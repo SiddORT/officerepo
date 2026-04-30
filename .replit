@@ -1,10 +1,10 @@
-modules = ["python-3.11"]
+modules = ["python-3.11", "nodejs-18"]
 [agent]
 expertMode = true
 
 [nix]
 channel = "stable-25_05"
-packages = ["libxcrypt"]
+packages = ["libxcrypt", "postgresql"]
 
 [workflows]
 runButton = "Project"
@@ -16,7 +16,23 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
+args = "Backend API"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
 args = "Start application"
+
+[[workflows.workflow]]
+name = "Backend API"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd /home/runner/workspace && python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload"
+waitForPort = 8000
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [[workflows.workflow]]
 name = "Start application"
@@ -24,11 +40,15 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
-waitForPort = 8000
+args = "cd /home/runner/workspace/frontend-web && npm run dev"
+waitForPort = 5000
 
 [workflows.workflow.metadata]
-outputType = "console"
+outputType = "webview"
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
 
 [[ports]]
 localPort = 8000
