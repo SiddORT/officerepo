@@ -28,10 +28,18 @@ def create_refresh_token(data: Dict[str, Any], expires_delta: Optional[timedelta
 
 
 def decode_access_token(token: str) -> Dict[str, Any]:
-    payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
-    return payload
+    try:
+        return jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+    except JWTError:
+        if settings.PREVIOUS_JWT_SECRET:
+            return jwt.decode(token, settings.PREVIOUS_JWT_SECRET, algorithms=["HS256"])
+        raise
 
 
 def decode_refresh_token(token: str) -> Dict[str, Any]:
-    payload = jwt.decode(token, settings.REFRESH_SECRET, algorithms=["HS256"])
-    return payload
+    try:
+        return jwt.decode(token, settings.REFRESH_SECRET, algorithms=["HS256"])
+    except JWTError:
+        if settings.PREVIOUS_REFRESH_SECRET:
+            return jwt.decode(token, settings.PREVIOUS_REFRESH_SECRET, algorithms=["HS256"])
+        raise

@@ -30,6 +30,22 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # Key rotation — graceful rollover procedure:
+    #
+    #   Step 1 – Generate new secrets.
+    #   Step 2 – Set PREVIOUS_JWT_SECRET=<old JWT_SECRET> and
+    #            PREVIOUS_REFRESH_SECRET=<old REFRESH_SECRET> in the environment.
+    #   Step 3 – Update JWT_SECRET / REFRESH_SECRET to the new values.
+    #   Step 4 – Redeploy.  Tokens signed with the old secret are still accepted
+    #            via the fallback path until they expire naturally.
+    #   Step 5 – After the maximum token lifetime has passed (REFRESH_TOKEN_EXPIRE_DAYS),
+    #            unset PREVIOUS_JWT_SECRET and PREVIOUS_REFRESH_SECRET and redeploy again.
+    #
+    # WARNING: leaving PREVIOUS_* vars set indefinitely keeps the old (possibly
+    # compromised) secret active.  Always clear them after the grace period.
+    PREVIOUS_JWT_SECRET: str = ""
+    PREVIOUS_REFRESH_SECRET: str = ""
+
     # App
     APP_NAME: str = "Office Repo"
     API_V1_PREFIX: str = "/api/v1"
