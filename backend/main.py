@@ -1,5 +1,8 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.app.config.settings import settings
 from backend.app.core.middleware import TenantMiddleware
@@ -56,6 +59,10 @@ app.include_router(employee_router, prefix=f"{PREFIX}/tenant/employees", tags=["
 
 @app.get("/", tags=["root"])
 def root():
+    dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend-web", "dist"))
+    index = os.path.join(dist, "index.html")
+    if os.path.isfile(index):
+        return FileResponse(index)
     return {
         "app": "Office Repo",
         "version": "1.0.0",
@@ -102,3 +109,17 @@ def seed_default_data():
 
 
 seed_default_data()
+
+# Serve compiled React frontend in production
+_frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend-web", "dist"))
+if os.path.isdir(_frontend_dist):
+    _index_html = os.path.join(_frontend_dist, "index.html")
+
+    app.mount("/assets", StaticFiles(directory=os.path.join(_frontend_dist, "assets")), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def serve_spa(full_path: str):
+        if full_path.startswith("api/") or full_path in ("docs", "openapi.json", "redoc"):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404)
+        return FileResponse(_index_html)
