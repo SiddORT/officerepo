@@ -1,3 +1,4 @@
+import os
 import secrets
 import logging
 from pydantic import model_validator
@@ -8,9 +9,19 @@ logger = logging.getLogger(__name__)
 _SENTINEL = "__unset__"
 
 
+def _normalize_db_url(url: str) -> str:
+    """Convert postgres:// → postgresql+psycopg2:// for SQLAlchemy compatibility."""
+    if url.startswith("postgres://"):
+        url = "postgresql+psycopg2://" + url[len("postgres://"):]
+    elif url.startswith("postgresql://"):
+        url = "postgresql+psycopg2://" + url[len("postgresql://"):]
+    return url
+
+
 class Settings(BaseSettings):
-    # Platform (master) database
-    PLATFORM_DB_URL: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/office_repo_platform"
+    # Platform (master) database — reads DATABASE_URL from environment automatically
+    DATABASE_URL: str = _SENTINEL
+    PLATFORM_DB_URL: str = _SENTINEL
 
     # JWT — defaults use a sentinel so the validator can detect missing values
     JWT_SECRET: str = _SENTINEL
@@ -33,7 +44,17 @@ class Settings(BaseSettings):
     def _resolve_and_validate_secrets(self) -> "Settings":
         is_production = self.ENVIRONMENT.lower() == "production"
 
-        # JWT_SECRET: accept SESSION_SECRET as legacy alias
+        # ── Database ──────────────────────────────────────────────────────────
+        # Prefer explicit PLATFORM_DB_URL, fall back to DATABASE_URL (Replit built-in)
+        if self.PLATFORM_DB_URL == _SENTINEL:
+            if self.DATABASE_URL != _SENTINEL:
+                self.PLATFORM_DB_URL = _normalize_db_url(self.DATABASE_URL)
+            else:
+                self.PLATFORM_DB_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/office_repo_platform"
+        else:
+            self.PLATFORM_DB_URL = _normalize_db_url(self.PLATFORM_DB_URL)
+
+        # ── JWT_SECRET ────────────────────────────────────────────────────────
         if self.JWT_SECRET == _SENTINEL:
             if self.SESSION_SECRET != _SENTINEL:
                 self.JWT_SECRET = self.SESSION_SECRET
@@ -49,9 +70,12 @@ class Settings(BaseSettings):
                     "run. Set JWT_SECRET explicitly for persistent sessions."
                 )
 
-        # REFRESH_SECRET
+        # ── REFRESH_SECRET ────────────────────────────────────────────────────
         if self.REFRESH_SECRET == _SENTINEL:
-            if is_production:
+            # Fall back to SESSION_SECRET so prod keeps working without extra setup
+            if self.SESSION_SECRET != _SENTINEL:
+                self.REFRESH_SECRET = self.SESSION_SECRET + "_refresh"
+            elif is_production:
                 raise ValueError(
                     "REFRESH_SECRET must be set in production. "
                     "The application cannot start with a missing or insecure secret."
