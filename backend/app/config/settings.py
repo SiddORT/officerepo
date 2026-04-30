@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     TENANT_RESOLVER_STRATEGY: str = "header"  # header | subdomain | jwt
     ENVIRONMENT: str = "development"
 
+    # CORS — comma-separated list of allowed origins for production.
+    # Example: "https://app.officerepo.io,https://www.officerepo.io"
+    # Ignored in development (wildcard is used instead).
+    ALLOWED_ORIGINS: str = ""
+
     class Config:
         env_file = ".env"
         extra = "allow"
@@ -85,6 +90,22 @@ class Settings(BaseSettings):
                 logger.warning(
                     "REFRESH_SECRET is not set. A random secret has been generated for "
                     "this run. Set REFRESH_SECRET explicitly for persistent sessions."
+                )
+
+        # ALLOWED_ORIGINS
+        is_restricted = self.ENVIRONMENT.lower() != "development"
+        if is_restricted:
+            if not self.ALLOWED_ORIGINS.strip():
+                raise ValueError(
+                    f"ALLOWED_ORIGINS must be set when ENVIRONMENT='{self.ENVIRONMENT}'. "
+                    "Provide a comma-separated list of allowed origins "
+                    "(e.g. 'https://app.officerepo.io')."
+                )
+            origins = [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
+            if "*" in origins:
+                raise ValueError(
+                    "ALLOWED_ORIGINS must not contain '*' in non-development environments. "
+                    "Specify explicit origin URLs instead."
                 )
 
         return self

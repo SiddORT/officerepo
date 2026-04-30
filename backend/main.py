@@ -31,10 +31,16 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS
+# CORS — wildcard only in development; restricted to ALLOWED_ORIGINS in all other environments
+_is_restricted = settings.ENVIRONMENT.lower() != "development"
+if _is_restricted:
+    _cors_origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
+else:
+    _cors_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
