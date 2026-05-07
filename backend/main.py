@@ -6,11 +6,12 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 
 from backend.app.config.settings import settings
 from backend.app.core.middleware import TenantMiddleware
 from backend.app.core.secret_rotation_monitor import run_monitor
-from backend.app.database.platform import Base, engine
+from backend.app.database.platform import Base, engine, SessionLocal
 
 # Platform models (import to register with metadata)
 from backend.app.platform.tenants.models import Tenant, TenantDomain, TenantDbConnection, TenantIdpConfig
@@ -18,6 +19,7 @@ from backend.app.platform.subscriptions.models import Plan, Subscription
 from backend.app.platform.feature_flags.models import FeatureFlag
 from backend.app.platform.superadmin.models import SuperAdmin
 from backend.app.platform.mobile.models import MobileDeviceSession
+from backend.app.platform.tenant_management.models import TenantBranding, TenantActivityLog
 
 # Routers
 from backend.app.modules.auth.router import router as auth_router
@@ -25,9 +27,66 @@ from backend.app.modules.employee.router import router as employee_router
 from backend.app.platform.tenants.router import router as tenants_router
 from backend.app.platform.feature_flags.router import router as flags_router
 from backend.app.platform.subscriptions.router import router as subscriptions_router
+from backend.app.platform.tenant_management.router import router as tenant_mgmt_router
 
-# Create all platform tables
+# Create all platform tables (new tables only; existing are not altered)
 Base.metadata.create_all(bind=engine)
+
+
+def run_schema_migrations():
+    """
+    Idempotent ALTER TABLE migrations — safely adds new columns to existing tables.
+    Uses IF NOT EXISTS so it is safe to run on every startup.
+    """
+    migrations = [
+        # tenants — extended fields
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS company_email VARCHAR(255)",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS contact_number VARCHAR(50)",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS company_website VARCHAR(500)",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS timezone VARCHAR(100) DEFAULT 'UTC'",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS region VARCHAR(100)",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_path VARCHAR(500)",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS created_by INTEGER",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP",
+
+        # tenant_domains — subdomain / custom_domain split
+        "ALTER TABLE tenant_domains ALTER COLUMN domain DROP NOT NULL",
+        "ALTER TABLE tenant_domains DROP CONSTRAINT IF EXISTS tenant_domains_domain_key",
+        "ALTER TABLE tenant_domains ADD COLUMN IF NOT EXISTS subdomain VARCHAR(255)",
+        "ALTER TABLE tenant_domains ADD COLUMN IF NOT EXISTS custom_domain VARCHAR(255)",
+
+        # tenant_db_connections — structured credential fields
+        "ALTER TABLE tenant_db_connections ALTER COLUMN db_url DROP NOT NULL",
+        "ALTER TABLE tenant_db_connections ADD COLUMN IF NOT EXISTS db_name VARCHAR(255)",
+        "ALTER TABLE tenant_db_connections ADD COLUMN IF NOT EXISTS db_host VARCHAR(255)",
+        "ALTER TABLE tenant_db_connections ADD COLUMN IF NOT EXISTS db_port INTEGER DEFAULT 5432",
+        "ALTER TABLE tenant_db_connections ADD COLUMN IF NOT EXISTS db_username VARCHAR(255)",
+        "ALTER TABLE tenant_db_connections ADD COLUMN IF NOT EXISTS db_password_encrypted TEXT",
+        "ALTER TABLE tenant_db_connections ADD COLUMN IF NOT EXISTS db_status VARCHAR(50) DEFAULT 'pending'",
+        "ALTER TABLE tenant_db_connections ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP",
+
+        # subscriptions — trial + limits
+        "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS plan_name VARCHAR(100)",
+        "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS trial_start TIMESTAMP",
+        "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS trial_end TIMESTAMP",
+        "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS user_limit INTEGER DEFAULT 10",
+        "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS storage_limit INTEGER DEFAULT 1024",
+    ]
+    try:
+        with engine.connect() as conn:
+            for sql in migrations:
+                try:
+                    conn.execute(text(sql))
+                except Exception as e:
+                    print(f"  Migration skipped ({e}): {sql[:60]}...")
+            conn.commit()
+        print("Schema migrations applied.")
+    except Exception as e:
+        print(f"Migration error: {e}")
+
+
+run_schema_migrations()
 
 
 @asynccontextmanager
@@ -61,7 +120,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Tenant-ID"],
 )
 
@@ -69,8 +128,6 @@ app.add_middleware(
 app.add_middleware(TenantMiddleware)
 
 # Content-Security-Policy — applied to every response.
-# The policy is intentionally strict: all resource types fall back to 'self'
-# so only same-origin assets are trusted by default.
 _CSP_POLICY = "; ".join([
     "default-src 'self'",
     "script-src 'self'",
@@ -82,9 +139,6 @@ _CSP_POLICY = "; ".join([
     "frame-ancestors 'none'",
 ])
 
-
-# Paths that serve FastAPI's built-in Swagger/ReDoc UI — these load JS and CSS
-# from cdn.jsdelivr.net, so we don't attach the strict CSP there.
 _CSP_EXEMPT_PATHS = {"/docs", "/redoc", "/openapi.json"}
 
 
@@ -95,18 +149,27 @@ async def add_csp_header(request: Request, call_next):
         response.headers["Content-Security-Policy"] = _CSP_POLICY
     return response
 
+
 PREFIX = settings.API_V1_PREFIX
 
 # Auth (superadmin + tenant login)
 app.include_router(auth_router, prefix=f"{PREFIX}/auth", tags=["auth"])
 
-# Superadmin
-app.include_router(tenants_router, prefix=f"{PREFIX}/superadmin/tenants", tags=["superadmin - tenants"])
+# Superadmin — legacy routes (keep for backward compat)
+app.include_router(tenants_router, prefix=f"{PREFIX}/superadmin/tenants", tags=["superadmin - tenants (legacy)"])
 app.include_router(flags_router, prefix=f"{PREFIX}/superadmin", tags=["superadmin - feature flags"])
 app.include_router(subscriptions_router, prefix=f"{PREFIX}/superadmin/subscriptions", tags=["superadmin - subscriptions"])
 
+# Tenant Management Module (new, full-featured)
+app.include_router(tenant_mgmt_router, prefix=f"{PREFIX}/superadmin/manage/tenants", tags=["tenant management"])
+
 # Tenant-scoped modules
 app.include_router(employee_router, prefix=f"{PREFIX}/tenant/employees", tags=["tenant - employees"])
+
+# Serve uploaded files statically
+_uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
+os.makedirs(_uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=_uploads_dir), name="uploads")
 
 
 @app.get("/", tags=["root"])
@@ -129,8 +192,7 @@ def health():
 
 
 def seed_default_data():
-    """Seed a default superadmin and sample plan on first run."""
-    from backend.app.database.platform import SessionLocal
+    """Seed a default superadmin and sample plans on first run."""
     db = SessionLocal()
     try:
         admin = db.query(SuperAdmin).filter(SuperAdmin.email == "admin@officerepo.io").first()

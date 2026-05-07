@@ -32,5 +32,12 @@ class Subscription(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Extended fields — added via ALTER TABLE migration in main.py
+    plan_name = Column(String(100), nullable=True)
+    trial_start = Column(DateTime, nullable=True)
+    trial_end = Column(DateTime, nullable=True)
+    user_limit = Column(Integer, default=10)
+    storage_limit = Column(Integer, default=1024)
+
     tenant = relationship("Tenant", back_populates="subscription")
     plan = relationship("Plan", back_populates="subscriptions")

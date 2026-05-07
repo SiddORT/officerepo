@@ -1,0 +1,47 @@
+import React, { useEffect } from "react";
+
+export default function Modal({ open, onClose, title, children, size = "md", footer }) {
+  useEffect(() => {
+    const handler = (e) => e.key === "Escape" && onClose?.();
+    if (open) document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const widths = { sm: "max-w-sm", md: "max-w-lg", lg: "max-w-2xl", xl: "max-w-4xl", full: "max-w-6xl" };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={(e) => e.target === e.currentTarget && onClose?.()}
+    >
+      <div
+        className={`relative w-full ${widths[size] || widths.md} bg-gray-900 border border-gray-800 rounded-xl shadow-2xl flex flex-col max-h-[90vh]`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+          <h3 className="text-base font-semibold text-white">{title}</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-300 transition-colors p-1 rounded"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+
+        {/* Footer */}
+        {footer && (
+          <div className="px-6 py-4 border-t border-gray-800 flex items-center justify-end gap-3">
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

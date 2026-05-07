@@ -1,11 +1,16 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import LandingPage from "./pages/landing/LandingPage";
 import LoginPage from "./pages/login/LoginPage";
 import AdminLoginPage from "./pages/login/AdminLoginPage";
 import DashboardPage from "./pages/dashboard/DashboardPage";
 import SuperAdminPage from "./pages/superadmin/SuperAdminPage";
+import TenantList from "./pages/superadmin/tenants/TenantList";
+import CreateTenant from "./pages/superadmin/tenants/CreateTenant";
+import EditTenant from "./pages/superadmin/tenants/EditTenant";
+import TenantDetails from "./pages/superadmin/tenants/TenantDetails";
 import Layout from "./components/Layout";
 
 function ProtectedRoute({ children, requireRole }) {
@@ -25,7 +30,7 @@ function AppRoutes() {
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
       <Route path="/admin" element={user ? <Navigate to="/dashboard" replace /> : <AdminLoginPage />} />
 
-      {/* Protected */}
+      {/* Protected — general */}
       <Route
         path="/dashboard"
         element={
@@ -34,11 +39,47 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      {/* Protected — superadmin legacy */}
       <Route
         path="/superadmin"
         element={
           <ProtectedRoute requireRole="superadmin">
             <Layout><SuperAdminPage /></Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Protected — Tenant Management Module */}
+      <Route
+        path="/superadmin/tenants"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><TenantList /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/tenants/new"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><CreateTenant /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/tenants/:id"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><TenantDetails /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/tenants/:id/edit"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><EditTenant /></Layout>
           </ProtectedRoute>
         }
       />
@@ -51,8 +92,10 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

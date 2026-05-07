@@ -15,6 +15,17 @@ class Tenant(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Extended fields — added via ALTER TABLE migration in main.py
+    company_email = Column(String(255), nullable=True)
+    contact_number = Column(String(50), nullable=True)
+    company_website = Column(String(500), nullable=True)
+    timezone = Column(String(100), default="UTC")
+    region = Column(String(100), nullable=True)
+    logo_path = Column(String(500), nullable=True)
+    created_by = Column(Integer, nullable=True)
+    is_deleted = Column(Boolean, default=False)
+    deleted_at = Column(DateTime, nullable=True)
+
     domains = relationship("TenantDomain", back_populates="tenant", cascade="all, delete-orphan")
     db_connection = relationship("TenantDbConnection", back_populates="tenant", uselist=False, cascade="all, delete-orphan")
     subscription = relationship("Subscription", back_populates="tenant", uselist=False)
@@ -27,7 +38,9 @@ class TenantDomain(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False)
-    domain = Column(String(255), unique=True, nullable=False, index=True)
+    domain = Column(String(255), nullable=True)
+    subdomain = Column(String(255), nullable=True, index=True)
+    custom_domain = Column(String(255), nullable=True)
     is_primary = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -39,9 +52,16 @@ class TenantDbConnection(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), unique=True, nullable=False)
-    db_url = Column(Text, nullable=False)
+    db_url = Column(Text, nullable=True)
+    db_name = Column(String(255), nullable=True)
+    db_host = Column(String(255), nullable=True)
+    db_port = Column(Integer, default=5432)
+    db_username = Column(String(255), nullable=True)
+    db_password_encrypted = Column(Text, nullable=True)
+    db_status = Column(String(50), default="pending")
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     tenant = relationship("Tenant", back_populates="db_connection")
 

@@ -54,7 +54,7 @@ apiClient.interceptors.response.use(
 
 export default apiClient;
 
-// Auth
+// ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
   superAdminLogin: (email, password) =>
     apiClient.post("/auth/superadmin/login", { email, password }),
@@ -67,7 +67,7 @@ export const authApi = {
   logout: () => apiClient.post("/auth/logout", {}),
 };
 
-// Tenants (superadmin)
+// ── Tenants — legacy (backward compat, used by SuperAdminPage) ────────────────
 export const tenantsApi = {
   list: (params) => apiClient.get("/superadmin/tenants", { params }),
   get: (id) => apiClient.get(`/superadmin/tenants/${id}`),
@@ -78,21 +78,53 @@ export const tenantsApi = {
   configureDb: (id, db_url) => apiClient.post(`/superadmin/tenants/${id}/db-connection`, { db_url }),
 };
 
-// Feature flags
+// ── Tenant Management — full-featured module ──────────────────────────────────
+export const tenantMgmtApi = {
+  list: (params) =>
+    apiClient.get("/superadmin/manage/tenants", { params }),
+
+  getById: (id) =>
+    apiClient.get(`/superadmin/manage/tenants/${id}`),
+
+  create: (data) =>
+    apiClient.post("/superadmin/manage/tenants", data),
+
+  update: (id, data) =>
+    apiClient.put(`/superadmin/manage/tenants/${id}`, data),
+
+  suspend: (id) =>
+    apiClient.patch(`/superadmin/manage/tenants/${id}/suspend`),
+
+  activate: (id) =>
+    apiClient.patch(`/superadmin/manage/tenants/${id}/activate`),
+
+  uploadLogo: (id, file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return apiClient.post(`/superadmin/manage/tenants/${id}/logo`, fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+
+  toggleModule: (tenantId, module, is_enabled) =>
+    apiClient.post(`/superadmin/${tenantId}/features`, { module, is_enabled }),
+};
+
+// ── Feature Flags ─────────────────────────────────────────────────────────────
 export const featureFlagsApi = {
   getForTenant: (tenantId) => apiClient.get(`/superadmin/${tenantId}/features`),
   toggle: (tenantId, module, is_enabled) =>
     apiClient.post(`/superadmin/${tenantId}/features`, { module, is_enabled }),
 };
 
-// Subscriptions
+// ── Subscriptions ─────────────────────────────────────────────────────────────
 export const subscriptionsApi = {
   plans: () => apiClient.get("/superadmin/subscriptions/plans"),
   assign: (tenant_id, plan_id) =>
     apiClient.post("/superadmin/subscriptions/assign", { tenant_id, plan_id }),
 };
 
-// Employees (tenant-scoped)
+// ── Employees (tenant-scoped) ─────────────────────────────────────────────────
 export const employeesApi = {
   list: (params) => apiClient.get("/tenant/employees", { params }),
   get: (id) => apiClient.get(`/tenant/employees/${id}`),
