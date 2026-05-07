@@ -1,7 +1,9 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import LandingPage from "./pages/landing/LandingPage";
 import LoginPage from "./pages/login/LoginPage";
+import AdminLoginPage from "./pages/login/AdminLoginPage";
 import DashboardPage from "./pages/dashboard/DashboardPage";
 import SuperAdminPage from "./pages/superadmin/SuperAdminPage";
 import Layout from "./components/Layout";
@@ -18,7 +20,12 @@ function AppRoutes() {
   const { user } = useAuth();
   return (
     <Routes>
+      {/* Public */}
+      <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
+      <Route path="/admin" element={user ? <Navigate to="/dashboard" replace /> : <AdminLoginPage />} />
+
+      {/* Protected */}
       <Route
         path="/dashboard"
         element={
@@ -35,8 +42,9 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

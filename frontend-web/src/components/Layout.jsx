@@ -14,7 +14,7 @@ export default function Layout({ children }) {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/");
   };
 
   const visibleNav = navItems.filter((item) => item.roles.includes(user?.role));

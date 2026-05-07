@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { authApi } from "../../services/apiClient";
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "", tenantId: "" });
+  const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -15,7 +15,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await authApi.tenantLogin(form.email, form.password, form.tenantId);
+      const res = await authApi.superAdminLogin(form.email, form.password);
       const data = res.data;
       login(
         { email: form.email, role: data.role, tenant_id: data.tenant_id, user_id: data.user_id },
@@ -41,21 +41,19 @@ export default function LoginPage() {
       </div>
 
       <div className="relative w-full max-w-sm">
-        {/* Brand */}
         <div className="text-center mb-8">
           <div
             className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 mb-4"
             style={{ boxShadow: "0 0 24px rgba(99,102,241,0.5)" }}
           >
             <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-white">Welcome back</h1>
-          <p className="text-gray-500 mt-1 text-sm">Sign in to your workspace</p>
+          <h1 className="text-2xl font-bold text-white">Platform Admin</h1>
+          <p className="text-gray-500 mt-1 text-sm">Restricted access — authorised personnel only</p>
         </div>
 
-        {/* Glass card */}
         <div
           className="rounded-2xl border border-white/5 p-7"
           style={{
@@ -66,24 +64,10 @@ export default function LoginPage() {
         >
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1.5">Workspace ID</label>
-              <input
-                type="text"
-                placeholder="your-company-slug"
-                value={form.tenantId}
-                onChange={(e) => setForm({ ...form, tenantId: e.target.value })}
-                className="w-full rounded-lg px-4 py-2.5 text-sm text-gray-100 placeholder-gray-600 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                style={{ background: "rgba(255,255,255,0.05)" }}
-                required
-                autoComplete="organization"
-              />
-            </div>
-
-            <div>
               <label className="block text-sm font-medium text-gray-400 mb-1.5">Email</label>
               <input
                 type="email"
-                placeholder="you@company.com"
+                placeholder="admin@example.com"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 className="w-full rounded-lg px-4 py-2.5 text-sm text-gray-100 placeholder-gray-600 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
@@ -123,14 +107,9 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 pt-5 border-t border-white/5 text-center">
-            <button
-              onClick={() => navigate("/")}
-              className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
-            >
-              ← Back to home
-            </button>
-          </div>
+          <p className="text-xs text-gray-700 text-center mt-5">
+            Default: admin@officerepo.io / admin123
+          </p>
         </div>
       </div>
     </div>
