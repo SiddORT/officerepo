@@ -3,12 +3,129 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { authApi } from "../../services/apiClient";
 
+const WaveArt = () => (
+  <svg
+    viewBox="0 0 500 700"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className="w-full h-full"
+    preserveAspectRatio="xMidYMid slice"
+  >
+    <defs>
+      <linearGradient id="wave1" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#38bdf8" stopOpacity="0" />
+        <stop offset="40%" stopColor="#38bdf8" stopOpacity="0.6" />
+        <stop offset="100%" stopColor="#7dd3fc" stopOpacity="0.1" />
+      </linearGradient>
+      <linearGradient id="wave2" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#e2e8f0" stopOpacity="0" />
+        <stop offset="50%" stopColor="#e2e8f0" stopOpacity="0.3" />
+        <stop offset="100%" stopColor="#e2e8f0" stopOpacity="0" />
+      </linearGradient>
+      <linearGradient id="wave3" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0" />
+        <stop offset="60%" stopColor="#7dd3fc" stopOpacity="0.2" />
+        <stop offset="100%" stopColor="#7dd3fc" stopOpacity="0" />
+      </linearGradient>
+    </defs>
+
+    {/* Flowing wave ribbons — multiple layers */}
+    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => {
+      const yBase = 50 + i * 50;
+      const cp1x = 80 + i * 15;
+      const cp1y = yBase - 60 + i * 8;
+      const cp2x = 300 - i * 10;
+      const cp2y = yBase + 80 - i * 6;
+      const endX = 420 + i * 5;
+      const endY = yBase + 30 + i * 4;
+      const opacity = 0.08 + (i % 4) * 0.06;
+      const stroke = i % 3 === 0 ? "#38bdf8" : i % 3 === 1 ? "#e2e8f0" : "#7dd3fc";
+      return (
+        <path
+          key={i}
+          d={`M -20 ${yBase} C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${endX} ${endY}`}
+          stroke={stroke}
+          strokeWidth={i % 4 === 0 ? 1.5 : 0.8}
+          strokeOpacity={opacity}
+          fill="none"
+        />
+      );
+    })}
+
+    {/* Bright highlight wave — the glowing main ribbon */}
+    <path
+      d="M -20 340 C 60 240 180 320 280 260 C 360 210 420 280 520 240"
+      stroke="url(#wave1)"
+      strokeWidth="2"
+      fill="none"
+    />
+    <path
+      d="M -20 360 C 70 260 190 335 285 275 C 365 225 425 295 525 258"
+      stroke="url(#wave1)"
+      strokeWidth="1"
+      strokeOpacity="0.4"
+      fill="none"
+    />
+
+    {/* Secondary bright ribbon */}
+    <path
+      d="M -20 420 C 80 340 160 400 260 370 C 340 345 400 390 520 350"
+      stroke="url(#wave2)"
+      strokeWidth="1.5"
+      fill="none"
+    />
+
+    {/* Fine detail waves — upper cluster */}
+    {[0, 1, 2, 3, 4, 5].map((i) => (
+      <path
+        key={`upper-${i}`}
+        d={`M -20 ${180 + i * 18} C ${60 + i * 8} ${120 + i * 10} ${200 - i * 5} ${200 + i * 12} ${420 + i * 10} ${170 + i * 15}`}
+        stroke="#e2e8f0"
+        strokeWidth="0.5"
+        strokeOpacity={0.06 + i * 0.02}
+        fill="none"
+      />
+    ))}
+
+    {/* Fine detail waves — lower cluster */}
+    {[0, 1, 2, 3, 4].map((i) => (
+      <path
+        key={`lower-${i}`}
+        d={`M -20 ${480 + i * 20} C ${100 + i * 10} ${440 + i * 8} ${220 + i * 5} ${500 + i * 10} ${440 + i * 8} ${460 + i * 12}`}
+        stroke="#7dd3fc"
+        strokeWidth="0.5"
+        strokeOpacity={0.05 + i * 0.02}
+        fill="none"
+      />
+    ))}
+
+    {/* Glow dot at brightest wave intersection */}
+    <circle cx="200" cy="300" r="3" fill="#38bdf8" fillOpacity="0.5" />
+    <circle cx="200" cy="300" r="8" fill="#38bdf8" fillOpacity="0.1" />
+    <circle cx="200" cy="300" r="16" fill="#38bdf8" fillOpacity="0.04" />
+  </svg>
+);
+
+const EyeIcon = ({ open }) =>
+  open ? (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+    </svg>
+  ) : (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+    </svg>
+  );
+
 export default function AdminLoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const [remember, setRemember] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,85 +148,225 @@ export default function AdminLoginPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: "#030311" }}
+      className="min-h-screen flex overflow-hidden relative"
+      style={{ background: "#0b1929" }}
     >
-      {/* Background orbs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-indigo-700/15 rounded-full blur-[120px]" />
-        <div className="absolute -bottom-40 -left-40 w-[400px] h-[400px] bg-violet-700/10 rounded-full blur-[100px]" />
+      {/* Subtle background texture */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at 25% 50%, rgba(14,42,71,0.8) 0%, transparent 60%)," +
+              "radial-gradient(ellipse at 75% 50%, rgba(8,28,54,0.9) 0%, transparent 60%)",
+          }}
+        />
       </div>
 
-      <div className="relative w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div
-            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 mb-4"
-            style={{ boxShadow: "0 0 24px rgba(99,102,241,0.5)" }}
+      {/* Left — wave art panel */}
+      <div className="relative w-1/2 flex-shrink-0 flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0">
+          <WaveArt />
+        </div>
+        {/* Fade to right so it blends into the right panel */}
+        <div
+          className="absolute inset-y-0 right-0 w-32 pointer-events-none"
+          style={{ background: "linear-gradient(to right, transparent, #0b1929)" }}
+        />
+      </div>
+
+      {/* Right — login form */}
+      <div className="relative flex-1 flex flex-col items-start justify-center px-16 py-12">
+
+        {/* Register button — top right */}
+        <div className="absolute top-8 right-8">
+          <button
+            type="button"
+            className="px-6 py-2 text-xs font-semibold tracking-widest uppercase rounded-full border transition-all"
+            style={{
+              borderColor: "rgba(125,211,252,0.4)",
+              color: "rgba(125,211,252,0.8)",
+              background: "rgba(125,211,252,0.04)",
+              letterSpacing: "0.12em",
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = "rgba(125,211,252,0.1)";
+              e.currentTarget.style.borderColor = "rgba(125,211,252,0.7)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = "rgba(125,211,252,0.04)";
+              e.currentTarget.style.borderColor = "rgba(125,211,252,0.4)";
+            }}
           >
-            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-white">Platform Admin</h1>
-          <p className="text-gray-500 mt-1 text-sm">Restricted access — authorised personnel only</p>
+            Register
+          </button>
         </div>
 
-        <div
-          className="rounded-2xl border border-white/5 p-7"
-          style={{
-            background: "rgba(255,255,255,0.03)",
-            backdropFilter: "blur(20px)",
-            boxShadow: "0 0 60px rgba(99,102,241,0.07), inset 0 1px 0 rgba(255,255,255,0.05)",
-          }}
-        >
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1.5">Email</label>
-              <input
-                type="email"
-                placeholder="admin@example.com"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full rounded-lg px-4 py-2.5 text-sm text-gray-100 placeholder-gray-600 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                style={{ background: "rgba(255,255,255,0.05)" }}
-                required
-                autoComplete="email"
-              />
-            </div>
+        {/* Form area + circular LOGIN button together */}
+        <div className="w-full max-w-sm relative">
 
-            <div>
-              <label className="block text-sm font-medium text-gray-400 mb-1.5">Password</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="w-full rounded-lg px-4 py-2.5 text-sm text-gray-100 placeholder-gray-600 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                style={{ background: "rgba(255,255,255,0.05)" }}
-                required
-                autoComplete="current-password"
-              />
+          {/* Small label */}
+          <p
+            className="text-xs font-medium tracking-widest uppercase mb-10"
+            style={{ color: "rgba(125,211,252,0.4)", letterSpacing: "0.2em" }}
+          >
+            Platform Admin
+          </p>
+
+          <form onSubmit={handleSubmit}>
+            {/* Fields + login button row */}
+            <div className="flex items-center gap-6">
+
+              {/* Fields */}
+              <div className="flex-1 space-y-8">
+
+                {/* Username / Email */}
+                <div className="relative">
+                  <input
+                    type="email"
+                    placeholder="username"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    className="w-full pb-3 text-sm bg-transparent border-0 border-b focus:outline-none transition-colors placeholder-gray-600"
+                    style={{
+                      borderBottomColor: "rgba(148,163,184,0.2)",
+                      color: "rgba(226,232,240,0.85)",
+                    }}
+                    onFocus={(e) => (e.target.style.borderBottomColor = "rgba(125,211,252,0.6)")}
+                    onBlur={(e) => (e.target.style.borderBottomColor = "rgba(148,163,184,0.2)")}
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+
+                {/* Password */}
+                <div className="relative">
+                  <input
+                    type={showPass ? "text" : "password"}
+                    placeholder="password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    className="w-full pb-3 pr-8 text-sm bg-transparent border-0 border-b focus:outline-none transition-colors placeholder-gray-600"
+                    style={{
+                      borderBottomColor: "rgba(148,163,184,0.2)",
+                      color: "rgba(226,232,240,0.85)",
+                    }}
+                    onFocus={(e) => (e.target.style.borderBottomColor = "rgba(125,211,252,0.6)")}
+                    onBlur={(e) => (e.target.style.borderBottomColor = "rgba(148,163,184,0.2)")}
+                    required
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPass(!showPass)}
+                    className="absolute right-0 bottom-3 transition-colors"
+                    style={{ color: "rgba(148,163,184,0.4)" }}
+                    onMouseOver={(e) => (e.currentTarget.style.color = "rgba(125,211,252,0.7)")}
+                    onMouseOut={(e) => (e.currentTarget.style.color = "rgba(148,163,184,0.4)")}
+                  >
+                    <EyeIcon open={showPass} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Circular LOGIN button */}
+              <div className="flex-shrink-0">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-24 h-24 rounded-full flex items-center justify-center font-bold text-sm tracking-widest uppercase transition-all relative overflow-hidden disabled:opacity-60"
+                  style={{
+                    background: loading
+                      ? "rgba(220,230,245,0.7)"
+                      : "linear-gradient(145deg, #f0f4f8 0%, #d8e4f0 50%, #c8d8ec 100%)",
+                    color: "#0b1929",
+                    boxShadow: loading
+                      ? "none"
+                      : "0 0 0 1px rgba(255,255,255,0.3), 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(125,211,252,0.15)",
+                    letterSpacing: "0.1em",
+                  }}
+                  onMouseOver={(e) => {
+                    if (!loading) {
+                      e.currentTarget.style.boxShadow =
+                        "0 0 0 1px rgba(255,255,255,0.4), 0 12px 40px rgba(0,0,0,0.5), 0 0 30px rgba(125,211,252,0.25)";
+                      e.currentTarget.style.transform = "scale(1.04)";
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.boxShadow =
+                      "0 0 0 1px rgba(255,255,255,0.3), 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(125,211,252,0.15)";
+                    e.currentTarget.style.transform = "scale(1)";
+                  }}
+                >
+                  {loading ? (
+                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : (
+                    "LOGIN"
+                  )}
+                </button>
+              </div>
             </div>
 
             {error && (
-              <div className="bg-red-900/20 border border-red-700/30 text-red-300 text-sm px-4 py-3 rounded-lg">
+              <p
+                className="mt-6 text-xs px-3 py-2 rounded"
+                style={{ color: "rgba(252,165,165,0.8)", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}
+              >
                 {error}
-              </div>
+              </p>
             )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full mt-2 py-2.5 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ boxShadow: loading ? "none" : "0 0 20px rgba(99,102,241,0.35)" }}
-            >
-              {loading ? "Signing in..." : "Sign in"}
-            </button>
+            {/* Remember password */}
+            <div className="mt-8 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setRemember(!remember)}
+                className="flex items-center gap-2 group"
+              >
+                <div
+                  className="w-3.5 h-3.5 rounded-sm border flex items-center justify-center transition-all"
+                  style={{
+                    borderColor: remember ? "rgba(125,211,252,0.7)" : "rgba(148,163,184,0.3)",
+                    background: remember ? "rgba(125,211,252,0.15)" : "transparent",
+                  }}
+                >
+                  {remember && (
+                    <svg className="w-2 h-2" fill="none" stroke="rgba(125,211,252,0.9)" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </div>
+                <span className="text-xs" style={{ color: "rgba(148,163,184,0.5)" }}>Remember Password</span>
+              </button>
+            </div>
           </form>
 
-          <p className="text-xs text-gray-700 text-center mt-5">
-            Default: admin@officerepo.io / admin123
-          </p>
+          {/* Forget password — bottom right, same pill style as Register */}
+          <div className="mt-16">
+            <button
+              type="button"
+              className="px-5 py-1.5 text-xs font-medium tracking-wider rounded-full border transition-all"
+              style={{
+                borderColor: "rgba(125,211,252,0.3)",
+                color: "rgba(125,211,252,0.6)",
+                background: "transparent",
+                letterSpacing: "0.08em",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = "rgba(125,211,252,0.06)";
+                e.currentTarget.style.borderColor = "rgba(125,211,252,0.5)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = "transparent";
+                e.currentTarget.style.borderColor = "rgba(125,211,252,0.3)";
+              }}
+            >
+              Forget password?
+            </button>
+          </div>
         </div>
       </div>
     </div>
