@@ -1,0 +1,365 @@
+You are building a production-grade SaaS platform named "Office Repo".
+
+Tech Stack:
+- Frontend: React + TailwindCSS
+- Backend: FastAPI
+- Database: PostgreSQL
+- Architecture: Multi-tenant SaaS (database-per-tenant)
+- Authentication: JWT-based centralized identity system
+
+IMPORTANT:
+This project must follow strict enterprise coding standards, UI standards, validation standards, database standards and reusable architecture patterns from day one.
+
+====================================================
+GLOBAL DEVELOPMENT STANDARDS
+====================================================
+
+1. CODING STANDARDS
+----------------------------------------------------
+
+Follow clean architecture and modular coding practices.
+
+Backend structure:
+- router layer
+- service layer
+- repository layer
+- schema layer
+- model layer
+
+Frontend structure:
+- reusable components
+- centralized API client
+- reusable form components
+- reusable validation utilities
+
+Use:
+- async/await consistently
+- proper error handling
+- centralized exception handlers
+- reusable response format
+
+Never hardcode:
+- secrets
+- URLs
+- tenant configs
+- environment-specific values
+
+Use environment variables for:
+- DB URLs
+- JWT secrets
+- S3/local storage paths
+- API URLs
+
+Create reusable:
+- constants
+- enums
+- helper utilities
+- validation helpers
+
+====================================================
+2. UI / UX STANDARDS
+----------------------------------------------------
+
+The application UI must be consistent across all modules.
+
+MANDATORY REQUIREMENTS:
+
+- All mandatory fields must display RED ASTERISK (*)
+- All forms must have:
+  - uniform spacing
+  - uniform padding
+  - consistent border radius
+  - consistent label positioning
+  - responsive layout
+
+Create reusable UI standards:
+
+Input height:
+- same throughout application
+
+Button styles:
+- primary
+- secondary
+- danger
+- disabled
+
+Spacing standards:
+- consistent margins and paddings
+- consistent section gaps
+- grid alignment
+
+Theme support:
+- Dark theme
+- Light theme
+
+Create centralized theme configuration.
+
+Use Tailwind best practices:
+- reusable utility classes
+- avoid inline styling
+- use reusable layout wrappers
+
+Responsive support:
+- desktop
+- tablet
+- mobile
+
+Create reusable components:
+- Input
+- Select
+- Textarea
+- Modal
+- Table
+- Form wrapper
+- Page header
+- Confirmation dialog
+- Loader
+- Empty state
+- Pagination
+
+====================================================
+3. FORM VALIDATION STANDARDS
+----------------------------------------------------
+
+ALL INPUTS MUST HAVE VALIDATIONS.
+
+Mandatory validations:
+
+- Trim white spaces automatically
+- Prevent leading/trailing spaces
+- Min/max length validation
+- Required field validation
+- Proper email validation
+- Numeric validation
+- Phone validation
+- Dropdown validation
+- File validation
+- Prevent SQL injection style unsafe inputs
+- Prevent script tags / XSS style input
+
+Frontend validations:
+- instant validation messages
+- inline validation display
+
+Backend validations:
+- schema-level validation
+- API-level validation
+- sanitize inputs before DB operations
+
+Standard validation behavior:
+- red border on invalid fields
+- consistent validation message placement
+- validation messages must be user friendly
+
+====================================================
+4. DATABASE STANDARDS
+----------------------------------------------------
+
+Use PostgreSQL standards.
+
+Rules:
+- snake_case naming convention
+- UUID support where needed
+- created_at everywhere
+- updated_at everywhere
+- created_by where applicable
+- soft delete support:
+  is_deleted
+  deleted_at
+
+Use indexing where appropriate.
+
+Use:
+- foreign key constraints
+- normalized schema design
+- audit-ready structure
+
+Never:
+- duplicate tenant metadata in tenant DB
+- store file blobs directly in DB
+
+Store:
+- file path only
+- metadata only
+
+====================================================
+5. FILE UPLOAD / STORAGE STANDARDS
+----------------------------------------------------
+
+Create centralized file upload helper service.
+
+IMPORTANT:
+This helper must be reusable across all modules.
+
+Future architecture:
+- one S3 bucket per tenant
+
+Current implementation:
+- local storage only
+
+Requirements:
+
+Create helper:
+shared/storage/
+
+Capabilities:
+- upload file
+- generate unique filename
+- create tenant folder automatically
+- validate file size
+- validate file extension
+- return file path
+- delete file
+- replace existing file
+
+Storage structure:
+
+uploads/
+   tenant_id/
+      module_name/
+         files
+
+Store only:
+- file path
+- file metadata
+
+inside database.
+
+Do NOT store files directly in database.
+
+Create abstraction layer so future migration to AWS S3 is easy.
+
+Future-ready architecture:
+- local storage strategy
+- S3 storage strategy
+
+====================================================
+6. API STANDARDS
+----------------------------------------------------
+
+Use:
+- versioned APIs
+
+Example:
+/api/v1/
+
+Standard response format:
+
+{
+  success: true,
+  message: "",
+  data: {},
+  errors: []
+}
+
+Implement:
+- pagination
+- filtering
+- sorting
+- search support
+
+Use proper:
+- HTTP status codes
+- exception handling
+- auth middleware
+
+====================================================
+7. SECURITY STANDARDS
+----------------------------------------------------
+
+Implement:
+- JWT auth
+- refresh token support
+- role-based permissions
+- tenant isolation
+
+Sanitize:
+- all inputs
+- uploaded filenames
+
+Prevent:
+- unauthorized tenant access
+- cross-tenant data leakage
+
+====================================================
+8. AUDIT & LOGGING STANDARDS
+----------------------------------------------------
+
+Implement reusable:
+- audit log helper
+- activity tracking helper
+
+Track:
+- create
+- update
+- delete
+- login
+- file upload
+- permission changes
+
+====================================================
+9. PERFORMANCE STANDARDS
+----------------------------------------------------
+
+Implement:
+- DB connection pooling
+- lazy loading where required
+- optimized queries
+- reusable DB sessions
+
+Avoid:
+- duplicate API calls
+- unnecessary re-renders
+
+====================================================
+10. ACCESSIBILITY & USABILITY
+----------------------------------------------------
+
+Implement:
+- keyboard-friendly forms
+- proper labels
+- proper placeholders
+- loading indicators
+- disabled button states
+- confirmation dialogs before destructive actions
+
+====================================================
+11. SUPERADMIN PANEL MODULE TO BUILD FIRST
+----------------------------------------------------
+
+Start with:
+
+Tenant Management Module
+
+Features:
+- Create Tenant
+- Edit Tenant
+- Suspend Tenant
+- Activate Tenant
+- Tenant Details
+- Tenant Database Mapping
+- Tenant Domain/Subdomain
+- Module Enablement
+- Tenant Status
+- Tenant Logo Upload
+- Tenant Theme Config
+
+====================================================
+12. IMPORTANT DEVELOPMENT RULES
+----------------------------------------------------
+
+- Keep code reusable
+- Avoid duplication
+- Create shared helpers
+- Create reusable form system
+- Create reusable validation system
+- Create reusable modal system
+- Create reusable table component
+- Use centralized constants
+- Use centralized themes
+- Use centralized storage helper
+- Use centralized API client
+
+IMPORTANT:
+Backend runtime must remain Python FastAPI.
+Do NOT generate Node.js backend code.
