@@ -126,6 +126,7 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [loginHover, setLoginHover] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -151,6 +152,25 @@ export default function AdminLoginPage() {
       className="min-h-screen flex overflow-hidden relative"
       style={{ background: "#0b1929" }}
     >
+      <style>{`
+        @keyframes glowPulse {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50%       { opacity: 1;   transform: scale(1.08); }
+        }
+        @keyframes glowRing {
+          0%, 100% { box-shadow: 0 0 0 3px rgba(125,211,252,0.25), 0 0 24px rgba(125,211,252,0.2); }
+          50%       { box-shadow: 0 0 0 6px rgba(125,211,252,0.15), 0 0 48px rgba(125,211,252,0.35); }
+        }
+        @keyframes underlineGlow {
+          0%, 100% { box-shadow: 0 2px 8px rgba(125,211,252,0.3); }
+          50%       { box-shadow: 0 2px 20px rgba(125,211,252,0.6); }
+        }
+        @keyframes fieldFadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+
       {/* Subtle background texture */}
       <div className="absolute inset-0 pointer-events-none">
         <div
@@ -168,7 +188,6 @@ export default function AdminLoginPage() {
         <div className="absolute inset-0">
           <WaveArt />
         </div>
-        {/* Fade to right so it blends into the right panel */}
         <div
           className="absolute inset-y-0 right-0 w-32 pointer-events-none"
           style={{ background: "linear-gradient(to right, transparent, #0b1929)" }}
@@ -182,20 +201,26 @@ export default function AdminLoginPage() {
         <div className="absolute top-8 right-8">
           <button
             type="button"
-            className="px-6 py-2 text-xs font-semibold tracking-widest uppercase rounded-full border transition-all"
+            className="px-6 py-2 text-xs font-semibold tracking-widest uppercase rounded-full border transition-all duration-300"
             style={{
               borderColor: "rgba(125,211,252,0.4)",
               color: "rgba(125,211,252,0.8)",
               background: "rgba(125,211,252,0.04)",
               letterSpacing: "0.12em",
+              boxShadow: "none",
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.background = "rgba(125,211,252,0.1)";
-              e.currentTarget.style.borderColor = "rgba(125,211,252,0.7)";
+              e.currentTarget.style.background = "rgba(125,211,252,0.08)";
+              e.currentTarget.style.borderColor = "rgba(125,211,252,0.9)";
+              e.currentTarget.style.boxShadow =
+                "0 0 12px rgba(125,211,252,0.35), 0 0 30px rgba(125,211,252,0.15), inset 0 0 12px rgba(125,211,252,0.06)";
+              e.currentTarget.style.color = "rgba(125,211,252,1)";
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.background = "rgba(125,211,252,0.04)";
               e.currentTarget.style.borderColor = "rgba(125,211,252,0.4)";
+              e.currentTarget.style.boxShadow = "none";
+              e.currentTarget.style.color = "rgba(125,211,252,0.8)";
             }}
           >
             Register
@@ -205,7 +230,6 @@ export default function AdminLoginPage() {
         {/* Form area + circular LOGIN button together */}
         <div className="w-full max-w-sm relative">
 
-          {/* Small label */}
           <p
             className="text-xs font-medium tracking-widest uppercase mb-10"
             style={{ color: "rgba(125,211,252,0.4)", letterSpacing: "0.2em" }}
@@ -214,55 +238,108 @@ export default function AdminLoginPage() {
           </p>
 
           <form onSubmit={handleSubmit}>
-            {/* Fields + login button row */}
             <div className="flex items-center gap-6">
 
               {/* Fields */}
               <div className="flex-1 space-y-8">
 
                 {/* Username / Email */}
-                <div className="relative">
+                <div className="relative group/field">
                   <input
                     type="email"
                     placeholder="username"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full pb-3 text-sm bg-transparent border-0 border-b focus:outline-none transition-colors placeholder-gray-600"
+                    className="w-full pb-3 text-sm bg-transparent border-0 border-b focus:outline-none placeholder-gray-600 transition-all duration-300"
                     style={{
                       borderBottomColor: "rgba(148,163,184,0.2)",
                       color: "rgba(226,232,240,0.85)",
                     }}
-                    onFocus={(e) => (e.target.style.borderBottomColor = "rgba(125,211,252,0.6)")}
-                    onBlur={(e) => (e.target.style.borderBottomColor = "rgba(148,163,184,0.2)")}
+                    onMouseOver={(e) => {
+                      e.target.style.borderBottomColor = "rgba(125,211,252,0.4)";
+                      e.target.style.filter = "drop-shadow(0 2px 6px rgba(125,211,252,0.2))";
+                    }}
+                    onMouseOut={(e) => {
+                      if (document.activeElement !== e.target) {
+                        e.target.style.borderBottomColor = "rgba(148,163,184,0.2)";
+                        e.target.style.filter = "none";
+                      }
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderBottomColor = "rgba(125,211,252,0.8)";
+                      e.target.style.filter = "drop-shadow(0 3px 10px rgba(125,211,252,0.4))";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderBottomColor = "rgba(148,163,184,0.2)";
+                      e.target.style.filter = "none";
+                    }}
                     required
                     autoComplete="email"
+                  />
+                  {/* Animated underline glow bar */}
+                  <div
+                    className="absolute bottom-0 left-0 h-px w-0 transition-all duration-500 rounded-full group-focus-within/field:w-full"
+                    style={{
+                      background: "linear-gradient(90deg, transparent, rgba(125,211,252,0.8), transparent)",
+                      boxShadow: "0 0 8px rgba(125,211,252,0.6)",
+                    }}
                   />
                 </div>
 
                 {/* Password */}
-                <div className="relative">
+                <div className="relative group/field">
                   <input
                     type={showPass ? "text" : "password"}
                     placeholder="password"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className="w-full pb-3 pr-8 text-sm bg-transparent border-0 border-b focus:outline-none transition-colors placeholder-gray-600"
+                    className="w-full pb-3 pr-8 text-sm bg-transparent border-0 border-b focus:outline-none placeholder-gray-600 transition-all duration-300"
                     style={{
                       borderBottomColor: "rgba(148,163,184,0.2)",
                       color: "rgba(226,232,240,0.85)",
                     }}
-                    onFocus={(e) => (e.target.style.borderBottomColor = "rgba(125,211,252,0.6)")}
-                    onBlur={(e) => (e.target.style.borderBottomColor = "rgba(148,163,184,0.2)")}
+                    onMouseOver={(e) => {
+                      e.target.style.borderBottomColor = "rgba(125,211,252,0.4)";
+                      e.target.style.filter = "drop-shadow(0 2px 6px rgba(125,211,252,0.2))";
+                    }}
+                    onMouseOut={(e) => {
+                      if (document.activeElement !== e.target) {
+                        e.target.style.borderBottomColor = "rgba(148,163,184,0.2)";
+                        e.target.style.filter = "none";
+                      }
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderBottomColor = "rgba(125,211,252,0.8)";
+                      e.target.style.filter = "drop-shadow(0 3px 10px rgba(125,211,252,0.4))";
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderBottomColor = "rgba(148,163,184,0.2)";
+                      e.target.style.filter = "none";
+                    }}
                     required
                     autoComplete="current-password"
+                  />
+                  {/* Animated underline glow bar */}
+                  <div
+                    className="absolute bottom-0 left-0 h-px w-0 transition-all duration-500 rounded-full group-focus-within/field:w-full"
+                    style={{
+                      background: "linear-gradient(90deg, transparent, rgba(125,211,252,0.8), transparent)",
+                      boxShadow: "0 0 8px rgba(125,211,252,0.6)",
+                    }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPass(!showPass)}
-                    className="absolute right-0 bottom-3 transition-colors"
+                    className="absolute right-0 bottom-3 transition-all duration-200"
                     style={{ color: "rgba(148,163,184,0.4)" }}
-                    onMouseOver={(e) => (e.currentTarget.style.color = "rgba(125,211,252,0.7)")}
-                    onMouseOut={(e) => (e.currentTarget.style.color = "rgba(148,163,184,0.4)")}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.color = "rgba(125,211,252,0.9)";
+                      e.currentTarget.style.filter = "drop-shadow(0 0 6px rgba(125,211,252,0.5))";
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.color = "rgba(148,163,184,0.4)";
+                      e.currentTarget.style.filter = "none";
+                    }}
                   >
                     <EyeIcon open={showPass} />
                   </button>
@@ -270,41 +347,75 @@ export default function AdminLoginPage() {
               </div>
 
               {/* Circular LOGIN button */}
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 relative">
+                {/* Outer pulsing ring — visible on hover */}
+                {loginHover && !loading && (
+                  <div
+                    className="absolute inset-0 rounded-full pointer-events-none"
+                    style={{
+                      margin: "-10px",
+                      border: "1.5px solid rgba(125,211,252,0.3)",
+                      animation: "glowRing 1.6s ease-in-out infinite",
+                    }}
+                  />
+                )}
+                {loginHover && !loading && (
+                  <div
+                    className="absolute inset-0 rounded-full pointer-events-none"
+                    style={{
+                      margin: "-20px",
+                      border: "1px solid rgba(125,211,252,0.12)",
+                      animation: "glowRing 1.6s ease-in-out infinite 0.4s",
+                    }}
+                  />
+                )}
+
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-24 h-24 rounded-full flex items-center justify-center font-bold text-sm tracking-widest uppercase transition-all relative overflow-hidden disabled:opacity-60"
+                  className="w-24 h-24 rounded-full flex items-center justify-center font-bold text-sm tracking-widest uppercase disabled:opacity-60 relative"
                   style={{
                     background: loading
                       ? "rgba(220,230,245,0.7)"
                       : "linear-gradient(145deg, #f0f4f8 0%, #d8e4f0 50%, #c8d8ec 100%)",
                     color: "#0b1929",
-                    boxShadow: loading
-                      ? "none"
-                      : "0 0 0 1px rgba(255,255,255,0.3), 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(125,211,252,0.15)",
                     letterSpacing: "0.1em",
+                    transition: "transform 0.25s ease, box-shadow 0.25s ease",
+                    boxShadow: loginHover && !loading
+                      ? "0 0 0 1px rgba(255,255,255,0.5), 0 12px 48px rgba(0,0,0,0.6), 0 0 50px rgba(125,211,252,0.5), 0 0 100px rgba(56,189,248,0.25)"
+                      : "0 0 0 1px rgba(255,255,255,0.3), 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(125,211,252,0.12)",
+                    transform: loginHover && !loading ? "scale(1.07)" : "scale(1)",
                   }}
-                  onMouseOver={(e) => {
-                    if (!loading) {
-                      e.currentTarget.style.boxShadow =
-                        "0 0 0 1px rgba(255,255,255,0.4), 0 12px 40px rgba(0,0,0,0.5), 0 0 30px rgba(125,211,252,0.25)";
-                      e.currentTarget.style.transform = "scale(1.04)";
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.boxShadow =
-                      "0 0 0 1px rgba(255,255,255,0.3), 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(125,211,252,0.15)";
-                    e.currentTarget.style.transform = "scale(1)";
-                  }}
+                  onMouseEnter={() => setLoginHover(true)}
+                  onMouseLeave={() => setLoginHover(false)}
                 >
+                  {/* Shimmer overlay on hover */}
+                  {loginHover && !loading && (
+                    <div
+                      className="absolute inset-0 rounded-full pointer-events-none overflow-hidden"
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: 0, left: "-100%",
+                          width: "60%", height: "100%",
+                          background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)",
+                          animation: "shimmer 1.2s ease infinite",
+                        }}
+                      />
+                    </div>
+                  )}
                   {loading ? (
                     <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
                   ) : (
-                    "LOGIN"
+                    <span className="relative z-10"
+                      style={{
+                        textShadow: loginHover ? "0 0 12px rgba(11,25,41,0.4)" : "none",
+                      }}
+                    >LOGIN</span>
                   )}
                 </button>
               </div>
@@ -324,13 +435,14 @@ export default function AdminLoginPage() {
               <button
                 type="button"
                 onClick={() => setRemember(!remember)}
-                className="flex items-center gap-2 group"
+                className="flex items-center gap-2 group/rem transition-all duration-200"
               >
                 <div
-                  className="w-3.5 h-3.5 rounded-sm border flex items-center justify-center transition-all"
+                  className="w-3.5 h-3.5 rounded-sm border flex items-center justify-center transition-all duration-200"
                   style={{
-                    borderColor: remember ? "rgba(125,211,252,0.7)" : "rgba(148,163,184,0.3)",
+                    borderColor: remember ? "rgba(125,211,252,0.8)" : "rgba(148,163,184,0.3)",
                     background: remember ? "rgba(125,211,252,0.15)" : "transparent",
+                    boxShadow: remember ? "0 0 8px rgba(125,211,252,0.4)" : "none",
                   }}
                 >
                   {remember && (
@@ -339,29 +451,40 @@ export default function AdminLoginPage() {
                     </svg>
                   )}
                 </div>
-                <span className="text-xs" style={{ color: "rgba(148,163,184,0.5)" }}>Remember Password</span>
+                <span
+                  className="text-xs transition-colors duration-200 group-hover/rem:text-cyan-400"
+                  style={{ color: "rgba(148,163,184,0.5)" }}
+                >
+                  Remember Password
+                </span>
               </button>
             </div>
           </form>
 
-          {/* Forget password — bottom right, same pill style as Register */}
+          {/* Forget password button */}
           <div className="mt-16">
             <button
               type="button"
-              className="px-5 py-1.5 text-xs font-medium tracking-wider rounded-full border transition-all"
+              className="px-5 py-1.5 text-xs font-medium tracking-wider rounded-full border transition-all duration-300"
               style={{
                 borderColor: "rgba(125,211,252,0.3)",
                 color: "rgba(125,211,252,0.6)",
                 background: "transparent",
                 letterSpacing: "0.08em",
+                boxShadow: "none",
               }}
               onMouseOver={(e) => {
                 e.currentTarget.style.background = "rgba(125,211,252,0.06)";
-                e.currentTarget.style.borderColor = "rgba(125,211,252,0.5)";
+                e.currentTarget.style.borderColor = "rgba(125,211,252,0.9)";
+                e.currentTarget.style.color = "rgba(125,211,252,1)";
+                e.currentTarget.style.boxShadow =
+                  "0 0 12px rgba(125,211,252,0.35), 0 0 28px rgba(125,211,252,0.15), inset 0 0 10px rgba(125,211,252,0.05)";
               }}
               onMouseOut={(e) => {
                 e.currentTarget.style.background = "transparent";
                 e.currentTarget.style.borderColor = "rgba(125,211,252,0.3)";
+                e.currentTarget.style.color = "rgba(125,211,252,0.6)";
+                e.currentTarget.style.boxShadow = "none";
               }}
             >
               Forget password?
@@ -369,6 +492,13 @@ export default function AdminLoginPage() {
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes shimmer {
+          0%   { left: -100%; }
+          100% { left: 200%; }
+        }
+      `}</style>
     </div>
   );
 }
