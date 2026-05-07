@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
 
 const NAV_ITEMS = [
   {
@@ -39,8 +40,27 @@ const NAV_ITEMS = [
   },
 ];
 
+function SunIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+        d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" />
+    </svg>
+  );
+}
+
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
+  const { theme, toggle, isDark } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
@@ -61,6 +81,7 @@ export default function Layout({ children }) {
     <div className="min-h-screen flex bg-gray-950">
       {/* Sidebar */}
       <aside className={`${collapsed ? "w-16" : "w-60"} bg-gray-900 border-r border-gray-800 flex flex-col transition-all duration-200 flex-shrink-0`}>
+
         {/* Logo */}
         <div className="p-4 border-b border-gray-800 flex items-center justify-between">
           {!collapsed && (
@@ -74,6 +95,7 @@ export default function Layout({ children }) {
           <button
             onClick={() => setCollapsed((c) => !c)}
             className="text-gray-500 hover:text-gray-300 transition-colors p-1 rounded"
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {collapsed
@@ -104,14 +126,32 @@ export default function Layout({ children }) {
           ))}
         </nav>
 
-        {/* User footer */}
-        <div className="p-3 border-t border-gray-800">
+        {/* Footer — theme toggle + user + logout */}
+        <div className="p-3 border-t border-gray-800 space-y-1">
+
+          {/* Theme toggle */}
+          <button
+            onClick={toggle}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-400 hover:text-gray-100 hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            <span className="flex-shrink-0">
+              {isDark ? <SunIcon /> : <MoonIcon />}
+            </span>
+            {!collapsed && (
+              <span>{isDark ? "Light mode" : "Dark mode"}</span>
+            )}
+          </button>
+
+          {/* User info */}
           {!collapsed && (
-            <div className="px-3 py-2 mb-1">
+            <div className="px-3 py-2">
               <p className="text-xs font-medium text-gray-200 truncate">{user?.email}</p>
               <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
             </div>
           )}
+
+          {/* Sign out */}
           <button
             onClick={handleLogout}
             title={collapsed ? "Sign out" : undefined}
