@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -48,6 +48,33 @@ app.add_middleware(
 
 # Tenant resolver middleware
 app.add_middleware(TenantMiddleware)
+
+# Content-Security-Policy — applied to every response.
+# The policy is intentionally strict: all resource types fall back to 'self'
+# so only same-origin assets are trusted by default.
+_CSP_POLICY = "; ".join([
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "connect-src 'self'",
+    "font-src 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+])
+
+
+# Paths that serve FastAPI's built-in Swagger/ReDoc UI — these load JS and CSS
+# from cdn.jsdelivr.net, so we don't attach the strict CSP there.
+_CSP_EXEMPT_PATHS = {"/docs", "/redoc", "/openapi.json"}
+
+
+@app.middleware("http")
+async def add_csp_header(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path not in _CSP_EXEMPT_PATHS:
+        response.headers["Content-Security-Policy"] = _CSP_POLICY
+    return response
 
 PREFIX = settings.API_V1_PREFIX
 
