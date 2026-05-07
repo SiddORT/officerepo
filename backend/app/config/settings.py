@@ -61,6 +61,14 @@ class Settings(BaseSettings):
     # Default: 168 h = 7 days (long enough for all refresh tokens to expire).
     PREVIOUS_SECRET_GRACE_HOURS: int = 168
 
+    # How often (in hours) the background monitor re-checks whether the grace
+    # period has elapsed but PREVIOUS_* vars are still set.  Default: 1 hour.
+    PREVIOUS_SECRET_CHECK_INTERVAL_HOURS: int = 1
+
+    # Optional URL to POST a JSON alert payload to when stale PREVIOUS_* secrets
+    # are detected after the grace period.  Leave blank to disable webhooks.
+    SECRET_ROTATION_ALERT_URL: str = ""
+
     # App
     APP_NAME: str = "Office Repo"
     API_V1_PREFIX: str = "/api/v1"
@@ -130,6 +138,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 "PREVIOUS_SECRET_GRACE_HOURS must be a positive integer (>= 1). "
                 f"Got: {self.PREVIOUS_SECRET_GRACE_HOURS}"
+            )
+
+        if self.PREVIOUS_SECRET_CHECK_INTERVAL_HOURS < 1:
+            raise ValueError(
+                "PREVIOUS_SECRET_CHECK_INTERVAL_HOURS must be a positive integer (>= 1). "
+                f"Got: {self.PREVIOUS_SECRET_CHECK_INTERVAL_HOURS}"
             )
 
         # Resolve the origin timestamp once at startup so all subsequent checks

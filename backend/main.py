@@ -1,4 +1,7 @@
+import asyncio
 import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -6,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.app.config.settings import settings
 from backend.app.core.middleware import TenantMiddleware
+from backend.app.core.secret_rotation_monitor import run_monitor
 from backend.app.database.platform import Base, engine
 
 # Platform models (import to register with metadata)
@@ -25,10 +29,25 @@ from backend.app.platform.subscriptions.router import router as subscriptions_ro
 # Create all platform tables
 Base.metadata.create_all(bind=engine)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    monitor_task = asyncio.create_task(run_monitor(settings))
+    try:
+        yield
+    finally:
+        monitor_task.cancel()
+        try:
+            await monitor_task
+        except asyncio.CancelledError:
+            pass
+
+
 app = FastAPI(
     title="Office Repo API",
     description="Multi-tenant SaaS platform for HR, Assets & Billing management.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # CORS — wildcard only in development; restricted to ALLOWED_ORIGINS in all other environments
