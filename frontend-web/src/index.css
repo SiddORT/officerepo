@@ -2,10 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── ORT Brand color ────────────────────────────────────────────────────── */
 :root {
   --ort-blue: #00aeec;
   --ort-blue-dark: #0090c8;
+  --navy: #1a3558;
+  --navy-light: #1e3d6b;
 }
 
 @layer base {
@@ -21,7 +22,7 @@
     @apply bg-transparent text-gray-300 text-sm font-medium py-2 px-4 rounded-lg border border-gray-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-danger {
-    @apply bg-red-700 hover:bg-red-600 active:bg-red-800 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-red-600 hover:bg-red-500 active:bg-red-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .input-field {
     @apply w-full bg-gray-800 border border-gray-700 text-gray-100 rounded-lg px-4 py-2.5 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition;
@@ -32,7 +33,7 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   DARK THEME  (default — .theme-dark or no class)
+   DARK THEME  (default)
 ══════════════════════════════════════════════════════════════════════════ */
 
 html,
@@ -41,6 +42,7 @@ html.theme-dark {
   color: #f1f5f9;
 }
 
+html.theme-dark body                { background-color: #030712; color: #f1f5f9; }
 html.theme-dark .layout-root        { background-color: #030712; }
 html.theme-dark .layout-sidebar     { background-color: #0f1117; border-right: 1px solid #1e2230; }
 html.theme-dark .layout-topbar      { background-color: #0f1117; }
@@ -50,21 +52,12 @@ html.theme-dark .layout-border      { border-color: #1e2230; }
 html.theme-dark .layout-divider     { background-color: #1e2230; }
 html.theme-dark .layout-title       { color: #f1f5f9; }
 html.theme-dark .layout-label-muted { color: #64748b; }
-
 html.theme-dark .nav-active         { background-color: #4f46e5; }
 html.theme-dark .layout-nav-idle    { color: #94a3b8; }
 html.theme-dark .layout-nav-idle:hover { background-color: #1e2230; color: #f1f5f9; }
-
-html.theme-dark .topbar-btn {
-  color: #94a3b8;
-  padding: 6px;
-  border-radius: 8px;
-  transition: all 0.15s;
-}
+html.theme-dark .topbar-btn         { color: #94a3b8; padding: 6px; border-radius: 8px; transition: all 0.15s; }
 html.theme-dark .topbar-btn:hover   { background-color: #1e2230; color: #f1f5f9; }
 
-/* Gray utility overrides (dark) */
-html.theme-dark body                { background-color: #030712; color: #f1f5f9; }
 html.theme-dark .bg-gray-950        { background-color: #030712; }
 html.theme-dark .bg-gray-900        { background-color: #0f1117; }
 html.theme-dark .bg-gray-800        { background-color: #1e2230; }
@@ -80,56 +73,97 @@ html.theme-dark .text-gray-500      { color: #64748b; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    LIGHT THEME  (.theme-light)
+   Sidebar: dark navy — Content: white/pale-blue — ORT #00aeec accents
 ══════════════════════════════════════════════════════════════════════════ */
 
 html.theme-light {
-  background-color: #eef4fb;
+  background-color: #ecf4fc;
   color: #0f172a;
 }
 
-/* Layout shells */
-html.theme-light .layout-root        { background-color: #eef4fb; }
-html.theme-light .layout-sidebar     { background-color: #ffffff; border-right: 1px solid #d4e6f5; }
-html.theme-light .layout-topbar      { background-color: #ffffff; }
-html.theme-light .layout-content     { background-color: #eef4fb; }
-html.theme-light .layout-dropdown    { background-color: #ffffff; }
-html.theme-light .layout-border      { border-color: #d4e6f5 !important; }
-html.theme-light .layout-divider     { background-color: #d4e6f5; }
+html.theme-light body { background-color: #ecf4fc; color: #0f172a; }
+
+/* ── Layout shells ─────────────────────────────────────────────────────── */
+html.theme-light .layout-root     { background-color: #ecf4fc; }
+
+/* Sidebar stays DARK NAVY — matches reference screenshot */
+html.theme-light .layout-sidebar  {
+  background-color: #1a3558 !important;
+  border-right: none !important;
+}
+html.theme-light .layout-topbar   { background-color: #ffffff; box-shadow: 0 1px 0 #dde8f4; }
+html.theme-light .layout-content  { background-color: #ecf4fc; }
+html.theme-light .layout-dropdown { background-color: #ffffff; box-shadow: 0 8px 32px rgba(26,53,88,0.15); }
+html.theme-light .layout-border   { border-color: #dde8f4 !important; }
+html.theme-light .layout-divider  { background-color: #dde8f4; }
+
+/* ── Sidebar text (on navy bg — all white) ────────────────────────────── */
 html.theme-light .layout-title       { color: #0f172a; }
 html.theme-light .layout-label-muted { color: #64748b; }
 
-/* Nav */
-html.theme-light .nav-active         { background-color: #00aeec; box-shadow: 0 2px 8px rgba(0,174,236,0.25); }
-html.theme-light .layout-nav-idle    { color: #475569; }
-html.theme-light .layout-nav-idle:hover { background-color: #e8f5fd; color: #00aeec; }
+/* Inside sidebar, labels should be white/pale */
+html.theme-light .layout-sidebar .layout-label-muted { color: rgba(255,255,255,0.45) !important; }
 
-/* Top bar buttons */
+/* Nav items inside dark sidebar */
+html.theme-light .nav-active {
+  background-color: #00aeec !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 12px rgba(0,174,236,0.35);
+}
+html.theme-light .layout-nav-idle {
+  color: rgba(255,255,255,0.65) !important;
+}
+html.theme-light .layout-nav-idle:hover {
+  background-color: rgba(0,174,236,0.18) !important;
+  color: #ffffff !important;
+}
+
+/* Collapse button in sidebar */
+html.theme-light .layout-sidebar button:not(.topbar-btn) {
+  color: rgba(255,255,255,0.5) !important;
+}
+html.theme-light .layout-sidebar button:not(.topbar-btn):hover {
+  background-color: rgba(255,255,255,0.08) !important;
+  color: #ffffff !important;
+}
+
+/* ── Top bar buttons (on white bg) ────────────────────────────────────── */
 html.theme-light .topbar-btn {
   color: #64748b;
   padding: 6px;
   border-radius: 8px;
   transition: all 0.15s;
 }
-html.theme-light .topbar-btn:hover   { background-color: #e8f5fd; color: #00aeec; }
+html.theme-light .topbar-btn:hover { background-color: #e4f2fb; color: #00aeec; }
 
-/* Gray utility overrides (light) */
-html.theme-light body                { background-color: #eef4fb; color: #0f172a; }
-html.theme-light .bg-gray-950        { background-color: #eef4fb !important; }
+/* Profile button in topbar */
+html.theme-light .layout-topbar .layout-nav-idle {
+  color: #334155 !important;
+}
+html.theme-light .layout-topbar .layout-nav-idle:hover {
+  background-color: #e4f2fb !important;
+  color: #1a3558 !important;
+}
+html.theme-light .layout-topbar .layout-title { color: #0f172a; }
+
+/* ── Gray utility overrides ────────────────────────────────────────────── */
+html.theme-light .bg-gray-950        { background-color: #ecf4fc !important; }
 html.theme-light .bg-gray-900        { background-color: #ffffff !important; }
-html.theme-light .bg-gray-800        { background-color: #f0f7fd !important; }
-html.theme-light .bg-gray-700        { background-color: #daedf8 !important; }
-html.theme-light .bg-gray-600        { background-color: #b8d9ef !important; }
+html.theme-light .bg-gray-800        { background-color: #f0f7fe !important; }
+html.theme-light .bg-gray-700        { background-color: #ddeaf8 !important; }
+html.theme-light .bg-gray-600        { background-color: #c3d8ef !important; }
 
-html.theme-light .hover\:bg-gray-800:hover { background-color: #e8f5fd !important; }
-html.theme-light .hover\:bg-gray-700:hover { background-color: #daedf8 !important; }
+html.theme-light .hover\:bg-gray-800:hover     { background-color: #e4f2fb !important; }
+html.theme-light .hover\:bg-gray-700:hover     { background-color: #ddeaf8 !important; }
+html.theme-light .hover\:bg-gray-800\/50:hover { background-color: rgba(228,242,251,0.8) !important; }
 
-/* Borders */
-html.theme-light .border-gray-800   { border-color: #d4e6f5 !important; }
-html.theme-light .border-gray-700   { border-color: #b8d9ef !important; }
-html.theme-light .border-gray-600   { border-color: #8fc6e4 !important; }
+/* ── Borders ───────────────────────────────────────────────────────────── */
+html.theme-light .border-gray-800   { border-color: #dde8f4 !important; }
+html.theme-light .border-gray-700   { border-color: #c3d8ef !important; }
+html.theme-light .border-gray-600   { border-color: #9fc0e0 !important; }
 html.theme-light .hover\:border-gray-600:hover { border-color: #00aeec !important; }
 
-/* Text */
+/* ── Text ─────────────────────────────────────────────────────────────── */
 html.theme-light .text-gray-100     { color: #0f172a !important; }
 html.theme-light .text-gray-200     { color: #1e293b !important; }
 html.theme-light .text-gray-300     { color: #334155 !important; }
@@ -138,45 +172,57 @@ html.theme-light .text-gray-500     { color: #64748b !important; }
 html.theme-light .hover\:text-gray-100:hover { color: #0f172a !important; }
 html.theme-light .hover\:text-gray-300:hover { color: #0f172a !important; }
 
-/* Accent — indigo becomes ORT blue in light mode */
+/* ── ORT blue accent replaces indigo ─────────────────────────────────── */
 html.theme-light .text-indigo-400   { color: #00aeec !important; }
 html.theme-light .text-indigo-500   { color: #0090c8 !important; }
 html.theme-light .bg-indigo-600     { background-color: #00aeec !important; }
 html.theme-light .hover\:bg-indigo-500:hover { background-color: #0090c8 !important; }
-html.theme-light .ring-indigo-500   { --tw-ring-color: #00aeec !important; }
 html.theme-light .focus\:ring-indigo-500:focus { --tw-ring-color: rgba(0,174,236,0.4) !important; }
 
-/* Dividers */
-html.theme-light .divide-gray-800 > * + * { border-color: #d4e6f5 !important; }
-html.theme-light .divide-gray-700 > * + * { border-color: #b8d9ef !important; }
+/* ── Dividers ─────────────────────────────────────────────────────────── */
+html.theme-light .divide-gray-800 > * + * { border-color: #dde8f4 !important; }
+html.theme-light .divide-gray-700 > * + * { border-color: #c3d8ef !important; }
 
-/* Input fields */
+/* ── Inputs ───────────────────────────────────────────────────────────── */
 html.theme-light .input-field {
   background-color: #ffffff !important;
-  border-color: #b8d9ef !important;
+  border-color: #c3d8ef !important;
   color: #0f172a !important;
 }
-html.theme-light .input-field::placeholder { color: #94a3b8 !important; }
+html.theme-light .input-field::placeholder,
 html.theme-light .placeholder-gray-500::placeholder { color: #94a3b8 !important; }
 
-/* Cards */
+/* ── Cards ────────────────────────────────────────────────────────────── */
 html.theme-light .card {
   background-color: #ffffff !important;
-  border-color: #d4e6f5 !important;
-  box-shadow: 0 1px 4px rgba(0,120,180,0.06);
+  border-color: #dde8f4 !important;
+  box-shadow: 0 1px 6px rgba(26,53,88,0.07);
 }
 
-/* Buttons */
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+html.theme-light .btn-primary {
+  background-color: #00aeec !important;
+}
+html.theme-light .btn-primary:hover { background-color: #0090c8 !important; }
+
 html.theme-light .btn-secondary {
   color: #334155 !important;
-  border-color: #b8d9ef !important;
-  background-color: transparent !important;
+  border-color: #c3d8ef !important;
+  background-color: #ffffff !important;
 }
 html.theme-light .btn-secondary:hover {
-  background-color: #e8f5fd !important;
+  background-color: #e4f2fb !important;
   color: #00aeec !important;
   border-color: #00aeec !important;
 }
 
-/* Table row hovers */
-html.theme-light .hover\:bg-gray-800\/50:hover { background-color: rgba(232,245,253,0.8) !important; }
+/* ── Dropdown menus (profile, etc.) ───────────────────────────────────── */
+html.theme-light .layout-dropdown .layout-nav-idle {
+  color: #334155 !important;
+}
+html.theme-light .layout-dropdown .layout-nav-idle:hover {
+  background-color: #e4f2fb !important;
+  color: #1a3558 !important;
+}
+html.theme-light .layout-dropdown .layout-title  { color: #0f172a; }
+html.theme-light .layout-dropdown .layout-label-muted { color: #64748b !important; }
