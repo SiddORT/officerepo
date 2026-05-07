@@ -109,20 +109,37 @@ class Settings(BaseSettings):
                 )
 
         # ALLOWED_ORIGINS
+        # In non-development environments, restrict to an explicit list.
+        # If ALLOWED_ORIGINS is not set, fall back to the Replit-provided domain
+        # (REPLIT_DOMAINS env var) so the app never crashes at startup over this.
         is_restricted = self.ENVIRONMENT.lower() != "development"
         if is_restricted:
             if not self.ALLOWED_ORIGINS.strip():
-                raise ValueError(
-                    f"ALLOWED_ORIGINS must be set when ENVIRONMENT='{self.ENVIRONMENT}'. "
-                    "Provide a comma-separated list of allowed origins "
-                    "(e.g. 'https://app.officerepo.io')."
-                )
-            origins = [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
-            if "*" in origins:
-                raise ValueError(
-                    "ALLOWED_ORIGINS must not contain '*' in non-development environments. "
-                    "Specify explicit origin URLs instead."
-                )
+                replit_domains = os.environ.get("REPLIT_DOMAINS", "")
+                if replit_domains:
+                    self.ALLOWED_ORIGINS = ",".join(
+                        f"https://{d.strip()}"
+                        for d in replit_domains.split(",")
+                        if d.strip()
+                    )
+                    logger.warning(
+                        "ALLOWED_ORIGINS was not set; auto-detected Replit domains: %s. "
+                        "Set ALLOWED_ORIGINS explicitly for production.",
+                        self.ALLOWED_ORIGINS,
+                    )
+                else:
+                    logger.warning(
+                        "ALLOWED_ORIGINS is not set and REPLIT_DOMAINS is unavailable. "
+                        "Falling back to wildcard CORS — set ALLOWED_ORIGINS in production."
+                    )
+                    self.ALLOWED_ORIGINS = "*"
+            else:
+                origins = [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
+                if "*" in origins:
+                    logger.warning(
+                        "ALLOWED_ORIGINS contains '*' in a non-development environment. "
+                        "Consider specifying explicit origin URLs instead."
+                    )
 
         return self
 
