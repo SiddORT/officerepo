@@ -31,7 +31,7 @@ def decode_access_token(token: str) -> Dict[str, Any]:
     try:
         return jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
     except JWTError:
-        if settings.PREVIOUS_JWT_SECRET:
+        if settings.PREVIOUS_JWT_SECRET and settings.previous_secret_grace_active():
             return jwt.decode(token, settings.PREVIOUS_JWT_SECRET, algorithms=["HS256"])
         raise
 
@@ -40,6 +40,6 @@ def decode_refresh_token(token: str) -> Dict[str, Any]:
     try:
         return jwt.decode(token, settings.REFRESH_SECRET, algorithms=["HS256"])
     except JWTError:
-        if settings.PREVIOUS_REFRESH_SECRET:
+        if settings.PREVIOUS_REFRESH_SECRET and settings.previous_secret_grace_active():
             return jwt.decode(token, settings.PREVIOUS_REFRESH_SECRET, algorithms=["HS256"])
         raise
