@@ -21,6 +21,19 @@ const LockIcon = () => (
   </svg>
 );
 
+const OfficeLogo = () => (
+  <svg className="w-7 h-7" viewBox="0 0 32 32" fill="none">
+    <rect width="32" height="32" rx="8" fill="rgba(56,189,248,0.12)" stroke="rgba(56,189,248,0.35)" strokeWidth="1" />
+    <rect x="8" y="10" width="16" height="14" rx="1.5" stroke="#67e8f9" strokeWidth="1.5" fill="none" />
+    <rect x="13" y="10" width="6" height="4" rx="1" fill="rgba(103,232,249,0.18)" stroke="#67e8f9" strokeWidth="1.2" />
+    <line x1="11" y1="15" x2="11" y2="24" stroke="#67e8f9" strokeWidth="1" strokeOpacity="0.5" />
+    <line x1="16" y1="15" x2="16" y2="24" stroke="#67e8f9" strokeWidth="1" strokeOpacity="0.5" />
+    <line x1="21" y1="15" x2="21" y2="24" stroke="#67e8f9" strokeWidth="1" strokeOpacity="0.5" />
+    <line x1="8" y1="18" x2="24" y2="18" stroke="#67e8f9" strokeWidth="0.8" strokeOpacity="0.4" />
+    <line x1="8" y1="21" x2="24" y2="21" stroke="#67e8f9" strokeWidth="0.8" strokeOpacity="0.4" />
+  </svg>
+);
+
 const ShieldIcon = () => (
   <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
     <defs>
@@ -154,7 +167,29 @@ export default function LoginPage() {
       />
 
       {/* Main content */}
-      <div className="relative z-10 flex items-center gap-0 md:gap-8 w-full max-w-2xl">
+      <div className="relative z-10 flex flex-col items-center w-full max-w-2xl">
+
+        {/* Office Repo branding — above card */}
+        <div className="mb-8 flex flex-col items-center gap-1">
+          <div className="flex items-center gap-2.5">
+            <OfficeLogo />
+            <span
+              className="text-2xl font-bold tracking-tight"
+              style={{
+                background: "linear-gradient(135deg, #e2e8f0 0%, #67e8f9 60%, #818cf8 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Office Repo
+            </span>
+          </div>
+          <p className="text-xs tracking-widest uppercase" style={{ color: "rgba(148,163,184,0.5)", letterSpacing: "0.18em" }}>
+            Unified Workplace Management
+          </p>
+        </div>
+
+        <div className="flex items-center gap-0 md:gap-8 w-full">
 
         {/* Shield — left decorative panel */}
         <div className="hidden md:flex flex-col items-center justify-center flex-shrink-0 relative">
@@ -375,8 +410,8 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Footer link */}
-            <div className="mt-6 pt-5 border-t flex justify-center" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+            {/* Footer */}
+            <div className="mt-6 pt-5 border-t flex items-center justify-between" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
               <button
                 onClick={() => navigate("/")}
                 className="text-xs transition-colors"
@@ -386,8 +421,20 @@ export default function LoginPage() {
               >
                 ← Back to home
               </button>
+
+              {/* ORT branding */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs" style={{ color: "rgba(148,163,184,0.35)" }}>by</span>
+                <img
+                  src="/ort-logo-dark.png"
+                  alt="ORT"
+                  className="h-4"
+                  style={{ mixBlendMode: "screen", opacity: 0.75 }}
+                />
+              </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
 

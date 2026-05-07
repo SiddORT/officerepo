@@ -3,106 +3,56 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { authApi } from "../../services/apiClient";
 
-const WaveArt = () => (
-  <svg
-    viewBox="0 0 500 700"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className="w-full h-full"
-    preserveAspectRatio="xMidYMid slice"
-  >
+const ShieldIcon = () => (
+  <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
     <defs>
-      <linearGradient id="wave1" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#38bdf8" stopOpacity="0" />
-        <stop offset="40%" stopColor="#38bdf8" stopOpacity="0.6" />
-        <stop offset="100%" stopColor="#7dd3fc" stopOpacity="0.1" />
+      <linearGradient id="adminShieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#f472b6" stopOpacity="0.9" />
+        <stop offset="50%" stopColor="#a78bfa" stopOpacity="0.7" />
+        <stop offset="100%" stopColor="#67e8f9" stopOpacity="0.8" />
       </linearGradient>
-      <linearGradient id="wave2" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#e2e8f0" stopOpacity="0" />
-        <stop offset="50%" stopColor="#e2e8f0" stopOpacity="0.3" />
-        <stop offset="100%" stopColor="#e2e8f0" stopOpacity="0" />
-      </linearGradient>
-      <linearGradient id="wave3" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0" />
-        <stop offset="60%" stopColor="#7dd3fc" stopOpacity="0.2" />
-        <stop offset="100%" stopColor="#7dd3fc" stopOpacity="0" />
-      </linearGradient>
+      <filter id="adminGlow">
+        <feGaussianBlur stdDeviation="3" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
     </defs>
-
-    {/* Flowing wave ribbons — multiple layers */}
-    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => {
-      const yBase = 50 + i * 50;
-      const cp1x = 80 + i * 15;
-      const cp1y = yBase - 60 + i * 8;
-      const cp2x = 300 - i * 10;
-      const cp2y = yBase + 80 - i * 6;
-      const endX = 420 + i * 5;
-      const endY = yBase + 30 + i * 4;
-      const opacity = 0.08 + (i % 4) * 0.06;
-      const stroke = i % 3 === 0 ? "#38bdf8" : i % 3 === 1 ? "#e2e8f0" : "#7dd3fc";
-      return (
-        <path
-          key={i}
-          d={`M -20 ${yBase} C ${cp1x} ${cp1y} ${cp2x} ${cp2y} ${endX} ${endY}`}
-          stroke={stroke}
-          strokeWidth={i % 4 === 0 ? 1.5 : 0.8}
-          strokeOpacity={opacity}
-          fill="none"
-        />
-      );
-    })}
-
-    {/* Bright highlight wave — the glowing main ribbon */}
     <path
-      d="M -20 340 C 60 240 180 320 280 260 C 360 210 420 280 520 240"
-      stroke="url(#wave1)"
-      strokeWidth="2"
-      fill="none"
+      d="M50 5 L90 22 L90 55 C90 78 72 97 50 105 C28 97 10 78 10 55 L10 22 Z"
+      stroke="url(#adminShieldGrad)"
+      strokeWidth="2.5"
+      fill="rgba(167,139,250,0.06)"
+      filter="url(#adminGlow)"
     />
     <path
-      d="M -20 360 C 70 260 190 335 285 275 C 365 225 425 295 525 258"
-      stroke="url(#wave1)"
-      strokeWidth="1"
-      strokeOpacity="0.4"
-      fill="none"
-    />
-
-    {/* Secondary bright ribbon */}
-    <path
-      d="M -20 420 C 80 340 160 400 260 370 C 340 345 400 390 520 350"
-      stroke="url(#wave2)"
+      d="M50 15 L82 29 L82 55 C82 73 68 89 50 97 C32 89 18 73 18 55 L18 29 Z"
+      stroke="url(#adminShieldGrad)"
       strokeWidth="1.5"
-      fill="none"
+      fill="rgba(99,102,241,0.04)"
+      strokeDasharray="4 2"
+      opacity="0.6"
     />
+    {/* Key icon inside shield */}
+    <circle cx="50" cy="51" r="9" stroke="#a78bfa" strokeWidth="2.5" fill="none" filter="url(#adminGlow)" />
+    <line x1="59" y1="51" x2="70" y2="51" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" filter="url(#adminGlow)" />
+    <line x1="67" y1="51" x2="67" y2="57" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" />
+    <line x1="63" y1="51" x2="63" y2="55" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" />
+    <circle cx="50" cy="57" r="18" stroke="rgba(167,139,250,0.2)" strokeWidth="1" fill="none" />
+    <circle cx="50" cy="57" r="12" stroke="rgba(167,139,250,0.15)" strokeWidth="1" fill="none" />
+  </svg>
+);
 
-    {/* Fine detail waves — upper cluster */}
-    {[0, 1, 2, 3, 4, 5].map((i) => (
-      <path
-        key={`upper-${i}`}
-        d={`M -20 ${180 + i * 18} C ${60 + i * 8} ${120 + i * 10} ${200 - i * 5} ${200 + i * 12} ${420 + i * 10} ${170 + i * 15}`}
-        stroke="#e2e8f0"
-        strokeWidth="0.5"
-        strokeOpacity={0.06 + i * 0.02}
-        fill="none"
-      />
-    ))}
+const LockIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+  </svg>
+);
 
-    {/* Fine detail waves — lower cluster */}
-    {[0, 1, 2, 3, 4].map((i) => (
-      <path
-        key={`lower-${i}`}
-        d={`M -20 ${480 + i * 20} C ${100 + i * 10} ${440 + i * 8} ${220 + i * 5} ${500 + i * 10} ${440 + i * 8} ${460 + i * 12}`}
-        stroke="#7dd3fc"
-        strokeWidth="0.5"
-        strokeOpacity={0.05 + i * 0.02}
-        fill="none"
-      />
-    ))}
-
-    {/* Glow dot at brightest wave intersection */}
-    <circle cx="200" cy="300" r="3" fill="#38bdf8" fillOpacity="0.5" />
-    <circle cx="200" cy="300" r="8" fill="#38bdf8" fillOpacity="0.1" />
-    <circle cx="200" cy="300" r="16" fill="#38bdf8" fillOpacity="0.04" />
+const UserIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
   </svg>
 );
 
@@ -118,15 +68,27 @@ const EyeIcon = ({ open }) =>
     </svg>
   );
 
+const OfficeLogo = () => (
+  <svg className="w-7 h-7" viewBox="0 0 32 32" fill="none">
+    <rect width="32" height="32" rx="8" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.4)" strokeWidth="1" />
+    <rect x="8" y="10" width="16" height="14" rx="1.5" stroke="#a78bfa" strokeWidth="1.5" fill="none" />
+    <rect x="13" y="10" width="6" height="4" rx="1" fill="rgba(167,139,250,0.2)" stroke="#a78bfa" strokeWidth="1.2" />
+    <line x1="11" y1="15" x2="11" y2="24" stroke="#a78bfa" strokeWidth="1" strokeOpacity="0.5" />
+    <line x1="16" y1="15" x2="16" y2="24" stroke="#a78bfa" strokeWidth="1" strokeOpacity="0.5" />
+    <line x1="21" y1="15" x2="21" y2="24" stroke="#a78bfa" strokeWidth="1" strokeOpacity="0.5" />
+    <line x1="8" y1="18" x2="24" y2="18" stroke="#a78bfa" strokeWidth="0.8" strokeOpacity="0.4" />
+    <line x1="8" y1="21" x2="24" y2="21" stroke="#a78bfa" strokeWidth="0.8" strokeOpacity="0.4" />
+  </svg>
+);
+
 export default function AdminLoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPass, setShowPass] = useState(false);
   const [remember, setRemember] = useState(false);
-  const [loginHover, setLoginHover] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -149,354 +111,269 @@ export default function AdminLoginPage() {
 
   return (
     <div
-      className="min-h-screen flex overflow-hidden relative"
-      style={{ background: "#0b1929" }}
+      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style={{
+        background:
+          "radial-gradient(ellipse at 15% 85%, rgba(80,0,120,0.5) 0%, transparent 45%)," +
+          "radial-gradient(ellipse at 85% 15%, rgba(40,0,100,0.4) 0%, transparent 45%)," +
+          "radial-gradient(ellipse at 60% 60%, rgba(20,0,80,0.6) 0%, transparent 50%)," +
+          "radial-gradient(ellipse at 40% 20%, rgba(0,10,60,0.5) 0%, transparent 40%)," +
+          "#04040f",
+      }}
     >
-      <style>{`
-        @keyframes glowPulse {
-          0%, 100% { opacity: 0.5; transform: scale(1); }
-          50%       { opacity: 1;   transform: scale(1.08); }
-        }
-        @keyframes glowRing {
-          0%, 100% { box-shadow: 0 0 0 3px rgba(125,211,252,0.25), 0 0 24px rgba(125,211,252,0.2); }
-          50%       { box-shadow: 0 0 0 6px rgba(125,211,252,0.15), 0 0 48px rgba(125,211,252,0.35); }
-        }
-        @keyframes underlineGlow {
-          0%, 100% { box-shadow: 0 2px 8px rgba(125,211,252,0.3); }
-          50%       { box-shadow: 0 2px 20px rgba(125,211,252,0.6); }
-        }
-        @keyframes fieldFadeIn {
-          from { opacity: 0; transform: translateY(4px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-
-      {/* Subtle background texture */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse at 25% 50%, rgba(14,42,71,0.8) 0%, transparent 60%)," +
-              "radial-gradient(ellipse at 75% 50%, rgba(8,28,54,0.9) 0%, transparent 60%)",
-          }}
-        />
-      </div>
-
-      {/* Left — wave art panel */}
-      <div className="relative w-1/2 flex-shrink-0 flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0">
-          <WaveArt />
-        </div>
-        <div
-          className="absolute inset-y-0 right-0 w-32 pointer-events-none"
-          style={{ background: "linear-gradient(to right, transparent, #0b1929)" }}
-        />
-      </div>
-
-      {/* Right — login form */}
-      <div className="relative flex-1 flex flex-col items-start justify-center px-16 py-12">
-
-        {/* Register button — top right */}
-        <div className="absolute top-8 right-8">
-          <button
-            type="button"
-            className="px-6 py-2 text-xs font-semibold tracking-widest uppercase rounded-full border transition-all duration-300"
+      {/* Bokeh ambient dots */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {[
+          { x: "10%", y: "70%", size: 6, color: "rgba(167,139,250,0.2)" },
+          { x: "25%", y: "80%", size: 4, color: "rgba(99,102,241,0.3)" },
+          { x: "70%", y: "75%", size: 8, color: "rgba(167,139,250,0.15)" },
+          { x: "80%", y: "85%", size: 5, color: "rgba(244,114,182,0.2)" },
+          { x: "90%", y: "65%", size: 4, color: "rgba(167,139,250,0.18)" },
+          { x: "5%",  y: "50%", size: 3, color: "rgba(99,102,241,0.2)" },
+          { x: "55%", y: "88%", size: 7, color: "rgba(167,139,250,0.12)" },
+          { x: "40%", y: "82%", size: 3, color: "rgba(244,114,182,0.15)" },
+        ].map((dot, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full"
             style={{
-              borderColor: "rgba(125,211,252,0.4)",
-              color: "rgba(125,211,252,0.8)",
-              background: "rgba(125,211,252,0.04)",
-              letterSpacing: "0.12em",
-              boxShadow: "none",
+              left: dot.x, top: dot.y,
+              width: dot.size * 4, height: dot.size * 4,
+              background: dot.color,
+              filter: `blur(${dot.size * 2}px)`,
             }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = "rgba(125,211,252,0.08)";
-              e.currentTarget.style.borderColor = "rgba(125,211,252,0.9)";
-              e.currentTarget.style.boxShadow =
-                "0 0 12px rgba(125,211,252,0.35), 0 0 30px rgba(125,211,252,0.15), inset 0 0 12px rgba(125,211,252,0.06)";
-              e.currentTarget.style.color = "rgba(125,211,252,1)";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = "rgba(125,211,252,0.04)";
-              e.currentTarget.style.borderColor = "rgba(125,211,252,0.4)";
-              e.currentTarget.style.boxShadow = "none";
-              e.currentTarget.style.color = "rgba(125,211,252,0.8)";
-            }}
-          >
-            Register
-          </button>
+          />
+        ))}
+        <div className="absolute rounded-full" style={{ left: "5%", top: "55%", width: 300, height: 200, background: "rgba(80,0,140,0.2)", filter: "blur(60px)" }} />
+        <div className="absolute rounded-full" style={{ right: "5%", top: "50%", width: 250, height: 180, background: "rgba(40,0,100,0.2)", filter: "blur(60px)" }} />
+        <div className="absolute" style={{ left: "35%", top: "-10%", width: 400, height: 300, background: "rgba(99,102,241,0.07)", filter: "blur(80px)", borderRadius: "50%" }} />
+      </div>
+
+      {/* Holographic scan lines */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(167,139,250,0.012) 3px, rgba(167,139,250,0.012) 4px)",
+        }}
+      />
+
+      {/* Main content */}
+      <div className="relative z-10 flex flex-col items-center w-full max-w-2xl">
+
+        {/* Office Repo branding — above card */}
+        <div className="mb-8 flex flex-col items-center gap-1">
+          <div className="flex items-center gap-2.5">
+            <OfficeLogo />
+            <span
+              className="text-2xl font-bold tracking-tight"
+              style={{
+                background: "linear-gradient(135deg, #e2e8f0 0%, #a78bfa 60%, #67e8f9 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Office Repo
+            </span>
+          </div>
+          <p className="text-xs tracking-widest uppercase" style={{ color: "rgba(148,163,184,0.5)", letterSpacing: "0.18em" }}>
+            Unified Workplace Management
+          </p>
         </div>
 
-        {/* Form area + circular LOGIN button together */}
-        <div className="w-full max-w-sm relative">
+        <div className="flex items-center gap-0 md:gap-8 w-full">
+          {/* Shield — left decorative panel */}
+          <div className="hidden md:flex flex-col items-center justify-center flex-shrink-0 relative">
+            <div className="absolute rounded-full" style={{ width: 220, height: 220, background: "radial-gradient(circle, rgba(167,139,250,0.1) 0%, transparent 70%)", filter: "blur(20px)" }} />
+            <div className="relative" style={{ width: 160, height: 190, filter: "drop-shadow(0 0 20px rgba(167,139,250,0.5)) drop-shadow(0 0 8px rgba(244,114,182,0.3))" }}>
+              <ShieldIcon />
+            </div>
+            <div className="absolute rounded-full border" style={{ width: 200, height: 200, borderColor: "rgba(167,139,250,0.1)", animation: "spin 20s linear infinite" }} />
+            <div className="absolute rounded-full border" style={{ width: 240, height: 240, borderColor: "rgba(99,102,241,0.07)", animation: "spin 30s linear infinite reverse" }} />
+          </div>
 
-          <p
-            className="text-xs font-medium tracking-widest uppercase mb-10"
-            style={{ color: "rgba(125,211,252,0.4)", letterSpacing: "0.2em" }}
-          >
-            Platform Admin
-          </p>
+          {/* Login card */}
+          <div className="flex-1 w-full">
+            <div
+              className="rounded-2xl p-7 border relative overflow-hidden"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                backdropFilter: "blur(28px) saturate(180%)",
+                borderColor: "rgba(255,255,255,0.1)",
+                boxShadow:
+                  "0 0 0 1px rgba(167,139,250,0.08) inset," +
+                  "0 20px 80px rgba(0,0,0,0.5)," +
+                  "0 0 60px rgba(167,139,250,0.06)," +
+                  "inset 0 1px 0 rgba(255,255,255,0.08)",
+              }}
+            >
+              {/* Corner glow */}
+              <div className="absolute -top-10 -right-10 rounded-full pointer-events-none" style={{ width: 120, height: 120, background: "radial-gradient(circle, rgba(167,139,250,0.15) 0%, transparent 70%)" }} />
 
-          <form onSubmit={handleSubmit}>
-            <div className="flex items-center gap-6">
-
-              {/* Fields */}
-              <div className="flex-1 space-y-8">
-
-                {/* Username / Email */}
-                <div className="relative group/field">
-                  <input
-                    type="email"
-                    placeholder="username"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full pb-3 text-sm bg-transparent border-0 border-b focus:outline-none placeholder-gray-600 transition-all duration-300"
-                    style={{
-                      borderBottomColor: "rgba(148,163,184,0.2)",
-                      color: "rgba(226,232,240,0.85)",
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.borderBottomColor = "rgba(125,211,252,0.4)";
-                      e.target.style.filter = "drop-shadow(0 2px 6px rgba(125,211,252,0.2))";
-                    }}
-                    onMouseOut={(e) => {
-                      if (document.activeElement !== e.target) {
-                        e.target.style.borderBottomColor = "rgba(148,163,184,0.2)";
-                        e.target.style.filter = "none";
-                      }
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderBottomColor = "rgba(125,211,252,0.8)";
-                      e.target.style.filter = "drop-shadow(0 3px 10px rgba(125,211,252,0.4))";
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderBottomColor = "rgba(148,163,184,0.2)";
-                      e.target.style.filter = "none";
-                    }}
-                    required
-                    autoComplete="email"
-                  />
-                  {/* Animated underline glow bar */}
-                  <div
-                    className="absolute bottom-0 left-0 h-px w-0 transition-all duration-500 rounded-full group-focus-within/field:w-full"
-                    style={{
-                      background: "linear-gradient(90deg, transparent, rgba(125,211,252,0.8), transparent)",
-                      boxShadow: "0 0 8px rgba(125,211,252,0.6)",
-                    }}
-                  />
+              {/* Header */}
+              <div className="mb-7">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-1 h-5 rounded-full" style={{ background: "linear-gradient(180deg, #a78bfa, #f472b6)", boxShadow: "0 0 8px rgba(167,139,250,0.8)" }} />
+                  <h1 className="text-xl font-bold text-white tracking-wide">Platform Admin</h1>
                 </div>
-
-                {/* Password */}
-                <div className="relative group/field">
-                  <input
-                    type={showPass ? "text" : "password"}
-                    placeholder="password"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className="w-full pb-3 pr-8 text-sm bg-transparent border-0 border-b focus:outline-none placeholder-gray-600 transition-all duration-300"
-                    style={{
-                      borderBottomColor: "rgba(148,163,184,0.2)",
-                      color: "rgba(226,232,240,0.85)",
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.borderBottomColor = "rgba(125,211,252,0.4)";
-                      e.target.style.filter = "drop-shadow(0 2px 6px rgba(125,211,252,0.2))";
-                    }}
-                    onMouseOut={(e) => {
-                      if (document.activeElement !== e.target) {
-                        e.target.style.borderBottomColor = "rgba(148,163,184,0.2)";
-                        e.target.style.filter = "none";
-                      }
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderBottomColor = "rgba(125,211,252,0.8)";
-                      e.target.style.filter = "drop-shadow(0 3px 10px rgba(125,211,252,0.4))";
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderBottomColor = "rgba(148,163,184,0.2)";
-                      e.target.style.filter = "none";
-                    }}
-                    required
-                    autoComplete="current-password"
-                  />
-                  {/* Animated underline glow bar */}
-                  <div
-                    className="absolute bottom-0 left-0 h-px w-0 transition-all duration-500 rounded-full group-focus-within/field:w-full"
-                    style={{
-                      background: "linear-gradient(90deg, transparent, rgba(125,211,252,0.8), transparent)",
-                      boxShadow: "0 0 8px rgba(125,211,252,0.6)",
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPass(!showPass)}
-                    className="absolute right-0 bottom-3 transition-all duration-200"
-                    style={{ color: "rgba(148,163,184,0.4)" }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.color = "rgba(125,211,252,0.9)";
-                      e.currentTarget.style.filter = "drop-shadow(0 0 6px rgba(125,211,252,0.5))";
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.color = "rgba(148,163,184,0.4)";
-                      e.currentTarget.style.filter = "none";
-                    }}
-                  >
-                    <EyeIcon open={showPass} />
-                  </button>
-                </div>
+                <p className="text-xs text-gray-500 ml-3">Restricted access — authorised personnel only</p>
               </div>
 
-              {/* Circular LOGIN button */}
-              <div className="flex-shrink-0 relative">
-                {/* Outer pulsing ring — visible on hover */}
-                {loginHover && !loading && (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Email field */}
+                <div className="relative group">
                   <div
-                    className="absolute inset-0 rounded-full pointer-events-none"
-                    style={{
-                      margin: "-10px",
-                      border: "1.5px solid rgba(125,211,252,0.3)",
-                      animation: "glowRing 1.6s ease-in-out infinite",
-                    }}
+                    className="absolute inset-0 rounded-lg opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none"
+                    style={{ boxShadow: "0 0 0 1px rgba(167,139,250,0.5), 0 0 12px rgba(167,139,250,0.15)" }}
                   />
-                )}
-                {loginHover && !loading && (
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3.5 text-violet-400/60 group-focus-within:text-violet-400 transition-colors" style={{ filter: "drop-shadow(0 0 4px rgba(167,139,250,0.4))" }}>
+                      <UserIcon />
+                    </span>
+                    <input
+                      type="email"
+                      placeholder="Admin Email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      className="w-full pl-10 pr-4 py-3 text-sm text-gray-100 placeholder-gray-500 rounded-lg border focus:outline-none transition-all"
+                      style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)" }}
+                      required
+                      autoComplete="email"
+                    />
+                  </div>
+                </div>
+
+                {/* Password field */}
+                <div className="relative group">
                   <div
-                    className="absolute inset-0 rounded-full pointer-events-none"
-                    style={{
-                      margin: "-20px",
-                      border: "1px solid rgba(125,211,252,0.12)",
-                      animation: "glowRing 1.6s ease-in-out infinite 0.4s",
-                    }}
+                    className="absolute inset-0 rounded-lg opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none"
+                    style={{ boxShadow: "0 0 0 1px rgba(167,139,250,0.5), 0 0 12px rgba(167,139,250,0.15)" }}
                   />
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3.5 text-violet-400/60 group-focus-within:text-violet-400 transition-colors" style={{ filter: "drop-shadow(0 0 4px rgba(167,139,250,0.4))" }}>
+                      <LockIcon />
+                    </span>
+                    <input
+                      type={showPass ? "text" : "password"}
+                      placeholder="Password"
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                      className="w-full pl-10 pr-10 py-3 text-sm text-gray-100 placeholder-gray-500 rounded-lg border focus:outline-none transition-all"
+                      style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)" }}
+                      required
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPass(!showPass)}
+                      className="absolute right-3.5 transition-colors"
+                      style={{ color: "rgba(148,163,184,0.4)" }}
+                      onMouseOver={(e) => (e.currentTarget.style.color = "rgba(167,139,250,0.8)")}
+                      onMouseOut={(e) => (e.currentTarget.style.color = "rgba(148,163,184,0.4)")}
+                    >
+                      <EyeIcon open={showPass} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Remember me + Forgot */}
+                <div className="flex items-center justify-between pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer group/check">
+                    <div className="relative">
+                      <input type="checkbox" className="sr-only" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+                      <div
+                        className="w-4 h-4 rounded border flex items-center justify-center transition-all"
+                        style={{
+                          borderColor: remember ? "rgba(167,139,250,0.8)" : "rgba(255,255,255,0.2)",
+                          background: remember ? "rgba(167,139,250,0.2)" : "rgba(255,255,255,0.04)",
+                          boxShadow: remember ? "0 0 8px rgba(167,139,250,0.3)" : "none",
+                        }}
+                      >
+                        {remember && (
+                          <svg className="w-2.5 h-2.5" fill="none" stroke="rgba(167,139,250,0.9)" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-500 group-hover/check:text-gray-400 transition-colors">Remember me</span>
+                  </label>
+                  <button type="button" className="text-xs text-gray-500 hover:text-violet-400 transition-colors">
+                    forgot password?
+                  </button>
+                </div>
+
+                {error && (
+                  <div
+                    className="text-sm px-4 py-3 rounded-lg border"
+                    style={{ background: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.2)", color: "rgba(252,165,165,0.9)" }}
+                  >
+                    {error}
+                  </div>
                 )}
 
+                {/* Login button */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-24 h-24 rounded-full flex items-center justify-center font-bold text-sm tracking-widest uppercase disabled:opacity-60 relative"
+                  className="w-full mt-1 py-3 rounded-lg text-sm font-bold tracking-widest uppercase transition-all disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden"
                   style={{
                     background: loading
-                      ? "rgba(220,230,245,0.7)"
-                      : "linear-gradient(145deg, #f0f4f8 0%, #d8e4f0 50%, #c8d8ec 100%)",
-                    color: "#0b1929",
-                    letterSpacing: "0.1em",
-                    transition: "transform 0.25s ease, box-shadow 0.25s ease",
-                    boxShadow: loginHover && !loading
-                      ? "0 0 0 1px rgba(255,255,255,0.5), 0 12px 48px rgba(0,0,0,0.6), 0 0 50px rgba(125,211,252,0.5), 0 0 100px rgba(56,189,248,0.25)"
-                      : "0 0 0 1px rgba(255,255,255,0.3), 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(125,211,252,0.12)",
-                    transform: loginHover && !loading ? "scale(1.07)" : "scale(1)",
+                      ? "rgba(167,139,250,0.3)"
+                      : "linear-gradient(135deg, rgba(167,139,250,0.9) 0%, rgba(99,102,241,0.9) 60%, rgba(244,114,182,0.7) 100%)",
+                    color: "#fff",
+                    boxShadow: loading ? "none" : "0 0 24px rgba(167,139,250,0.45), 0 0 8px rgba(99,102,241,0.3), inset 0 1px 0 rgba(255,255,255,0.15)",
+                    letterSpacing: "0.15em",
                   }}
-                  onMouseEnter={() => setLoginHover(true)}
-                  onMouseLeave={() => setLoginHover(false)}
                 >
-                  {/* Shimmer overlay on hover */}
-                  {loginHover && !loading && (
-                    <div
-                      className="absolute inset-0 rounded-full pointer-events-none overflow-hidden"
-                    >
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: 0, left: "-100%",
-                          width: "60%", height: "100%",
-                          background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)",
-                          animation: "shimmer 1.2s ease infinite",
-                        }}
-                      />
-                    </div>
-                  )}
-                  {loading ? (
-                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                  ) : (
-                    <span className="relative z-10"
+                  {!loading && (
+                    <span
+                      className="absolute inset-0 opacity-20"
                       style={{
-                        textShadow: loginHover ? "0 0 12px rgba(11,25,41,0.4)" : "none",
+                        background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)",
+                        animation: "shimmer 2.5s infinite",
                       }}
-                    >LOGIN</span>
+                    />
                   )}
+                  <span className="relative">{loading ? "Authenticating..." : "Login"}</span>
                 </button>
+              </form>
+
+              {/* Footer */}
+              <div className="mt-6 pt-5 border-t flex items-center justify-between" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+                <button
+                  onClick={() => navigate("/")}
+                  className="text-xs transition-colors"
+                  style={{ color: "rgba(148,163,184,0.5)" }}
+                  onMouseOver={(e) => (e.currentTarget.style.color = "rgba(167,139,250,0.8)")}
+                  onMouseOut={(e) => (e.currentTarget.style.color = "rgba(148,163,184,0.5)")}
+                >
+                  ← Back to home
+                </button>
+
+                {/* ORT branding */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs" style={{ color: "rgba(148,163,184,0.35)" }}>by</span>
+                  <img
+                    src="/ort-logo-dark.png"
+                    alt="ORT"
+                    className="h-4"
+                    style={{ mixBlendMode: "screen", opacity: 0.75 }}
+                  />
+                </div>
               </div>
             </div>
-
-            {error && (
-              <p
-                className="mt-6 text-xs px-3 py-2 rounded"
-                style={{ color: "rgba(252,165,165,0.8)", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}
-              >
-                {error}
-              </p>
-            )}
-
-            {/* Remember password */}
-            <div className="mt-8 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setRemember(!remember)}
-                className="flex items-center gap-2 group/rem transition-all duration-200"
-              >
-                <div
-                  className="w-3.5 h-3.5 rounded-sm border flex items-center justify-center transition-all duration-200"
-                  style={{
-                    borderColor: remember ? "rgba(125,211,252,0.8)" : "rgba(148,163,184,0.3)",
-                    background: remember ? "rgba(125,211,252,0.15)" : "transparent",
-                    boxShadow: remember ? "0 0 8px rgba(125,211,252,0.4)" : "none",
-                  }}
-                >
-                  {remember && (
-                    <svg className="w-2 h-2" fill="none" stroke="rgba(125,211,252,0.9)" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3.5} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </div>
-                <span
-                  className="text-xs transition-colors duration-200 group-hover/rem:text-cyan-400"
-                  style={{ color: "rgba(148,163,184,0.5)" }}
-                >
-                  Remember Password
-                </span>
-              </button>
-            </div>
-          </form>
-
-          {/* Forget password button */}
-          <div className="mt-16">
-            <button
-              type="button"
-              className="px-5 py-1.5 text-xs font-medium tracking-wider rounded-full border transition-all duration-300"
-              style={{
-                borderColor: "rgba(125,211,252,0.3)",
-                color: "rgba(125,211,252,0.6)",
-                background: "transparent",
-                letterSpacing: "0.08em",
-                boxShadow: "none",
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.background = "rgba(125,211,252,0.06)";
-                e.currentTarget.style.borderColor = "rgba(125,211,252,0.9)";
-                e.currentTarget.style.color = "rgba(125,211,252,1)";
-                e.currentTarget.style.boxShadow =
-                  "0 0 12px rgba(125,211,252,0.35), 0 0 28px rgba(125,211,252,0.15), inset 0 0 10px rgba(125,211,252,0.05)";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.borderColor = "rgba(125,211,252,0.3)";
-                e.currentTarget.style.color = "rgba(125,211,252,0.6)";
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            >
-              Forget password?
-            </button>
           </div>
         </div>
       </div>
 
       <style>{`
         @keyframes shimmer {
-          0%   { left: -100%; }
-          100% { left: 200%; }
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
     </div>
