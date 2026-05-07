@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 from pydantic import model_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 logger = logging.getLogger(__name__)
 
@@ -75,9 +75,7 @@ class Settings(BaseSettings):
     # Internal — set at startup; not read from environment
     _previous_secret_origin: datetime = None
 
-    class Config:
-        env_file = ".env"
-        extra = "allow"
+    model_config = SettingsConfigDict(env_file=".env", extra="allow")
 
     @model_validator(mode="after")
     def _resolve_and_validate_secrets(self) -> "Settings":
