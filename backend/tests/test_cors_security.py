@@ -8,6 +8,8 @@ Verifies that:
     Access-Control-Allow-Origin header returned).
   - Requests from a listed origin are accepted (header present and correct).
   - Wildcard is permitted in development (no error raised).
+  - Only the explicitly listed HTTP methods are accepted in preflight requests.
+  - Only the explicitly listed request headers are accepted in preflight requests.
 """
 import importlib
 import os
@@ -23,6 +25,13 @@ from pydantic import ValidationError
 _BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _BACKEND_DIR not in sys.path:
     sys.path.insert(0, _BACKEND_DIR)
+
+# ---------------------------------------------------------------------------
+# CORS constants — kept in sync with backend/main.py CORSMiddleware config.
+# If you change allow_methods or allow_headers in main.py, update these too.
+# ---------------------------------------------------------------------------
+_CORS_ALLOW_METHODS: list[str] = ["GET", "POST", "PATCH", "DELETE"]
+_CORS_ALLOW_HEADERS: list[str] = ["Authorization", "Content-Type", "X-Tenant-ID"]
 
 # Fully-set production env with valid secrets — only ALLOWED_ORIGINS varies
 _PROD_SECRETS = {
@@ -63,14 +72,18 @@ def _assert_cors_guard_raised(test_case, env, expected_keyword):
 
 
 def _build_cors_app(allowed_origins: list[str]) -> FastAPI:
-    """Return a minimal FastAPI app with CORSMiddleware using *allowed_origins*."""
+    """Return a minimal FastAPI app with CORSMiddleware using *allowed_origins*.
+
+    The allow_methods and allow_headers values are taken from the shared
+    constants above, which mirror backend/main.py's CORSMiddleware config.
+    """
     test_app = FastAPI()
     test_app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "DELETE"],
-        allow_headers=["Authorization", "Content-Type", "X-Tenant-ID"],
+        allow_methods=_CORS_ALLOW_METHODS,
+        allow_headers=_CORS_ALLOW_HEADERS,
     )
 
     @test_app.get("/ping")
@@ -326,6 +339,198 @@ class TestCorsMainAppWiring(unittest.TestCase):
             "/ping", headers={"Origin": "https://evil.example.com"}
         )
         self.assertNotIn("access-control-allow-origin", resp_blocked.headers)
+
+
+class TestCorsAllowedMethods(unittest.TestCase):
+    """Preflight requests must only succeed for the explicitly listed HTTP methods.
+
+    ALLOWED_METHODS references _CORS_ALLOW_METHODS so this class stays in sync
+    with _build_cors_app (and therefore main.py's CORSMiddleware config).
+    """
+
+    ALLOWED = "https://app.officerepo.io"
+    ALLOWED_METHODS = _CORS_ALLOW_METHODS
+    DISALLOWED_METHODS = ["PUT", "HEAD", "TRACE", "CONNECT"]
+
+    def setUp(self):
+        app = _build_cors_app([self.ALLOWED])
+        self.client = TestClient(app, raise_server_exceptions=True)
+
+    def _preflight(self, method: str):
+        return self.client.options(
+            "/ping",
+            headers={
+                "Origin": self.ALLOWED,
+                "Access-Control-Request-Method": method,
+            },
+        )
+
+    def test_allowed_methods_preflight_returns_200(self):
+        for method in self.ALLOWED_METHODS:
+            with self.subTest(method=method):
+                resp = self._preflight(method)
+                self.assertEqual(
+                    resp.status_code,
+                    200,
+                    f"Preflight for allowed method {method} must return 200, got {resp.status_code}",
+                )
+
+    def test_allowed_methods_preflight_includes_acao_and_acam_headers(self):
+        for method in self.ALLOWED_METHODS:
+            with self.subTest(method=method):
+                resp = self._preflight(method)
+                self.assertIn(
+                    "access-control-allow-origin",
+                    resp.headers,
+                    f"Preflight for allowed method {method} must include Access-Control-Allow-Origin",
+                )
+                self.assertEqual(resp.headers["access-control-allow-origin"], self.ALLOWED)
+                acam = resp.headers.get("access-control-allow-methods", "")
+                self.assertTrue(
+                    len(acam) > 0,
+                    f"Preflight for allowed method {method} must include Access-Control-Allow-Methods",
+                )
+
+    def test_disallowed_methods_preflight_returns_400_with_cause(self):
+        for method in self.DISALLOWED_METHODS:
+            with self.subTest(method=method):
+                resp = self._preflight(method)
+                self.assertEqual(
+                    resp.status_code,
+                    400,
+                    f"Preflight for disallowed method {method} must return 400, got {resp.status_code}",
+                )
+                self.assertIn(
+                    "Disallowed CORS",
+                    resp.text,
+                    f"Preflight rejection for {method} must identify the CORS cause in the body",
+                )
+
+    def test_disallowed_method_acam_header_excludes_the_rejected_method(self):
+        resp = self._preflight("PUT")
+        acam = resp.headers.get("access-control-allow-methods", "")
+        for allowed in self.ALLOWED_METHODS:
+            self.assertIn(allowed, acam)
+        self.assertNotIn("PUT", acam)
+
+    def test_options_method_not_in_explicit_allow_list_is_rejected(self):
+        resp = self._preflight("OPTIONS")
+        self.assertEqual(
+            resp.status_code,
+            400,
+            "Preflight requesting OPTIONS method (not in allow_methods) must return 400",
+        )
+
+
+class TestCorsAllowedHeaders(unittest.TestCase):
+    """Preflight requests must only succeed for the explicitly listed request headers.
+
+    ALLOWED_HEADERS references _CORS_ALLOW_HEADERS so this class stays in sync
+    with _build_cors_app (and therefore main.py's CORSMiddleware config).
+    """
+
+    ALLOWED = "https://app.officerepo.io"
+    ALLOWED_HEADERS = _CORS_ALLOW_HEADERS
+    DISALLOWED_HEADERS = ["X-Custom-Header", "X-API-Key", "X-Forwarded-For"]
+
+    def setUp(self):
+        app = _build_cors_app([self.ALLOWED])
+        self.client = TestClient(app, raise_server_exceptions=True)
+
+    def _preflight(self, header: str):
+        return self.client.options(
+            "/ping",
+            headers={
+                "Origin": self.ALLOWED,
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": header,
+            },
+        )
+
+    def test_allowed_headers_preflight_returns_200_with_correct_headers(self):
+        for header in self.ALLOWED_HEADERS:
+            with self.subTest(header=header):
+                resp = self._preflight(header)
+                self.assertEqual(
+                    resp.status_code,
+                    200,
+                    f"Preflight for allowed header '{header}' must return 200, got {resp.status_code}",
+                )
+                self.assertIn(
+                    "access-control-allow-origin",
+                    resp.headers,
+                    f"Preflight for allowed header '{header}' must include Access-Control-Allow-Origin",
+                )
+                self.assertEqual(resp.headers["access-control-allow-origin"], self.ALLOWED)
+                acah = resp.headers.get("access-control-allow-headers", "")
+                self.assertIn(
+                    header.lower(),
+                    acah.lower(),
+                    f"Access-Control-Allow-Headers must include '{header}', got: {acah}",
+                )
+
+    def test_disallowed_headers_preflight_returns_400_with_cause(self):
+        for header in self.DISALLOWED_HEADERS:
+            with self.subTest(header=header):
+                resp = self._preflight(header)
+                self.assertEqual(
+                    resp.status_code,
+                    400,
+                    f"Preflight for disallowed header '{header}' must return 400, got {resp.status_code}",
+                )
+                self.assertIn(
+                    "Disallowed CORS",
+                    resp.text,
+                    f"Preflight rejection for header '{header}' must identify the CORS cause in the body",
+                )
+
+    def test_disallowed_header_acah_excludes_the_rejected_header(self):
+        resp = self._preflight("X-Custom-Header")
+        acah = resp.headers.get("access-control-allow-headers", "").lower()
+        for allowed in self.ALLOWED_HEADERS:
+            self.assertIn(allowed.lower(), acah)
+        self.assertNotIn("x-custom-header", acah)
+
+    def test_combined_allowed_headers_in_single_preflight(self):
+        combined = ", ".join(self.ALLOWED_HEADERS)
+        resp = self.client.options(
+            "/ping",
+            headers={
+                "Origin": self.ALLOWED,
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": combined,
+            },
+        )
+        self.assertEqual(
+            resp.status_code,
+            200,
+            f"Preflight with all allowed headers combined must return 200, got {resp.status_code}",
+        )
+        self.assertIn(
+            "access-control-allow-headers",
+            resp.headers,
+            "Combined allowed-header preflight must include Access-Control-Allow-Headers",
+        )
+
+    def test_mixed_allowed_and_disallowed_header_is_rejected(self):
+        resp = self.client.options(
+            "/ping",
+            headers={
+                "Origin": self.ALLOWED,
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "Authorization, X-Custom-Header",
+            },
+        )
+        self.assertEqual(
+            resp.status_code,
+            400,
+            f"Preflight mixing allowed and disallowed headers must return 400, got {resp.status_code}",
+        )
+        self.assertIn(
+            "Disallowed CORS",
+            resp.text,
+            "Mixed allowed/disallowed header preflight must identify the CORS cause in the body",
+        )
 
 
 if __name__ == "__main__":
