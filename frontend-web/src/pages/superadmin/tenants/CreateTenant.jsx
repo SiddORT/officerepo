@@ -325,20 +325,37 @@ function StepIndicator({ steps, current }) {
               className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all"
               style={
                 i <= current
-                  ? { backgroundColor: "var(--c-accent)", color: "#fff", boxShadow: i === current ? "0 0 0 3px var(--c-accent-dim)" : "none" }
+                  ? {
+                      background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
+                      color: "#fff",
+                      boxShadow: i === current
+                        ? "0 0 0 3px rgba(0,174,236,0.25), 0 0 0 5px rgba(139,92,246,0.12)"
+                        : "none",
+                    }
                   : { backgroundColor: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }
               }
             >
               {i < current ? "✓" : i + 1}
             </div>
-            <span className="text-xs mt-1 hidden sm:block" style={{ color: i === current ? "var(--c-accent)" : "var(--c-muted)" }}>
+            <span
+              className="text-xs mt-1 hidden sm:block font-medium"
+              style={
+                i === current
+                  ? { background: "linear-gradient(135deg,#00aeec,#8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }
+                  : { color: i < current ? "var(--c-accent)" : "var(--c-muted)" }
+              }
+            >
               {s}
             </span>
           </div>
           {i < steps.length - 1 && (
             <div
-              className="flex-1 h-px mx-1 mb-4 transition-colors"
-              style={{ backgroundColor: i < current ? "var(--c-accent)" : "var(--c-border)" }}
+              className="flex-1 h-px mx-1 mb-4 transition-all"
+              style={{
+                background: i < current
+                  ? "linear-gradient(90deg, #00aeec, #8b5cf6)"
+                  : "var(--c-border)",
+              }}
             />
           )}
         </React.Fragment>
