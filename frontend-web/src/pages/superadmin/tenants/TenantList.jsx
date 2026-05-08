@@ -152,13 +152,24 @@ export default function TenantList() {
     },
   ];
 
+  const activeCount    = tenants.filter((t) => t.status === "active").length;
+  const suspendedCount = tenants.filter((t) => t.status === "suspended").length;
+  const inactiveCount  = tenants.filter((t) => t.status === "inactive").length;
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-5">
+
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold t-heading">Tenants</h1>
-          <p className="text-sm t-muted mt-0.5">Manage all SaaS clients on the platform.</p>
+          <div className="flex items-center gap-2 mb-0.5">
+            <span
+              className="inline-block w-1 h-5 rounded-full"
+              style={{ background: "linear-gradient(to bottom, #00aeec, #8b5cf6)" }}
+            />
+            <h1 className="text-2xl font-bold t-heading">Tenant Management</h1>
+          </div>
+          <p className="text-sm t-muted ml-3">Manage all SaaS clients on the platform.</p>
         </div>
         <button
           onClick={() => navigate("/superadmin/tenants/new")}
@@ -171,8 +182,43 @@ export default function TenantList() {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
+      {/* Stats strip */}
+      {!loading && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Total",     value: total,          color: "#00aeec" },
+            { label: "Active",    value: activeCount,    color: "#10b981" },
+            { label: "Suspended", value: suspendedCount, color: "#ef4444" },
+            { label: "Inactive",  value: inactiveCount,  color: "#f59e0b" },
+          ].map(({ label, value, color }) => (
+            <div
+              key={label}
+              className="rounded-xl px-4 py-3 flex items-center gap-3"
+              style={{
+                background: "var(--c-surface)",
+                border: "1px solid var(--c-border)",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.10)",
+              }}
+            >
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+              <div>
+                <p className="text-xs t-muted">{label}</p>
+                <p className="text-lg font-bold t-heading leading-tight">{value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Filters bar */}
+      <div
+        className="flex flex-wrap gap-3 rounded-xl px-4 py-3"
+        style={{
+          background: "var(--c-surface)",
+          border: "1px solid var(--c-border)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+        }}
+      >
         <SearchBar
           value={search}
           onChange={handleSearchChange}
