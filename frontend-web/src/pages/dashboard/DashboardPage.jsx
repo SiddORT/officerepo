@@ -3,22 +3,13 @@ import { useAuth } from "../../contexts/AuthContext";
 import { Link } from "react-router-dom";
 
 const MODULES = [
-  { name: "HRMS", desc: "Manage employees, departments, attendance", color: "indigo" },
-  { name: "Assets", desc: "Track company assets and assignments", color: "violet" },
-  { name: "Billing", desc: "Invoices, subscriptions, payments", color: "sky" },
-  { name: "Attendance", desc: "Time tracking, schedules, leaves", color: "emerald" },
-  { name: "Payroll", desc: "Salaries, deductions, payslips", color: "amber" },
-  { name: "Leave", desc: "Leave requests and approvals", color: "rose" },
+  { name: "HRMS", desc: "Manage employees, departments, attendance", accent: "#6366f1" },
+  { name: "Assets", desc: "Track company assets and assignments", accent: "#8b5cf6" },
+  { name: "Billing", desc: "Invoices, subscriptions, payments", accent: "#0ea5e9" },
+  { name: "Attendance", desc: "Time tracking, schedules, leaves", accent: "#10b981" },
+  { name: "Payroll", desc: "Salaries, deductions, payslips", accent: "#f59e0b" },
+  { name: "Leave", desc: "Leave requests and approvals", accent: "#f43f5e" },
 ];
-
-const colorMap = {
-  indigo: "bg-indigo-900/30 border-indigo-700/40 text-indigo-400",
-  violet: "bg-violet-900/30 border-violet-700/40 text-violet-400",
-  sky: "bg-sky-900/30 border-sky-700/40 text-sky-400",
-  emerald: "bg-emerald-900/30 border-emerald-700/40 text-emerald-400",
-  amber: "bg-amber-900/30 border-amber-700/40 text-amber-400",
-  rose: "bg-rose-900/30 border-rose-700/40 text-rose-400",
-};
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -27,10 +18,10 @@ export default function DashboardPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white">
+        <h2 className="text-2xl font-bold t-heading">
           Welcome back{user?.email ? `, ${user.email.split("@")[0]}` : ""}
         </h2>
-        <p className="text-gray-500 mt-1">
+        <p className="t-muted mt-1">
           {isSuperAdmin
             ? "Platform overview — manage all tenants from one place."
             : `Logged in as ${user?.role} · Tenant: ${user?.tenant_id}`}
@@ -40,19 +31,24 @@ export default function DashboardPage() {
       {isSuperAdmin && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {[
-            { label: "Manage Tenants", desc: "Create, activate, suspend tenants", link: "/superadmin", color: "indigo" },
-            { label: "API Docs", desc: "Interactive Swagger UI", link: `${window.location.origin.replace(':5000', ':8000')}/docs`, external: true, color: "sky" },
-            { label: "Feature Flags", desc: "Enable modules per tenant", link: "/superadmin", color: "violet" },
+            { label: "Manage Tenants", desc: "Create, activate, suspend tenants", link: "/superadmin/tenants", accent: "#00aeec" },
+            { label: "API Docs", desc: "Interactive Swagger UI", link: `${window.location.origin.replace(":5000", ":8000")}/docs`, external: true, accent: "#8b5cf6" },
+            { label: "Feature Flags", desc: "Enable modules per tenant", link: "/superadmin", accent: "#10b981" },
           ].map((card) => (
-            <div key={card.label} className={`card border ${colorMap[card.color]} hover:opacity-90 transition-opacity`}>
-              <h3 className="font-semibold text-white text-lg">{card.label}</h3>
-              <p className="text-sm text-gray-400 mt-1 mb-4">{card.desc}</p>
+            <div
+              key={card.label}
+              className="card hover:scale-[1.01] transition-transform cursor-pointer"
+              style={{ borderLeftWidth: 3, borderLeftColor: card.accent }}
+            >
+              <h3 className="font-semibold t-heading text-base">{card.label}</h3>
+              <p className="text-sm t-muted mt-1 mb-4">{card.desc}</p>
               {card.external ? (
-                <a href={card.link} target="_blank" rel="noreferrer" className="text-sm font-medium text-indigo-400 hover:text-indigo-300">
+                <a href={card.link} target="_blank" rel="noreferrer"
+                  className="text-sm font-medium t-accent hover:underline">
                   Open &rarr;
                 </a>
               ) : (
-                <Link to={card.link} className="text-sm font-medium text-indigo-400 hover:text-indigo-300">
+                <Link to={card.link} className="text-sm font-medium t-accent hover:underline">
                   Go &rarr;
                 </Link>
               )}
@@ -62,19 +58,28 @@ export default function DashboardPage() {
       )}
 
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-200">Available Modules</h3>
-        <p className="text-sm text-gray-500">Modules are enabled per tenant by the platform admin.</p>
+        <h3 className="text-lg font-semibold t-heading">Available Modules</h3>
+        <p className="text-sm t-muted">Modules are enabled per tenant by the platform admin.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {MODULES.map((mod) => (
-          <div key={mod.name} className={`card border ${colorMap[mod.color]} cursor-pointer hover:scale-[1.01] transition-transform`}>
+          <div
+            key={mod.name}
+            className="card cursor-pointer hover:scale-[1.01] transition-transform"
+            style={{ borderLeftWidth: 3, borderLeftColor: mod.accent }}
+          >
             <div className="flex items-start justify-between">
               <div>
-                <h4 className="font-semibold text-white">{mod.name}</h4>
-                <p className="text-sm text-gray-400 mt-1">{mod.desc}</p>
+                <h4 className="font-semibold t-heading">{mod.name}</h4>
+                <p className="text-sm t-muted mt-1">{mod.desc}</p>
               </div>
-              <span className={`text-xs px-2 py-1 rounded-full border ${colorMap[mod.color]}`}>Module</span>
+              <span
+                className="text-xs px-2 py-1 rounded-full font-medium"
+                style={{ backgroundColor: `${mod.accent}18`, color: mod.accent, border: `1px solid ${mod.accent}30` }}
+              >
+                Module
+              </span>
             </div>
           </div>
         ))}

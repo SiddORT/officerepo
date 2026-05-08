@@ -21,11 +21,6 @@ const TIMEZONE_OPTIONS = [
   { value: "Europe/Paris", label: "Europe/Paris (CET)" },
 ];
 
-const THEME_OPTIONS = [
-  { value: "dark", label: "Dark" },
-  { value: "light", label: "Light" },
-];
-
 const DEFAULT_MODULES = {
   employee: false, hrms: false, assets: false,
   billing: false, workflow: false, reports: false,
@@ -41,34 +36,13 @@ export default function CreateTenant() {
   const [globalError, setGlobalError] = useState("");
 
   const [form, setForm] = useState({
-    // Basic info
-    tenant_name: "",
-    tenant_code: "",
-    company_email: "",
-    contact_number: "",
-    company_website: "",
-    timezone: "UTC",
-    region: "",
-    // Domain
-    subdomain: "",
-    custom_domain: "",
-    // DB
-    db_name: "",
-    db_host: "",
-    db_port: "5432",
-    db_username: "",
-    db_password: "",
-    // Subscription
-    plan_name: "Starter",
-    trial_start: "",
-    trial_end: "",
-    user_limit: "25",
-    storage_limit: "1024",
-    // Modules
+    tenant_name: "", tenant_code: "", company_email: "",
+    contact_number: "", company_website: "", timezone: "UTC", region: "",
+    subdomain: "", custom_domain: "",
+    db_name: "", db_host: "", db_port: "5432", db_username: "", db_password: "",
+    plan_name: "Starter", trial_start: "", trial_end: "", user_limit: "25", storage_limit: "1024",
     modules: { ...DEFAULT_MODULES },
-    // Branding
-    primary_color: "#6366f1",
-    theme_mode: "dark",
+    primary_color: "#00aeec", theme_mode: "dark",
   });
 
   const set = (field, value) => {
@@ -77,8 +51,7 @@ export default function CreateTenant() {
   };
 
   const autoCode = (name) => {
-    const code = name.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-    set("tenant_code", code);
+    set("tenant_code", name.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""));
   };
 
   const validate = () => {
@@ -125,7 +98,7 @@ export default function CreateTenant() {
     setGlobalError("");
     try {
       const hasDb = form.db_name && form.db_host && form.db_username && form.db_password;
-      const payload = {
+      await tenantMgmtApi.create({
         tenant_name: form.tenant_name.trim(),
         tenant_code: form.tenant_code.trim(),
         company_email: form.company_email.trim().toLowerCase(),
@@ -133,28 +106,21 @@ export default function CreateTenant() {
         company_website: form.company_website || null,
         timezone: form.timezone,
         region: form.region || null,
-        domain: {
-          subdomain: form.subdomain.trim(),
-          custom_domain: form.custom_domain || null,
-        },
+        domain: { subdomain: form.subdomain.trim(), custom_domain: form.custom_domain || null },
         db_config: hasDb ? {
-          db_name: form.db_name.trim(),
-          db_host: form.db_host.trim(),
+          db_name: form.db_name.trim(), db_host: form.db_host.trim(),
           db_port: Number(form.db_port) || 5432,
-          db_username: form.db_username.trim(),
-          db_password: form.db_password,
+          db_username: form.db_username.trim(), db_password: form.db_password,
         } : null,
         subscription: {
-          plan_name: form.plan_name,
-          trial_start: form.trial_start || null,
+          plan_name: form.plan_name, trial_start: form.trial_start || null,
           trial_end: form.trial_end || null,
           user_limit: Number(form.user_limit) || 25,
           storage_limit: Number(form.storage_limit) || 1024,
         },
         modules: form.modules,
         branding: { primary_color: form.primary_color, theme_mode: form.theme_mode },
-      };
-      await tenantMgmtApi.create(payload);
+      });
       navigate("/superadmin/tenants");
     } catch (e) {
       const detail = e.response?.data?.detail;
@@ -169,14 +135,14 @@ export default function CreateTenant() {
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate("/superadmin/tenants")} className="text-gray-500 hover:text-gray-300 transition-colors">
+        <button onClick={() => navigate("/superadmin/tenants")} className="topbar-btn">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
         <div>
-          <h1 className="text-xl font-bold text-white">Create New Tenant</h1>
-          <p className="text-sm text-gray-500">Fill in the details to onboard a new SaaS client.</p>
+          <h1 className="text-xl font-bold t-heading">Create New Tenant</h1>
+          <p className="text-sm t-muted">Fill in the details to onboard a new SaaS client.</p>
         </div>
       </div>
 
@@ -185,26 +151,24 @@ export default function CreateTenant() {
 
       {/* Global error */}
       {globalError && (
-        <div className="bg-red-900/20 border border-red-700/30 rounded-lg px-4 py-3 text-sm text-red-400">
+        <div className="rounded-lg px-4 py-3 text-sm text-red-400"
+          style={{ backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
           {globalError}
         </div>
       )}
 
       {/* Form card */}
-      <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-6">
+      <div className="card">
         {step === 0 && <StepBasicInfo form={form} set={set} errors={errors} autoCode={autoCode} />}
         {step === 1 && <StepDomain form={form} set={set} errors={errors} />}
         {step === 2 && <StepDatabase form={form} set={set} errors={errors} />}
-        {step === 3 && <StepSubscription form={form} set={set} errors={errors} />}
+        {step === 3 && <StepSubscription form={form} set={set} />}
         {step === 4 && <StepModules form={form} set={set} />}
       </div>
 
       {/* Navigation */}
       <div className="flex items-center justify-between gap-3">
-        <button
-          onClick={() => step === 0 ? navigate("/superadmin/tenants") : back()}
-          className="btn-secondary"
-        >
+        <button onClick={() => step === 0 ? navigate("/superadmin/tenants") : back()} className="btn-secondary">
           {step === 0 ? "Cancel" : "← Back"}
         </button>
         {step < STEPS.length - 1 ? (
@@ -219,7 +183,7 @@ export default function CreateTenant() {
   );
 }
 
-/* ── Step components ─────────────────────────────────────────────────────────── */
+/* ── Step components ──────────────────────────────────────────────────── */
 
 function StepBasicInfo({ form, set, errors, autoCode }) {
   return (
@@ -230,8 +194,7 @@ function StepBasicInfo({ form, set, errors, autoCode }) {
           placeholder="Acme Corporation"
           onChange={(e) => { set("tenant_name", e.target.value); autoCode(e.target.value); }} />
         <Input label="Tenant Code" required value={form.tenant_code} error={errors.tenant_code}
-          placeholder="acme-corp"
-          hint="Lowercase letters, digits, hyphens only."
+          placeholder="acme-corp" hint="Lowercase letters, digits, hyphens only."
           onChange={(e) => set("tenant_code", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} />
         <Input label="Company Email" required type="email" value={form.company_email} error={errors.company_email}
           placeholder="admin@acmecorp.com"
@@ -244,8 +207,7 @@ function StepBasicInfo({ form, set, errors, autoCode }) {
           onChange={(e) => set("company_website", e.target.value)} />
         <Select label="Timezone" value={form.timezone} options={TIMEZONE_OPTIONS}
           onChange={(e) => set("timezone", e.target.value)} />
-        <Input label="Region" value={form.region}
-          placeholder="e.g. APAC, EMEA, US"
+        <Input label="Region" value={form.region} placeholder="e.g. APAC, EMEA, US"
           onChange={(e) => set("region", e.target.value)} />
       </div>
     </div>
@@ -258,12 +220,10 @@ function StepDomain({ form, set, errors }) {
       <SectionTitle title="Domain Configuration" icon="🌐" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input label="Subdomain" required value={form.subdomain} error={errors.subdomain}
-          placeholder="acme"
-          hint="e.g. acme → acme.officerepo.io"
+          placeholder="acme" hint="e.g. acme → acme.officerepo.io"
           onChange={(e) => set("subdomain", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} />
         <Input label="Custom Domain" value={form.custom_domain}
-          placeholder="app.acmecorp.com"
-          hint="Optional. Point CNAME to our servers."
+          placeholder="app.acmecorp.com" hint="Optional. Point CNAME to our servers."
           onChange={(e) => set("custom_domain", e.target.value)} />
       </div>
     </div>
@@ -274,7 +234,7 @@ function StepDatabase({ form, set, errors }) {
   return (
     <div className="space-y-4">
       <SectionTitle title="Database Configuration" icon="🗄️" />
-      <p className="text-xs text-gray-500">Optional. Leave blank to configure later.</p>
+      <p className="text-xs t-muted">Optional. Leave blank to configure later.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Input label="Database Name" value={form.db_name} error={errors.db_name}
           placeholder="acme_db" onChange={(e) => set("db_name", e.target.value)} />
@@ -285,8 +245,7 @@ function StepDatabase({ form, set, errors }) {
         <Input label="DB Username" value={form.db_username} error={errors.db_username}
           placeholder="acme_user" onChange={(e) => set("db_username", e.target.value)} />
         <Input label="DB Password" type="password" value={form.db_password} error={errors.db_password}
-          placeholder="••••••••"
-          hint="Encrypted before storage. Never stored in plain text."
+          placeholder="••••••••" hint="Encrypted before storage."
           className="sm:col-span-2"
           onChange={(e) => set("db_password", e.target.value)} />
       </div>
@@ -294,7 +253,7 @@ function StepDatabase({ form, set, errors }) {
   );
 }
 
-function StepSubscription({ form, set, errors }) {
+function StepSubscription({ form, set }) {
   return (
     <div className="space-y-4">
       <SectionTitle title="Subscription Assignment" icon="📋" />
@@ -305,7 +264,7 @@ function StepSubscription({ form, set, errors }) {
           onChange={(e) => set("user_limit", e.target.value)} />
         <Input label="Storage Limit (MB)" type="number" value={form.storage_limit}
           onChange={(e) => set("storage_limit", e.target.value)} />
-        <div /> {/* spacer */}
+        <div />
         <Input label="Trial Start" type="date" value={form.trial_start}
           onChange={(e) => set("trial_start", e.target.value)} />
         <Input label="Trial End" type="date" value={form.trial_end}
@@ -318,23 +277,23 @@ function StepSubscription({ form, set, errors }) {
 function StepModules({ form, set }) {
   const modules = [
     { key: "employee", label: "Employee", desc: "Employee directory & profiles" },
-    { key: "hrms", label: "HRMS", desc: "HR management system" },
-    { key: "assets", label: "Assets", desc: "Asset tracking & management" },
-    { key: "billing", label: "Billing", desc: "Invoicing & payments" },
+    { key: "hrms",     label: "HRMS",     desc: "HR management system" },
+    { key: "assets",   label: "Assets",   desc: "Asset tracking & management" },
+    { key: "billing",  label: "Billing",  desc: "Invoicing & payments" },
     { key: "workflow", label: "Workflow", desc: "Approval workflows & automation" },
-    { key: "reports", label: "Reports", desc: "Analytics & reporting" },
+    { key: "reports",  label: "Reports",  desc: "Analytics & reporting" },
   ];
-
   return (
     <div className="space-y-4">
       <SectionTitle title="Module Enablement" icon="🧩" />
-      <p className="text-xs text-gray-500">Select which modules this tenant will have access to.</p>
+      <p className="text-xs t-muted">Select which modules this tenant will have access to.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {modules.map((m) => (
-          <div key={m.key} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
+          <div key={m.key} className="flex items-center justify-between p-3 rounded-lg"
+            style={{ backgroundColor: "var(--c-surface2)", border: "1px solid var(--c-border)" }}>
             <div>
-              <p className="text-sm font-medium text-gray-200">{m.label}</p>
-              <p className="text-xs text-gray-500">{m.desc}</p>
+              <p className="text-sm font-medium t-heading">{m.label}</p>
+              <p className="text-xs t-muted">{m.desc}</p>
             </div>
             <Toggle
               checked={form.modules[m.key]}
@@ -349,7 +308,7 @@ function StepModules({ form, set }) {
 
 function SectionTitle({ title, icon }) {
   return (
-    <h2 className="text-base font-semibold text-white flex items-center gap-2">
+    <h2 className="text-base font-semibold t-heading flex items-center gap-2">
       <span>{icon}</span>
       {title}
     </h2>
@@ -362,20 +321,25 @@ function StepIndicator({ steps, current }) {
       {steps.map((s, i) => (
         <React.Fragment key={s}>
           <div className="flex flex-col items-center">
-            <div className={[
-              "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all",
-              i < current ? "bg-indigo-600 text-white" :
-              i === current ? "bg-indigo-600 text-white ring-2 ring-indigo-400/40" :
-              "bg-gray-800 text-gray-500",
-            ].join(" ")}>
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all"
+              style={
+                i <= current
+                  ? { backgroundColor: "var(--c-accent)", color: "#fff", boxShadow: i === current ? "0 0 0 3px var(--c-accent-dim)" : "none" }
+                  : { backgroundColor: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }
+              }
+            >
               {i < current ? "✓" : i + 1}
             </div>
-            <span className={`text-xs mt-1 hidden sm:block ${i === current ? "text-indigo-400" : "text-gray-600"}`}>
+            <span className="text-xs mt-1 hidden sm:block" style={{ color: i === current ? "var(--c-accent)" : "var(--c-muted)" }}>
               {s}
             </span>
           </div>
           {i < steps.length - 1 && (
-            <div className={`flex-1 h-px mx-1 mb-4 ${i < current ? "bg-indigo-600" : "bg-gray-800"}`} />
+            <div
+              className="flex-1 h-px mx-1 mb-4 transition-colors"
+              style={{ backgroundColor: i < current ? "var(--c-accent)" : "var(--c-border)" }}
+            />
           )}
         </React.Fragment>
       ))}

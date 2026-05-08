@@ -24,7 +24,6 @@ export default function TenantList() {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [regionFilter, setRegionFilter] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
 
@@ -40,7 +39,6 @@ export default function TenantList() {
         page_size: pageSize,
         search: search || undefined,
         status: statusFilter || undefined,
-        region: regionFilter || undefined,
       });
       const d = res.data?.data ?? res.data;
       setTenants(d?.items ?? []);
@@ -51,7 +49,7 @@ export default function TenantList() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, statusFilter, regionFilter]);
+  }, [page, pageSize, search, statusFilter]);
 
   useEffect(() => { fetchTenants(); }, [fetchTenants]);
 
@@ -86,7 +84,10 @@ export default function TenantList() {
       render: (v, row) => (
         <button
           onClick={() => navigate(`/superadmin/tenants/${row.id}`)}
-          className="font-medium text-white hover:text-indigo-400 transition-colors text-left"
+          className="font-medium t-heading hover:t-accent transition-colors text-left"
+          style={{ color: "var(--c-text)" }}
+          onMouseEnter={(e) => e.currentTarget.style.color = "var(--c-accent)"}
+          onMouseLeave={(e) => e.currentTarget.style.color = "var(--c-text)"}
         >
           {v}
         </button>
@@ -95,17 +96,26 @@ export default function TenantList() {
     {
       key: "tenant_code",
       label: "Tenant Code",
-      render: (v) => <code className="text-xs text-gray-400 bg-gray-800 px-1.5 py-0.5 rounded">{v}</code>,
+      render: (v) => (
+        <code
+          className="text-xs px-1.5 py-0.5 rounded font-mono"
+          style={{ backgroundColor: "var(--c-surface2)", color: "var(--c-text2)", border: "1px solid var(--c-border)" }}
+        >
+          {v}
+        </code>
+      ),
     },
     {
       key: "subdomain",
       label: "Subdomain",
-      render: (v) => v ? <span className="text-gray-300">{v}</span> : <span className="text-gray-600">—</span>,
+      render: (v) => v
+        ? <span className="t-body">{v}</span>
+        : <span className="t-muted">—</span>,
     },
     {
       key: "plan_name",
       label: "Plan",
-      render: (v) => v ? <Badge status="active" label={v} /> : <span className="text-gray-600">—</span>,
+      render: (v) => v ? <Badge status="active" label={v} /> : <span className="t-muted">—</span>,
     },
     {
       key: "status",
@@ -115,28 +125,19 @@ export default function TenantList() {
     {
       key: "created_at",
       label: "Created",
-      render: (v) => v ? new Date(v).toLocaleDateString() : "—",
+      render: (v) => <span className="t-muted text-xs">{v ? new Date(v).toLocaleDateString() : "—"}</span>,
     },
     {
       key: "actions",
       label: "Actions",
       render: (_, row) => (
-        <div className="flex items-center gap-2 flex-wrap">
-          <ActionBtn
-            label="View"
-            color="indigo"
-            onClick={() => navigate(`/superadmin/tenants/${row.id}`)}
-          />
-          <ActionBtn
-            label="Edit"
-            color="gray"
-            onClick={() => navigate(`/superadmin/tenants/${row.id}/edit`)}
-          />
-          {row.status === "suspended" ? (
-            <ActionBtn label="Activate" color="emerald" onClick={() => confirmAction("activate", row)} />
-          ) : (
-            <ActionBtn label="Suspend" color="red" onClick={() => confirmAction("suspend", row)} />
-          )}
+        <div className="flex items-center gap-3 flex-wrap">
+          <ActionBtn label="View"  accent="#00aeec" onClick={() => navigate(`/superadmin/tenants/${row.id}`)} />
+          <ActionBtn label="Edit"  accent="var(--c-text2)" onClick={() => navigate(`/superadmin/tenants/${row.id}/edit`)} />
+          {row.status === "suspended"
+            ? <ActionBtn label="Activate" accent="#10b981" onClick={() => confirmAction("activate", row)} />
+            : <ActionBtn label="Suspend"  accent="#ef4444"  onClick={() => confirmAction("suspend", row)} />
+          }
         </div>
       ),
     },
@@ -147,8 +148,8 @@ export default function TenantList() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Tenants</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Manage all SaaS clients on the platform.</p>
+          <h1 className="text-2xl font-bold t-heading">Tenants</h1>
+          <p className="text-sm t-muted mt-0.5">Manage all SaaS clients on the platform.</p>
         </div>
         <button
           onClick={() => navigate("/superadmin/tenants/new")}
@@ -181,7 +182,10 @@ export default function TenantList() {
 
       {/* Error */}
       {error && (
-        <div className="bg-red-900/20 border border-red-700/30 rounded-lg px-4 py-3 text-sm text-red-400">
+        <div
+          className="rounded-lg px-4 py-3 text-sm text-red-400"
+          style={{ backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}
+        >
           {error}
         </div>
       )}
@@ -209,12 +213,7 @@ export default function TenantList() {
         size="sm"
         footer={
           <>
-            <button
-              onClick={() => setConfirmModal(null)}
-              className="btn-secondary"
-            >
-              Cancel
-            </button>
+            <button onClick={() => setConfirmModal(null)} className="btn-secondary">Cancel</button>
             <button
               onClick={executeAction}
               disabled={actionLoading}
@@ -225,11 +224,11 @@ export default function TenantList() {
           </>
         }
       >
-        <p className="text-gray-300 text-sm">
+        <p className="t-body text-sm">
           Are you sure you want to{" "}
-          <span className="font-semibold text-white">{confirmModal?.type}</span>{" "}
+          <span className="font-semibold t-heading">{confirmModal?.type}</span>{" "}
           tenant{" "}
-          <span className="font-semibold text-white">{confirmModal?.tenant?.tenant_name}</span>?
+          <span className="font-semibold t-heading">{confirmModal?.tenant?.tenant_name}</span>?
           {confirmModal?.type === "suspend" && (
             <span className="block mt-2 text-red-400">
               Suspended tenants will lose access to all modules.
@@ -241,17 +240,14 @@ export default function TenantList() {
   );
 }
 
-function ActionBtn({ label, color, onClick }) {
-  const colors = {
-    indigo: "text-indigo-400 hover:text-indigo-300",
-    gray: "text-gray-400 hover:text-gray-300",
-    emerald: "text-emerald-400 hover:text-emerald-300",
-    red: "text-red-400 hover:text-red-300",
-  };
+function ActionBtn({ label, accent, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`text-xs font-medium transition-colors ${colors[color] || colors.gray}`}
+      className="text-xs font-medium transition-colors"
+      style={{ color: accent }}
+      onMouseEnter={(e) => e.currentTarget.style.opacity = "0.75"}
+      onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
     >
       {label}
     </button>

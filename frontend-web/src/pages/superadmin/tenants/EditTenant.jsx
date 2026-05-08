@@ -24,12 +24,8 @@ export default function EditTenant() {
   const [success, setSuccess] = useState(false);
 
   const [form, setForm] = useState({
-    tenant_name: "",
-    company_email: "",
-    contact_number: "",
-    company_website: "",
-    timezone: "UTC",
-    region: "",
+    tenant_name: "", company_email: "", contact_number: "",
+    company_website: "", timezone: "UTC", region: "",
   });
 
   useEffect(() => {
@@ -99,7 +95,7 @@ export default function EditTenant() {
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center text-gray-500 gap-2">
+      <div className="p-6 flex items-center justify-center t-muted gap-2">
         <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -113,90 +109,58 @@ export default function EditTenant() {
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate(`/superadmin/tenants/${id}`)} className="text-gray-500 hover:text-gray-300 transition-colors">
+        <button onClick={() => navigate(`/superadmin/tenants/${id}`)} className="topbar-btn">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
         <div>
-          <h1 className="text-xl font-bold text-white">Edit Tenant</h1>
-          <p className="text-sm text-gray-500">Update basic tenant information.</p>
+          <h1 className="text-xl font-bold t-heading">Edit Tenant</h1>
+          <p className="text-sm t-muted">Update basic tenant information.</p>
         </div>
       </div>
 
       {/* Alerts */}
       {globalError && (
-        <div className="bg-red-900/20 border border-red-700/30 rounded-lg px-4 py-3 text-sm text-red-400">
+        <div className="rounded-lg px-4 py-3 text-sm text-red-400"
+          style={{ backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
           {globalError}
         </div>
       )}
       {success && (
-        <div className="bg-emerald-900/20 border border-emerald-700/30 rounded-lg px-4 py-3 text-sm text-emerald-400">
+        <div className="rounded-lg px-4 py-3 text-sm text-emerald-400"
+          style={{ backgroundColor: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)" }}>
           Tenant updated successfully! Redirecting...
         </div>
       )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} noValidate>
-        <div className="bg-gray-900/60 border border-gray-800 rounded-xl p-6 space-y-5">
-          <h2 className="text-base font-semibold text-white flex items-center gap-2">
+        <div className="card space-y-5">
+          <h2 className="text-base font-semibold t-heading flex items-center gap-2">
             <span>🏢</span> Company Details
           </h2>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Tenant Name" required
-              value={form.tenant_name} error={errors.tenant_name}
-              placeholder="Acme Corporation"
-              onChange={(e) => set("tenant_name", e.target.value)}
-            />
-            <Input
-              label="Company Email" required type="email"
-              value={form.company_email} error={errors.company_email}
-              placeholder="admin@acmecorp.com"
-              onChange={(e) => set("company_email", e.target.value)}
-            />
-            <Input
-              label="Contact Number" type="tel"
-              value={form.contact_number} error={errors.contact_number}
-              placeholder="+1 555 000 0000"
-              onChange={(e) => set("contact_number", e.target.value)}
-            />
-            <Input
-              label="Company Website" type="url"
-              value={form.company_website} error={errors.company_website}
-              placeholder="https://acmecorp.com"
-              onChange={(e) => set("company_website", e.target.value)}
-            />
-            <Select
-              label="Timezone"
-              value={form.timezone}
-              options={TIMEZONE_OPTIONS}
-              onChange={(e) => set("timezone", e.target.value)}
-            />
-            <Input
-              label="Region"
-              value={form.region}
-              placeholder="e.g. APAC, EMEA, US"
-              onChange={(e) => set("region", e.target.value)}
-            />
+            <Input label="Tenant Name" required value={form.tenant_name} error={errors.tenant_name}
+              placeholder="Acme Corporation" onChange={(e) => set("tenant_name", e.target.value)} />
+            <Input label="Company Email" required type="email" value={form.company_email} error={errors.company_email}
+              placeholder="admin@acmecorp.com" onChange={(e) => set("company_email", e.target.value)} />
+            <Input label="Contact Number" type="tel" value={form.contact_number} error={errors.contact_number}
+              placeholder="+1 555 000 0000" onChange={(e) => set("contact_number", e.target.value)} />
+            <Input label="Company Website" type="url" value={form.company_website} error={errors.company_website}
+              placeholder="https://acmecorp.com" onChange={(e) => set("company_website", e.target.value)} />
+            <Select label="Timezone" value={form.timezone} options={TIMEZONE_OPTIONS}
+              onChange={(e) => set("timezone", e.target.value)} />
+            <Input label="Region" value={form.region} placeholder="e.g. APAC, EMEA, US"
+              onChange={(e) => set("region", e.target.value)} />
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center justify-between gap-3 mt-6">
-          <button
-            type="button"
-            onClick={() => navigate(`/superadmin/tenants/${id}`)}
-            className="btn-secondary"
-          >
+          <button type="button" onClick={() => navigate(`/superadmin/tenants/${id}`)} className="btn-secondary">
             Cancel
           </button>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="btn-primary min-w-[140px]"
-          >
+          <button type="submit" disabled={submitting} className="btn-primary min-w-[140px]">
             {submitting ? "Saving..." : "Save Changes"}
           </button>
         </div>

@@ -14,7 +14,7 @@ export default function Select({
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
-        <label className="text-sm font-medium text-gray-300">
+        <label className="text-sm font-medium t-body">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -22,11 +22,7 @@ export default function Select({
       <select
         {...props}
         className={[
-          "w-full px-3 py-2.5 text-sm rounded-lg border bg-gray-900/60 text-gray-100",
-          "focus:outline-none transition-all appearance-none cursor-pointer",
-          error
-            ? "border-red-500 focus:border-red-400"
-            : "border-gray-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30",
+          "input-field appearance-none cursor-pointer",
           props.disabled ? "opacity-50 cursor-not-allowed" : "",
           selectClassName,
         ]
@@ -41,7 +37,7 @@ export default function Select({
         ))}
       </select>
       {error && <p className="text-xs text-red-400">{error}</p>}
-      {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
+      {hint && !error && <p className="text-xs t-muted">{hint}</p>}
     </div>
   );
 }

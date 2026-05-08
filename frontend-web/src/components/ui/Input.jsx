@@ -12,7 +12,7 @@ export default function Input({
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
       {label && (
-        <label className="text-sm font-medium text-gray-300">
+        <label className="text-sm font-medium t-body">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -20,11 +20,8 @@ export default function Input({
       <input
         {...props}
         className={[
-          "w-full px-3 py-2.5 text-sm rounded-lg border bg-gray-900/60 text-gray-100",
-          "placeholder-gray-500 focus:outline-none transition-all",
-          error
-            ? "border-red-500 focus:border-red-400 focus:ring-1 focus:ring-red-500/40"
-            : "border-gray-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30",
+          "input-field",
+          error ? "border-red-500 focus:border-red-400" : "",
           props.disabled ? "opacity-50 cursor-not-allowed" : "",
           inputClassName,
         ]
@@ -32,7 +29,7 @@ export default function Input({
           .join(" ")}
       />
       {error && <p className="text-xs text-red-400">{error}</p>}
-      {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
+      {hint && !error && <p className="text-xs t-muted">{hint}</p>}
     </div>
   );
 }

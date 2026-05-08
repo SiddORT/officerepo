@@ -13,18 +13,27 @@ export default function Modal({ open, onClose, title, children, size = "md", foo
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+      style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
       onClick={(e) => e.target === e.currentTarget && onClose?.()}
     >
       <div
-        className={`relative w-full ${widths[size] || widths.md} bg-gray-900 border border-gray-800 rounded-xl shadow-2xl flex flex-col max-h-[90vh]`}
+        className={`relative w-full ${widths[size] || widths.md} rounded-xl shadow-2xl flex flex-col max-h-[90vh]`}
+        style={{
+          backgroundColor: "var(--c-surface)",
+          border: "1px solid var(--c-border)",
+          boxShadow: "var(--c-shadow-lg)",
+        }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-          <h3 className="text-base font-semibold text-white">{title}</h3>
+        <div
+          className="flex items-center justify-between px-6 py-4"
+          style={{ borderBottom: "1px solid var(--c-border)" }}
+        >
+          <h3 className="text-base font-semibold t-heading">{title}</h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-300 transition-colors p-1 rounded"
+            className="t-muted hover:t-body transition-colors p-1 rounded topbar-btn"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -37,7 +46,10 @@ export default function Modal({ open, onClose, title, children, size = "md", foo
 
         {/* Footer */}
         {footer && (
-          <div className="px-6 py-4 border-t border-gray-800 flex items-center justify-end gap-3">
+          <div
+            className="px-6 py-4 flex items-center justify-end gap-3"
+            style={{ borderTop: "1px solid var(--c-border)" }}
+          >
             {footer}
           </div>
         )}
