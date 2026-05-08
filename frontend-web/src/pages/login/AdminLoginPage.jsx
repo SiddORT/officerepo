@@ -1,381 +1,400 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { authApi } from "../../services/apiClient";
+import {
+  motion,
+  AnimatePresence,
+  useMotionValue,
+  useSpring,
+} from "framer-motion";
 
-const ShieldIcon = () => (
-  <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-    <defs>
-      <linearGradient id="adminShieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#f472b6" stopOpacity="0.9" />
-        <stop offset="50%" stopColor="#a78bfa" stopOpacity="0.7" />
-        <stop offset="100%" stopColor="#67e8f9" stopOpacity="0.8" />
-      </linearGradient>
-      <filter id="adminGlow">
-        <feGaussianBlur stdDeviation="3" result="blur" />
-        <feMerge>
-          <feMergeNode in="blur" />
-          <feMergeNode in="SourceGraphic" />
-        </feMerge>
-      </filter>
-    </defs>
-    <path
-      d="M50 5 L90 22 L90 55 C90 78 72 97 50 105 C28 97 10 78 10 55 L10 22 Z"
-      stroke="url(#adminShieldGrad)"
-      strokeWidth="2.5"
-      fill="rgba(167,139,250,0.06)"
-      filter="url(#adminGlow)"
-    />
-    <path
-      d="M50 15 L82 29 L82 55 C82 73 68 89 50 97 C32 89 18 73 18 55 L18 29 Z"
-      stroke="url(#adminShieldGrad)"
-      strokeWidth="1.5"
-      fill="rgba(99,102,241,0.04)"
-      strokeDasharray="4 2"
-      opacity="0.6"
-    />
-    {/* Key icon inside shield */}
-    <circle cx="50" cy="51" r="9" stroke="#a78bfa" strokeWidth="2.5" fill="none" filter="url(#adminGlow)" />
-    <line x1="59" y1="51" x2="70" y2="51" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" filter="url(#adminGlow)" />
-    <line x1="67" y1="51" x2="67" y2="57" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" />
-    <line x1="63" y1="51" x2="63" y2="55" stroke="#a78bfa" strokeWidth="2.5" strokeLinecap="round" />
-    <circle cx="50" cy="57" r="18" stroke="rgba(167,139,250,0.2)" strokeWidth="1" fill="none" />
-    <circle cx="50" cy="57" r="12" stroke="rgba(167,139,250,0.15)" strokeWidth="1" fill="none" />
-  </svg>
-);
+/* ── Animation configs ─────────────────────────────────────────────────── */
+const EASE_CINEMA = [0.16, 1, 0.3, 1];
 
-const LockIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-  </svg>
-);
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.09, delayChildren: 0.35 } },
+};
 
-const UserIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-  </svg>
-);
+const fadeSlide = {
+  hidden: { opacity: 0, x: -18, filter: "blur(6px)" },
+  show:   { opacity: 1, x: 0,   filter: "blur(0px)", transition: { duration: 0.5, ease: EASE_CINEMA } },
+};
 
-const EyeIcon = ({ open }) =>
-  open ? (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-    </svg>
-  ) : (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-    </svg>
+/* ── Particles ─────────────────────────────────────────────────────────── */
+const PARTICLES = Array.from({ length: 24 }, (_, i) => ({
+  id: i,
+  x: Math.random() * 100,
+  y: Math.random() * 100,
+  size: Math.random() * 2 + 1,
+  dur: Math.random() * 12 + 10,
+  delay: Math.random() * 8,
+  opacity: Math.random() * 0.3 + 0.05,
+  color: i % 3 === 0 ? "#00aeec" : i % 3 === 1 ? "#8b5cf6" : "#ffffff",
+}));
+
+function ParticleField() {
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      {PARTICLES.map((p) => (
+        <motion.div
+          key={p.id}
+          className="absolute rounded-full"
+          style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size, backgroundColor: p.color, opacity: p.opacity }}
+          animate={{ y: [0, -28, 0], x: [0, Math.random() * 12 - 6, 0], opacity: [p.opacity, p.opacity * 1.6, p.opacity] }}
+          transition={{ duration: p.dur, delay: p.delay, repeat: Infinity, ease: "easeInOut" }}
+        />
+      ))}
+    </div>
   );
+}
 
-const OfficeLogo = () => (
-  <svg className="w-7 h-7" viewBox="0 0 32 32" fill="none">
-    <rect width="32" height="32" rx="8" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.4)" strokeWidth="1" />
-    <rect x="8" y="10" width="16" height="14" rx="1.5" stroke="#a78bfa" strokeWidth="1.5" fill="none" />
-    <rect x="13" y="10" width="6" height="4" rx="1" fill="rgba(167,139,250,0.2)" stroke="#a78bfa" strokeWidth="1.2" />
-    <line x1="11" y1="15" x2="11" y2="24" stroke="#a78bfa" strokeWidth="1" strokeOpacity="0.5" />
-    <line x1="16" y1="15" x2="16" y2="24" stroke="#a78bfa" strokeWidth="1" strokeOpacity="0.5" />
-    <line x1="21" y1="15" x2="21" y2="24" stroke="#a78bfa" strokeWidth="1" strokeOpacity="0.5" />
-    <line x1="8" y1="18" x2="24" y2="18" stroke="#a78bfa" strokeWidth="0.8" strokeOpacity="0.4" />
-    <line x1="8" y1="21" x2="24" y2="21" stroke="#a78bfa" strokeWidth="0.8" strokeOpacity="0.4" />
-  </svg>
-);
+/* ── Dot grid ──────────────────────────────────────────────────────────── */
+function DotGrid() {
+  return (
+    <div
+      className="fixed inset-0 pointer-events-none"
+      style={{
+        backgroundImage: "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0)",
+        backgroundSize: "40px 40px",
+      }}
+    />
+  );
+}
 
+/* ── Ambient orbs ──────────────────────────────────────────────────────── */
+function AmbientOrbs() {
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      <motion.div
+        style={{ position: "absolute", top: "-20%", right: "-10%", width: 650, height: 650, background: "radial-gradient(circle, rgba(0,174,236,0.11) 0%, transparent 70%)", borderRadius: "50%", filter: "blur(40px)" }}
+        animate={{ scale: [1, 1.1, 1], opacity: [0.7, 1, 0.7] }}
+        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        style={{ position: "absolute", bottom: "-15%", left: "-10%", width: 580, height: 580, background: "radial-gradient(circle, rgba(139,92,246,0.09) 0%, transparent 70%)", borderRadius: "50%", filter: "blur(40px)" }}
+        animate={{ scale: [1, 1.14, 1], opacity: [0.5, 0.9, 0.5] }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+      />
+      <motion.div
+        style={{ position: "absolute", top: "40%", left: "30%", width: 380, height: 380, background: "radial-gradient(circle, rgba(0,174,236,0.05) 0%, transparent 70%)", borderRadius: "50%", filter: "blur(60px)" }}
+        animate={{ x: [0, 28, 0], y: [0, -18, 0] }}
+        transition={{ duration: 16, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+      />
+    </div>
+  );
+}
+
+/* ── Spotlight cursor ──────────────────────────────────────────────────── */
+function SpotlightCursor() {
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const springX = useSpring(mouseX, { stiffness: 80, damping: 25 });
+  const springY = useSpring(mouseY, { stiffness: 80, damping: 25 });
+
+  useEffect(() => {
+    const move = (e) => { mouseX.set(e.clientX); mouseY.set(e.clientY); };
+    window.addEventListener("mousemove", move);
+    return () => window.removeEventListener("mousemove", move);
+  }, [mouseX, mouseY]);
+
+  return (
+    <motion.div
+      className="fixed pointer-events-none z-10"
+      style={{
+        x: springX, y: springY,
+        translateX: "-50%", translateY: "-50%",
+        width: 300, height: 300,
+        background: "radial-gradient(circle, rgba(0,174,236,0.055) 0%, transparent 70%)",
+        borderRadius: "50%",
+      }}
+    />
+  );
+}
+
+/* ── Main page ─────────────────────────────────────────────────────────── */
 export default function AdminLoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [remember, setRemember] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [focusedField, setFocusedField] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!email || !password) { setError("Please fill in all fields."); return; }
     setError("");
     setLoading(true);
     try {
-      const res = await authApi.superAdminLogin(form.email, form.password);
-      const data = res.data;
-      login(
-        { email: form.email, role: data.role, tenant_id: data.tenant_id, user_id: data.user_id },
-        { access_token: data.access_token, refresh_token: data.refresh_token }
-      );
+      const res = await authApi.superadminLogin({ email, password });
+      login(res.data.access_token, res.data.refresh_token);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.detail || "Login failed. Check your credentials.");
+      setError(err.response?.data?.detail || "Invalid credentials.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style={{
-        background:
-          "radial-gradient(ellipse at 15% 85%, rgba(80,0,120,0.5) 0%, transparent 45%)," +
-          "radial-gradient(ellipse at 85% 15%, rgba(40,0,100,0.4) 0%, transparent 45%)," +
-          "radial-gradient(ellipse at 60% 60%, rgba(20,0,80,0.6) 0%, transparent 50%)," +
-          "radial-gradient(ellipse at 40% 20%, rgba(0,10,60,0.5) 0%, transparent 40%)," +
-          "#04040f",
-      }}
-    >
-      {/* Bokeh ambient dots */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {[
-          { x: "10%", y: "70%", size: 6, color: "rgba(167,139,250,0.2)" },
-          { x: "25%", y: "80%", size: 4, color: "rgba(99,102,241,0.3)" },
-          { x: "70%", y: "75%", size: 8, color: "rgba(167,139,250,0.15)" },
-          { x: "80%", y: "85%", size: 5, color: "rgba(244,114,182,0.2)" },
-          { x: "90%", y: "65%", size: 4, color: "rgba(167,139,250,0.18)" },
-          { x: "5%",  y: "50%", size: 3, color: "rgba(99,102,241,0.2)" },
-          { x: "55%", y: "88%", size: 7, color: "rgba(167,139,250,0.12)" },
-          { x: "40%", y: "82%", size: 3, color: "rgba(244,114,182,0.15)" },
-        ].map((dot, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              left: dot.x, top: dot.y,
-              width: dot.size * 4, height: dot.size * 4,
-              background: dot.color,
-              filter: `blur(${dot.size * 2}px)`,
-            }}
-          />
-        ))}
-        <div className="absolute rounded-full" style={{ left: "5%", top: "55%", width: 300, height: 200, background: "rgba(80,0,140,0.2)", filter: "blur(60px)" }} />
-        <div className="absolute rounded-full" style={{ right: "5%", top: "50%", width: 250, height: 180, background: "rgba(40,0,100,0.2)", filter: "blur(60px)" }} />
-        <div className="absolute" style={{ left: "35%", top: "-10%", width: 400, height: 300, background: "rgba(99,102,241,0.07)", filter: "blur(80px)", borderRadius: "50%" }} />
-      </div>
+    <div style={{ minHeight: "100vh", backgroundColor: "#081018", color: "#f8fafc", overflowX: "hidden", position: "relative" }}>
 
-      {/* Holographic scan lines */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(167,139,250,0.012) 3px, rgba(167,139,250,0.012) 4px)",
-        }}
-      />
+      {/* Background layers */}
+      <AmbientOrbs />
+      <DotGrid />
+      <ParticleField />
+      <SpotlightCursor />
 
-      {/* Main content */}
-      <div className="relative z-10 flex flex-col items-center w-full max-w-2xl">
+      {/* Centered layout */}
+      <div className="relative z-20 flex flex-col items-center justify-center min-h-screen px-6">
 
-        {/* Office Repo branding — above card */}
-        <div className="mb-8 flex flex-col items-center gap-1">
-          <div className="flex items-center gap-2.5">
-            <OfficeLogo />
-            <span
-              className="text-2xl font-bold tracking-tight"
-              style={{
-                background: "linear-gradient(135deg, #e2e8f0 0%, #a78bfa 60%, #67e8f9 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              Office Repo
-            </span>
+        {/* Back to home */}
+        <motion.button
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2, duration: 0.5, ease: EASE_CINEMA }}
+          onClick={() => navigate("/")}
+          className="fixed top-6 left-6 z-50 flex items-center gap-2"
+          style={{ color: "#475569", fontSize: 13, fontWeight: 500, background: "none", border: "none", cursor: "pointer", transition: "color 0.2s" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#94a3b8")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#475569")}
+        >
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Home
+        </motion.button>
+
+        {/* Wordmark */}
+        <motion.div
+          initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
+          animate={{ opacity: 1, y: 0,  filter: "blur(0px)" }}
+          transition={{ delay: 0.1, duration: 0.7, ease: EASE_CINEMA }}
+          className="text-center mb-8"
+        >
+          <div className="flex items-center justify-center gap-2.5 mb-2">
+            <div style={{ width: 34, height: 34, background: "linear-gradient(135deg, #00aeec, #8b5cf6)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 16px rgba(0,174,236,0.45)" }}>
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <span style={{ fontSize: 20, fontWeight: 800, color: "#f8fafc", letterSpacing: "-0.02em" }}>Office Repo</span>
           </div>
-          <p className="text-xs tracking-widest uppercase" style={{ color: "rgba(148,163,184,0.5)", letterSpacing: "0.18em" }}>
+          <p style={{ fontSize: 12, color: "#334155", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500 }}>
             Unified Workplace Management
           </p>
-        </div>
+        </motion.div>
 
-        <div className="flex items-center gap-0 md:gap-8 w-full">
-          {/* Shield — left decorative panel */}
-          <div className="hidden md:flex flex-col items-center justify-center flex-shrink-0 relative">
-            <div className="absolute rounded-full" style={{ width: 220, height: 220, background: "radial-gradient(circle, rgba(167,139,250,0.1) 0%, transparent 70%)", filter: "blur(20px)" }} />
-            <div className="relative" style={{ width: 160, height: 190, filter: "drop-shadow(0 0 20px rgba(167,139,250,0.5)) drop-shadow(0 0 8px rgba(244,114,182,0.3))" }}>
-              <ShieldIcon />
-            </div>
-            <div className="absolute rounded-full border" style={{ width: 200, height: 200, borderColor: "rgba(167,139,250,0.1)", animation: "spin 20s linear infinite" }} />
-            <div className="absolute rounded-full border" style={{ width: 240, height: 240, borderColor: "rgba(99,102,241,0.07)", animation: "spin 30s linear infinite reverse" }} />
-          </div>
+        {/* Card wrapper — glow ring + card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.88, y: 32, filter: "blur(12px)" }}
+          animate={{ opacity: 1, scale: 1,    y: 0,  filter: "blur(0px)" }}
+          transition={{ delay: 0.2, duration: 0.9, ease: EASE_CINEMA }}
+          style={{ position: "relative", width: "100%", maxWidth: 420 }}
+        >
+          {/* Pulsing glow ring behind card */}
+          <motion.div
+            style={{ position: "absolute", inset: -1, borderRadius: 25, zIndex: 0 }}
+            animate={{
+              boxShadow: [
+                "0 0 0 1px rgba(0,174,236,0.18), 0 0 40px rgba(0,174,236,0.07)",
+                "0 0 0 1px rgba(0,174,236,0.45), 0 0 70px rgba(0,174,236,0.16)",
+                "0 0 0 1px rgba(0,174,236,0.18), 0 0 40px rgba(0,174,236,0.07)",
+              ],
+            }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          />
 
-          {/* Login card */}
-          <div className="flex-1 w-full">
-            <div
-              className="rounded-2xl p-7 border relative overflow-hidden"
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                backdropFilter: "blur(28px) saturate(180%)",
-                borderColor: "rgba(255,255,255,0.1)",
-                boxShadow:
-                  "0 0 0 1px rgba(167,139,250,0.08) inset," +
-                  "0 20px 80px rgba(0,0,0,0.5)," +
-                  "0 0 60px rgba(167,139,250,0.06)," +
-                  "inset 0 1px 0 rgba(255,255,255,0.08)",
-              }}
-            >
-              {/* Corner glow */}
-              <div className="absolute -top-10 -right-10 rounded-full pointer-events-none" style={{ width: 120, height: 120, background: "radial-gradient(circle, rgba(167,139,250,0.15) 0%, transparent 70%)" }} />
+          {/* Glass card */}
+          <div
+            style={{
+              position: "relative", zIndex: 1,
+              background: "rgba(17,24,39,0.78)",
+              borderRadius: 24,
+              backdropFilter: "blur(32px)",
+              WebkitBackdropFilter: "blur(32px)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              overflow: "hidden",
+              boxShadow: "0 32px 64px rgba(0,0,0,0.55)",
+            }}
+          >
+            {/* Top accent bar */}
+            <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #00aeec, #8b5cf6, transparent)" }} />
 
-              {/* Header */}
-              <div className="mb-7">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-1 h-5 rounded-full" style={{ background: "linear-gradient(180deg, #a78bfa, #f472b6)", boxShadow: "0 0 8px rgba(167,139,250,0.8)" }} />
-                  <h1 className="text-xl font-bold text-white tracking-wide">Platform Admin</h1>
-                </div>
-                <p className="text-xs text-gray-500 ml-3">Restricted access — authorised personnel only</p>
-              </div>
+            <div style={{ padding: "36px 36px 32px" }}>
+              {/* Form content with stagger */}
+              <motion.div variants={stagger} initial="hidden" animate="show">
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Email field */}
-                <div className="relative group">
-                  <div
-                    className="absolute inset-0 rounded-lg opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none"
-                    style={{ boxShadow: "0 0 0 1px rgba(167,139,250,0.5), 0 0 12px rgba(167,139,250,0.15)" }}
-                  />
-                  <div className="relative flex items-center">
-                    <span className="absolute left-3.5 text-violet-400/60 group-focus-within:text-violet-400 transition-colors" style={{ filter: "drop-shadow(0 0 4px rgba(167,139,250,0.4))" }}>
-                      <UserIcon />
-                    </span>
-                    <input
-                      type="email"
-                      placeholder="Admin Email"
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 text-sm text-gray-100 placeholder-gray-500 rounded-lg border focus:outline-none transition-all"
-                      style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)" }}
-                      required
-                      autoComplete="email"
-                    />
+                {/* Title */}
+                <motion.div variants={fadeSlide} style={{ marginBottom: 28 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5 }}>
+                    <div style={{ width: 3, height: 22, background: "linear-gradient(to bottom, #00aeec, #8b5cf6)", borderRadius: 2 }} />
+                    <h1 style={{ fontSize: 22, fontWeight: 800, color: "#f8fafc", letterSpacing: "-0.02em", margin: 0 }}>Admin Access</h1>
                   </div>
-                </div>
+                  <p style={{ fontSize: 13, color: "#475569", marginLeft: 13, margin: "4px 0 0 13px" }}>
+                    Authenticate to continue into OfficeRepo
+                  </p>
+                </motion.div>
 
-                {/* Password field */}
-                <div className="relative group">
-                  <div
-                    className="absolute inset-0 rounded-lg opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none"
-                    style={{ boxShadow: "0 0 0 1px rgba(167,139,250,0.5), 0 0 12px rgba(167,139,250,0.15)" }}
-                  />
-                  <div className="relative flex items-center">
-                    <span className="absolute left-3.5 text-violet-400/60 group-focus-within:text-violet-400 transition-colors" style={{ filter: "drop-shadow(0 0 4px rgba(167,139,250,0.4))" }}>
-                      <LockIcon />
-                    </span>
-                    <input
-                      type={showPass ? "text" : "password"}
-                      placeholder="Password"
-                      value={form.password}
-                      onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      className="w-full pl-10 pr-10 py-3 text-sm text-gray-100 placeholder-gray-500 rounded-lg border focus:outline-none transition-all"
-                      style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)" }}
-                      required
-                      autoComplete="current-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPass(!showPass)}
-                      className="absolute right-3.5 transition-colors"
-                      style={{ color: "rgba(148,163,184,0.4)" }}
-                      onMouseOver={(e) => (e.currentTarget.style.color = "rgba(167,139,250,0.8)")}
-                      onMouseOut={(e) => (e.currentTarget.style.color = "rgba(148,163,184,0.4)")}
+                {/* Error */}
+                <AnimatePresence>
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.97 }}
+                      transition={{ duration: 0.25 }}
+                      style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#f87171", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}
                     >
-                      <EyeIcon open={showPass} />
-                    </button>
-                  </div>
-                </div>
+                      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {error}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-                {/* Remember me + Forgot */}
-                <div className="flex items-center justify-between pt-1">
-                  <label className="flex items-center gap-2 cursor-pointer group/check">
-                    <div className="relative">
-                      <input type="checkbox" className="sr-only" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-                      <div
-                        className="w-4 h-4 rounded border flex items-center justify-center transition-all"
+                <form onSubmit={handleSubmit}>
+                  {/* Email */}
+                  <motion.div variants={fadeSlide} style={{ marginBottom: 14 }}>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#475569", letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 8 }}>
+                      Email
+                    </label>
+                    <div style={{ position: "relative" }}>
+                      <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: focusedField === "email" ? "#00aeec" : "#1e3040", transition: "color 0.2s" }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                        </svg>
+                      </div>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        onFocus={() => setFocusedField("email")}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="admin@officerepo.io"
+                        autoComplete="email"
+                        required
                         style={{
-                          borderColor: remember ? "rgba(167,139,250,0.8)" : "rgba(255,255,255,0.2)",
-                          background: remember ? "rgba(167,139,250,0.2)" : "rgba(255,255,255,0.04)",
-                          boxShadow: remember ? "0 0 8px rgba(167,139,250,0.3)" : "none",
+                          width: "100%", boxSizing: "border-box",
+                          background: focusedField === "email" ? "rgba(0,174,236,0.06)" : "rgba(255,255,255,0.03)",
+                          border: focusedField === "email" ? "1px solid rgba(0,174,236,0.45)" : "1px solid rgba(255,255,255,0.07)",
+                          borderRadius: 12, padding: "12px 14px 12px 44px",
+                          fontSize: 14, color: "#f8fafc", outline: "none",
+                          transition: "all 0.25s",
+                          boxShadow: focusedField === "email" ? "0 0 0 3px rgba(0,174,236,0.1)" : "none",
                         }}
+                      />
+                    </div>
+                  </motion.div>
+
+                  {/* Password */}
+                  <motion.div variants={fadeSlide} style={{ marginBottom: 24 }}>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#475569", letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 8 }}>
+                      Password
+                    </label>
+                    <div style={{ position: "relative" }}>
+                      <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: focusedField === "password" ? "#00aeec" : "#1e3040", transition: "color 0.2s" }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </div>
+                      <input
+                        type={showPass ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        onFocus={() => setFocusedField("password")}
+                        onBlur={() => setFocusedField(null)}
+                        placeholder="••••••••"
+                        autoComplete="current-password"
+                        required
+                        style={{
+                          width: "100%", boxSizing: "border-box",
+                          background: focusedField === "password" ? "rgba(0,174,236,0.06)" : "rgba(255,255,255,0.03)",
+                          border: focusedField === "password" ? "1px solid rgba(0,174,236,0.45)" : "1px solid rgba(255,255,255,0.07)",
+                          borderRadius: 12, padding: "12px 44px 12px 44px",
+                          fontSize: 14, color: "#f8fafc", outline: "none",
+                          transition: "all 0.25s",
+                          boxShadow: focusedField === "password" ? "0 0 0 3px rgba(0,174,236,0.1)" : "none",
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPass((s) => !s)}
+                        style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#1e3040", padding: 4, transition: "color 0.2s" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "#64748b")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "#1e3040")}
                       >
-                        {remember && (
-                          <svg className="w-2.5 h-2.5" fill="none" stroke="rgba(167,139,250,0.9)" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        {showPass ? (
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                          </svg>
+                        ) : (
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
                         )}
-                      </div>
+                      </button>
                     </div>
-                    <span className="text-xs text-gray-500 group-hover/check:text-gray-400 transition-colors">Remember me</span>
-                  </label>
-                  <button type="button" className="text-xs text-gray-500 hover:text-violet-400 transition-colors">
-                    forgot password?
-                  </button>
-                </div>
+                  </motion.div>
 
-                {error && (
-                  <div
-                    className="text-sm px-4 py-3 rounded-lg border"
-                    style={{ background: "rgba(239,68,68,0.08)", borderColor: "rgba(239,68,68,0.2)", color: "rgba(252,165,165,0.9)" }}
-                  >
-                    {error}
-                  </div>
-                )}
-
-                {/* Login button */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full mt-1 py-3 rounded-lg text-sm font-bold tracking-widest uppercase transition-all disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden"
-                  style={{
-                    background: loading
-                      ? "rgba(167,139,250,0.3)"
-                      : "linear-gradient(135deg, rgba(167,139,250,0.9) 0%, rgba(99,102,241,0.9) 60%, rgba(244,114,182,0.7) 100%)",
-                    color: "#fff",
-                    boxShadow: loading ? "none" : "0 0 24px rgba(167,139,250,0.45), 0 0 8px rgba(99,102,241,0.3), inset 0 1px 0 rgba(255,255,255,0.15)",
-                    letterSpacing: "0.15em",
-                  }}
-                >
-                  {!loading && (
-                    <span
-                      className="absolute inset-0 opacity-20"
+                  {/* Submit */}
+                  <motion.div variants={fadeSlide}>
+                    <motion.button
+                      type="submit"
+                      disabled={loading}
+                      whileHover={!loading ? { scale: 1.02, boxShadow: "0 0 44px rgba(0,174,236,0.55)" } : {}}
+                      whileTap={!loading ? { scale: 0.98 } : {}}
                       style={{
-                        background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)",
-                        animation: "shimmer 2.5s infinite",
+                        width: "100%",
+                        background: loading ? "rgba(0,174,236,0.45)" : "linear-gradient(135deg, #00aeec, #0090c8)",
+                        color: "#fff", border: "none", borderRadius: 12,
+                        padding: "13px 24px", fontSize: 15, fontWeight: 700,
+                        cursor: loading ? "not-allowed" : "pointer",
+                        letterSpacing: "-0.01em",
+                        boxShadow: "0 0 24px rgba(0,174,236,0.28)",
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                        transition: "background 0.2s",
                       }}
-                    />
-                  )}
-                  <span className="relative">{loading ? "Authenticating..." : "Login"}</span>
-                </button>
-              </form>
+                    >
+                      {loading ? (
+                        <>
+                          <motion.div
+                            style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%" }}
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                          />
+                          Authenticating...
+                        </>
+                      ) : (
+                        <>
+                          Access Workspace
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </>
+                      )}
+                    </motion.button>
+                  </motion.div>
+                </form>
+              </motion.div>
+            </div>
 
-              {/* Footer */}
-              <div className="mt-6 pt-5 border-t flex items-center justify-between" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-                <button
-                  onClick={() => navigate("/")}
-                  className="text-xs transition-colors"
-                  style={{ color: "rgba(148,163,184,0.5)" }}
-                  onMouseOver={(e) => (e.currentTarget.style.color = "rgba(167,139,250,0.8)")}
-                  onMouseOut={(e) => (e.currentTarget.style.color = "rgba(148,163,184,0.5)")}
-                >
-                  ← Back to home
-                </button>
-
-                {/* ORT branding */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs" style={{ color: "rgba(148,163,184,0.35)" }}>by</span>
-                  <img
-                    src="/ort-logo-dark.png"
-                    alt="ORT"
-                    className="h-4"
-                    style={{ mixBlendMode: "screen", opacity: 0.75 }}
-                  />
-                </div>
-              </div>
+            {/* Footer */}
+            <div style={{ padding: "14px 36px 20px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 12, color: "#1e2d3d" }}>Restricted access</span>
+              <span style={{ fontSize: 12, color: "#1e3040", fontFamily: "monospace", letterSpacing: "0.05em" }}>
+                by <span style={{ color: "#00aeec" }}>ort_</span>
+              </span>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
-
-      <style>{`
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(200%); }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }
