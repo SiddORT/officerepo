@@ -312,7 +312,7 @@ export default function Layout({ children }) {
                 className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg layout-nav-idle transition-all"
               >
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                  style={{ backgroundColor: "#00aeec" }}>
+                  style={{ background: "linear-gradient(135deg, #00aeec, #8b5cf6)" }}>
                   {initials}
                 </div>
                 {!collapsed && (
@@ -331,7 +331,7 @@ export default function Layout({ children }) {
                   <div className="px-4 py-3 border-b layout-border">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                        style={{ backgroundColor: "#00aeec" }}>
+                        style={{ background: "linear-gradient(135deg, #00aeec, #8b5cf6)" }}>
                         {initials}
                       </div>
                       <div className="min-w-0">
