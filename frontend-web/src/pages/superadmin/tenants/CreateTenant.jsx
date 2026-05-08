@@ -173,20 +173,36 @@ export default function CreateTenant() {
             const isCompleted = i < step;
             const isPending   = i > step;
             return (
-              <div key={s.label} className="flex gap-3">
+              <div key={s.label} className="flex gap-3 group">
                 {/* Line + circle */}
                 <div className="flex flex-col items-center" style={{ minWidth: 28 }}>
                   <div
+                    onClick={() => isCompleted && setStep(i)}
                     className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all"
-                    style={
-                      isActive || isCompleted
+                    style={{
+                      cursor: isCompleted ? "pointer" : "default",
+                      ...(isActive || isCompleted
                         ? {
                             background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
                             color: "#fff",
-                            boxShadow: isActive ? "0 0 0 3px rgba(0,174,236,0.22), 0 0 0 5px rgba(139,92,246,0.10)" : "none",
+                            boxShadow: isActive
+                              ? "0 0 0 3px rgba(0,174,236,0.22), 0 0 0 5px rgba(139,92,246,0.10)"
+                              : "none",
                           }
-                        : { backgroundColor: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }
-                    }
+                        : { backgroundColor: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }),
+                    }}
+                    onMouseEnter={(e) => {
+                      if (isCompleted) {
+                        e.currentTarget.style.transform = "scale(1.12)";
+                        e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0,174,236,0.30), 0 4px 12px rgba(139,92,246,0.25)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "scale(1)";
+                      e.currentTarget.style.boxShadow = isActive
+                        ? "0 0 0 3px rgba(0,174,236,0.22), 0 0 0 5px rgba(139,92,246,0.10)"
+                        : "none";
+                    }}
                   >
                     {isCompleted ? "✓" : i + 1}
                   </div>
@@ -204,7 +220,11 @@ export default function CreateTenant() {
                 </div>
 
                 {/* Text */}
-                <div className="pb-6">
+                <div
+                  className="pb-6 transition-all"
+                  onClick={() => isCompleted && setStep(i)}
+                  style={{ cursor: isCompleted ? "pointer" : "default" }}
+                >
                   <p
                     className="text-sm font-semibold transition-all"
                     style={
@@ -218,6 +238,11 @@ export default function CreateTenant() {
                   <p className="text-xs mt-0.5" style={{ color: isActive ? "var(--c-text2)" : "var(--c-muted)", opacity: isPending ? 0.6 : 1 }}>
                     {s.desc}
                   </p>
+                  {isCompleted && (
+                    <p className="text-[10px] mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#00aeec" }}>
+                      Click to edit ↩
+                    </p>
+                  )}
                 </div>
               </div>
             );

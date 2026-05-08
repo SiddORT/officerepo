@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 export default function Pagination({ page, totalPages, onChange, pageSize, onPageSizeChange, total }) {
   const pages = [];
@@ -52,35 +52,53 @@ export default function Pagination({ page, totalPages, onChange, pageSize, onPag
 }
 
 function PageBtn({ label, onClick, disabled, active }) {
+  const [hovered, setHovered] = useState(false);
+  const isArrow = label === "←" || label === "→";
+
+  const baseStyle = {
+    minWidth: 32, height: 32, padding: "0 8px",
+    borderRadius: 8, fontSize: 12, fontWeight: 600,
+    transition: "all 0.18s ease",
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.35 : 1,
+    display: "inline-flex", alignItems: "center", justifyContent: "center",
+    border: "1px solid transparent",
+  };
+
+  const activeStyle = {
+    background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
+    color: "#fff",
+    boxShadow: "0 2px 12px rgba(0,174,236,0.35), 0 1px 4px rgba(139,92,246,0.22)",
+    border: "1px solid transparent",
+    transform: "translateY(-1px)",
+  };
+
+  const hoveredStyle = {
+    background: "linear-gradient(135deg, rgba(0,174,236,0.12), rgba(139,92,246,0.10))",
+    color: "#00aeec",
+    border: "1px solid rgba(0,174,236,0.35)",
+    boxShadow: "0 2px 8px rgba(0,174,236,0.15)",
+    transform: "translateY(-1px)",
+  };
+
+  const idleStyle = {
+    background: "var(--c-surface2)",
+    color: "var(--c-text2)",
+    border: "1px solid var(--c-border)",
+  };
+
+  let computedStyle = { ...baseStyle };
+  if (active)               computedStyle = { ...baseStyle, ...activeStyle };
+  else if (hovered && !disabled) computedStyle = { ...baseStyle, ...hoveredStyle };
+  else                      computedStyle = { ...baseStyle, ...idleStyle };
+
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={[
-        "min-w-[32px] h-8 px-2 rounded text-xs font-semibold transition-all",
-        disabled ? "opacity-30 cursor-not-allowed" : "",
-      ].join(" ")}
-      style={
-        active
-          ? {
-              background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
-              color: "#fff",
-              boxShadow: "0 2px 10px rgba(0,174,236,0.30), 0 1px 4px rgba(139,92,246,0.18)",
-            }
-          : { color: "var(--c-text2)" }
-      }
-      onMouseEnter={(e) => {
-        if (!active && !disabled) {
-          e.currentTarget.style.backgroundColor = "var(--c-hover)";
-          e.currentTarget.style.color = "var(--c-accent)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!active) {
-          e.currentTarget.style.backgroundColor = "";
-          e.currentTarget.style.color = "var(--c-text2)";
-        }
-      }}
+      style={computedStyle}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       {label}
     </button>

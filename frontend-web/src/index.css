@@ -90,12 +90,18 @@ html.theme-light {
   }
 
   .btn-secondary {
-    background-color: transparent;
+    background-color: var(--c-surface2);
     color: var(--c-text2);
     border: 1px solid var(--c-border);
-    @apply text-sm font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply text-sm font-medium py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   }
-  .btn-secondary:hover { background-color: var(--c-hover); color: var(--c-accent); border-color: var(--c-accent); }
+  .btn-secondary:hover {
+    background-color: var(--c-surface);
+    color: var(--c-text);
+    border-color: var(--c-accent);
+    box-shadow: 0 0 0 2px rgba(0,174,236,0.15), 0 2px 8px rgba(0,0,0,0.12);
+  }
 
   .btn-danger { @apply bg-red-600 hover:bg-red-500 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed; }
 
