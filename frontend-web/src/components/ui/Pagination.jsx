@@ -57,16 +57,30 @@ function PageBtn({ label, onClick, disabled, active }) {
       onClick={onClick}
       disabled={disabled}
       className={[
-        "min-w-[32px] h-8 px-2 rounded text-xs font-medium transition-colors",
+        "min-w-[32px] h-8 px-2 rounded text-xs font-semibold transition-all",
         disabled ? "opacity-30 cursor-not-allowed" : "",
       ].join(" ")}
       style={
         active
-          ? { backgroundColor: "var(--c-accent)", color: "#fff" }
+          ? {
+              background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
+              color: "#fff",
+              boxShadow: "0 2px 10px rgba(0,174,236,0.30), 0 1px 4px rgba(139,92,246,0.18)",
+            }
           : { color: "var(--c-text2)" }
       }
-      onMouseEnter={(e) => { if (!active && !disabled) { e.currentTarget.style.backgroundColor = "var(--c-hover)"; e.currentTarget.style.color = "var(--c-accent)"; } }}
-      onMouseLeave={(e) => { if (!active) { e.currentTarget.style.backgroundColor = ""; e.currentTarget.style.color = "var(--c-text2)"; } }}
+      onMouseEnter={(e) => {
+        if (!active && !disabled) {
+          e.currentTarget.style.backgroundColor = "var(--c-hover)";
+          e.currentTarget.style.color = "var(--c-accent)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          e.currentTarget.style.backgroundColor = "";
+          e.currentTarget.style.color = "var(--c-text2)";
+        }
+      }}
     >
       {label}
     </button>

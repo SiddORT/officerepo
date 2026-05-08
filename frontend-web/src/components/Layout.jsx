@@ -127,18 +127,35 @@ export default function Layout({ children }) {
       {/* ── Sidebar ─────────────────────────────────────────────────── */}
       <aside className={`layout-sidebar ${collapsed ? "w-[64px]" : "w-[220px]"} flex flex-col flex-shrink-0 transition-all duration-200`}>
 
-        {/* Product wordmark */}
-        <div className={`border-b layout-border ${collapsed ? "flex justify-center px-3 py-4" : "px-5 py-4"}`}>
+        {/* Product wordmark + collapse icon */}
+        <div className={`border-b layout-border flex items-center ${collapsed ? "justify-center px-3 py-4" : "px-4 py-4 gap-2"}`}>
           {collapsed ? (
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: "linear-gradient(135deg,#00aeec,#8b5cf6)" }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", fontFamily: "monospace" }}>OR</span>
-            </div>
+            <button
+              onClick={() => setCollapsed(false)}
+              title="Expand sidebar"
+              className="w-8 h-8 rounded-lg flex items-center justify-center transition-all layout-nav-idle"
+              style={{ background: "linear-gradient(135deg,#00aeec,#8b5cf6)" }}
+            >
+              <svg className="w-4 h-4 text-white" fill="none" stroke="white" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              </svg>
+            </button>
           ) : (
-            <div>
-              <p className="text-[15px] font-bold tracking-tight layout-title leading-tight">Office Repo</p>
-              <p className="text-[10px] tracking-widest uppercase layout-label-muted mt-0.5">Unified Workplace Management</p>
-            </div>
+            <>
+              <div className="flex-1 min-w-0">
+                <p className="text-[15px] font-bold tracking-tight layout-title leading-tight">Office Repo</p>
+                <p className="text-[10px] tracking-widest uppercase layout-label-muted mt-0.5">Unified Workplace Management</p>
+              </div>
+              <button
+                onClick={() => setCollapsed(true)}
+                title="Collapse sidebar"
+                className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 layout-nav-idle transition-all"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+              </button>
+            </>
           )}
         </div>
 
@@ -164,21 +181,59 @@ export default function Layout({ children }) {
         </nav>
 
         {/* Sidebar footer */}
-        <div className="px-2 pb-3 border-t layout-border pt-3 flex flex-col gap-1">
-          {/* Collapse toggle */}
-          <button
-            onClick={() => setCollapsed((c) => !c)}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm layout-nav-idle transition-all"
-          >
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {collapsed
-                ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-              }
-            </svg>
-            {!collapsed && <span className="text-xs">Collapse</span>}
-          </button>
+        <div className="pb-3 border-t layout-border pt-3 flex flex-col gap-2">
+
+          {/* App store buttons */}
+          {!collapsed && (
+            <div className="px-3 flex flex-col gap-1.5">
+              {/* Play Store */}
+              <a
+                href="#"
+                title="Get it on Google Play"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all layout-nav-idle"
+                style={{ border: "1px solid var(--c-border)" }}
+              >
+                <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0" fill="currentColor" style={{ color: "#10b981" }}>
+                  <path d="M3.18 23.76c.33.18.7.24 1.07.17l11.67-11.67L12.5 9l-9.32 14.76zM20.83 10.5l-3.01-1.69-3.56 3.56 3.56 3.56 3.03-1.7c.86-.48.86-1.74-.02-2.73zM2.01 1.05C1.7 1.39 1.5 1.88 1.5 2.5v19c0 .62.2 1.11.51 1.45L14.17 10.5 2.01 1.05zM15.25 3.19l-11.67 7.31 3.56 3.56L15.25 3.19z" />
+                </svg>
+                <div className="min-w-0">
+                  <p style={{ fontSize: 8, color: "var(--c-muted)", letterSpacing: "0.04em", lineHeight: 1 }}>GET IT ON</p>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text)", lineHeight: 1.2 }}>Google Play</p>
+                </div>
+              </a>
+              {/* App Store */}
+              <a
+                href="#"
+                title="Download on the App Store"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all layout-nav-idle"
+                style={{ border: "1px solid var(--c-border)" }}
+              >
+                <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0" fill="currentColor" style={{ color: "#00aeec" }}>
+                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                </svg>
+                <div className="min-w-0">
+                  <p style={{ fontSize: 8, color: "var(--c-muted)", letterSpacing: "0.04em", lineHeight: 1 }}>DOWNLOAD ON THE</p>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: "var(--c-text)", lineHeight: 1.2 }}>App Store</p>
+                </div>
+              </a>
+            </div>
+          )}
+
+          {/* Collapsed: stacked store icons */}
+          {collapsed && (
+            <div className="flex flex-col items-center gap-1.5 px-2">
+              <a href="#" title="Get it on Google Play" className="w-8 h-8 rounded-lg flex items-center justify-center layout-nav-idle transition-all" style={{ border: "1px solid var(--c-border)" }}>
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor" style={{ color: "#10b981" }}>
+                  <path d="M3.18 23.76c.33.18.7.24 1.07.17l11.67-11.67L12.5 9l-9.32 14.76zM20.83 10.5l-3.01-1.69-3.56 3.56 3.56 3.56 3.03-1.7c.86-.48.86-1.74-.02-2.73zM2.01 1.05C1.7 1.39 1.5 1.88 1.5 2.5v19c0 .62.2 1.11.51 1.45L14.17 10.5 2.01 1.05zM15.25 3.19l-11.67 7.31 3.56 3.56L15.25 3.19z" />
+                </svg>
+              </a>
+              <a href="#" title="Download on the App Store" className="w-8 h-8 rounded-lg flex items-center justify-center layout-nav-idle transition-all" style={{ border: "1px solid var(--c-border)" }}>
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor" style={{ color: "#00aeec" }}>
+                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                </svg>
+              </a>
+            </div>
+          )}
 
           {/* by ort_ brand mark */}
           {!collapsed && (
@@ -186,11 +241,10 @@ export default function Layout({ children }) {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, paddingRight: 6, paddingTop: 2 }}
+              style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, paddingRight: 10, paddingTop: 2 }}
             >
               <span style={{ fontSize: 10, color: "#475569", letterSpacing: "0.05em" }}>by</span>
               <motion.div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
-                {/* breathing glow behind ort_ */}
                 <motion.div
                   animate={{ opacity: [0.25, 0.55, 0.25] }}
                   transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
