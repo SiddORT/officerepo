@@ -62,9 +62,9 @@ html.theme-light {
 
 /* Nav items */
 .nav-active {
-  background-color: var(--c-accent) !important;
+  background: linear-gradient(135deg, #00aeec, #8b5cf6) !important;
   color: #ffffff !important;
-  box-shadow: 0 2px 10px var(--c-accent-dim);
+  box-shadow: 0 2px 14px rgba(0,174,236,0.30), 0 1px 4px rgba(139,92,246,0.18);
 }
 .layout-nav-idle { color: var(--c-text2); }
 .layout-nav-idle:hover {
@@ -79,11 +79,15 @@ html.theme-light {
 /* ── Reusable component classes ─────────────────────────────────────── */
 @layer components {
   .btn-primary {
-    background-color: var(--c-accent);
+    background: linear-gradient(135deg, #00aeec, #8b5cf6);
     color: #fff;
-    @apply text-sm font-semibold py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply text-sm font-semibold py-2 px-4 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    box-shadow: 0 2px 14px rgba(0,174,236,0.25), 0 1px 4px rgba(139,92,246,0.15);
   }
-  .btn-primary:hover  { background-color: var(--c-accent-h); }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #00c4ff, #9d6fff);
+    box-shadow: 0 4px 20px rgba(0,174,236,0.35), 0 2px 8px rgba(139,92,246,0.22);
+  }
 
   .btn-secondary {
     background-color: transparent;
