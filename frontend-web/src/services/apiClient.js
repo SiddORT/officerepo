@@ -89,6 +89,25 @@ export const tenantMgmtApi = {
   create: (data) =>
     apiClient.post("/superadmin/manage/tenants", data),
 
+  // Step-by-step wizard save
+  createDraft: (data) =>
+    apiClient.post("/superadmin/manage/tenants/draft", data),
+
+  updateBasicInfo: (id, data) =>
+    apiClient.patch(`/superadmin/manage/tenants/${id}/step/basic`, data),
+
+  saveDomainStep: (id, data) =>
+    apiClient.patch(`/superadmin/manage/tenants/${id}/step/domain`, data),
+
+  saveDatabaseStep: (id, data) =>
+    apiClient.patch(`/superadmin/manage/tenants/${id}/step/database`, data),
+
+  saveSubscriptionStep: (id, data) =>
+    apiClient.patch(`/superadmin/manage/tenants/${id}/step/subscription`, data),
+
+  saveModulesStep: (id, data) =>
+    apiClient.patch(`/superadmin/manage/tenants/${id}/step/modules`, data),
+
   update: (id, data) =>
     apiClient.put(`/superadmin/manage/tenants/${id}`, data),
 

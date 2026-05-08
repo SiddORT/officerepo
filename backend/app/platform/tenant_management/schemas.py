@@ -76,10 +76,9 @@ class BrandingIn(BaseModel):
         return v
 
 
-# ── Create Tenant ─────────────────────────────────────────────────────────────
+# ── Create Tenant (full, one-shot) ────────────────────────────────────────────
 
 class TenantCreateRequest(BaseModel):
-    # Basic info
     tenant_name: str
     tenant_code: str
     company_email: str
@@ -88,7 +87,6 @@ class TenantCreateRequest(BaseModel):
     timezone: Optional[str] = "UTC"
     region: Optional[str] = None
 
-    # Sub-sections
     domain: DomainConfigIn
     db_config: Optional[DbConfigIn] = None
     subscription: Optional[SubscriptionIn] = None
@@ -129,7 +127,7 @@ class TenantCreateRequest(BaseModel):
         if not v or not v.strip():
             return None
         v = v.strip()
-        if not re.match(r"^\+?[0-9\s\-().]{7,20}$", v):
+        if not re.match(r"^\+?[0-9\s\-().]{7,25}$", v):
             raise ValueError("Enter a valid phone number.")
         return v
 
@@ -142,6 +140,111 @@ class TenantCreateRequest(BaseModel):
         if not re.match(r"^(https?://)?([a-zA-Z0-9\-]+\.)+[a-zA-Z]{2,}(:\d+)?(/[^\s]*)?$", v):
             raise ValueError("Enter a valid URL.")
         return v
+
+
+# ── Draft Create (step 0 — basic info only) ───────────────────────────────────
+
+class TenantDraftCreateRequest(BaseModel):
+    tenant_name: str
+    tenant_code: str
+    company_email: str
+    contact_number: Optional[str] = None
+    company_website: Optional[str] = None
+    timezone: Optional[str] = "UTC"
+    region: Optional[str] = None
+
+    @field_validator("tenant_name")
+    @classmethod
+    def validate_name(cls, v):
+        v = v.strip()
+        if not v:
+            raise ValueError("Tenant name is required.")
+        if len(v) > 255:
+            raise ValueError("Tenant name must be at most 255 characters.")
+        return _safe(v)
+
+    @field_validator("tenant_code")
+    @classmethod
+    def validate_code(cls, v):
+        v = v.strip().lower()
+        if not re.match(r"^[a-z0-9][a-z0-9\-]{1,48}[a-z0-9]$", v):
+            raise ValueError("Tenant code must be 3–50 lowercase letters, digits, or hyphens.")
+        return v
+
+    @field_validator("company_email")
+    @classmethod
+    def validate_email(cls, v):
+        v = v.strip().lower()
+        if not re.match(r"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$", v):
+            raise ValueError("Enter a valid email address.")
+        return v
+
+    @field_validator("contact_number")
+    @classmethod
+    def validate_phone(cls, v):
+        if not v or not v.strip():
+            return None
+        v = v.strip()
+        if not re.match(r"^\+?[0-9\s\-().]{7,25}$", v):
+            raise ValueError("Enter a valid phone number.")
+        return v
+
+    @field_validator("company_website")
+    @classmethod
+    def validate_url(cls, v):
+        if not v or not v.strip():
+            return None
+        v = v.strip()
+        if not re.match(r"^(https?://)?([a-zA-Z0-9\-]+\.)+[a-zA-Z]{2,}(:\d+)?(/[^\s]*)?$", v):
+            raise ValueError("Enter a valid URL.")
+        return v
+
+
+# ── Step-save schemas ─────────────────────────────────────────────────────────
+
+class DomainStepRequest(BaseModel):
+    subdomain: str
+    custom_domain: Optional[str] = None
+
+    @field_validator("subdomain")
+    @classmethod
+    def validate_subdomain(cls, v):
+        v = v.strip().lower()
+        if not re.match(r"^[a-z0-9][a-z0-9\-]{0,61}[a-z0-9]?$", v):
+            raise ValueError("Subdomain must be lowercase letters, digits, or hyphens.")
+        return v
+
+
+class DatabaseStepRequest(BaseModel):
+    db_name: Optional[str] = None
+    db_host: Optional[str] = None
+    db_port: Optional[int] = 5432
+    db_username: Optional[str] = None
+    db_password: Optional[str] = None
+
+    @field_validator("db_port")
+    @classmethod
+    def validate_port(cls, v):
+        if v is not None and not (1 <= v <= 65535):
+            raise ValueError("Port must be between 1 and 65535.")
+        return v
+
+
+class SubscriptionStepRequest(BaseModel):
+    plan_name: Optional[str] = "Starter"
+    trial_start: Optional[datetime] = None
+    trial_end: Optional[datetime] = None
+    user_limit: Optional[int] = 25
+    storage_limit: Optional[int] = 1024
+
+
+class ModulesStepRequest(BaseModel):
+    employee: bool = False
+    hrms: bool = False
+    assets: bool = False
+    billing: bool = False
+    workflow: bool = False
+    reports: bool = False
 
 
 # ── Update Tenant ─────────────────────────────────────────────────────────────
@@ -245,6 +348,14 @@ class ActivityLogResponse(BaseModel):
         from_attributes = True
 
 
+class CompletionBreakdown(BaseModel):
+    basic_info: bool
+    domain: bool
+    database: bool
+    subscription: bool
+    modules: bool
+
+
 class TenantListItem(BaseModel):
     id: int
     tenant_name: str
@@ -252,6 +363,8 @@ class TenantListItem(BaseModel):
     subdomain: Optional[str] = None
     plan_name: Optional[str] = None
     status: str
+    profile_completion: int = 0
+    completion_breakdown: Optional[dict] = None
     created_at: datetime
 
     class Config:
@@ -269,6 +382,8 @@ class TenantDetailResponse(BaseModel):
     region: Optional[str] = None
     logo_path: Optional[str] = None
     status: str
+    profile_completion: int = 0
+    completion_breakdown: Optional[dict] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

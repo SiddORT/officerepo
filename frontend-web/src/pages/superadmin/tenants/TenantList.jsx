@@ -127,6 +127,11 @@ export default function TenantList() {
       render: (v) => v ? <Badge status="active" label={v} /> : <span className="t-muted">—</span>,
     },
     {
+      key: "profile_completion",
+      label: "Profile",
+      render: (v) => <ProfileCompletion pct={v ?? 0} />,
+    },
+    {
       key: "status",
       label: "Status",
       render: (v) => <Badge status={v} />,
@@ -306,5 +311,50 @@ function ActionBtn({ label, accent, onClick }) {
     >
       {label}
     </button>
+  );
+}
+
+function ProfileCompletion({ pct }) {
+  const pctNum = Number(pct) || 0;
+  const isComplete = pctNum === 100;
+
+  const color = isComplete
+    ? "#10b981"
+    : pctNum >= 60
+    ? "#f59e0b"
+    : "#ef4444";
+
+  const label = isComplete ? "Complete" : "Incomplete";
+
+  return (
+    <div className="flex flex-col gap-1 min-w-[90px]">
+      <div className="flex items-center justify-between gap-2">
+        <span
+          className="text-[10px] font-semibold uppercase tracking-wide"
+          style={{ color }}
+        >
+          {label}
+        </span>
+        <span className="text-[10px] font-mono t-muted tabular-nums">
+          {pctNum}%
+        </span>
+      </div>
+      <div
+        className="h-1 rounded-full overflow-hidden"
+        style={{ background: "var(--c-surface2)", width: "100%" }}
+      >
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${pctNum}%`,
+            background: isComplete
+              ? "#10b981"
+              : pctNum >= 60
+              ? "linear-gradient(90deg, #f59e0b, #fb923c)"
+              : "linear-gradient(90deg, #ef4444, #f97316)",
+          }}
+        />
+      </div>
+    </div>
   );
 }

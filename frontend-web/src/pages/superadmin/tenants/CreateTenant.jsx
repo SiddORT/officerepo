@@ -35,22 +35,38 @@ const STEPS = [
   { label: "Modules",       desc: "Enable feature modules" },
 ];
 
+// Saved indicator shown after each step save
+function SavedBadge({ show }) {
+  if (!show) return null;
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full"
+      style={{ background: "rgba(16,185,129,0.12)", color: "#10b981", border: "1px solid rgba(16,185,129,0.22)" }}
+    >
+      ✓ Saved
+    </span>
+  );
+}
+
 export default function CreateTenant() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
+  const [tenantId, setTenantId] = useState(null);   // set after step 0 save
   const [hoveredStep, setHoveredStep] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [savedStep, setSavedStep] = useState(null);  // which step just saved
   const [errors, setErrors] = useState({});
-  const [globalError, setGlobalError] = useState("");
+  const [stepError, setStepError] = useState("");
 
   const [form, setForm] = useState({
     tenant_name: "", tenant_code: "", company_email: "",
-    contact_dial: "+91", contact_number: "", company_website: "", timezone: "UTC", region: "",
+    contact_dial: "+91", contact_number: "", company_website: "",
+    timezone: "UTC", region: "",
     subdomain: "", custom_domain: "",
     db_name: "", db_host: "", db_port: "5432", db_username: "", db_password: "",
-    plan_name: "Starter", trial_start: "", trial_end: "", user_limit: "25", storage_limit: "1024",
+    plan_name: "Starter", trial_start: "", trial_end: "",
+    user_limit: "25", storage_limit: "1024",
     modules: { ...DEFAULT_MODULES },
-    primary_color: "#00aeec", theme_mode: "dark",
   });
 
   const set = (field, value) => {
@@ -96,47 +112,83 @@ export default function CreateTenant() {
     return Object.keys(errs).length === 0;
   };
 
-  const next = () => { if (validate()) setStep((s) => s + 1); };
-  const back = () => setStep((s) => s - 1);
+  const flashSaved = (s) => {
+    setSavedStep(s);
+    setTimeout(() => setSavedStep(null), 2500);
+  };
 
-  const handleSubmit = async () => {
+  // Save the current step, then advance
+  const saveAndNext = async () => {
     if (!validate()) return;
-    setSubmitting(true);
-    setGlobalError("");
+    setSaving(true);
+    setStepError("");
     try {
-      const hasDb = form.db_name && form.db_host && form.db_username && form.db_password;
-      await tenantMgmtApi.create({
-        tenant_name:      form.tenant_name.trim(),
-        tenant_code:      form.tenant_code.trim(),
-        company_email:    form.company_email.trim().toLowerCase(),
-        contact_number:   form.contact_number ? `${form.contact_dial} ${form.contact_number.trim()}` : null,
-        company_website:  form.company_website || null,
-        timezone:         form.timezone,
-        region:           form.region || null,
-        domain: { subdomain: form.subdomain.trim(), custom_domain: form.custom_domain || null },
-        db_config: hasDb ? {
-          db_name: form.db_name.trim(), db_host: form.db_host.trim(),
+      const contactFull = form.contact_number
+        ? `${form.contact_dial} ${form.contact_number.trim()}`
+        : null;
+
+      if (step === 0) {
+        const payload = {
+          tenant_name: form.tenant_name.trim(),
+          tenant_code: form.tenant_code.trim(),
+          company_email: form.company_email.trim().toLowerCase(),
+          contact_number: contactFull,
+          company_website: form.company_website || null,
+          timezone: form.timezone,
+          region: form.region || null,
+        };
+        if (tenantId) {
+          // Re-saving basic info for an existing draft
+          await tenantMgmtApi.updateBasicInfo(tenantId, payload);
+        } else {
+          const res = await tenantMgmtApi.createDraft(payload);
+          const id = res.data?.data?.id ?? res.data?.id;
+          setTenantId(id);
+        }
+      } else if (step === 1) {
+        await tenantMgmtApi.saveDomainStep(tenantId, {
+          subdomain: form.subdomain.trim(),
+          custom_domain: form.custom_domain || null,
+        });
+      } else if (step === 2) {
+        await tenantMgmtApi.saveDatabaseStep(tenantId, {
+          db_name: form.db_name || null,
+          db_host: form.db_host || null,
           db_port: Number(form.db_port) || 5432,
-          db_username: form.db_username.trim(), db_password: form.db_password,
-        } : null,
-        subscription: {
-          plan_name: form.plan_name, trial_start: form.trial_start || null,
+          db_username: form.db_username || null,
+          db_password: form.db_password || null,
+        });
+      } else if (step === 3) {
+        await tenantMgmtApi.saveSubscriptionStep(tenantId, {
+          plan_name: form.plan_name,
+          trial_start: form.trial_start || null,
           trial_end: form.trial_end || null,
           user_limit: Number(form.user_limit) || 25,
           storage_limit: Number(form.storage_limit) || 1024,
-        },
-        modules:  form.modules,
-        branding: { primary_color: form.primary_color, theme_mode: form.theme_mode },
-      });
-      navigate("/superadmin/tenants");
+        });
+      } else if (step === 4) {
+        await tenantMgmtApi.saveModulesStep(tenantId, form.modules);
+        flashSaved(4);
+        navigate("/superadmin/tenants");
+        return;
+      }
+
+      flashSaved(step);
+      setStep((s) => s + 1);
     } catch (e) {
       const detail = e.response?.data?.detail;
-      setGlobalError(typeof detail === "string" ? detail : "Failed to create tenant.");
-      setStep(0);
+      setStepError(typeof detail === "string" ? detail : "Failed to save. Please try again.");
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
+
+  const back = () => {
+    setStepError("");
+    setStep((s) => s - 1);
+  };
+
+  const isLastStep = step === STEPS.length - 1;
 
   return (
     <div className="flex h-full min-h-0" style={{ height: "100%" }}>
@@ -149,10 +201,9 @@ export default function CreateTenant() {
           background: "var(--c-surface)",
           borderRight: "1px solid var(--c-border)",
           padding: "32px 24px",
-          gap: 0,
         }}
       >
-        {/* Back button + title */}
+        {/* Back + title */}
         <button
           onClick={() => navigate("/superadmin/tenants")}
           className="flex items-center gap-2 mb-6 text-xs t-muted layout-nav-idle rounded-lg px-2 py-1 transition-all w-fit"
@@ -165,7 +216,7 @@ export default function CreateTenant() {
 
         <div className="mb-8">
           <h1 className="text-lg font-bold t-heading leading-snug">Create New Tenant</h1>
-          <p className="text-xs t-muted mt-1">Onboard a new SaaS client in {STEPS.length} steps.</p>
+          <p className="text-xs t-muted mt-1">Each step is saved automatically.</p>
         </div>
 
         {/* Vertical step list */}
@@ -186,47 +237,29 @@ export default function CreateTenant() {
                 fontSize: 11, fontWeight: 700, flexShrink: 0,
               };
               if (isCompleted && isHovered) return { ...base,
-                background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
-                color: "#fff",
+                background: "linear-gradient(135deg, #00aeec, #8b5cf6)", color: "#fff",
                 transform: "scale(1.18)",
                 boxShadow: "0 0 0 4px rgba(0,174,236,0.28), 0 4px 14px rgba(139,92,246,0.30)",
               };
               if (isActive && isHovered) return { ...base,
-                background: "linear-gradient(135deg, #00c4ff, #a78bfa)",
-                color: "#fff",
+                background: "linear-gradient(135deg, #00c4ff, #a78bfa)", color: "#fff",
                 transform: "scale(1.10)",
                 boxShadow: "0 0 0 5px rgba(0,174,236,0.30), 0 0 0 8px rgba(139,92,246,0.14)",
               };
               if (isPending && isHovered) return { ...base,
                 background: "linear-gradient(135deg, rgba(0,174,236,0.18), rgba(139,92,246,0.15))",
-                color: "#00aeec",
-                border: "1px solid rgba(0,174,236,0.40)",
-                transform: "scale(1.10)",
-                boxShadow: "0 2px 10px rgba(0,174,236,0.18)",
+                color: "#00aeec", border: "1px solid rgba(0,174,236,0.40)",
+                transform: "scale(1.10)", boxShadow: "0 2px 10px rgba(0,174,236,0.18)",
               };
               if (isActive || isCompleted) return { ...base,
-                background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
-                color: "#fff",
-                boxShadow: isActive
-                  ? "0 0 0 3px rgba(0,174,236,0.22), 0 0 0 5px rgba(139,92,246,0.10)"
-                  : "none",
+                background: "linear-gradient(135deg, #00aeec, #8b5cf6)", color: "#fff",
+                boxShadow: isActive ? "0 0 0 3px rgba(0,174,236,0.22), 0 0 0 5px rgba(139,92,246,0.10)" : "none",
               };
               return { ...base,
-                backgroundColor: "var(--c-surface2)",
-                color: "var(--c-muted)",
+                backgroundColor: "var(--c-surface2)", color: "var(--c-muted)",
                 border: "1px solid var(--c-border)",
               };
             })();
-
-            const rowStyle = {
-              transition: "background 0.18s ease",
-              borderRadius: 10,
-              padding: "2px 6px 2px 0",
-              cursor: isClickable ? "pointer" : "default",
-              background: isHovered && isClickable
-                ? "rgba(0,174,236,0.06)"
-                : "transparent",
-            };
 
             return (
               <div
@@ -236,39 +269,41 @@ export default function CreateTenant() {
                 onMouseLeave={() => setHoveredStep(null)}
                 onClick={() => isClickable && setStep(i)}
               >
-                {/* Line + circle */}
                 <div className="flex flex-col items-center" style={{ minWidth: 28 }}>
-                  <div style={circleStyle}>
-                    {isCompleted ? "✓" : i + 1}
-                  </div>
+                  <div style={circleStyle}>{isCompleted ? "✓" : i + 1}</div>
                   {i < STEPS.length - 1 && (
-                    <div
-                      style={{
-                        width: 1, flex: 1, minHeight: 28, margin: "4px 0",
-                        transition: "background 0.3s ease",
-                        background: isCompleted
-                          ? "linear-gradient(to bottom, #00aeec, #8b5cf6)"
-                          : "var(--c-border)",
-                      }}
-                    />
+                    <div style={{
+                      width: 1, flex: 1, minHeight: 28, margin: "4px 0",
+                      transition: "background 0.3s ease",
+                      background: isCompleted ? "linear-gradient(to bottom, #00aeec, #8b5cf6)" : "var(--c-border)",
+                    }} />
                   )}
                 </div>
-
-                {/* Text */}
-                <div className="pb-6" style={rowStyle}>
-                  <p
-                    className="text-sm font-semibold"
-                    style={{
-                      transition: "all 0.18s ease",
-                      ...(isActive
-                        ? { background: "linear-gradient(135deg,#00aeec,#8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }
-                        : isHovered && isCompleted
-                          ? { color: "#00aeec" }
-                          : { color: isCompleted ? "var(--c-text)" : "var(--c-muted)" }),
-                    }}
-                  >
-                    {s.label}
-                  </p>
+                <div
+                  className="pb-6"
+                  style={{
+                    cursor: isClickable ? "pointer" : "default",
+                    transition: "background 0.18s ease",
+                    borderRadius: 10, padding: "2px 6px 2px 0",
+                    background: isHovered && isClickable ? "rgba(0,174,236,0.06)" : "transparent",
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <p
+                      className="text-sm font-semibold"
+                      style={{
+                        transition: "all 0.18s ease",
+                        ...(isActive
+                          ? { background: "linear-gradient(135deg,#00aeec,#8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }
+                          : isHovered && isCompleted
+                            ? { color: "#00aeec" }
+                            : { color: isCompleted ? "var(--c-text)" : "var(--c-muted)" }),
+                      }}
+                    >
+                      {s.label}
+                    </p>
+                    {savedStep === i && <SavedBadge show />}
+                  </div>
                   <p className="text-xs mt-0.5" style={{
                     color: "var(--c-muted)",
                     opacity: isHovered ? 1 : isPending ? 0.55 : 0.8,
@@ -277,9 +312,7 @@ export default function CreateTenant() {
                     {s.desc}
                   </p>
                   {isCompleted && isHovered && (
-                    <p className="text-[10px] mt-0.5" style={{ color: "#00aeec" }}>
-                      Click to edit ↩
-                    </p>
+                    <p className="text-[10px] mt-0.5" style={{ color: "#00aeec" }}>Click to edit ↩</p>
                   )}
                 </div>
               </div>
@@ -304,6 +337,12 @@ export default function CreateTenant() {
               }}
             />
           </div>
+          {tenantId && (
+            <p className="text-[10px] t-muted mt-2">
+              Tenant ID: <span className="font-mono" style={{ color: "var(--c-accent)" }}>#{tenantId}</span>
+              {" · "}auto-saved
+            </p>
+          )}
         </div>
       </div>
 
@@ -313,36 +352,35 @@ export default function CreateTenant() {
 
           {/* Step heading */}
           <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-3 mb-1">
               <span
                 className="inline-block w-0.5 h-5 rounded-full"
                 style={{ background: "linear-gradient(to bottom, #00aeec, #8b5cf6)" }}
               />
               <h2 className="text-xl font-bold t-heading">{STEPS[step].label}</h2>
+              {savedStep === step && <SavedBadge show />}
             </div>
             <p className="text-sm t-muted ml-2.5">{STEPS[step].desc}</p>
           </div>
 
-          {/* Global error */}
-          {globalError && (
+          {/* Step error */}
+          {stepError && (
             <div className="mb-5 rounded-lg px-4 py-3 text-sm text-red-400"
               style={{ backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
-              {globalError}
+              {stepError}
             </div>
           )}
 
-          {/* Form content */}
+          {/* Form card */}
           <div
             className="rounded-xl p-6"
             style={{
               background: "var(--c-surface)",
               border: "1px solid var(--c-border)",
               boxShadow: "0 4px 24px rgba(0,0,0,0.10)",
-              position: "relative",
-              overflow: "hidden",
+              position: "relative", overflow: "hidden",
             }}
           >
-            {/* Gradient top accent */}
             <div style={{
               position: "absolute", top: 0, left: 0, right: 0, height: 3,
               background: "linear-gradient(90deg, #00aeec, #8b5cf6)",
@@ -355,7 +393,7 @@ export default function CreateTenant() {
           </div>
         </div>
 
-        {/* Nav bar — pinned to bottom of right panel */}
+        {/* Nav bar */}
         <div
           className="flex items-center justify-between px-8 py-4 flex-shrink-0"
           style={{ borderTop: "1px solid var(--c-border)", background: "var(--c-surface)" }}
@@ -363,18 +401,31 @@ export default function CreateTenant() {
           <button
             onClick={() => step === 0 ? navigate("/superadmin/tenants") : back()}
             className="btn-secondary"
+            disabled={saving}
           >
             {step === 0 ? "Cancel" : "← Back"}
           </button>
+
           <div className="flex items-center gap-3">
             <span className="text-xs t-muted">Step {step + 1} of {STEPS.length}</span>
-            {step < STEPS.length - 1 ? (
-              <button onClick={next} className="btn-primary px-6">Next →</button>
-            ) : (
-              <button onClick={handleSubmit} disabled={submitting} className="btn-primary min-w-[150px]">
-                {submitting ? "Creating..." : "Create Tenant ✓"}
-              </button>
-            )}
+            <button
+              onClick={saveAndNext}
+              disabled={saving}
+              className="btn-primary min-w-[150px] flex items-center justify-center gap-2"
+            >
+              {saving ? (
+                <>
+                  <span
+                    className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                  />
+                  Saving...
+                </>
+              ) : isLastStep ? (
+                "Finish & Save ✓"
+              ) : (
+                "Save & Next →"
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -382,7 +433,7 @@ export default function CreateTenant() {
   );
 }
 
-/* ── Step form components ──────────────────────────────────────────────── */
+/* ── Step form components ──────────────────────────────────────────────────── */
 
 function StepBasicInfo({ form, set, errors, autoCode }) {
   return (
@@ -479,7 +530,7 @@ function StepModules({ form, set }) {
     { key: "reports",  label: "Reports",  desc: "Analytics & reporting",           icon: "📊" },
   ];
   return (
-    <div className="space-y-3">
+    <div>
       <p className="text-xs t-muted mb-4">Select which modules this tenant will have access to.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {modules.map((m) => (
