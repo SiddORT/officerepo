@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { tenantMgmtApi } from "../../../services/apiClient";
 import Table from "../../../components/ui/Table";
@@ -143,16 +143,15 @@ export default function TenantList() {
     },
     {
       key: "actions",
-      label: "Actions",
+      label: "",
       render: (_, row) => (
-        <div className="flex items-center gap-3 flex-wrap">
-          <ActionBtn label="View"  accent="#00aeec" onClick={() => navigate(`/superadmin/tenants/${row.id}`)} />
-          <ActionBtn label="Edit"  accent="var(--c-text2)" onClick={() => navigate(`/superadmin/tenants/${row.id}/edit`)} />
-          {row.status === "suspended"
-            ? <ActionBtn label="Activate" accent="#10b981" onClick={() => confirmAction("activate", row)} />
-            : <ActionBtn label="Suspend"  accent="#ef4444"  onClick={() => confirmAction("suspend", row)} />
-          }
-        </div>
+        <ActionsDropdown
+          row={row}
+          onView={() => navigate(`/superadmin/tenants/${row.id}`)}
+          onEdit={() => navigate(`/superadmin/tenants/${row.id}/edit`)}
+          onSuspend={() => confirmAction("suspend", row)}
+          onActivate={() => confirmAction("activate", row)}
+        />
       ),
     },
   ];
@@ -300,17 +299,191 @@ export default function TenantList() {
   );
 }
 
-function ActionBtn({ label, accent, onClick }) {
+function ActionsDropdown({ row, onView, onEdit, onSuspend, onActivate }) {
+  const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+
+  // Position menu relative to trigger using fixed coords (avoids table clip)
+  const openMenu = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const menuWidth = 176;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const menuHeight = 160;
+      const top = spaceBelow > menuHeight
+        ? rect.bottom + 4
+        : rect.top - menuHeight - 4;
+      const left = Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8);
+      setMenuPos({ top, left });
+    }
+    setOpen(true);
+  };
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handle = (e) => {
+      if (
+        menuRef.current && !menuRef.current.contains(e.target) &&
+        triggerRef.current && !triggerRef.current.contains(e.target)
+      ) setOpen(false);
+    };
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
+
+  // Close on scroll
+  useEffect(() => {
+    if (!open) return;
+    const handle = () => setOpen(false);
+    window.addEventListener("scroll", handle, true);
+    return () => window.removeEventListener("scroll", handle, true);
+  }, [open]);
+
+  const isSuspended = row.status === "suspended";
+
+  const items = [
+    {
+      label: "View Details",
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      ),
+      color: "#00aeec",
+      onClick: onView,
+    },
+    {
+      label: "Edit Tenant",
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      ),
+      color: "var(--c-text2)",
+      onClick: onEdit,
+    },
+    { divider: true },
+    isSuspended
+      ? {
+          label: "Activate Tenant",
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          ),
+          color: "#10b981",
+          onClick: onActivate,
+        }
+      : {
+          label: "Suspend Tenant",
+          icon: (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+          ),
+          color: "#ef4444",
+          onClick: onSuspend,
+          danger: true,
+        },
+  ];
+
   return (
-    <button
-      onClick={onClick}
-      className="text-xs font-medium transition-colors"
-      style={{ color: accent }}
-      onMouseEnter={(e) => e.currentTarget.style.opacity = "0.75"}
-      onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
-    >
-      {label}
-    </button>
+    <div style={{ position: "relative" }}>
+      {/* Trigger — three-dot button */}
+      <button
+        ref={triggerRef}
+        onClick={(e) => { e.stopPropagation(); open ? setOpen(false) : openMenu(); }}
+        className="flex items-center justify-center rounded-lg transition-all"
+        style={{
+          width: 32, height: 32,
+          background: open ? "var(--c-surface2)" : "transparent",
+          border: open ? "1px solid var(--c-border)" : "1px solid transparent",
+          color: "var(--c-muted)",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "var(--c-surface2)";
+          e.currentTarget.style.border = "1px solid var(--c-border)";
+          e.currentTarget.style.color = "var(--c-text2)";
+        }}
+        onMouseLeave={(e) => {
+          if (!open) {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.border = "1px solid transparent";
+            e.currentTarget.style.color = "var(--c-muted)";
+          }
+        }}
+        title="Actions"
+      >
+        {/* Vertical three dots */}
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="5"  r="1.5" />
+          <circle cx="12" cy="12" r="1.5" />
+          <circle cx="12" cy="19" r="1.5" />
+        </svg>
+      </button>
+
+      {/* Dropdown portal rendered via fixed position */}
+      {open && (
+        <div
+          ref={menuRef}
+          style={{
+            position: "fixed",
+            top: menuPos.top,
+            left: menuPos.left,
+            width: 176,
+            zIndex: 9999,
+            background: "var(--c-surface)",
+            border: "1px solid var(--c-border)",
+            borderRadius: 12,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12)",
+            overflow: "hidden",
+            animation: "fadeScaleIn 0.12s ease",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Gradient top accent */}
+          <div style={{ height: 2, background: "linear-gradient(90deg, #00aeec, #8b5cf6)" }} />
+
+          <div style={{ padding: "4px 0" }}>
+            {items.map((item, i) =>
+              item.divider ? (
+                <div
+                  key={`div-${i}`}
+                  style={{ height: 1, margin: "4px 10px", background: "var(--c-border)" }}
+                />
+              ) : (
+                <button
+                  key={item.label}
+                  onClick={() => { setOpen(false); item.onClick(); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-all text-left"
+                  style={{ color: item.color, background: "transparent" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = item.danger
+                      ? "rgba(239,68,68,0.08)"
+                      : "var(--c-surface2)";
+                  }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                >
+                  <span style={{ color: item.color, opacity: 0.85, flexShrink: 0 }}>
+                    {item.icon}
+                  </span>
+                  <span className="font-medium">{item.label}</span>
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
