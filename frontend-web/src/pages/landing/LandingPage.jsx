@@ -711,7 +711,7 @@ function LoginPanel({ onBack }) {
 
         {/* Card footer */}
         <div style={{ padding: "18px 36px 26px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 12, color: "#1e2d45", letterSpacing: "0.03em" }}>Restricted access</span>
+          <span style={{ fontSize: 12, color: "#475569", letterSpacing: "0.04em" }}>Restricted access</span>
 
           {/* Animated ORT brand */}
           <motion.div
