@@ -85,7 +85,7 @@ externalPort = 8000
 [deployment]
 deploymentTarget = "vm"
 run = ["sh", "-c", "python -m uvicorn backend.main:app --host 0.0.0.0 --port 5001"]
-build = ["sh", "-c", "cd frontend-web && npm install && npm run build"]
+build = ["sh", "-c", "pip install -e . && cd frontend-web && npm install && npm run build"]
 
 [postMerge]
 path = "scripts/post-merge.sh"
