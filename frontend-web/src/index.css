@@ -105,6 +105,8 @@ html.theme-light {
 
   .btn-danger { @apply bg-red-600 hover:bg-red-500 text-white text-sm font-semibold py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed; }
 
+  .input-bg { background-color: var(--c-surface2); }
+
   .input-field {
     background-color: var(--c-surface2);
     border: 1px solid var(--c-border);
@@ -210,4 +212,5 @@ html.theme-light .border-gray-600 { border-color: #b8d0e8 !important; }
 html.theme-light .hover\:border-gray-600:hover { border-color: var(--c-accent) !important; }
 
 /* Input overrides */
-html.theme-light .input-field { background-color: #ffffff !important; }
+html.theme-light .input-field  { background-color: #ffffff !important; }
+html.theme-light .input-bg     { background-color: #ffffff !important; }

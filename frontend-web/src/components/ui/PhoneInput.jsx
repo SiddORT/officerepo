@@ -103,17 +103,16 @@ export default function PhoneInput({
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label className="text-xs font-medium t-muted">
+        <label className="text-sm font-medium t-body">
           {label}
-          {required && <span className="text-red-400 ml-0.5">*</span>}
+          {required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
 
       <div
-        className="flex items-stretch rounded-lg overflow-visible"
+        className="input-bg flex items-stretch rounded-lg overflow-visible"
         style={{
           border: `1px solid ${error ? "rgba(239,68,68,0.6)" : "var(--c-border)"}`,
-          background: "var(--c-surface2)",
           transition: "border-color 0.15s",
           position: "relative",
         }}
@@ -128,7 +127,7 @@ export default function PhoneInput({
             style={{
               borderRight: "1px solid var(--c-border)",
               background: open ? "rgba(0,174,236,0.06)" : "transparent",
-              borderRadius: "8px 0 0 8px",
+              borderRadius: "7px 0 0 7px",
               minWidth: 88,
               color: "var(--c-text)",
             }}
