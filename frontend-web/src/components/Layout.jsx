@@ -127,16 +127,17 @@ export default function Layout({ children }) {
       {/* ── Sidebar ─────────────────────────────────────────────────── */}
       <aside className={`layout-sidebar ${collapsed ? "w-[64px]" : "w-[220px]"} flex flex-col flex-shrink-0 transition-all duration-200`}>
 
-        {/* ORT Logo */}
-        <div className={`flex items-center border-b layout-border ${collapsed ? "justify-center px-3 py-4" : "px-4 py-4"} gap-3`}>
-          <img
-            src={isDark ? "/ort-logo-dark.png" : "/ort-logo-light.jpg"}
-            alt="ORT"
-            className={`object-contain flex-shrink-0 ${collapsed ? "h-7 w-auto" : "h-8 w-auto max-w-[110px]"}`}
-          />
-          {!collapsed && (
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold tracking-widest uppercase layout-label-muted">Office Repo</p>
+        {/* Product wordmark */}
+        <div className={`border-b layout-border ${collapsed ? "flex justify-center px-3 py-4" : "px-5 py-4"}`}>
+          {collapsed ? (
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: "linear-gradient(135deg,#00aeec,#8b5cf6)" }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", fontFamily: "monospace" }}>OR</span>
+            </div>
+          ) : (
+            <div>
+              <p className="text-[15px] font-bold tracking-tight layout-title leading-tight">Office Repo</p>
+              <p className="text-[10px] tracking-widest uppercase layout-label-muted mt-0.5">Unified Workplace Management</p>
             </div>
           )}
         </div>
