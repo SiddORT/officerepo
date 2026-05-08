@@ -74,11 +74,11 @@ function PageBtn({ label, onClick, disabled, active }) {
   };
 
   const hoveredStyle = {
-    background: "linear-gradient(135deg, rgba(0,174,236,0.12), rgba(139,92,246,0.10))",
+    background: "linear-gradient(135deg, rgba(0,174,236,0.18), rgba(139,92,246,0.15))",
     color: "#00aeec",
-    border: "1px solid rgba(0,174,236,0.35)",
-    boxShadow: "0 2px 8px rgba(0,174,236,0.15)",
-    transform: "translateY(-1px)",
+    border: "1px solid rgba(0,174,236,0.50)",
+    boxShadow: "0 4px 14px rgba(0,174,236,0.25), 0 0 0 2px rgba(0,174,236,0.10)",
+    transform: "translateY(-2px) scale(1.08)",
   };
 
   const idleStyle = {

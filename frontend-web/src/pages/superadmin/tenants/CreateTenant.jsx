@@ -37,6 +37,7 @@ const STEPS = [
 export default function CreateTenant() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
+  const [hoveredStep, setHoveredStep] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [globalError, setGlobalError] = useState("");
@@ -172,45 +173,78 @@ export default function CreateTenant() {
             const isActive    = i === step;
             const isCompleted = i < step;
             const isPending   = i > step;
+            const isHovered   = hoveredStep === i;
+            const isClickable = isCompleted;
+
+            const circleStyle = (() => {
+              const base = {
+                transition: "all 0.2s ease",
+                cursor: isClickable ? "pointer" : "default",
+                width: 28, height: 28, borderRadius: "50%",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11, fontWeight: 700, flexShrink: 0,
+              };
+              if (isCompleted && isHovered) return { ...base,
+                background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
+                color: "#fff",
+                transform: "scale(1.18)",
+                boxShadow: "0 0 0 4px rgba(0,174,236,0.28), 0 4px 14px rgba(139,92,246,0.30)",
+              };
+              if (isActive && isHovered) return { ...base,
+                background: "linear-gradient(135deg, #00c4ff, #a78bfa)",
+                color: "#fff",
+                transform: "scale(1.10)",
+                boxShadow: "0 0 0 5px rgba(0,174,236,0.30), 0 0 0 8px rgba(139,92,246,0.14)",
+              };
+              if (isPending && isHovered) return { ...base,
+                background: "linear-gradient(135deg, rgba(0,174,236,0.18), rgba(139,92,246,0.15))",
+                color: "#00aeec",
+                border: "1px solid rgba(0,174,236,0.40)",
+                transform: "scale(1.10)",
+                boxShadow: "0 2px 10px rgba(0,174,236,0.18)",
+              };
+              if (isActive || isCompleted) return { ...base,
+                background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
+                color: "#fff",
+                boxShadow: isActive
+                  ? "0 0 0 3px rgba(0,174,236,0.22), 0 0 0 5px rgba(139,92,246,0.10)"
+                  : "none",
+              };
+              return { ...base,
+                backgroundColor: "var(--c-surface2)",
+                color: "var(--c-muted)",
+                border: "1px solid var(--c-border)",
+              };
+            })();
+
+            const rowStyle = {
+              transition: "background 0.18s ease",
+              borderRadius: 10,
+              padding: "2px 6px 2px 0",
+              cursor: isClickable ? "pointer" : "default",
+              background: isHovered && isClickable
+                ? "rgba(0,174,236,0.06)"
+                : "transparent",
+            };
+
             return (
-              <div key={s.label} className="flex gap-3 group">
+              <div
+                key={s.label}
+                className="flex gap-3"
+                onMouseEnter={() => setHoveredStep(i)}
+                onMouseLeave={() => setHoveredStep(null)}
+                onClick={() => isClickable && setStep(i)}
+              >
                 {/* Line + circle */}
                 <div className="flex flex-col items-center" style={{ minWidth: 28 }}>
-                  <div
-                    onClick={() => isCompleted && setStep(i)}
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all"
-                    style={{
-                      cursor: isCompleted ? "pointer" : "default",
-                      ...(isActive || isCompleted
-                        ? {
-                            background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
-                            color: "#fff",
-                            boxShadow: isActive
-                              ? "0 0 0 3px rgba(0,174,236,0.22), 0 0 0 5px rgba(139,92,246,0.10)"
-                              : "none",
-                          }
-                        : { backgroundColor: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }),
-                    }}
-                    onMouseEnter={(e) => {
-                      if (isCompleted) {
-                        e.currentTarget.style.transform = "scale(1.12)";
-                        e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0,174,236,0.30), 0 4px 12px rgba(139,92,246,0.25)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "scale(1)";
-                      e.currentTarget.style.boxShadow = isActive
-                        ? "0 0 0 3px rgba(0,174,236,0.22), 0 0 0 5px rgba(139,92,246,0.10)"
-                        : "none";
-                    }}
-                  >
+                  <div style={circleStyle}>
                     {isCompleted ? "✓" : i + 1}
                   </div>
                   {i < STEPS.length - 1 && (
                     <div
-                      className="w-px flex-1 my-1 transition-all"
                       style={{
-                        minHeight: 28,
+                        width: 1, flex: 1, minHeight: 28, margin: "4px 0",
+                        transition: "background 0.3s ease",
                         background: isCompleted
                           ? "linear-gradient(to bottom, #00aeec, #8b5cf6)"
                           : "var(--c-border)",
@@ -220,26 +254,29 @@ export default function CreateTenant() {
                 </div>
 
                 {/* Text */}
-                <div
-                  className="pb-6 transition-all"
-                  onClick={() => isCompleted && setStep(i)}
-                  style={{ cursor: isCompleted ? "pointer" : "default" }}
-                >
+                <div className="pb-6" style={rowStyle}>
                   <p
-                    className="text-sm font-semibold transition-all"
-                    style={
-                      isActive
+                    className="text-sm font-semibold"
+                    style={{
+                      transition: "all 0.18s ease",
+                      ...(isActive
                         ? { background: "linear-gradient(135deg,#00aeec,#8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }
-                        : { color: isCompleted ? "var(--c-text)" : "var(--c-muted)" }
-                    }
+                        : isHovered && isCompleted
+                          ? { color: "#00aeec" }
+                          : { color: isCompleted ? "var(--c-text)" : "var(--c-muted)" }),
+                    }}
                   >
                     {s.label}
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: isActive ? "var(--c-text2)" : "var(--c-muted)", opacity: isPending ? 0.6 : 1 }}>
+                  <p className="text-xs mt-0.5" style={{
+                    color: "var(--c-muted)",
+                    opacity: isHovered ? 1 : isPending ? 0.55 : 0.8,
+                    transition: "opacity 0.18s ease",
+                  }}>
                     {s.desc}
                   </p>
-                  {isCompleted && (
-                    <p className="text-[10px] mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "#00aeec" }}>
+                  {isCompleted && isHovered && (
+                    <p className="text-[10px] mt-0.5" style={{ color: "#00aeec" }}>
                       Click to edit ↩
                     </p>
                   )}
