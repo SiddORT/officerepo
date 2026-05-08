@@ -1,69 +1,129 @@
-import React from "react";
+import React, { useState } from "react";
 
 export default function Table({
   columns, data, loading, emptyMessage = "No records found.",
   onSort, sortKey, sortDir, className = "",
 }) {
+  const [hoveredRow, setHoveredRow] = useState(null);
+
   return (
     <div
       className={`overflow-hidden rounded-xl ${className}`}
       style={{
         border: "1px solid var(--c-border)",
-        boxShadow: "0 4px 24px 0 rgba(0,0,0,0.18), 0 1.5px 6px 0 rgba(0,174,236,0.04)",
+        boxShadow: "0 4px 32px rgba(0,0,0,0.18), 0 1.5px 6px rgba(0,174,236,0.05)",
+        position: "relative",
       }}
     >
-      <div className="overflow-x-auto">
+      {/* Gradient top accent bar */}
+      <div style={{
+        height: 3,
+        background: "linear-gradient(90deg, #00aeec 0%, #8b5cf6 100%)",
+        position: "absolute", top: 0, left: 0, right: 0, zIndex: 1,
+      }} />
+
+      <div className="overflow-x-auto" style={{ paddingTop: 3 }}>
         <table className="w-full text-sm">
-          <thead className="t-table-header">
-            <tr>
-              {columns.map((col) => (
+
+          {/* Header */}
+          <thead>
+            <tr style={{ background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
+              {columns.map((col, ci) => (
                 <th
                   key={col.key}
-                  className={[
-                    "text-left px-4 py-3.5 text-xs font-semibold t-muted uppercase tracking-wider whitespace-nowrap",
-                    col.sortable ? "cursor-pointer select-none hover:t-accent transition-colors" : "",
-                  ].join(" ")}
-                  style={{ width: col.width }}
                   onClick={() => col.sortable && onSort?.(col.key)}
+                  style={{ width: col.width }}
+                  className={[
+                    "px-4 py-3 text-left text-xs font-semibold uppercase tracking-widest whitespace-nowrap select-none",
+                    col.sortable ? "cursor-pointer" : "",
+                  ].join(" ")}
                 >
-                  <span className="flex items-center gap-1">
+                  <span
+                    className="inline-flex items-center gap-1.5"
+                    style={
+                      col.sortable && sortKey === col.key
+                        ? { background: "linear-gradient(135deg,#00aeec,#8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }
+                        : { color: "var(--c-muted)" }
+                    }
+                  >
                     {col.label}
-                    {col.sortable && sortKey === col.key && (
-                      <span style={{ color: "var(--c-accent)" }}>{sortDir === "asc" ? "↑" : "↓"}</span>
+                    {col.sortable && (
+                      <span style={{
+                        opacity: sortKey === col.key ? 1 : 0.3,
+                        fontSize: 10,
+                        color: sortKey === col.key ? "#00aeec" : "var(--c-muted)",
+                      }}>
+                        {sortKey === col.key && sortDir === "desc" ? "↓" : "↑"}
+                      </span>
                     )}
                   </span>
                 </th>
               ))}
             </tr>
           </thead>
+
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-12 text-center t-muted">
-                  <div className="flex items-center justify-center gap-2">
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Loading...
+                <td colSpan={columns.length} className="px-4 py-16 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div style={{
+                      width: 36, height: 36, borderRadius: "50%",
+                      background: "conic-gradient(from 0deg, #00aeec, #8b5cf6, transparent)",
+                      animation: "spin 0.8s linear infinite",
+                    }} />
+                    <span className="text-xs t-muted tracking-wide">Loading data…</span>
                   </div>
                 </td>
               </tr>
             ) : data.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-14 text-center t-muted">
-                  {emptyMessage}
+                <td colSpan={columns.length} className="px-4 py-16 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12,
+                      background: "var(--c-surface2)",
+                      border: "1px solid var(--c-border)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: "var(--c-muted)" }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium t-body">{emptyMessage}</p>
+                      <p className="text-xs t-muted mt-0.5">Nothing to display yet</p>
+                    </div>
+                  </div>
                 </td>
               </tr>
             ) : (
               data.map((row, i) => (
                 <tr
                   key={row.id ?? i}
-                  className="t-table-row transition-colors"
-                  style={{ borderTop: "1px solid var(--c-border)" }}
+                  onMouseEnter={() => setHoveredRow(i)}
+                  onMouseLeave={() => setHoveredRow(null)}
+                  style={{
+                    borderTop: "1px solid var(--c-border)",
+                    background: hoveredRow === i
+                      ? "linear-gradient(90deg, rgba(0,174,236,0.04) 0%, rgba(139,92,246,0.03) 100%)"
+                      : "transparent",
+                    transition: "background 0.15s ease",
+                    position: "relative",
+                  }}
                 >
-                  {columns.map((col) => (
-                    <td key={col.key} className="px-4 py-3.5 t-body">
+                  {columns.map((col, ci) => (
+                    <td
+                      key={col.key}
+                      className="px-4 py-3.5 t-body"
+                      style={{
+                        borderLeft: ci === 0 && hoveredRow === i
+                          ? "2px solid #00aeec"
+                          : ci === 0 ? "2px solid transparent" : undefined,
+                        transition: "border-color 0.15s ease",
+                      }}
+                    >
                       {col.render ? col.render(row[col.key], row, i) : (row[col.key] ?? "—")}
                     </td>
                   ))}
