@@ -4,6 +4,7 @@ import { tenantMgmtApi } from "../../../services/apiClient";
 import Input from "../../../components/ui/Input";
 import Select from "../../../components/ui/Select";
 import Toggle from "../../../components/ui/Toggle";
+import PhoneInput from "../../../components/ui/PhoneInput";
 
 const PLAN_OPTIONS = [
   { value: "Starter",    label: "Starter" },
@@ -44,7 +45,7 @@ export default function CreateTenant() {
 
   const [form, setForm] = useState({
     tenant_name: "", tenant_code: "", company_email: "",
-    contact_number: "", company_website: "", timezone: "UTC", region: "",
+    contact_dial: "+91", contact_number: "", company_website: "", timezone: "UTC", region: "",
     subdomain: "", custom_domain: "",
     db_name: "", db_host: "", db_port: "5432", db_username: "", db_password: "",
     plan_name: "Starter", trial_start: "", trial_end: "", user_limit: "25", storage_limit: "1024",
@@ -70,7 +71,7 @@ export default function CreateTenant() {
       if (!form.company_email.trim()) errs.company_email = "Company email is required.";
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.company_email))
         errs.company_email = "Enter a valid email.";
-      if (form.contact_number && !/^\+?[0-9\s\-().]{7,20}$/.test(form.contact_number))
+      if (form.contact_number && !/^[0-9\s\-().]{5,18}$/.test(form.contact_number))
         errs.contact_number = "Enter a valid phone number.";
       if (form.company_website && !/^(https?:\/\/)?([a-zA-Z0-9\-]+\.)+[a-zA-Z]{2,}/.test(form.company_website))
         errs.company_website = "Enter a valid URL.";
@@ -108,7 +109,7 @@ export default function CreateTenant() {
         tenant_name:      form.tenant_name.trim(),
         tenant_code:      form.tenant_code.trim(),
         company_email:    form.company_email.trim().toLowerCase(),
-        contact_number:   form.contact_number || null,
+        contact_number:   form.contact_number ? `${form.contact_dial} ${form.contact_number.trim()}` : null,
         company_website:  form.company_website || null,
         timezone:         form.timezone,
         region:           form.region || null,
@@ -395,9 +396,14 @@ function StepBasicInfo({ form, set, errors, autoCode }) {
       <Input label="Company Email" required type="email" value={form.company_email} error={errors.company_email}
         placeholder="admin@acmecorp.com"
         onChange={(e) => set("company_email", e.target.value)} />
-      <Input label="Contact Number" type="tel" value={form.contact_number} error={errors.contact_number}
-        placeholder="+1 555 000 0000"
-        onChange={(e) => set("contact_number", e.target.value)} />
+      <PhoneInput
+        label="Contact Number"
+        dialCode={form.contact_dial}
+        onDialCodeChange={(v) => set("contact_dial", v)}
+        number={form.contact_number}
+        onNumberChange={(v) => set("contact_number", v)}
+        error={errors.contact_number}
+      />
       <Input label="Company Website" type="url" value={form.company_website} error={errors.company_website}
         placeholder="https://acmecorp.com"
         onChange={(e) => set("company_website", e.target.value)} />
