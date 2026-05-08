@@ -78,6 +78,15 @@ export default function TenantList() {
 
   const columns = [
     {
+      key: "_sr",
+      label: "Sr. No",
+      render: (_, _row, index) => (
+        <span className="t-muted text-xs tabular-nums">
+          {(page - 1) * pageSize + index + 1}
+        </span>
+      ),
+    },
+    {
       key: "tenant_name",
       label: "Tenant Name",
       sortable: true,

@@ -55,7 +55,7 @@ export default function Table({ columns, data, loading, emptyMessage = "No recor
                 >
                   {columns.map((col) => (
                     <td key={col.key} className="px-4 py-3.5 t-body">
-                      {col.render ? col.render(row[col.key], row) : (row[col.key] ?? "—")}
+                      {col.render ? col.render(row[col.key], row, i) : (row[col.key] ?? "—")}
                     </td>
                   ))}
                 </tr>

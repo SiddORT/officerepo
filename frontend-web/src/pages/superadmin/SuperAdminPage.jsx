@@ -124,7 +124,7 @@ export default function SuperAdminPage() {
           <table className="w-full text-sm">
             <thead className="t-table-header">
               <tr>
-                {["ID", "Name", "Slug", "Status", "Actions"].map((h) => (
+                {["Sr. No", "ID", "Name", "Slug", "Status", "Actions"].map((h) => (
                   <th key={h} className="text-left px-5 py-3 text-xs font-semibold t-muted uppercase tracking-wider">
                     {h}
                   </th>
@@ -139,8 +139,9 @@ export default function SuperAdminPage() {
                   </td>
                 </tr>
               ) : (
-                tenants.map((tenant) => (
+                tenants.map((tenant, index) => (
                   <tr key={tenant.id} className="t-table-row t-table-divider border-t transition-colors">
+                    <td className="px-5 py-3.5 t-muted text-xs tabular-nums">{index + 1}</td>
                     <td className="px-5 py-3.5 t-muted">#{tenant.id}</td>
                     <td className="px-5 py-3.5 font-medium t-heading">{tenant.name}</td>
                     <td className="px-5 py-3.5 t-body font-mono text-xs">{tenant.slug}</td>
