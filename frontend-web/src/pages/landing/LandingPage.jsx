@@ -710,9 +710,58 @@ function LoginPanel({ onBack }) {
         </div>
 
         {/* Card footer */}
-        <div style={{ padding: "14px 36px 20px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 12, color: "#1e2d45" }}>Restricted access</span>
-          <span style={{ fontSize: 12, color: "#334155", fontFamily: "monospace", letterSpacing: "0.05em" }}>by <span style={{ color: "#00aeec" }}>ort_</span></span>
+        <div style={{ padding: "18px 36px 26px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 12, color: "#1e2d45", letterSpacing: "0.03em" }}>Restricted access</span>
+
+          {/* Animated ORT brand */}
+          <motion.div
+            style={{ display: "flex", alignItems: "center", gap: 7 }}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.2, duration: 0.6, ease: EASE_CINEMA }}
+          >
+            <span style={{ fontSize: 12, color: "#334155", letterSpacing: "0.04em" }}>by</span>
+            <motion.div
+              style={{ position: "relative", display: "flex", alignItems: "center" }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            >
+              {/* Glow behind text */}
+              <motion.div
+                style={{
+                  position: "absolute", inset: "-4px -8px", borderRadius: 6,
+                  background: "radial-gradient(ellipse, rgba(0,174,236,0.18) 0%, transparent 70%)",
+                }}
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+              />
+              {/* Shimmer sweep */}
+              <motion.div
+                style={{
+                  position: "absolute", inset: 0, borderRadius: 4,
+                  background: "linear-gradient(105deg, transparent 30%, rgba(0,174,236,0.35) 50%, transparent 70%)",
+                  opacity: 0,
+                }}
+                animate={{ opacity: [0, 1, 0], x: ["-80%", "80%"] }}
+                transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 2.5, ease: "easeInOut" }}
+              />
+              <span
+                style={{
+                  position: "relative",
+                  fontSize: 15,
+                  fontWeight: 800,
+                  fontFamily: "monospace",
+                  letterSpacing: "0.06em",
+                  background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                ort_
+              </span>
+            </motion.div>
+          </motion.div>
         </div>
         </motion.div>
       </motion.div>
