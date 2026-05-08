@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 
@@ -161,8 +162,9 @@ export default function Layout({ children }) {
           ))}
         </nav>
 
-        {/* Sidebar footer — collapse toggle only */}
-        <div className="px-2 pb-4 border-t layout-border pt-3">
+        {/* Sidebar footer */}
+        <div className="px-2 pb-3 border-t layout-border pt-3 flex flex-col gap-1">
+          {/* Collapse toggle */}
           <button
             onClick={() => setCollapsed((c) => !c)}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -176,6 +178,42 @@ export default function Layout({ children }) {
             </svg>
             {!collapsed && <span className="text-xs">Collapse</span>}
           </button>
+
+          {/* by ort_ brand mark */}
+          {!collapsed && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, paddingRight: 6, paddingTop: 2 }}
+            >
+              <span style={{ fontSize: 10, color: "#475569", letterSpacing: "0.05em" }}>by</span>
+              <motion.div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+                {/* breathing glow behind ort_ */}
+                <motion.div
+                  animate={{ opacity: [0.25, 0.55, 0.25] }}
+                  transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+                  style={{
+                    position: "absolute", inset: "-3px -6px",
+                    background: "radial-gradient(ellipse at center, rgba(0,174,236,0.35) 0%, transparent 70%)",
+                    borderRadius: 6, pointerEvents: "none",
+                  }}
+                />
+                <motion.span
+                  whileHover={{ scale: 1.08 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  style={{
+                    fontSize: 13, fontWeight: 700, fontFamily: "monospace", letterSpacing: "0.04em",
+                    background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
+                    WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                    backgroundClip: "text", position: "relative", cursor: "default",
+                  }}
+                >
+                  ort_
+                </motion.span>
+              </motion.div>
+            </motion.div>
+          )}
         </div>
       </aside>
 
