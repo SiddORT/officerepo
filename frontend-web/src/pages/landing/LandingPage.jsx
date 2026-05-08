@@ -441,8 +441,12 @@ function LoginPanel({ onBack }) {
     setError("");
     setLoading(true);
     try {
-      const res = await authApi.superadminLogin({ email, password });
-      login(res.data.access_token, res.data.refresh_token);
+      const res = await authApi.superAdminLogin(email, password);
+      const data = res.data;
+      login(
+        { email, role: data.role, tenant_id: data.tenant_id, user_id: data.user_id },
+        { access_token: data.access_token, refresh_token: data.refresh_token }
+      );
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.detail || "Invalid credentials.");
