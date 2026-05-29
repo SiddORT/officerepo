@@ -533,5 +533,207 @@ class TestCorsAllowedHeaders(unittest.TestCase):
         )
 
 
+class TestCorsOriginEdgeCases(unittest.TestCase):
+    """CORS middleware must handle malformed, unusual, and absent Origin headers safely.
+
+    Edge cases tested:
+      - null origin (sent by browsers for sandboxed iframes / data: URIs)
+      - data: URI origin
+      - file:// URI origin
+      - Origins with leading/trailing whitespace
+      - Origins that differ only in case (HTTPS://APP.OFFICEREPO.IO)
+      - Preflight sent with no Origin header at all (invalid but possible)
+    """
+
+    ALLOWED = "https://app.officerepo.io"
+
+    def setUp(self):
+        app = _build_cors_app([self.ALLOWED])
+        self.client = TestClient(app, raise_server_exceptions=True)
+
+    # ── null / special scheme origins ─────────────────────────────────────
+
+    def test_preflight_null_origin_is_rejected(self):
+        """Browsers send Origin: null for sandboxed iframes — must be rejected."""
+        resp = self.client.options(
+            "/ping",
+            headers={
+                "Origin": "null",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        self.assertEqual(
+            resp.status_code,
+            400,
+            f"Preflight with Origin: null must be rejected with 400, got {resp.status_code}",
+        )
+        self.assertNotIn(
+            "access-control-allow-origin",
+            resp.headers,
+            "Rejected null-origin preflight must NOT include Access-Control-Allow-Origin",
+        )
+
+    def test_simple_request_null_origin_has_no_acao_header(self):
+        """Simple GET with Origin: null must not receive CORS headers."""
+        resp = self.client.get("/ping", headers={"Origin": "null"})
+        self.assertNotIn(
+            "access-control-allow-origin",
+            resp.headers,
+            "Simple request with Origin: null must NOT include Access-Control-Allow-Origin",
+        )
+
+    def test_preflight_data_uri_origin_is_rejected(self):
+        """data: URI is not a valid CORS origin — must be rejected."""
+        resp = self.client.options(
+            "/ping",
+            headers={
+                "Origin": "data:",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        self.assertNotIn(
+            "access-control-allow-origin",
+            resp.headers,
+            "Preflight with data: origin must NOT include Access-Control-Allow-Origin",
+        )
+
+    def test_simple_request_data_uri_origin_has_no_acao_header(self):
+        resp = self.client.get("/ping", headers={"Origin": "data:"})
+        self.assertNotIn(
+            "access-control-allow-origin",
+            resp.headers,
+            "Simple request with data: origin must NOT include Access-Control-Allow-Origin",
+        )
+
+    def test_preflight_file_uri_origin_is_rejected(self):
+        """file:// origin (local filesystem) is not a valid CORS origin."""
+        resp = self.client.options(
+            "/ping",
+            headers={
+                "Origin": "file://",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        self.assertNotIn(
+            "access-control-allow-origin",
+            resp.headers,
+            "Preflight with file:// origin must NOT include Access-Control-Allow-Origin",
+        )
+
+    def test_simple_request_file_uri_origin_has_no_acao_header(self):
+        resp = self.client.get("/ping", headers={"Origin": "file://"})
+        self.assertNotIn(
+            "access-control-allow-origin",
+            resp.headers,
+            "Simple request with file:// origin must NOT include Access-Control-Allow-Origin",
+        )
+
+    # ── whitespace-padded origins ──────────────────────────────────────────
+
+    def test_preflight_origin_with_leading_whitespace_is_rejected(self):
+        """' https://app.officerepo.io' (leading space) must not match the listed origin."""
+        resp = self.client.options(
+            "/ping",
+            headers={
+                "Origin": f" {self.ALLOWED}",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        self.assertNotIn(
+            "access-control-allow-origin",
+            resp.headers,
+            "Preflight with leading-whitespace origin must NOT include Access-Control-Allow-Origin",
+        )
+
+    def test_preflight_origin_with_trailing_whitespace_is_rejected(self):
+        """'https://app.officerepo.io ' (trailing space) must not match the listed origin."""
+        resp = self.client.options(
+            "/ping",
+            headers={
+                "Origin": f"{self.ALLOWED} ",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        self.assertNotIn(
+            "access-control-allow-origin",
+            resp.headers,
+            "Preflight with trailing-whitespace origin must NOT include Access-Control-Allow-Origin",
+        )
+
+    # ── case-sensitivity ───────────────────────────────────────────────────
+
+    def test_preflight_uppercase_scheme_is_rejected(self):
+        """HTTPS://app.officerepo.io differs in case — must NOT be accepted."""
+        resp = self.client.options(
+            "/ping",
+            headers={
+                "Origin": "HTTPS://app.officerepo.io",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        self.assertNotIn(
+            "access-control-allow-origin",
+            resp.headers,
+            "Preflight with upper-case scheme must NOT include Access-Control-Allow-Origin",
+        )
+
+    def test_preflight_mixed_case_host_is_rejected(self):
+        """https://App.OfficereRepo.io differs in case — must NOT be accepted."""
+        resp = self.client.options(
+            "/ping",
+            headers={
+                "Origin": "https://App.OfficereRepo.io",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        self.assertNotIn(
+            "access-control-allow-origin",
+            resp.headers,
+            "Preflight with mixed-case host must NOT include Access-Control-Allow-Origin",
+        )
+
+    def test_simple_request_mixed_case_host_has_no_acao_header(self):
+        """Simple GET with https://APP.OFFICEREPO.IO must not receive CORS headers."""
+        resp = self.client.get(
+            "/ping", headers={"Origin": "https://APP.OFFICEREPO.IO"}
+        )
+        self.assertNotIn(
+            "access-control-allow-origin",
+            resp.headers,
+            "Simple request with upper-case host must NOT include Access-Control-Allow-Origin",
+        )
+
+    # ── missing Origin header ──────────────────────────────────────────────
+
+    def test_preflight_without_origin_header_has_no_acao_header(self):
+        """OPTIONS request with no Origin header is technically invalid.
+
+        Starlette passes it through to the route handler rather than treating
+        it as a CORS preflight, so no CORS response headers should be set.
+        """
+        resp = self.client.options(
+            "/ping",
+            headers={"Access-Control-Request-Method": "GET"},
+        )
+        self.assertNotIn(
+            "access-control-allow-origin",
+            resp.headers,
+            "OPTIONS without Origin header must NOT include Access-Control-Allow-Origin",
+        )
+
+    def test_preflight_without_origin_does_not_set_vary_on_origin(self):
+        """With no Origin present, Vary: Origin should not be set by CORS middleware."""
+        resp = self.client.options(
+            "/ping",
+            headers={"Access-Control-Request-Method": "GET"},
+        )
+        vary = resp.headers.get("vary", "")
+        self.assertNotIn(
+            "origin",
+            vary.lower(),
+            "OPTIONS without Origin header must not add Origin to the Vary header",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
