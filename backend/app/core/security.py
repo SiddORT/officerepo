@@ -43,12 +43,19 @@ def create_refresh_token(data: Dict[str, Any], expires_delta: Optional[timedelta
 
 
 def decode_access_token(token: str) -> Dict[str, Any]:
+    """Verify *token* and return its payload.
+
+    The verified ``kid`` (key ID of the signing secret) is injected into the
+    returned payload under the ``_kid`` key so callers can propagate it to
+    structured logs without re-deriving it.
+    """
     from backend.app.core.fallback_counter import record_fallback_use
     current_kid = _derive_kid(settings.JWT_SECRET)
     try:
         header = jwt.get_unverified_header(token)
         kid = header.get("kid", "unknown")
         payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+        payload["_kid"] = kid
         logger.debug("access token verified kid=%s", kid)
         return payload
     except JWTError:
@@ -64,6 +71,7 @@ def decode_access_token(token: str) -> Dict[str, Any]:
                 current_kid,
             )
             record_fallback_use()
+            payload["_kid"] = header_kid
             return payload
         raise
 

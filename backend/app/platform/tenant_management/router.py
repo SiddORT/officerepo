@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, Query, Request, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -19,11 +19,20 @@ router = APIRouter()
 _bearer = HTTPBearer()
 
 
-def _current_admin(creds: HTTPAuthorizationCredentials = Depends(_bearer)) -> str:
+def _current_admin(
+    request: Request,
+    creds: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> str:
+    """Validate superadmin JWT and expose the verified kid on request state.
+
+    Sets ``request.state.token_kid`` so the TenantMiddleware can emit a
+    structured log record for each successfully authenticated request.
+    """
     try:
         payload = decode_access_token(creds.credentials)
         if payload.get("role") != "superadmin":
             raise HTTPException(status_code=403, detail="Superadmin role required.")
+        request.state.token_kid = payload.get("_kid", "unknown")
         return payload.get("email", "unknown")
     except HTTPException:
         raise
