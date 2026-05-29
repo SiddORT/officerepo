@@ -214,7 +214,8 @@ class Settings(BaseSettings):
         # ALLOWED_ORIGINS
         # In non-development environments, restrict to an explicit list.
         # If ALLOWED_ORIGINS is not set, fall back to the Replit-provided domain
-        # (REPLIT_DOMAINS env var) so the app never crashes at startup over this.
+        # (REPLIT_DOMAINS env var).  If that is also unavailable, raise an error
+        # so the application refuses to start with an insecure CORS config.
         is_restricted = self.ENVIRONMENT.lower() != "development"
         if is_restricted:
             if not self.ALLOWED_ORIGINS.strip():
@@ -231,17 +232,20 @@ class Settings(BaseSettings):
                         self.ALLOWED_ORIGINS,
                     )
                 else:
-                    logger.warning(
-                        "ALLOWED_ORIGINS is not set and REPLIT_DOMAINS is unavailable. "
-                        "Falling back to wildcard CORS — set ALLOWED_ORIGINS in production."
+                    raise ValueError(
+                        "ALLOWED_ORIGINS must be set in production. "
+                        "Provide a comma-separated list of explicit origin URLs "
+                        "(e.g. 'https://app.example.com'). "
+                        "The application cannot start with an empty ALLOWED_ORIGINS "
+                        "in a non-development environment."
                     )
-                    self.ALLOWED_ORIGINS = "*"
             else:
                 origins = [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
                 if "*" in origins:
-                    logger.warning(
-                        "ALLOWED_ORIGINS contains '*' in a non-development environment. "
-                        "Consider specifying explicit origin URLs instead."
+                    raise ValueError(
+                        "ALLOWED_ORIGINS must not contain '*' in production. "
+                        "Wildcards are only permitted in development. "
+                        "Provide explicit origin URLs instead."
                     )
 
         return self
