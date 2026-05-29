@@ -11,6 +11,7 @@ from sqlalchemy import text
 from backend.app.config.settings import settings
 from backend.app.core.middleware import TenantMiddleware
 from backend.app.core.secret_rotation_monitor import run_monitor
+from backend.app.core.security_headers import CSP_POLICY, CSP_EXEMPT_PATHS, add_security_headers
 from backend.app.database.platform import Base, engine, SessionLocal
 
 # Platform models (import to register with metadata)
@@ -222,28 +223,9 @@ app.add_middleware(
 # Tenant resolver middleware
 app.add_middleware(TenantMiddleware)
 
-# Content-Security-Policy — applied to every response.
-_CSP_POLICY = "; ".join([
-    "default-src 'self'",
-    "script-src 'self'",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
-    "connect-src 'self'",
-    "font-src 'self'",
-    "object-src 'none'",
-    "frame-ancestors 'none'",
-    "report-uri /api/v1/csp-report",
-])
-
-_CSP_EXEMPT_PATHS = {"/docs", "/redoc", "/openapi.json"}
-
-
-@app.middleware("http")
-async def add_csp_header(request: Request, call_next):
-    response = await call_next(request)
-    if request.url.path not in _CSP_EXEMPT_PATHS:
-        response.headers["Content-Security-Policy"] = _CSP_POLICY
-    return response
+# Content-Security-Policy — policy and middleware live in security_headers.py
+# so tests can import the real constants without triggering DB side-effects.
+app.middleware("http")(add_security_headers)
 
 
 PREFIX = settings.API_V1_PREFIX
