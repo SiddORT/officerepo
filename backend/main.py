@@ -20,6 +20,7 @@ from backend.app.platform.feature_flags.models import FeatureFlag
 from backend.app.platform.superadmin.models import SuperAdmin
 from backend.app.platform.mobile.models import MobileDeviceSession
 from backend.app.platform.tenant_management.models import TenantBranding, TenantActivityLog
+from backend.app.platform.config.models import PlatformConfig
 
 # Routers
 from backend.app.modules.auth.router import router as auth_router
@@ -90,6 +91,97 @@ def run_schema_migrations():
 
 
 run_schema_migrations()
+
+
+import logging as _startup_logger
+
+_startup_log = _startup_logger.getLogger(__name__)
+
+_ROTATION_TS_KEY = "previous_secret_issued_at"
+
+
+def _upsert_platform_config(db, key: str, value: str) -> None:
+    """Insert or update a single key in platform_config."""
+    from datetime import datetime, timezone as _tz
+    row = db.query(PlatformConfig).filter(PlatformConfig.key == key).first()
+    if row:
+        row.value = value
+        row.updated_at = datetime.now(tz=_tz.utc)
+    else:
+        row = PlatformConfig(key=key, value=value)
+        db.add(row)
+    db.commit()
+
+
+def sync_rotation_timestamp_with_db() -> None:
+    """
+    Synchronise the grace-period origin timestamp between the environment and
+    the platform_config table so the clock survives application restarts.
+
+    Two scenarios are handled:
+
+    1. Env var IS set (not a fallback):
+       The timestamp from PREVIOUS_SECRET_ISSUED_AT is authoritative.
+       Upsert it into platform_config so that if the env var is later removed
+       (e.g. after a key rotation cleanup), the DB value keeps the anchor stable.
+
+    2. Env var is NOT set (fallback was used):
+       Look up the timestamp in platform_config and apply it to settings so
+       the grace-period clock does not reset on every restart.
+       If the DB also has no value, emit the "startup-time fallback" warning
+       to let operators know the expiry is unstable.
+    """
+    has_previous = bool(
+        settings.PREVIOUS_JWT_SECRET or settings.PREVIOUS_REFRESH_SECRET
+    )
+    if not has_previous:
+        return
+
+    db = SessionLocal()
+    try:
+        if not settings._previous_secret_origin_is_fallback:
+            # Env var was set and parsed successfully — persist to DB.
+            iso_value = settings.PREVIOUS_SECRET_ISSUED_AT.strip()
+            _upsert_platform_config(db, _ROTATION_TS_KEY, iso_value)
+            _startup_log.info(
+                "secret rotation: persisted grace-period origin to platform_config "
+                "(%s=%r)", _ROTATION_TS_KEY, iso_value
+            )
+        else:
+            # Env var absent — try the DB.
+            row = db.query(PlatformConfig).filter(
+                PlatformConfig.key == _ROTATION_TS_KEY
+            ).first()
+            if row and row.value:
+                applied = settings.apply_db_rotation_timestamp(row.value)
+                if applied:
+                    _startup_log.info(
+                        "secret rotation: grace-period origin loaded from "
+                        "platform_config (%s=%r)", _ROTATION_TS_KEY, row.value
+                    )
+                    return
+
+            # Neither env var nor DB has a value — warn that the clock is unstable.
+            _startup_log.warning(
+                "PREVIOUS_JWT_SECRET / PREVIOUS_REFRESH_SECRET are set but "
+                "PREVIOUS_SECRET_ISSUED_AT is missing and platform_config has no "
+                "stored value. The grace-period clock will start from application "
+                "startup time and reset on every restart. Set "
+                "PREVIOUS_SECRET_ISSUED_AT or store the timestamp in "
+                "platform_config (key=%r) to get a stable expiry time.",
+                _ROTATION_TS_KEY,
+            )
+    except Exception as exc:
+        _startup_log.warning(
+            "Could not sync rotation timestamp with platform_config: %s. "
+            "Falling back to application startup time.",
+            exc,
+        )
+    finally:
+        db.close()
+
+
+sync_rotation_timestamp_with_db()
 
 
 @asynccontextmanager

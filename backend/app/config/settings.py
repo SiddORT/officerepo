@@ -100,6 +100,9 @@ class Settings(BaseSettings):
 
     # Internal — set at startup; not read from environment
     _previous_secret_origin: datetime = None
+    # True when _previous_secret_origin was set to startup time as a fallback
+    # because neither the env var nor the DB had a value yet.
+    _previous_secret_origin_is_fallback: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", extra="allow")
 
@@ -176,6 +179,7 @@ class Settings(BaseSettings):
                     if origin.tzinfo is None:
                         origin = origin.replace(tzinfo=timezone.utc)
                     self._previous_secret_origin = origin
+                    self._previous_secret_origin_is_fallback = False
                 except ValueError:
                     logger.warning(
                         "PREVIOUS_SECRET_ISSUED_AT=%r could not be parsed as ISO-8601. "
@@ -183,30 +187,29 @@ class Settings(BaseSettings):
                         self.PREVIOUS_SECRET_ISSUED_AT,
                     )
                     self._previous_secret_origin = datetime.now(tz=timezone.utc)
+                    self._previous_secret_origin_is_fallback = True
             else:
-                logger.warning(
-                    "PREVIOUS_JWT_SECRET / PREVIOUS_REFRESH_SECRET are set but "
-                    "PREVIOUS_SECRET_ISSUED_AT is missing. The grace-period clock will "
-                    "start from application startup time and reset on every restart. "
-                    "Set PREVIOUS_SECRET_ISSUED_AT to a fixed UTC timestamp for a "
-                    "stable expiry time."
-                )
+                # env var not set — defer the warning until after the DB lookup
+                # (main.py will call apply_db_rotation_timestamp or emit the warning
+                # if the DB also has no value).
                 self._previous_secret_origin = datetime.now(tz=timezone.utc)
+                self._previous_secret_origin_is_fallback = True
 
             # Warn if the grace period has already elapsed at startup
-            elapsed_hours = (
-                datetime.now(tz=timezone.utc) - self._previous_secret_origin
-            ).total_seconds() / 3600
-            if elapsed_hours >= self.PREVIOUS_SECRET_GRACE_HOURS:
-                logger.warning(
-                    "PREVIOUS_JWT_SECRET / PREVIOUS_REFRESH_SECRET grace period has "
-                    "already elapsed (%.1f h >= %d h configured). The fallback secrets "
-                    "will be ignored for all token verifications. Consider unsetting "
-                    "PREVIOUS_JWT_SECRET and PREVIOUS_REFRESH_SECRET to keep the "
-                    "environment tidy.",
-                    elapsed_hours,
-                    self.PREVIOUS_SECRET_GRACE_HOURS,
-                )
+            if not self._previous_secret_origin_is_fallback:
+                elapsed_hours = (
+                    datetime.now(tz=timezone.utc) - self._previous_secret_origin
+                ).total_seconds() / 3600
+                if elapsed_hours >= self.PREVIOUS_SECRET_GRACE_HOURS:
+                    logger.warning(
+                        "PREVIOUS_JWT_SECRET / PREVIOUS_REFRESH_SECRET grace period has "
+                        "already elapsed (%.1f h >= %d h configured). The fallback secrets "
+                        "will be ignored for all token verifications. Consider unsetting "
+                        "PREVIOUS_JWT_SECRET and PREVIOUS_REFRESH_SECRET to keep the "
+                        "environment tidy.",
+                        elapsed_hours,
+                        self.PREVIOUS_SECRET_GRACE_HOURS,
+                    )
 
         # ALLOWED_ORIGINS
         # In non-development environments, restrict to an explicit list.
@@ -242,6 +245,46 @@ class Settings(BaseSettings):
                     )
 
         return self
+
+    def apply_db_rotation_timestamp(self, iso_value: str) -> bool:
+        """
+        Override the grace-period origin with a timestamp read from the DB.
+
+        Called at startup by main.py when PREVIOUS_SECRET_ISSUED_AT is absent
+        from the environment but a value is found in the platform_config table.
+
+        Returns True if the value was successfully applied, False otherwise.
+        """
+        if not iso_value or not iso_value.strip():
+            return False
+        try:
+            origin = datetime.fromisoformat(iso_value.replace("Z", "+00:00"))
+            if origin.tzinfo is None:
+                origin = origin.replace(tzinfo=timezone.utc)
+            self._previous_secret_origin = origin
+            self._previous_secret_origin_is_fallback = False
+
+            elapsed_hours = (
+                datetime.now(tz=timezone.utc) - origin
+            ).total_seconds() / 3600
+            if elapsed_hours >= self.PREVIOUS_SECRET_GRACE_HOURS:
+                logger.warning(
+                    "PREVIOUS_JWT_SECRET / PREVIOUS_REFRESH_SECRET grace period has "
+                    "already elapsed (%.1f h >= %d h configured). The fallback secrets "
+                    "will be ignored for all token verifications. Consider unsetting "
+                    "PREVIOUS_JWT_SECRET and PREVIOUS_REFRESH_SECRET to keep the "
+                    "environment tidy.",
+                    elapsed_hours,
+                    self.PREVIOUS_SECRET_GRACE_HOURS,
+                )
+            return True
+        except ValueError:
+            logger.warning(
+                "platform_config previous_secret_issued_at=%r could not be parsed "
+                "as ISO-8601. Falling back to application startup time.",
+                iso_value,
+            )
+            return False
 
     def previous_secret_grace_active(self) -> bool:
         """Return True if the previous-secret grace period is still in effect."""
