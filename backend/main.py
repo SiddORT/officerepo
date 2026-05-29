@@ -30,6 +30,7 @@ from backend.app.platform.feature_flags.router import router as flags_router
 from backend.app.platform.subscriptions.router import router as subscriptions_router
 from backend.app.platform.tenant_management.router import router as tenant_mgmt_router
 from backend.app.platform.superadmin.rotation_router import router as rotation_router
+from backend.app.platform.superadmin.rotation_status_router import router as rotation_status_router
 
 # Create all platform tables (new tables only; existing are not altered)
 Base.metadata.create_all(bind=engine)
@@ -166,6 +167,9 @@ app.include_router(tenants_router, prefix=f"{PREFIX}/superadmin/tenants", tags=[
 app.include_router(flags_router, prefix=f"{PREFIX}/superadmin", tags=["superadmin - feature flags"])
 app.include_router(subscriptions_router, prefix=f"{PREFIX}/superadmin/subscriptions", tags=["superadmin - subscriptions"])
 app.include_router(rotation_router, prefix=f"{PREFIX}/superadmin", tags=["superadmin - secrets"])
+
+# Superadmin — rotation status
+app.include_router(rotation_status_router, prefix=f"{PREFIX}/superadmin", tags=["superadmin - rotation"])
 
 # Tenant Management Module (new, full-featured)
 app.include_router(tenant_mgmt_router, prefix=f"{PREFIX}/superadmin/manage/tenants", tags=["tenant management"])

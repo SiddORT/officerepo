@@ -43,6 +43,7 @@ def create_refresh_token(data: Dict[str, Any], expires_delta: Optional[timedelta
 
 
 def decode_access_token(token: str) -> Dict[str, Any]:
+    from backend.app.core.fallback_counter import record_fallback_use
     current_kid = _derive_kid(settings.JWT_SECRET)
     try:
         header = jwt.get_unverified_header(token)
@@ -62,11 +63,13 @@ def decode_access_token(token: str) -> Dict[str, Any]:
                 previous_kid,
                 current_kid,
             )
+            record_fallback_use()
             return payload
         raise
 
 
 def decode_refresh_token(token: str) -> Dict[str, Any]:
+    from backend.app.core.fallback_counter import record_fallback_use
     current_kid = _derive_kid(settings.REFRESH_SECRET)
     try:
         header = jwt.get_unverified_header(token)
@@ -86,5 +89,6 @@ def decode_refresh_token(token: str) -> Dict[str, Any]:
                 previous_kid,
                 current_kid,
             )
+            record_fallback_use()
             return payload
         raise

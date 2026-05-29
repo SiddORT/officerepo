@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { tenantsApi, featureFlagsApi, subscriptionsApi } from "../../services/apiClient";
+import { tenantsApi, featureFlagsApi, subscriptionsApi, rotationStatusApi } from "../../services/apiClient";
 
 const MODULES = ["hrms", "assets", "billing", "attendance", "leave", "payroll"];
 
@@ -14,10 +14,12 @@ export default function SuperAdminPage() {
   const [form, setForm] = useState({ name: "", slug: "", db_url: "" });
   const [submitting, setSubmitting] = useState(false);
   const [plans, setPlans] = useState([]);
+  const [rotationStatus, setRotationStatus] = useState(null);
 
   useEffect(() => {
     fetchTenants();
     subscriptionsApi.plans().then((r) => setPlans(r.data)).catch(() => {});
+    rotationStatusApi.get().then((r) => setRotationStatus(r.data)).catch(() => {});
   }, []);
 
   const fetchTenants = async (q = "") => {
@@ -74,8 +76,38 @@ export default function SuperAdminPage() {
   const isModuleEnabled = (module) =>
     tenantFlags.find((f) => f.module === module)?.is_enabled ?? false;
 
+  const showRotationWarning =
+    rotationStatus &&
+    rotationStatus.grace_active &&
+    rotationStatus.fallback_requests_last_hour > 0;
+
   return (
     <div className="p-8">
+      {showRotationWarning && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-5 py-4">
+          <span className="mt-0.5 text-amber-400 text-lg leading-none">&#9888;</span>
+          <div className="flex-1">
+            <p className="font-semibold text-amber-300 text-sm">
+              Old-key tokens still in active use &mdash; rotation is not yet safe to complete
+            </p>
+            <p className="text-amber-400/80 text-xs mt-1">
+              <strong>{rotationStatus.fallback_requests_last_hour}</strong> request
+              {rotationStatus.fallback_requests_last_hour !== 1 ? "s" : ""} in the last hour
+              were verified using the previous signing key
+              {rotationStatus.previous_kid ? (
+                <> (<code className="font-mono bg-amber-900/40 px-1 rounded">{rotationStatus.previous_kid}</code>)</>
+              ) : null}.
+              {rotationStatus.grace_expires_at ? (
+                <> Grace period expires&nbsp;
+                  <strong>{new Date(rotationStatus.grace_expires_at).toLocaleString()}</strong>.
+                </>
+              ) : null}
+              &nbsp;Wait until this count reaches zero before removing <code className="font-mono bg-amber-900/40 px-1 rounded">PREVIOUS_JWT_SECRET</code>.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl font-bold t-heading">Tenant Management</h2>

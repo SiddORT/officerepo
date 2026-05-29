@@ -148,6 +148,11 @@ export const subscriptionsApi = {
     apiClient.post("/superadmin/subscriptions/assign", { tenant_id, plan_id }),
 };
 
+// ── Superadmin — Rotation Status ──────────────────────────────────────────────
+export const rotationStatusApi = {
+  get: () => apiClient.get("/superadmin/rotation-status"),
+};
+
 // ── Employees (tenant-scoped) ─────────────────────────────────────────────────
 export const employeesApi = {
   list: (params) => apiClient.get("/tenant/employees", { params }),
