@@ -69,6 +69,24 @@ class Settings(BaseSettings):
     # are detected after the grace period.  Leave blank to disable webhooks.
     SECRET_ROTATION_ALERT_URL: str = ""
 
+    # Optional metadata merged into the stale-secret webhook payload so that
+    # the alert can be routed or rendered correctly by the receiving system
+    # (PagerDuty, Opsgenie, Slack block-kit bots, etc.) without a proxy layer.
+    #
+    # SECRET_ROTATION_ALERT_SEVERITY
+    #   A free-form severity / priority label included as "severity" in the
+    #   payload.  Common values: "critical", "high", "warning", "info".
+    #   Defaults to "warning" when not set.
+    #   Example: SECRET_ROTATION_ALERT_SEVERITY=critical
+    #
+    # SECRET_ROTATION_ALERT_ENV_TAG
+    #   A free-form environment tag included as "environment" in the payload.
+    #   Useful for distinguishing staging vs production alerts in shared
+    #   on-call tooling.  Defaults to the ENVIRONMENT value when not set.
+    #   Example: SECRET_ROTATION_ALERT_ENV_TAG=production
+    SECRET_ROTATION_ALERT_SEVERITY: str = ""
+    SECRET_ROTATION_ALERT_ENV_TAG: str = ""
+
     # App
     APP_NAME: str = "Office Repo"
     API_V1_PREFIX: str = "/api/v1"

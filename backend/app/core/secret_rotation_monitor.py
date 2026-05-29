@@ -9,6 +9,26 @@ If stale secrets are detected:
 Configuration (environment variables):
   PREVIOUS_SECRET_CHECK_INTERVAL_HOURS  – how often to run the check (default 1)
   SECRET_ROTATION_ALERT_URL             – optional webhook URL (default disabled)
+  SECRET_ROTATION_ALERT_SEVERITY        – severity label merged into the webhook
+                                          payload (default "warning").  Common
+                                          values: critical, high, warning, info.
+  SECRET_ROTATION_ALERT_ENV_TAG         – environment tag merged into the webhook
+                                          payload (defaults to the ENVIRONMENT
+                                          setting).  Useful for telling staging
+                                          and production alerts apart in shared
+                                          on-call tools such as PagerDuty or
+                                          Opsgenie.
+
+Webhook payload shape (all fields always present):
+  {
+    "alert":         "stale_previous_secrets",
+    "message":       "<human-readable description>",
+    "severity":      "<SECRET_ROTATION_ALERT_SEVERITY or 'warning'>",
+    "environment":   "<SECRET_ROTATION_ALERT_ENV_TAG or ENVIRONMENT>",
+    "elapsed_hours": <float>,
+    "grace_hours":   <int>,
+    "checked_at":    "<ISO-8601 UTC timestamp>"
+  }
 """
 
 import asyncio
@@ -75,6 +95,14 @@ async def _check_once(settings) -> None:
 
     alert_url = settings.SECRET_ROTATION_ALERT_URL.strip()
     if alert_url:
+        severity = (
+            settings.SECRET_ROTATION_ALERT_SEVERITY.strip()
+            or "warning"
+        )
+        env_tag = (
+            settings.SECRET_ROTATION_ALERT_ENV_TAG.strip()
+            or settings.ENVIRONMENT
+        )
         payload = {
             "alert": "stale_previous_secrets",
             "message": (
@@ -82,6 +110,8 @@ async def _check_once(settings) -> None:
                 "after the rotation grace period has elapsed. "
                 "Please unset these environment variables."
             ),
+            "severity": severity,
+            "environment": env_tag,
             "elapsed_hours": round(elapsed_hours, 2),
             "grace_hours": settings.PREVIOUS_SECRET_GRACE_HOURS,
             "checked_at": datetime.now(tz=timezone.utc).isoformat(),
