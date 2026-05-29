@@ -136,6 +136,11 @@ export const featureFlagsApi = {
     apiClient.post(`/superadmin/${tenantId}/features`, { module, is_enabled }),
 };
 
+// ── Secrets / Security ────────────────────────────────────────────────────────
+export const secretsApi = {
+  rotate: () => apiClient.post("/superadmin/rotate-secrets"),
+};
+
 // ── Subscriptions ─────────────────────────────────────────────────────────────
 export const subscriptionsApi = {
   plans: () => apiClient.get("/superadmin/subscriptions/plans"),

@@ -7,6 +7,7 @@ import LoginPage from "./pages/login/LoginPage";
 import AdminLoginPage from "./pages/login/AdminLoginPage";
 import DashboardPage from "./pages/dashboard/DashboardPage";
 import SuperAdminPage from "./pages/superadmin/SuperAdminPage";
+import SecurityPage from "./pages/superadmin/SecurityPage";
 import TenantList from "./pages/superadmin/tenants/TenantList";
 import CreateTenant from "./pages/superadmin/tenants/CreateTenant";
 import EditTenant from "./pages/superadmin/tenants/EditTenant";
@@ -46,6 +47,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireRole="superadmin">
             <Layout><SuperAdminPage /></Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Protected — Security / Secret Rotation */}
+      <Route
+        path="/superadmin/security"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><SecurityPage /></Layout>
           </ProtectedRoute>
         }
       />
