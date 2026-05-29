@@ -23,6 +23,7 @@ from backend.app.platform.tenant_management.models import TenantBranding, Tenant
 
 # Routers
 from backend.app.modules.auth.router import router as auth_router
+from backend.app.modules.csp_report.router import router as csp_report_router
 from backend.app.modules.employee.router import router as employee_router
 from backend.app.platform.tenants.router import router as tenants_router
 from backend.app.platform.feature_flags.router import router as flags_router
@@ -138,6 +139,7 @@ _CSP_POLICY = "; ".join([
     "font-src 'self'",
     "object-src 'none'",
     "frame-ancestors 'none'",
+    "report-uri /api/v1/csp-report",
 ])
 
 _CSP_EXEMPT_PATHS = {"/docs", "/redoc", "/openapi.json"}
@@ -152,6 +154,9 @@ async def add_csp_header(request: Request, call_next):
 
 
 PREFIX = settings.API_V1_PREFIX
+
+# CSP violation reporting
+app.include_router(csp_report_router, prefix=f"{PREFIX}", tags=["security"])
 
 # Auth (superadmin + tenant login)
 app.include_router(auth_router, prefix=f"{PREFIX}/auth", tags=["auth"])
