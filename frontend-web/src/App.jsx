@@ -14,6 +14,10 @@ import TenantList from "./pages/superadmin/tenants/TenantList";
 import CreateTenant from "./pages/superadmin/tenants/CreateTenant";
 import EditTenant from "./pages/superadmin/tenants/EditTenant";
 import TenantDetails from "./pages/superadmin/tenants/TenantDetails";
+import LeadList from "./pages/superadmin/leads/LeadList";
+import CreateLead from "./pages/superadmin/leads/CreateLead";
+import EditLead from "./pages/superadmin/leads/EditLead";
+import LeadDetails from "./pages/superadmin/leads/LeadDetails";
 import Layout from "./components/Layout";
 
 function ProtectedRoute({ children, requireRole }) {
@@ -95,6 +99,40 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireRole="superadmin">
             <Layout><EditTenant /></Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Protected — Lead Management & Sales Pipeline */}
+      <Route
+        path="/superadmin/leads"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><LeadList /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/leads/new"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><CreateLead /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/leads/:id"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><LeadDetails /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/leads/:id/edit"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><EditLead /></Layout>
           </ProtectedRoute>
         }
       />

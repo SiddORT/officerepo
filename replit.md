@@ -33,6 +33,11 @@ backend/
     modules/
       auth/                    Login (superadmin + tenant), refresh, logout
       employee/                Employee + Department CRUD (tenant-scoped)
+      lead_management/         Lead & Sales Pipeline CRM (platform-scoped, superadmin)
+                               constants/validators/models/schemas/repository/service/router
+                               leads + 8 child tables (activities, demos, follow-ups, notes,
+                               documents, proposals, negotiations, conversions)
+  shared/storage/             Storage helper (public uploads/ + private_storage/ roots)
 
 frontend-web/
   public/
@@ -48,6 +53,11 @@ frontend-web/
       login/AdminLoginPage.jsx Platform admin login (route: /admin, hidden) — full-bleed office background + floating glassmorphic card with mouse-driven 3D tilt, cyan accent
       dashboard/DashboardPage  Module overview dashboard
       superadmin/              Tenant list, create, activate/suspend, feature flags
+      superadmin/leads/        Lead CRM: LeadList, CreateLead, EditLead, LeadDetails
+                               (tabs: Overview, Activities, Demos, Follow-ups, Notes,
+                               Documents, Proposals, Negotiations, Conversions, Timeline);
+                               components/ (StageBadge, ScoreBadge, Timeline, LeadForm);
+                               constants.js (helpers + enum→option mappers)
     components/Layout.jsx      Sidebar navigation, logout → /
 ```
 
@@ -110,6 +120,30 @@ PATCH /api/v1/tenant/employees/{id}
 DELETE /api/v1/tenant/employees/{id}
 
 POST /api/v1/public/enquiries        (public; GDPR-aware lead capture)
+
+# Lead Management & Sales Pipeline (superadmin; platform-scoped)
+GET    /api/v1/superadmin/leads/meta/options
+GET    /api/v1/superadmin/leads/dashboard
+GET    /api/v1/superadmin/leads                          (list: page/page_size/sort/search/filters)
+POST   /api/v1/superadmin/leads
+GET    /api/v1/superadmin/leads/{lead_id}
+PATCH  /api/v1/superadmin/leads/{lead_id}
+DELETE /api/v1/superadmin/leads/{lead_id}                (soft delete)
+POST   /api/v1/superadmin/leads/{lead_id}/stage          (advance pipeline stage)
+POST   /api/v1/superadmin/leads/{lead_id}/lost           (mark lost + reason)
+GET/POST/PATCH/DELETE  .../leads/{lead_id}/activities[/{activity_id}]
+GET/POST/PATCH/DELETE  .../leads/{lead_id}/demos[/{demo_id}]
+GET/POST/PATCH/DELETE  .../leads/{lead_id}/followups[/{followup_id}]
+GET/POST/DELETE        .../leads/{lead_id}/notes[/{note_id}]
+GET/POST/DELETE        .../leads/{lead_id}/documents[/{document_id}]
+GET    .../leads/{lead_id}/documents/{document_id}/download   (authenticated FileResponse)
+GET/POST/PATCH         .../leads/{lead_id}/proposals[/{proposal_id}]
+GET    .../leads/{lead_id}/proposals/{proposal_id}/download   (authenticated FileResponse)
+GET/POST               .../leads/{lead_id}/negotiations
+GET    /api/v1/superadmin/leads/{lead_id}/timeline
+GET    /api/v1/superadmin/leads/{lead_id}/conversions
+POST   /api/v1/superadmin/leads/{lead_id}/convert-to-client   (only stage=Won)
+POST   /api/v1/superadmin/leads/convert-enquiry/{enquiry_id}  (idempotent)
 ```
 
 ## Public Enquiries (GDPR-aware lead capture)
@@ -130,6 +164,30 @@ POST /api/v1/public/enquiries        (public; GDPR-aware lead capture)
 - Each row gets an `enquiry_number` (`ENQ-YYYYMMDD-XXXXXXXX`).
 - Audit entries written via `backend/shared/audit/` with **masked PII**
   (e.g. `j***e@acme.com`).
+
+## Lead Management & Sales Pipeline (superadmin)
+- **Scope**: platform-scoped, superadmin JWT guard, platform DB (`get_platform_db`).
+- **Tables** (UUID `String(36)` PKs): `leads` + 8 child tables — activities, demos,
+  follow-ups, notes, documents, proposals, negotiations, conversions. Standard
+  `created_at`/`updated_at`/`is_deleted`/`deleted_at` columns; `created_by` where applicable.
+- **PII at rest encrypted** (contact email/phone via shared encryption helper);
+  `dedupe_hash` blind index for duplicate detection.
+- **Pipeline stages** ordered (see `STAGE_ORDER`); `/stage` advances, `/lost` records
+  reason. Each lead gets a `lead_number` (`LEAD-YYYYMMDD-XXXXXXXX`).
+- **Lead scoring** computed from demo/proposal/revenue/company-size/users →
+  Hot / Warm / Cold (`ScoreBadge`).
+- **Conversion metrics** computed: lead age, sales cycle, time-to-demo, time-to-proposal,
+  time-to-conversion (surfaced in the Conversions tab).
+- **Convert Enquiry→Lead**: idempotent (reuses existing lead via `source_enquiry_id`,
+  ignoring soft-delete). **Convert Lead→Client**: only when stage = Won; creates Tenant +
+  Subscription placeholders + a conversion record + audit entry.
+- **Document/proposal files are PRIVATE**: stored under `LEAD_PRIVATE_STORAGE_ROOT`
+  (`private_storage/`, NOT the public `/uploads` mount) with randomized filenames.
+  Downloads go through **authenticated** endpoints returning `FileResponse` (superadmin
+  guard). API list responses expose `has_file` + a download `url`; the frontend fetches
+  the blob with the JWT and triggers a browser download (a plain `<a href>` would not
+  carry auth). `uploads/` and `private_storage/` are gitignored.
+- Mutations write **masked-PII audit entries** via `backend/shared/audit/`.
 
 ## JWT Payload
 ```json

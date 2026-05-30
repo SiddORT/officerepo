@@ -28,6 +28,17 @@ const NAV_ITEMS = [
     ),
   },
   {
+    label: "Leads",
+    path: "/superadmin/leads",
+    roles: ["superadmin"],
+    icon: (
+      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+      </svg>
+    ),
+  },
+  {
     label: "Platform Admin",
     path: "/superadmin",
     roles: ["superadmin"],
@@ -92,6 +103,10 @@ function getPageTitle(pathname) {
   if (pathname.startsWith("/superadmin/tenants/new")) return "New Tenant";
   if (pathname.startsWith("/superadmin/tenants/")) return "Tenant Details";
   if (pathname.startsWith("/superadmin/tenants")) return "Tenant Management";
+  if (pathname.startsWith("/superadmin/leads/") && pathname.endsWith("/edit")) return "Edit Lead";
+  if (pathname.startsWith("/superadmin/leads/new")) return "New Lead";
+  if (pathname.startsWith("/superadmin/leads/")) return "Lead Details";
+  if (pathname.startsWith("/superadmin/leads")) return "Lead Management";
   if (pathname === "/superadmin/security") return "Security";
   if (pathname === "/superadmin") return "Platform Admin";
   if (pathname === "/dashboard") return "Dashboard";

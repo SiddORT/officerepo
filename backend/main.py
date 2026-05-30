@@ -23,6 +23,10 @@ from backend.app.platform.mobile.models import MobileDeviceSession
 from backend.app.platform.tenant_management.models import TenantBranding, TenantActivityLog
 from backend.app.platform.config.models import PlatformConfig
 from backend.app.modules.enquiry.models import Enquiry
+from backend.app.modules.lead_management.models import (
+    Lead, LeadActivity, LeadDemo, LeadFollowup, LeadNote,
+    LeadDocument, LeadProposal, LeadNegotiation, LeadConversion,
+)
 from backend.shared.audit.models import AuditLog
 
 # Routers
@@ -30,6 +34,7 @@ from backend.app.modules.auth.router import router as auth_router
 from backend.app.modules.csp_report.router import router as csp_report_router
 from backend.app.modules.employee.router import router as employee_router
 from backend.app.modules.enquiry.router import router as enquiry_router
+from backend.app.modules.lead_management.router import router as lead_router
 from backend.app.platform.tenants.router import router as tenants_router
 from backend.app.platform.feature_flags.router import router as flags_router
 from backend.app.platform.subscriptions.router import router as subscriptions_router
@@ -273,6 +278,9 @@ app.include_router(rotation_status_router, prefix=f"{PREFIX}/superadmin", tags=[
 
 # Tenant Management Module (new, full-featured)
 app.include_router(tenant_mgmt_router, prefix=f"{PREFIX}/superadmin/manage/tenants", tags=["tenant management"])
+
+# Lead Management & Sales Pipeline Module (superadmin CRM)
+app.include_router(lead_router, prefix=f"{PREFIX}/superadmin/leads", tags=["lead management"])
 
 # Tenant-scoped modules
 app.include_router(employee_router, prefix=f"{PREFIX}/tenant/employees", tags=["tenant - employees"])

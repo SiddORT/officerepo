@@ -158,6 +158,78 @@ export const enquiriesApi = {
   submit: (data) => apiClient.post("/public/enquiries", data),
 };
 
+// ── Lead Management & Sales Pipeline (superadmin CRM) ─────────────────────────
+const LEADS = "/superadmin/leads";
+export const leadsApi = {
+  options: () => apiClient.get(`${LEADS}/meta/options`),
+  dashboard: () => apiClient.get(`${LEADS}/dashboard`),
+
+  list: (params) => apiClient.get(LEADS, { params }),
+  get: (id) => apiClient.get(`${LEADS}/${id}`),
+  create: (data) => apiClient.post(LEADS, data),
+  update: (id, data) => apiClient.patch(`${LEADS}/${id}`, data),
+  remove: (id) => apiClient.delete(`${LEADS}/${id}`),
+  setStage: (id, stage) => apiClient.post(`${LEADS}/${id}/stage`, { stage }),
+  markLost: (id, data) => apiClient.post(`${LEADS}/${id}/lost`, data),
+
+  timeline: (id) => apiClient.get(`${LEADS}/${id}/timeline`),
+
+  activities: (id) => apiClient.get(`${LEADS}/${id}/activities`),
+  addActivity: (id, data) => apiClient.post(`${LEADS}/${id}/activities`, data),
+  updateActivity: (id, aid, data) => apiClient.patch(`${LEADS}/${id}/activities/${aid}`, data),
+  deleteActivity: (id, aid) => apiClient.delete(`${LEADS}/${id}/activities/${aid}`),
+
+  demos: (id) => apiClient.get(`${LEADS}/${id}/demos`),
+  addDemo: (id, data) => apiClient.post(`${LEADS}/${id}/demos`, data),
+  updateDemo: (id, did, data) => apiClient.patch(`${LEADS}/${id}/demos/${did}`, data),
+  deleteDemo: (id, did) => apiClient.delete(`${LEADS}/${id}/demos/${did}`),
+
+  followups: (id) => apiClient.get(`${LEADS}/${id}/followups`),
+  addFollowup: (id, data) => apiClient.post(`${LEADS}/${id}/followups`, data),
+  updateFollowup: (id, fid, data) => apiClient.patch(`${LEADS}/${id}/followups/${fid}`, data),
+  deleteFollowup: (id, fid) => apiClient.delete(`${LEADS}/${id}/followups/${fid}`),
+
+  notes: (id) => apiClient.get(`${LEADS}/${id}/notes`),
+  addNote: (id, data) => apiClient.post(`${LEADS}/${id}/notes`, data),
+  deleteNote: (id, nid) => apiClient.delete(`${LEADS}/${id}/notes/${nid}`),
+
+  documents: (id) => apiClient.get(`${LEADS}/${id}/documents`),
+  uploadDocument: (id, file, documentType) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("document_type", documentType || "Other");
+    return apiClient.post(`${LEADS}/${id}/documents`, fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  downloadDocument: (id, docId) =>
+    apiClient.get(`${LEADS}/${id}/documents/${docId}/download`, { responseType: "blob" }),
+  deleteDocument: (id, docId) => apiClient.delete(`${LEADS}/${id}/documents/${docId}`),
+
+  proposals: (id) => apiClient.get(`${LEADS}/${id}/proposals`),
+  addProposal: (id, { proposalDate, quotedAmount, modulesIncluded, status, file }) => {
+    const fd = new FormData();
+    if (proposalDate) fd.append("proposal_date", proposalDate);
+    if (quotedAmount != null && quotedAmount !== "") fd.append("quoted_amount", quotedAmount);
+    if (modulesIncluded) fd.append("modules_included", modulesIncluded);
+    if (status) fd.append("status", status);
+    if (file) fd.append("file", file);
+    return apiClient.post(`${LEADS}/${id}/proposals`, fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  downloadProposal: (id, pid) =>
+    apiClient.get(`${LEADS}/${id}/proposals/${pid}/download`, { responseType: "blob" }),
+  updateProposal: (id, pid, data) => apiClient.patch(`${LEADS}/${id}/proposals/${pid}`, data),
+
+  negotiations: (id) => apiClient.get(`${LEADS}/${id}/negotiations`),
+  addNegotiation: (id, data) => apiClient.post(`${LEADS}/${id}/negotiations`, data),
+
+  conversions: (id) => apiClient.get(`${LEADS}/${id}/conversions`),
+  convertToClient: (id, data) => apiClient.post(`${LEADS}/${id}/convert-to-client`, data || {}),
+  convertEnquiry: (enquiryId, data) => apiClient.post(`${LEADS}/convert-enquiry/${enquiryId}`, data || {}),
+};
+
 // ── Employees (tenant-scoped) ─────────────────────────────────────────────────
 export const employeesApi = {
   list: (params) => apiClient.get("/tenant/employees", { params }),
