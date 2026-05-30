@@ -14,6 +14,42 @@ import {
 /* ── Animation configs ─────────────────────────────────────────────────── */
 const EASE_CINEMA = [0.16, 1, 0.3, 1];
 const ACCENT = "#00aeec";
+const ORANGE = "#ff7a1a";
+
+/* ── Animated background orbs ───────────────────────────────────────────── */
+const ORBS = [
+  { color: "rgba(255,122,26,0.55)", size: 460, top: "-12%", left: "-8%", dur: 16, move: [0, 60, -30, 0], moveY: [0, -40, 30, 0] },
+  { color: "rgba(0,174,236,0.45)", size: 520, bottom: "-16%", right: "-10%", dur: 20, move: [0, -50, 40, 0], moveY: [0, 40, -30, 0] },
+  { color: "rgba(255,122,26,0.32)", size: 300, top: "45%", right: "18%", dur: 14, move: [0, 40, -40, 0], moveY: [0, -30, 30, 0] },
+  { color: "rgba(0,174,236,0.30)", size: 260, bottom: "10%", left: "12%", dur: 18, move: [0, -30, 50, 0], moveY: [0, 30, -40, 0] },
+];
+
+function AnimatedBackground({ reduced }) {
+  return (
+    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+      {ORBS.map((o, i) => (
+        <motion.div
+          key={i}
+          aria-hidden="true"
+          animate={reduced ? {} : { x: o.move, y: o.moveY, scale: [1, 1.12, 0.95, 1] }}
+          transition={reduced ? {} : { duration: o.dur, repeat: Infinity, ease: "easeInOut" }}
+          style={{
+            position: "absolute",
+            top: o.top,
+            left: o.left,
+            right: o.right,
+            bottom: o.bottom,
+            width: o.size,
+            height: o.size,
+            borderRadius: "50%",
+            background: `radial-gradient(circle, ${o.color} 0%, transparent 70%)`,
+            filter: "blur(40px)",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 const stagger = {
   hidden: {},
@@ -126,6 +162,9 @@ export default function AdminLoginPage() {
         }}
       />
 
+      {/* Animated drifting orbs (orange + cyan) */}
+      <AnimatedBackground reduced={prefersReducedMotion} />
+
       {/* Back to home */}
       <button
         onClick={() => navigate("/")}
@@ -188,7 +227,8 @@ export default function AdminLoginPage() {
             pointerEvents: "none",
             background: useTransform(
               [glareX, glareY],
-              ([x, y]) => `radial-gradient(600px circle at ${x} ${y}, rgba(0,174,236,0.18), transparent 45%)`
+              ([x, y]) =>
+                `radial-gradient(500px circle at ${x} ${y}, rgba(255,122,26,0.22), rgba(0,174,236,0.16) 40%, transparent 60%)`
             ),
           }}
         />
@@ -200,12 +240,12 @@ export default function AdminLoginPage() {
               style={{
                 width: 38,
                 height: 38,
-                background: "linear-gradient(135deg, #00aeec, #0090c8)",
+                background: "linear-gradient(135deg, #00aeec, #ff7a1a)",
                 borderRadius: 11,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                boxShadow: "0 8px 22px rgba(0,174,236,0.5)",
+                boxShadow: "0 8px 22px rgba(255,122,26,0.45)",
               }}
             >
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,7 +305,7 @@ export default function AdminLoginPage() {
             {/* Email */}
             <motion.div variants={fadeSlide} style={{ marginBottom: 16 }}>
               <label htmlFor="admin-email" style={{ display: "block", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.75)", marginBottom: 8 }}>
-                Email <span style={{ color: ACCENT }}>*</span>
+                Email <span style={{ color: ORANGE }}>*</span>
               </label>
               <div style={{ position: "relative" }}>
                 <div
@@ -300,7 +340,7 @@ export default function AdminLoginPage() {
             {/* Password */}
             <motion.div variants={fadeSlide} style={{ marginBottom: 26 }}>
               <label htmlFor="admin-password" style={{ display: "block", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.75)", marginBottom: 8 }}>
-                Password <span style={{ color: ACCENT }}>*</span>
+                Password <span style={{ color: ORANGE }}>*</span>
               </label>
               <div style={{ position: "relative" }}>
                 <div
@@ -372,7 +412,7 @@ export default function AdminLoginPage() {
                 whileTap={!loading ? { scale: 0.98 } : {}}
                 style={{
                   width: "100%",
-                  background: loading ? "#0a6f93" : "linear-gradient(135deg, #00aeec, #0090c8)",
+                  background: loading ? "#0a6f93" : "linear-gradient(135deg, #00aeec, #ff7a1a)",
                   color: "#fff",
                   border: "none",
                   borderRadius: 12,
@@ -381,7 +421,7 @@ export default function AdminLoginPage() {
                   fontWeight: 700,
                   cursor: loading ? "not-allowed" : "pointer",
                   letterSpacing: "-0.01em",
-                  boxShadow: "0 12px 28px rgba(0,174,236,0.45)",
+                  boxShadow: "0 12px 28px rgba(255,122,26,0.4)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
