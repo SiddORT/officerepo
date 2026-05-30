@@ -370,6 +370,77 @@ class CurrencySyncTests(unittest.TestCase):
         self.assertEqual(inr_total, 1)
         self._assert_one_log_and_audit(c.SYNC_PARTIAL)
 
+    # ── invalid provider rates are skipped, never persisted ──────────────────
+    def test_sync_skips_invalid_provider_rates(self):
+        """Nonsensical provider numbers must not overwrite a stored rate.
+
+        The provider returns one valid rate (EUR) and a battery of invalid ones
+        (zero, negative, over RATE_MAX, NaN, +inf, non-numeric string). Only EUR
+        is persisted; every other currency keeps its original rate and appends no
+        history. The sync downgrades to Partial Success and the skip is logged.
+        """
+        self._create("USD", is_base=True)
+        eur = self._create("EUR", rate=1.1)
+        zero = self._create("ZAR", rate=18.0)
+        neg = self._create("GBP", rate=0.8)
+        huge = self._create("INR", rate=80.0)
+        nan = self._create("JPY", rate=150.0)
+        inf = self._create("AUD", rate=1.5)
+        text = self._create("CAD", rate=1.35)
+
+        providers_pkg.register_provider(
+            self._SOURCE,
+            _StubProvider({
+                "EUR": 0.92,                  # valid — should persist
+                "ZAR": 0,                     # zero
+                "GBP": -3.5,                  # negative
+                "INR": c.RATE_MAX + 1,        # over max
+                "JPY": float("nan"),          # NaN
+                "AUD": float("inf"),          # infinity
+                "CAD": "not-a-number",        # non-numeric
+            }),
+        )
+
+        out = self._sync()
+
+        # Only the single valid currency was updated; sync is Partial.
+        self.assertEqual(out["sync_status"], c.SYNC_PARTIAL)
+        self.assertEqual(out["currencies_updated"], 1)
+        self.assertEqual(repo.get_rate(self.db, eur["id"]).exchange_rate, 0.92)
+
+        # Every invalid currency keeps its original rate untouched …
+        originals = {
+            zero["id"]: 18.0, neg["id"]: 0.8, huge["id"]: 80.0,
+            nan["id"]: 150.0, inf["id"]: 1.5, text["id"]: 1.35,
+        }
+        for cid, original in originals.items():
+            self.assertEqual(repo.get_rate(self.db, cid).exchange_rate, original)
+            # … and no synced history row was appended (only the create row).
+            _, total = repo.list_rate_history(self.db, currency_id=cid, page=1, page_size=10)
+            self.assertEqual(total, 1)
+
+        # The skip is surfaced in the sync log + the single audit entry.
+        self.assertIsNotNone(out["error_message"])
+        for code in ("ZAR", "GBP", "INR", "JPY", "AUD", "CAD"):
+            self.assertIn(code, out["error_message"])
+        self._assert_one_log_and_audit(c.SYNC_PARTIAL)
+
+    def test_sync_with_only_invalid_rates_updates_nothing(self):
+        """If every provider rate is invalid, nothing is persisted at all."""
+        self._create("USD", is_base=True)
+        eur = self._create("EUR", rate=1.1)
+        inr = self._create("INR", rate=80.0)
+        providers_pkg.register_provider(
+            self._SOURCE, _StubProvider({"EUR": 0, "INR": -1}),
+        )
+
+        out = self._sync()
+        self.assertEqual(out["sync_status"], c.SYNC_PARTIAL)
+        self.assertEqual(out["currencies_updated"], 0)
+        self.assertEqual(repo.get_rate(self.db, eur["id"]).exchange_rate, 1.1)
+        self.assertEqual(repo.get_rate(self.db, inr["id"]).exchange_rate, 80.0)
+        self._assert_one_log_and_audit(c.SYNC_PARTIAL)
+
     # ── provider reports an error despite full coverage ──────────────────────
     def test_sync_full_coverage_with_provider_error_is_partial(self):
         self._create("USD", is_base=True)

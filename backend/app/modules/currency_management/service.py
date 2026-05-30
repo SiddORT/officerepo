@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 
 from backend.app.modules.currency_management import constants as c
 from backend.app.modules.currency_management import repository as repo
+from backend.app.modules.currency_management import validators
 from backend.app.modules.currency_management.models import (
     Currency, CurrencyRate, CurrencyRateHistory, CurrencySyncLog,
 )
@@ -449,9 +450,19 @@ def run_sync(
         provider = get_provider(sync_source)
         targets = [cur for cur in repo.list_active_currencies(db) if not cur.is_base_currency]
         result = provider.fetch_rates(base.currency_code, [t.currency_code for t in targets])
+        skipped: list[str] = []
         for cur in targets:
             new_rate = result.rates.get(cur.currency_code)
             if new_rate is None:
+                continue
+            # Provider-supplied numbers are untrusted: reject anything that
+            # would not pass manual entry (zero, negative, NaN/inf, non-numeric,
+            # or above RATE_MAX). Such currencies keep their existing rate and
+            # the sync downgrades to "Partial Success".
+            try:
+                new_rate = validators.validate_rate(new_rate)
+            except ValueError:
+                skipped.append(cur.currency_code)
                 continue
             rate = repo.get_rate(db, cur.id)
             old_rate = rate.exchange_rate if rate else None
@@ -470,6 +481,11 @@ def run_sync(
             ))
             updated += 1
         status = c.SYNC_SUCCESS if updated == len(targets) else c.SYNC_PARTIAL
+        if skipped:
+            status = c.SYNC_PARTIAL
+            error_message = (
+                f"Skipped invalid provider rate(s) for: {', '.join(sorted(skipped))}."
+            )
         if result.error and status == c.SYNC_SUCCESS:
             status = c.SYNC_PARTIAL
             error_message = result.error

@@ -8,6 +8,7 @@ so both the Pydantic schemas and the service layer can call them.
 """
 from __future__ import annotations
 
+import math
 import re
 from typing import Optional
 
@@ -128,10 +129,14 @@ def validate_rate(value, *, required: bool = True) -> Optional[float]:
         if required:
             raise ValueError("Exchange rate is required.")
         return None
+    if isinstance(value, bool):
+        raise ValueError("Exchange rate must be a number.")
     try:
         fvalue = float(value)
     except (TypeError, ValueError):
         raise ValueError("Exchange rate must be a number.")
+    if not math.isfinite(fvalue):
+        raise ValueError("Exchange rate must be a finite number.")
     if fvalue <= c.RATE_MIN:
         raise ValueError("Exchange rate must be greater than 0.")
     if fvalue > c.RATE_MAX:
