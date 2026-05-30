@@ -35,6 +35,9 @@ from backend.app.modules.cors_report.models import CorsRejection
 from backend.app.modules.rbac.models import (
     Permission, Role, RolePermission, AdminRole, AdminInvitation,
 )
+from backend.app.modules.currency_management.models import (
+    Currency, CurrencyRate, CurrencyRateHistory, CurrencySyncLog,
+)
 
 # Routers
 from backend.app.modules.auth.router import router as auth_router
@@ -49,6 +52,7 @@ from backend.app.modules.enquiry.router import router as enquiry_router
 from backend.app.modules.enquiry.admin_router import router as enquiry_admin_router
 from backend.app.modules.lead_management.router import router as lead_router
 from backend.app.modules.client_management.router import router as client_router
+from backend.app.modules.currency_management.router import router as currency_router
 from backend.app.platform.superadmin.rotation_router import router as rotation_router
 from backend.app.platform.superadmin.rotation_status_router import router as rotation_status_router
 
@@ -352,6 +356,9 @@ def create_app(app_settings=settings) -> FastAPI:
 
     # Client Management Module (superadmin — Client IS the tenant)
     app.include_router(client_router, prefix=f"{prefix}/superadmin/clients", tags=["client management"])
+
+    # Currency Management Module (superadmin — global platform settings)
+    app.include_router(currency_router, prefix=f"{prefix}/superadmin/currencies", tags=["currency management"])
 
     # Enquiry Inbox (superadmin CRM)
     app.include_router(enquiry_admin_router, prefix=f"{prefix}/superadmin/enquiries", tags=["enquiry inbox"])

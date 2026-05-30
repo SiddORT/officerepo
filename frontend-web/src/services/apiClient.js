@@ -269,3 +269,25 @@ export const clientsApi = {
     apiClient.get(`${CLIENTS}/${id}/documents/${docId}/download`, { responseType: "blob" }),
   deleteDocument: (id, docId) => apiClient.delete(`${CLIENTS}/${id}/documents/${docId}`),
 };
+
+// ── Currency Management (superadmin — global platform settings) ───────────────
+const CURRENCIES = "/superadmin/currencies";
+
+export const currencyApi = {
+  options: () => apiClient.get(`${CURRENCIES}/meta/options`),
+  dashboard: () => apiClient.get(`${CURRENCIES}/dashboard`),
+
+  list: (params) => apiClient.get(CURRENCIES, { params }),
+  get: (id) => apiClient.get(`${CURRENCIES}/${id}`),
+  create: (data) => apiClient.post(CURRENCIES, data),
+  update: (id, data) => apiClient.patch(`${CURRENCIES}/${id}`, data),
+  remove: (id) => apiClient.delete(`${CURRENCIES}/${id}`),
+
+  setStatus: (id, status) => apiClient.post(`${CURRENCIES}/${id}/status`, { status }),
+  setBase: (id, confirm = true) => apiClient.post(`${CURRENCIES}/${id}/base`, { confirm }),
+  updateRate: (id, data) => apiClient.put(`${CURRENCIES}/${id}/rate`, data),
+
+  rateHistory: (id, params) => apiClient.get(`${CURRENCIES}/${id}/rate-history`, { params }),
+  syncLogs: (params) => apiClient.get(`${CURRENCIES}/sync-logs`, { params }),
+  runSync: (syncSource) => apiClient.post(`${CURRENCIES}/sync`, null, { params: { sync_source: syncSource } }),
+};

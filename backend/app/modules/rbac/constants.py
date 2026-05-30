@@ -92,9 +92,10 @@ PERM_CLIENT_DOWNLOAD = "client.download"
 # Currency Management (first downstream consumer of the framework)
 PERM_CURRENCY_VIEW = "currency.view"
 PERM_CURRENCY_CREATE = "currency.create"
-PERM_CURRENCY_UPDATE = "currency.update"
-PERM_CURRENCY_DELETE = "currency.delete"
+PERM_CURRENCY_EDIT = "currency.edit"
+PERM_CURRENCY_ACTIVATE = "currency.activate"
 PERM_CURRENCY_OVERRIDE_RATE = "currency.override_rate"
+PERM_CURRENCY_VIEW_HISTORY = "currency.view_history"
 
 # Canonical catalog seeded on startup: (name, module, description).
 PERMISSION_CATALOG = [
@@ -129,9 +130,10 @@ PERMISSION_CATALOG = [
 
     (PERM_CURRENCY_VIEW, MODULE_CURRENCY, "View currencies and exchange rates"),
     (PERM_CURRENCY_CREATE, MODULE_CURRENCY, "Add new currencies"),
-    (PERM_CURRENCY_UPDATE, MODULE_CURRENCY, "Edit currency details"),
-    (PERM_CURRENCY_DELETE, MODULE_CURRENCY, "Delete currencies"),
-    (PERM_CURRENCY_OVERRIDE_RATE, MODULE_CURRENCY, "Manually override exchange rates"),
+    (PERM_CURRENCY_EDIT, MODULE_CURRENCY, "Edit currency details and base currency"),
+    (PERM_CURRENCY_ACTIVATE, MODULE_CURRENCY, "Activate or deactivate currencies"),
+    (PERM_CURRENCY_OVERRIDE_RATE, MODULE_CURRENCY, "Update or manually override exchange rates"),
+    (PERM_CURRENCY_VIEW_HISTORY, MODULE_CURRENCY, "View rate change history and sync logs"),
 ]
 
 # ── List defaults (pagination / sorting) ─────────────────────────────────────

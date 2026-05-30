@@ -23,6 +23,11 @@ import ClientDetails from "./pages/superadmin/clients/ClientDetails";
 import RolesPermissionsPage from "./pages/superadmin/settings/RolesPermissionsPage";
 import SettingsLayout from "./pages/superadmin/settings/SettingsLayout";
 import ProfileSettings from "./pages/superadmin/settings/ProfileSettings";
+import CurrencyList from "./pages/superadmin/settings/currency/CurrencyList";
+import CurrencyForm from "./pages/superadmin/settings/currency/CurrencyForm";
+import CurrencyDetails from "./pages/superadmin/settings/currency/CurrencyDetails";
+import CurrencyHistory from "./pages/superadmin/settings/currency/CurrencyHistory";
+import SyncLogs from "./pages/superadmin/settings/currency/SyncLogs";
 import Layout from "./components/Layout";
 
 function ProtectedRoute({ children, requireRole }) {
@@ -177,6 +182,56 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireRole="superadmin">
             <Layout><SettingsLayout><RolesPermissionsPage /></SettingsLayout></Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Protected — Settings → Currency Management */}
+      <Route
+        path="/superadmin/settings/currencies"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><SettingsLayout><CurrencyList /></SettingsLayout></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/settings/currencies/new"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><SettingsLayout><CurrencyForm /></SettingsLayout></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/settings/currencies/sync-logs"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><SettingsLayout><SyncLogs /></SettingsLayout></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/settings/currencies/:id"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><SettingsLayout><CurrencyDetails /></SettingsLayout></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/settings/currencies/:id/edit"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><SettingsLayout><CurrencyForm /></SettingsLayout></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/settings/currencies/:id/history"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><SettingsLayout><CurrencyHistory /></SettingsLayout></Layout>
           </ProtectedRoute>
         }
       />

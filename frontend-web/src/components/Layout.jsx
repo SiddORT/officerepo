@@ -119,6 +119,12 @@ function getPageTitle(pathname) {
   if (pathname.startsWith("/superadmin/leads")) return "Lead Management";
   if (pathname === "/superadmin/security") return "Security";
   if (pathname.startsWith("/superadmin/settings/roles")) return "Roles & Permissions";
+  if (pathname.startsWith("/superadmin/settings/currencies/sync-logs")) return "Currency Sync Logs";
+  if (pathname.startsWith("/superadmin/settings/currencies/new")) return "Add Currency";
+  if (pathname.endsWith("/edit") && pathname.startsWith("/superadmin/settings/currencies/")) return "Edit Currency";
+  if (pathname.endsWith("/history") && pathname.startsWith("/superadmin/settings/currencies/")) return "Rate History";
+  if (pathname.startsWith("/superadmin/settings/currencies/")) return "Currency Details";
+  if (pathname.startsWith("/superadmin/settings/currencies")) return "Currency Management";
   if (pathname.startsWith("/superadmin/settings")) return "Settings";
   if (pathname === "/dashboard") return "Dashboard";
   return "Office Repo";
