@@ -10,13 +10,18 @@ silently drift between the running application and the test suite.
 """
 from fastapi import Request
 
+# Cloudflare Turnstile is loaded only when configured, but the policy permits
+# its script/frame/endpoint unconditionally so the integration is deploy-ready.
+_TURNSTILE_ORIGIN = "https://challenges.cloudflare.com"
+
 CSP_POLICY: str = "; ".join([
     "default-src 'self'",
-    "script-src 'self'",
+    f"script-src 'self' {_TURNSTILE_ORIGIN}",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
-    "connect-src 'self'",
+    f"connect-src 'self' {_TURNSTILE_ORIGIN}",
     "font-src 'self'",
+    f"frame-src {_TURNSTILE_ORIGIN}",
     "object-src 'none'",
     "frame-ancestors 'none'",
     "report-uri /api/v1/csp-report",

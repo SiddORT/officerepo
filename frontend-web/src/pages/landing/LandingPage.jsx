@@ -355,6 +355,7 @@ function LandingHero({ onEnter, user, p, isDark, toggle }) {
         <nav className="hidden md:flex items-center gap-8 text-sm" style={{ color: p.textMuted }}>
           <a href="#features" style={{ transition: "color 0.15s" }} onMouseEnter={e => e.target.style.color=p.textStrong} onMouseLeave={e => e.target.style.color=p.textMuted}>Features</a>
           <a href="#platform" style={{ transition: "color 0.15s" }} onMouseEnter={e => e.target.style.color=p.textStrong} onMouseLeave={e => e.target.style.color=p.textMuted}>Platform</a>
+          <a onClick={() => navigate("/contact")} style={{ cursor: "pointer", transition: "color 0.15s" }} onMouseEnter={e => e.target.style.color=p.textStrong} onMouseLeave={e => e.target.style.color=p.textMuted}>Contact</a>
         </nav>
         <div className="flex items-center gap-3">
           <ThemeToggle isDark={isDark} toggle={toggle} p={p} />

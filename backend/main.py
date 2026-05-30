@@ -22,11 +22,13 @@ from backend.app.platform.superadmin.models import SuperAdmin
 from backend.app.platform.mobile.models import MobileDeviceSession
 from backend.app.platform.tenant_management.models import TenantBranding, TenantActivityLog
 from backend.app.platform.config.models import PlatformConfig
+from backend.app.modules.enquiry.models import Enquiry
 
 # Routers
 from backend.app.modules.auth.router import router as auth_router
 from backend.app.modules.csp_report.router import router as csp_report_router
 from backend.app.modules.employee.router import router as employee_router
+from backend.app.modules.enquiry.router import router as enquiry_router
 from backend.app.platform.tenants.router import router as tenants_router
 from backend.app.platform.feature_flags.router import router as flags_router
 from backend.app.platform.subscriptions.router import router as subscriptions_router
@@ -250,6 +252,9 @@ app.include_router(tenant_mgmt_router, prefix=f"{PREFIX}/superadmin/manage/tenan
 
 # Tenant-scoped modules
 app.include_router(employee_router, prefix=f"{PREFIX}/tenant/employees", tags=["tenant - employees"])
+
+# Public marketing site — enquiry / contact form (no auth)
+app.include_router(enquiry_router, prefix=f"{PREFIX}/enquiries", tags=["public - enquiries"])
 
 # Serve uploaded files statically
 _uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))

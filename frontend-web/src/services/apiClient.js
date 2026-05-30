@@ -153,6 +153,11 @@ export const rotationStatusApi = {
   get: () => apiClient.get("/superadmin/rotation-status"),
 };
 
+// ── Public Enquiries (no auth) ────────────────────────────────────────────────
+export const enquiriesApi = {
+  submit: (data) => apiClient.post("/enquiries", data),
+};
+
 // ── Employees (tenant-scoped) ─────────────────────────────────────────────────
 export const employeesApi = {
   list: (params) => apiClient.get("/tenant/employees", { params }),

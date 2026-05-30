@@ -100,6 +100,19 @@ class Settings(BaseSettings):
     TENANT_RESOLVER_STRATEGY: str = "header"  # header | subdomain | jwt
     ENVIRONMENT: str = "development"
 
+    # Cloudflare Turnstile — optional bot protection for the public enquiry form.
+    # When set, the backend verifies the widget token via Cloudflare siteverify
+    # and the frontend renders the widget (VITE_TURNSTILE_SITE_KEY). Leave blank
+    # to disable enforcement (default for local/dev).
+    TURNSTILE_SECRET_KEY: str = ""
+
+    # Number of trusted reverse-proxy / CDN hops in front of the app. Used to
+    # resolve the real client IP from X-Forwarded-For without trusting the
+    # left-most (client-spoofable) entry: the client IP is taken this many hops
+    # from the right of the chain. Replit serves the app behind one proxy, so the
+    # default of 1 selects the right-most entry (added by trusted infra).
+    TRUSTED_PROXY_HOPS: int = 1
+
     # CORS — comma-separated list of allowed origins for production.
     # Example: "https://app.officerepo.io,https://www.officerepo.io"
     # Ignored in development (wildcard is used instead).
