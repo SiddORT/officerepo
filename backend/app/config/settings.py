@@ -166,6 +166,18 @@ class Settings(BaseSettings):
     # new submissions to support retention-policy enforcement / right-to-erasure.
     ENQUIRY_RETENTION_DAYS: int = 365
 
+    # Live exchange-rate provider (Currency Management → "Run Sync Now").
+    # The built-in provider targets exchangerate-api.com (v6). When
+    # EXCHANGE_RATE_API_KEY is set, the provider is registered as "Forex API"
+    # and live sync fetches real rates; when blank, live sync stays disabled and
+    # records an explicit Failed log (Manual rate entry is unaffected).
+    #   EXCHANGE_RATE_API_KEY     — v6 API key (required to enable live sync).
+    #   EXCHANGE_RATE_API_URL     — override the base URL (default: v6 endpoint).
+    #   EXCHANGE_RATE_API_TIMEOUT — per-request HTTP timeout in seconds.
+    EXCHANGE_RATE_API_KEY: str = ""
+    EXCHANGE_RATE_API_URL: str = ""
+    EXCHANGE_RATE_API_TIMEOUT: float = 10.0
+
     # CORS — comma-separated list of allowed origins for production.
     # Example: "https://app.officerepo.io,https://www.officerepo.io"
     # Ignored in development (wildcard is used instead).

@@ -362,6 +362,11 @@ ENQUIRY_ENCRYPTION_KEYS             Comma-separated Fernet keys for enquiry PII 
                                     a key derived from SESSION_SECRET/JWT_SECRET via HKDF.
 PRIVACY_POLICY_VERSION              Privacy policy version stamped on enquiries (default: 1.0)
 ENQUIRY_RETENTION_DAYS              Days until enquiry retention_until expiry (default: 365)
+EXCHANGE_RATE_API_KEY               exchangerate-api.com v6 API key. When set, the live "Forex API"
+                                    provider is registered and "Run Sync Now" fetches real rates.
+                                    Blank = live sync disabled (records explicit Failed log; Manual unaffected).
+EXCHANGE_RATE_API_URL               Override the provider base URL (default: https://v6.exchangerate-api.com/v6)
+EXCHANGE_RATE_API_TIMEOUT           Per-request HTTP timeout in seconds (default: 10)
 
 # Notifications (all optional — each channel stays disabled until its vars are set)
 SMTP_HOST                           SMTP server host (enables email)
@@ -562,8 +567,16 @@ superadmin JWT guard, platform DB (`get_platform_db`).
 - **Database-per-client is DEFERRED**: `client_db_connections` records the *intended*
   connection (name/host/port/username/encrypted password); `database_status` defaults to
   **"Not Provisioned"**. Actual provisioning + a "Provision" action are future work.
-- **Currency**: stored as an ISO `currency_code` string on the billing profile + a frontend
-  constant list (no Settings→Currency Management module exists — documented deviation).
+- **Currency**: stored as an ISO `currency_code` string on the billing profile. A
+  Settings→Currency Management module (`backend/app/modules/currency_management/`,
+  `frontend-web/src/pages/superadmin/settings/currency/`) manages the currency catalog,
+  the single base currency, and exchange rates — Manual entry plus live "Run Sync Now"
+  via a provider abstraction (`providers/`). The built-in `ExchangeRateApiProvider`
+  (exchangerate-api.com v6) is registered as the "Forex API" source when
+  `EXCHANGE_RATE_API_KEY` is set; otherwise sync records an explicit Failed log and Manual
+  entry still works. Every sync fetches rates for active non-base currencies, updates the
+  current rate, journals `currency_rate_history`, and writes a Success/Partial/Failed
+  `currency_sync_logs` row.
 - **Documents** are PRIVATE via the shared storage helper (`scope="platform"`,
   `module="client_documents"`); same rootless-key + authenticated-download pattern as leads.
 - **Convert Lead→Client** (extends the existing `convert-to-client`): creates the Client +

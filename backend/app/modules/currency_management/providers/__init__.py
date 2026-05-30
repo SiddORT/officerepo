@@ -17,6 +17,7 @@ Register a real provider by adding it to ``_REGISTRY`` (or calling
 """
 from __future__ import annotations
 
+import logging
 from typing import Dict, List
 
 from backend.app.modules.currency_management.providers.base import (
@@ -25,8 +26,12 @@ from backend.app.modules.currency_management.providers.base import (
     ProviderResult,
 )
 
-# No live providers are configured yet — the module ships with the seam only.
-# Map a provider name → an ExchangeRateProvider instance to "go live".
+logger = logging.getLogger(__name__)
+
+# Live providers are registered at import time when their credentials are present
+# (see ``_bootstrap_default_providers``). Map a provider name → an
+# ExchangeRateProvider instance. Empty when no credentials are configured, in
+# which case ``get_provider`` raises ``ProviderNotConfigured`` (explicit failure).
 _REGISTRY: Dict[str, ExchangeRateProvider] = {}
 
 
@@ -46,6 +51,29 @@ def get_provider(name: str) -> ExchangeRateProvider:
             "Rates can only be set via the Manual source at this time."
         )
     return provider
+
+
+def _bootstrap_default_providers() -> None:
+    """Register the built-in live provider when its credentials are present.
+
+    Import-time and best-effort: a missing key simply leaves the registry empty
+    (live sync records a ``Failed`` log explaining no provider is configured),
+    and any unexpected error never blocks module import.
+    """
+    try:
+        from backend.app.modules.currency_management.providers.exchange_rate_api import (
+            ExchangeRateApiProvider,
+        )
+
+        provider = ExchangeRateApiProvider()
+        if provider.is_configured():
+            register_provider(provider.name, provider)
+            logger.info("Registered live exchange-rate provider: %s", provider.name)
+    except Exception:  # pragma: no cover - never block import on provider wiring
+        logger.exception("Failed to bootstrap default exchange-rate provider")
+
+
+_bootstrap_default_providers()
 
 
 __all__ = [

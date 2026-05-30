@@ -48,12 +48,13 @@ export default function SyncLogs() {
     setSyncing(true);
     setNotice("");
     try {
-      const res = await currencyApi.runSync("Manual");
+      const res = await currencyApi.runSync("Forex API");
       const d = unwrap(res);
+      const updated = d?.currencies_updated ?? 0;
       setNotice(
         d?.sync_status === "Failed"
           ? `Sync failed: ${d?.error_message || "no live provider configured."}`
-          : `Sync ${d?.sync_status?.toLowerCase() || "completed"}.`
+          : `Sync ${d?.sync_status?.toLowerCase() || "completed"} — ${updated} rate(s) updated.`
       );
       load();
     } catch (err) {
@@ -72,8 +73,9 @@ export default function SyncLogs() {
           </Link>
           <h2 className="text-xl font-bold t-heading mt-2">Currency Sync Logs</h2>
           <p className="text-sm t-muted mt-1">
-            History of exchange-rate sync attempts. No live provider is configured — manual syncs are
-            recorded as failed by design.
+            History of exchange-rate sync attempts. "Run Sync Now" fetches live rates from the
+            configured provider. If no provider API key is set, the attempt is recorded as failed
+            with an explanatory message (manual rate entry is unaffected).
           </p>
         </div>
         {hasPermission(CURRENCY_PERMS.overrideRate) && (
