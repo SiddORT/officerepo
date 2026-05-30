@@ -119,6 +119,7 @@ function getPageTitle(pathname) {
   if (pathname.startsWith("/superadmin/leads")) return "Lead Management";
   if (pathname === "/superadmin/security") return "Security";
   if (pathname.startsWith("/superadmin/settings/roles")) return "Roles & Permissions";
+  if (pathname.startsWith("/superadmin/settings")) return "Settings";
   if (pathname === "/dashboard") return "Dashboard";
   return "Office Repo";
 }
@@ -479,7 +480,10 @@ export default function Layout({ children }) {
 
                   {/* Menu items */}
                   <div className="p-1.5">
-                    <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg layout-nav-idle transition-all text-left">
+                    <button
+                      onClick={() => { setProfileOpen(false); navigate("/superadmin/settings/profile"); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg layout-nav-idle transition-all text-left"
+                    >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                           d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />

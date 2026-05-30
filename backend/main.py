@@ -117,6 +117,10 @@ def run_schema_migrations():
         # legacy converted_client_id is INTEGER and cannot hold a UUID).
         "ALTER TABLE leads ADD COLUMN IF NOT EXISTS converted_client_uuid VARCHAR(36)",
         "ALTER TABLE lead_conversions ADD COLUMN IF NOT EXISTS client_uuid VARCHAR(36)",
+
+        # superadmins — profile fields editable from Settings → Profile
+        "ALTER TABLE superadmins ADD COLUMN IF NOT EXISTS phone VARCHAR(20)",
+        "ALTER TABLE superadmins ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP",
     ]
     try:
         with engine.connect() as conn:

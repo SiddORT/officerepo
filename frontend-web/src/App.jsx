@@ -20,6 +20,8 @@ import CreateClient from "./pages/superadmin/clients/CreateClient";
 import EditClient from "./pages/superadmin/clients/EditClient";
 import ClientDetails from "./pages/superadmin/clients/ClientDetails";
 import RolesPermissionsPage from "./pages/superadmin/settings/RolesPermissionsPage";
+import SettingsLayout from "./pages/superadmin/settings/SettingsLayout";
+import ProfileSettings from "./pages/superadmin/settings/ProfileSettings";
 import Layout from "./components/Layout";
 
 function ProtectedRoute({ children, requireRole }) {
@@ -155,12 +157,24 @@ function AppRoutes() {
         }
       />
 
-      {/* Protected — Settings → Roles & Permissions */}
+      {/* Protected — Settings */}
+      <Route
+        path="/superadmin/settings"
+        element={<Navigate to="/superadmin/settings/profile" replace />}
+      />
+      <Route
+        path="/superadmin/settings/profile"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><SettingsLayout><ProfileSettings /></SettingsLayout></Layout>
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/superadmin/settings/roles"
         element={
           <ProtectedRoute requireRole="superadmin">
-            <Layout><RolesPermissionsPage /></Layout>
+            <Layout><SettingsLayout><RolesPermissionsPage /></SettingsLayout></Layout>
           </ProtectedRoute>
         }
       />

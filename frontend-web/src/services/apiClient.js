@@ -56,6 +56,9 @@ export const authApi = {
     apiClient.post("/auth/superadmin/login", { email, password }),
   logout: () => apiClient.post("/auth/logout", {}),
   me: () => apiClient.get("/auth/me"),
+  getProfile: () => apiClient.get("/auth/profile"),
+  updateProfile: (data) => apiClient.patch("/auth/profile", data),
+  changePassword: (data) => apiClient.post("/auth/change-password", data),
 };
 
 // ── RBAC — Roles & Permissions (superadmin) ───────────────────────────────────

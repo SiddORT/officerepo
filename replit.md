@@ -96,6 +96,10 @@ The frontend proxies `/api` to the backend via Vite.
 - `/dashboard` → protected
 - `/superadmin/leads/calendar` → protected (superadmin Calendar; route declared before `/leads/:id`)
 - `/superadmin/security` → protected (secret rotation status)
+- `/superadmin/settings` → protected (redirects to `/settings/profile`); SettingsLayout wraps a left section
+  nav card + content. `/superadmin/settings/profile` (Profile Information + Change Password; universal,
+  reached from the topbar profile dropdown "My Profile"); `/superadmin/settings/roles` (Roles &
+  Permissions; nav item gated by `rbac.role.view`)
 - `/superadmin/clients` → protected (Client list); `/new`, `/:id`, `/:id/edit` (Client = tenant)
 - `/contact` → EnquiryPage (public lead capture / "Request Demo" form)
 - `/privacy-policy` → PrivacyPolicyPage (public, linked from enquiry consent)
@@ -113,6 +117,11 @@ The frontend proxies `/api` to the backend via Vite.
 POST /api/v1/auth/superadmin/login
 POST /api/v1/auth/refresh
 POST /api/v1/auth/logout
+
+# Superadmin — profile & account (self-service Settings)
+GET   /api/v1/auth/profile          (own name/email/phone/role)
+PATCH /api/v1/auth/profile          ({name?, phone?} — email is read-only)
+POST  /api/v1/auth/change-password  ({current_password, new_password min 8})
 
 # Superadmin — secret rotation
 POST /api/v1/superadmin/rotate-secrets

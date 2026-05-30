@@ -37,7 +37,7 @@ export default function RolesPermissionsPage() {
   const [tab, setTab] = useState("roles");
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div>
       <div className="mb-6">
         <h2 className="text-xl font-bold t-heading">Roles &amp; Permissions</h2>
         <p className="text-sm t-muted mt-1">
