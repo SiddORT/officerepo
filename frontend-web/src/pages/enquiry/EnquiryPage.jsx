@@ -5,6 +5,7 @@ import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
 import Textarea from "../../components/ui/Textarea";
 import PhoneInput from "../../components/ui/PhoneInput";
+import Checkbox from "../../components/ui/Checkbox";
 import ThemeToggle from "../../components/ui/ThemeToggle";
 
 import { enquiriesApi } from "../../services/apiClient";
@@ -17,6 +18,7 @@ import {
   COMPANY_MIN_LEN,
   COMPANY_MAX_LEN,
   ENQUIRY_SUCCESS_MESSAGE,
+  MARKETING_CONSENT_LABEL,
 } from "../../constants/enquiry";
 import {
   required,
@@ -73,7 +75,10 @@ export default function EnquiryPage() {
   const [form, setForm] = useState(EMPTY);
   const [dialCode, setDialCode] = useState("+91");
   const [phone, setPhone] = useState("");
-  const [honeypot, setHoneypot] = useState(""); // hidden anti-bot field
+  const [consentGiven, setConsentGiven] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
+  const [consentError, setConsentError] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState(""); // honeypot — hidden anti-bot field
   const [turnstileToken, setTurnstileToken] = useState("");
   const turnstileRef = useRef(null);
   const widgetIdRef = useRef(null);
@@ -175,7 +180,12 @@ export default function EnquiryPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setServerError("");
-    if (!validateAll()) return;
+    const formValid = validateAll();
+    const consentValid = consentGiven;
+    setConsentError(
+      consentValid ? "" : "You must agree to the privacy terms before submitting."
+    );
+    if (!formValid || !consentValid) return;
 
     if (TURNSTILE_SITE_KEY && !turnstileToken) {
       setServerError("Please complete the verification challenge before submitting.");
@@ -191,7 +201,10 @@ export default function EnquiryPage() {
         company_name: form.company_name.trim(),
         interested_module: form.interested_module || null,
         message: form.message.trim(),
-        honeypot,
+        consent_given: consentGiven,
+        marketing_consent: marketingConsent,
+        website_url: websiteUrl,
+        referrer_url: document.referrer || null,
         turnstile_token: turnstileToken || null,
       });
       setSubmitted(true);
@@ -237,7 +250,10 @@ export default function EnquiryPage() {
     setForm(EMPTY);
     setPhone("");
     setDialCode("+91");
-    setHoneypot("");
+    setConsentGiven(false);
+    setMarketingConsent(false);
+    setConsentError("");
+    setWebsiteUrl("");
     setTurnstileToken("");
     if (widgetIdRef.current !== null && window.turnstile) {
       try {
@@ -417,6 +433,41 @@ export default function EnquiryPage() {
                 />
               </div>
 
+              {/* Consent section */}
+              <div className="mt-6 pt-6 space-y-4" style={{ borderTop: "1px solid var(--border)" }}>
+                <Checkbox
+                  required
+                  name="consent_given"
+                  checked={consentGiven}
+                  onChange={(e) => {
+                    setConsentGiven(e.target.checked);
+                    if (e.target.checked) setConsentError("");
+                  }}
+                  error={consentError}
+                >
+                  I agree to Office Repo storing and processing my personal
+                  information for the purpose of responding to my enquiry. You can
+                  read how we handle your data in our{" "}
+                  <Link
+                    to="/privacy-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-cyan-500 hover:underline"
+                  >
+                    Privacy Policy
+                  </Link>
+                  .
+                </Checkbox>
+
+                <Checkbox
+                  name="marketing_consent"
+                  checked={marketingConsent}
+                  onChange={(e) => setMarketingConsent(e.target.checked)}
+                >
+                  {MARKETING_CONSENT_LABEL}
+                </Checkbox>
+              </div>
+
               {/* Honeypot — visually hidden, must remain empty (anti-bot) */}
               <div
                 aria-hidden="true"
@@ -434,9 +485,9 @@ export default function EnquiryPage() {
                     type="text"
                     tabIndex={-1}
                     autoComplete="off"
-                    name="website"
-                    value={honeypot}
-                    onChange={(e) => setHoneypot(e.target.value)}
+                    name="website_url"
+                    value={websiteUrl}
+                    onChange={(e) => setWebsiteUrl(e.target.value)}
                   />
                 </label>
               </div>
@@ -454,7 +505,7 @@ export default function EnquiryPage() {
                   className="btn-primary px-6"
                   disabled={submitting || (!!TURNSTILE_SITE_KEY && !turnstileToken)}
                 >
-                  {submitting ? "Sending..." : "Send enquiry"}
+                  {submitting ? "Sending..." : "Request Demo"}
                 </button>
               </div>
             </form>

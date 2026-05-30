@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import LandingPage from "./pages/landing/LandingPage";
 import EnquiryPage from "./pages/enquiry/EnquiryPage";
+import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
 import LoginPage from "./pages/login/LoginPage";
 import AdminLoginPage from "./pages/login/AdminLoginPage";
 import DashboardPage from "./pages/dashboard/DashboardPage";
@@ -30,6 +31,7 @@ function AppRoutes() {
       {/* Public */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/contact" element={<EnquiryPage />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
       <Route path="/admin" element={user ? <Navigate to="/dashboard" replace /> : <AdminLoginPage />} />
 

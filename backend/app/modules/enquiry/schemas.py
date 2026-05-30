@@ -3,7 +3,6 @@ Schema layer — Pydantic request/response models with validation & sanitization
 """
 import re
 from typing import Optional
-from datetime import datetime
 from pydantic import BaseModel, field_validator
 
 from backend.app.modules.enquiry.constants import (
@@ -22,6 +21,12 @@ _XSS_RE = re.compile(r"<|>|javascript:|on\w+\s*=", re.IGNORECASE)
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _PHONE_RE = re.compile(r"^\+?[\d\s\-()]{7,20}$")
 _NAME_RE = re.compile(r"^[A-Za-z][A-Za-z\s.\-']*$")
+_MULTISPACE_RE = re.compile(r"\s{2,}")
+
+
+def _clean(v: Optional[str]) -> str:
+    """Trim and collapse runs of consecutive whitespace into a single space."""
+    return _MULTISPACE_RE.sub(" ", (v or "").strip())
 
 
 def _no_xss(v: str, field: str) -> str:
@@ -38,14 +43,21 @@ class EnquiryCreateRequest(BaseModel):
     interested_module: Optional[str] = None
     message: str
 
+    # Consent (privacy / GDPR)
+    consent_given: bool = False
+    marketing_consent: bool = False
+
     # Spam protection
-    honeypot: Optional[str] = None          # hidden field — must stay empty
+    website_url: Optional[str] = None       # honeypot — must stay empty
     turnstile_token: Optional[str] = None   # Cloudflare Turnstile response token
+
+    # Metadata (client-provided; server-side values take precedence)
+    referrer_url: Optional[str] = None
 
     @field_validator("full_name")
     @classmethod
     def validate_full_name(cls, v):
-        v = (v or "").strip()
+        v = _clean(v)
         if not v:
             raise ValueError("Full name is required.")
         if not (NAME_MIN_LEN <= len(v) <= NAME_MAX_LEN):
@@ -67,7 +79,7 @@ class EnquiryCreateRequest(BaseModel):
     @field_validator("phone_number")
     @classmethod
     def validate_phone_number(cls, v):
-        v = (v or "").strip()
+        v = _clean(v)
         if not v:
             raise ValueError("Phone number is required.")
         if not _PHONE_RE.match(v):
@@ -77,7 +89,7 @@ class EnquiryCreateRequest(BaseModel):
     @field_validator("company_name")
     @classmethod
     def validate_company_name(cls, v):
-        v = (v or "").strip()
+        v = _clean(v)
         if not v:
             raise ValueError("Company name is required.")
         if not (COMPANY_MIN_LEN <= len(v) <= COMPANY_MAX_LEN):
@@ -99,24 +111,24 @@ class EnquiryCreateRequest(BaseModel):
     @field_validator("message")
     @classmethod
     def validate_message(cls, v):
-        v = (v or "").strip()
+        v = _clean(v)
         if not v:
             raise ValueError("Message is required.")
         if not (MESSAGE_MIN_LEN <= len(v) <= MESSAGE_MAX_LEN):
             raise ValueError(f"Message must be between {MESSAGE_MIN_LEN} and {MESSAGE_MAX_LEN} characters.")
         return _no_xss(v, "Message")
 
+    @field_validator("consent_given")
+    @classmethod
+    def validate_consent(cls, v):
+        if v is not True:
+            raise ValueError("You must agree to the privacy terms before submitting.")
+        return v
 
-class EnquiryResponse(BaseModel):
-    id: int
-    full_name: str
-    work_email: str
-    phone_number: str
-    company_name: str
-    interested_module: Optional[str] = None
-    message: str
-    source: str
-    status: str
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
+    @field_validator("referrer_url")
+    @classmethod
+    def validate_referrer_url(cls, v):
+        if not v:
+            return None
+        v = v.strip()[:1024]
+        return v or None

@@ -34,19 +34,32 @@ def count_recent_by_ip(db: Session, ip_address: str, window_minutes: int) -> int
 
 def find_recent_duplicate(
     db: Session,
-    work_email: str,
-    message: str,
+    dedupe_hash: str,
     window_minutes: int,
 ) -> Optional[Enquiry]:
-    """Find an identical email+message submission within the time window."""
+    """Find a recent submission with the same email+company blind index.
+
+    The blind index lets us detect duplicates without decrypting/querying the
+    encrypted email — identical email+company within the window collide on hash.
+    """
+    if not dedupe_hash:
+        return None
     since = datetime.utcnow() - timedelta(minutes=window_minutes)
     return (
         db.query(Enquiry)
         .filter(
-            Enquiry.work_email == work_email,
-            Enquiry.message == message,
+            Enquiry.dedupe_hash == dedupe_hash,
             Enquiry.created_at >= since,
             Enquiry.is_deleted.is_(False),
         )
         .first()
+    )
+
+
+def exists_by_enquiry_number(db: Session, enquiry_number: str) -> bool:
+    return (
+        db.query(Enquiry.id)
+        .filter(Enquiry.enquiry_number == enquiry_number)
+        .first()
+        is not None
     )

@@ -10,14 +10,13 @@ from sqlalchemy.orm import Session
 from backend.app.config.settings import settings
 from backend.app.database.platform import get_platform_db
 from backend.app.modules.enquiry import service
+from backend.app.modules.enquiry.constants import SUCCESS_MESSAGE
 from backend.app.modules.enquiry.schemas import EnquiryCreateRequest
 from backend.shared.response import ApiResponse
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-SUCCESS_MESSAGE = "Thank you for contacting Office Repo. Our team will reach out shortly."
 
 
 def _client_ip(request: Request) -> Optional[str]:
@@ -47,9 +46,17 @@ def submit_enquiry(
 ):
     ip_address = _client_ip(request)
     user_agent = request.headers.get("user-agent")
+    # Prefer the server-observed referer; fall back to the client-supplied value.
+    referrer_url = request.headers.get("referer") or payload.referrer_url
 
     try:
-        service.create_enquiry(db, payload, ip_address=ip_address, user_agent=user_agent)
+        service.create_enquiry(
+            db,
+            payload,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            referrer_url=referrer_url,
+        )
     except service.HoneypotTripped:
         # Silently succeed so bots get no signal — nothing is persisted.
         return ApiResponse.ok(None, SUCCESS_MESSAGE).model_dump()

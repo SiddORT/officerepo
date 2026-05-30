@@ -72,6 +72,8 @@ The frontend proxies `/api` to the backend via Vite.
 - `/admin` → AdminLoginPage (hidden, not linked anywhere, violet theme)
 - `/dashboard` → protected
 - `/superadmin` → protected
+- `/contact` → EnquiryPage (public lead capture / "Request Demo" form)
+- `/privacy-policy` → PrivacyPolicyPage (public, linked from enquiry consent)
 - Unknown routes → `/`
 - Logout → navigates to `/`
 
@@ -106,7 +108,28 @@ POST /api/v1/tenant/employees
 GET  /api/v1/tenant/employees/{id}
 PATCH /api/v1/tenant/employees/{id}
 DELETE /api/v1/tenant/employees/{id}
+
+POST /api/v1/public/enquiries        (public; GDPR-aware lead capture)
 ```
+
+## Public Enquiries (GDPR-aware lead capture)
+- `POST /api/v1/public/enquiries` — no auth. Body: `full_name`, `work_email`,
+  `phone_number`, `company_name`, `interested_module?`, `message`,
+  `consent_given` (required `true`), `marketing_consent?`, `referrer_url?`,
+  `website_url` (honeypot — must stay empty), `turnstile_token?`.
+- **PII at rest is encrypted** (email/phone/message via Fernet/MultiFernet).
+  A `dedupe_hash` (HMAC of `email|company`) enables duplicate detection since
+  encrypted columns can't be queried.
+- **Consent**: `consent_given` + `consent_timestamp`, `marketing_consent` +
+  `marketing_consent_timestamp` stored independently; `privacy_policy_version`
+  recorded per submission. Compliance fields: `retention_until`,
+  `deletion_requested`, `deletion_requested_at`.
+- **Spam controls**: honeypot (`website_url`), duplicate detection (email+company
+  within 24h → 409), rate limit 5/IP/hr (→ 429), stores `ip_address`,
+  `user_agent`, `referrer_url`. Honeypot trips silently.
+- Each row gets an `enquiry_number` (`ENQ-YYYYMMDD-XXXXXXXX`).
+- Audit entries written via `backend/shared/audit/` with **masked PII**
+  (e.g. `j***e@acme.com`).
 
 ## JWT Payload
 ```json
@@ -134,6 +157,11 @@ SECRET_ROTATION_ALERT_URL           Optional webhook URL for stale-secret alerts
 TENANT_RESOLVER_STRATEGY            header | subdomain | jwt (default: header)
 ENVIRONMENT                         development | production (default: development)
 ALLOWED_ORIGINS                     Comma-separated CORS origins (auto-detects REPLIT_DOMAINS)
+ENQUIRY_ENCRYPTION_KEYS             Comma-separated Fernet keys for enquiry PII (1st = primary
+                                    for encryption, rest for decryption/rotation). Falls back to
+                                    a key derived from SESSION_SECRET/JWT_SECRET via HKDF.
+PRIVACY_POLICY_VERSION              Privacy policy version stamped on enquiries (default: 1.0)
+ENQUIRY_RETENTION_DAYS              Days until enquiry retention_until expiry (default: 365)
 ```
 
 ## Stack

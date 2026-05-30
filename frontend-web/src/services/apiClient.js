@@ -155,7 +155,7 @@ export const rotationStatusApi = {
 
 // ── Public Enquiries (no auth) ────────────────────────────────────────────────
 export const enquiriesApi = {
-  submit: (data) => apiClient.post("/enquiries", data),
+  submit: (data) => apiClient.post("/public/enquiries", data),
 };
 
 // ── Employees (tenant-scoped) ─────────────────────────────────────────────────

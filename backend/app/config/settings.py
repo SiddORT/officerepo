@@ -113,6 +113,22 @@ class Settings(BaseSettings):
     # default of 1 selects the right-most entry (added by trusted infra).
     TRUSTED_PROXY_HOPS: int = 1
 
+    # Field-level encryption for enquiry PII (email/phone/message).
+    # Comma-separated urlsafe-base64 Fernet keys; the FIRST is used to encrypt,
+    # ALL are tried when decrypting (enables zero-downtime key rotation). When
+    # blank, a key is derived deterministically from SESSION_SECRET/JWT_SECRET so
+    # the feature works without provisioning a dedicated secret. Set a dedicated
+    # key in production for cryptographic separation.
+    ENQUIRY_ENCRYPTION_KEYS: str = ""
+
+    # Privacy policy version stamped onto each consent record. Bump whenever the
+    # published privacy policy materially changes so consent provenance is tracked.
+    PRIVACY_POLICY_VERSION: str = "1.0"
+
+    # Data retention window (days) for enquiry PII. Used to set retention_until on
+    # new submissions to support retention-policy enforcement / right-to-erasure.
+    ENQUIRY_RETENTION_DAYS: int = 365
+
     # CORS — comma-separated list of allowed origins for production.
     # Example: "https://app.officerepo.io,https://www.officerepo.io"
     # Ignored in development (wildcard is used instead).

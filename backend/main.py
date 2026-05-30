@@ -23,6 +23,7 @@ from backend.app.platform.mobile.models import MobileDeviceSession
 from backend.app.platform.tenant_management.models import TenantBranding, TenantActivityLog
 from backend.app.platform.config.models import PlatformConfig
 from backend.app.modules.enquiry.models import Enquiry
+from backend.shared.audit.models import AuditLog
 
 # Routers
 from backend.app.modules.auth.router import router as auth_router
@@ -79,6 +80,29 @@ def run_schema_migrations():
         "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS trial_end TIMESTAMP",
         "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS user_limit INTEGER DEFAULT 10",
         "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS storage_limit INTEGER DEFAULT 1024",
+
+        # enquiries — GDPR/privacy-aware lead capture (encryption, consent, compliance)
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS enquiry_number VARCHAR(40)",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS email_encrypted TEXT",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS phone_encrypted TEXT",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS message_encrypted TEXT",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS dedupe_hash VARCHAR(64)",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS consent_given BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS consent_timestamp TIMESTAMP",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS privacy_policy_version VARCHAR(20)",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS marketing_consent BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS marketing_consent_timestamp TIMESTAMP",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS referrer_url VARCHAR(1024)",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS retention_until TIMESTAMP",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS deletion_requested BOOLEAN DEFAULT FALSE",
+        # Drop legacy plaintext PII columns (replaced by encrypted equivalents)
+        "ALTER TABLE enquiries DROP COLUMN IF EXISTS work_email",
+        "ALTER TABLE enquiries DROP COLUMN IF EXISTS phone_number",
+        "ALTER TABLE enquiries DROP COLUMN IF EXISTS message",
+        # Indexes for enquiry_number (unique) and dedupe lookups
+        "CREATE UNIQUE INDEX IF NOT EXISTS ix_enquiries_enquiry_number ON enquiries (enquiry_number)",
+        "CREATE INDEX IF NOT EXISTS ix_enquiries_dedupe_hash ON enquiries (dedupe_hash)",
+        "CREATE INDEX IF NOT EXISTS ix_enquiries_dedupe_created ON enquiries (dedupe_hash, created_at)",
     ]
     try:
         with engine.connect() as conn:
@@ -254,7 +278,7 @@ app.include_router(tenant_mgmt_router, prefix=f"{PREFIX}/superadmin/manage/tenan
 app.include_router(employee_router, prefix=f"{PREFIX}/tenant/employees", tags=["tenant - employees"])
 
 # Public marketing site — enquiry / contact form (no auth)
-app.include_router(enquiry_router, prefix=f"{PREFIX}/enquiries", tags=["public - enquiries"])
+app.include_router(enquiry_router, prefix=f"{PREFIX}/public/enquiries", tags=["public - enquiries"])
 
 # Serve uploaded files statically
 _uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
