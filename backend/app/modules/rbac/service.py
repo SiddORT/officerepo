@@ -11,6 +11,10 @@ Responsibilities:
 """
 from __future__ import annotations
 
+import hashlib
+import os
+import secrets
+from datetime import datetime, timedelta
 from typing import List, Optional, Set
 
 from fastapi import HTTPException
@@ -18,11 +22,13 @@ from sqlalchemy.orm import Session
 
 from backend.app.modules.rbac import constants as c
 from backend.app.modules.rbac import repository as repo
-from backend.app.modules.rbac.models import Role, Permission
+from backend.app.modules.rbac.models import Role, Permission, AdminInvitation
 from backend.app.modules.rbac.schemas import (
-    RoleCreateRequest, RoleUpdateRequest, AssignRolesRequest,
+    RoleCreateRequest, RoleUpdateRequest, AssignRolesRequest, InviteUserRequest,
 )
-from backend.shared.audit.audit_logger import record_audit
+from backend.app.platform.superadmin.models import SuperAdmin
+from backend.shared.audit.audit_logger import record_audit, mask_email
+from backend.shared.notifications import notifier
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -364,3 +370,266 @@ def assign_roles(db: Session, admin_id: int, payload: AssignRolesRequest, *,
         "is_active": admin.is_active,
         "role_ids": repo.list_admin_role_ids(db, admin_id),
     }
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# User management & invitations
+# ════════════════════════════════════════════════════════════════════════════
+def _hash_token(raw_token: str) -> str:
+    return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+
+def _is_onboarded(inv: Optional[AdminInvitation]) -> bool:
+    """True when the account has a usable password (so it can be (re)activated).
+
+    Onboarded means *not* sitting on a pending invite: either there is no
+    invitation at all (a legacy/seeded admin created with a real password) or
+    the most-recent invitation has been accepted. A user only counts as NOT
+    onboarded while they hold an invitation they never accepted.
+    """
+    return inv is None or inv.accepted_at is not None
+
+
+def _invitation_status(admin: SuperAdmin, inv: Optional[AdminInvitation]) -> str:
+    """Derive a user's status from its account + most-recent invitation."""
+    if admin.is_active:
+        return c.USER_STATUS_ACTIVE
+    if _is_onboarded(inv):
+        # Onboarded (accepted invite, or legacy/seeded), then deactivated —
+        # reactivatable, not a pending invite.
+        return c.USER_STATUS_INACTIVE
+    # Here inv is not None and was never accepted: a pending/expired invite.
+    if inv.is_revoked:
+        return c.USER_STATUS_EXPIRED
+    if inv.expires_at and inv.expires_at < datetime.utcnow():
+        return c.USER_STATUS_EXPIRED
+    return c.USER_STATUS_INVITED
+
+
+def _frontend_base_url() -> str:
+    """Best-effort public base URL for building the invite link in emails."""
+    explicit = os.environ.get("APP_BASE_URL")
+    if explicit:
+        return explicit.rstrip("/")
+    domains = os.environ.get("REPLIT_DOMAINS", "")
+    first = domains.split(",")[0].strip() if domains else ""
+    if first:
+        return f"https://{first}"
+    return ""
+
+
+def _build_invite_link(token: str) -> str:
+    base = _frontend_base_url()
+    path = f"{c.INVITE_ACCEPT_PATH}?token={token}"
+    return f"{base}{path}" if base else path
+
+
+def _issue_invitation(db: Session, admin: SuperAdmin, *, actor_id: Optional[int]) -> str:
+    """Revoke any open invitation, mint a fresh single-use token, persist its hash."""
+    repo.revoke_open_invitations(db, admin.id)
+    raw_token = secrets.token_urlsafe(c.INVITE_TOKEN_BYTES)
+    repo.create_invitation(
+        db,
+        admin_id=admin.id,
+        email=admin.email,
+        token_hash=_hash_token(raw_token),
+        expires_at=datetime.utcnow() + timedelta(days=c.INVITE_EXPIRY_DAYS),
+        created_by=actor_id,
+    )
+    return raw_token
+
+
+def _send_invite_email(admin: SuperAdmin, invite_link: str) -> bool:
+    result = notifier.send_email(
+        to=admin.email,
+        subject="You've been invited to Office Repo",
+        body=(
+            f"Hello{(' ' + admin.name) if admin.name else ''},\n\n"
+            "You've been invited to access the Office Repo admin console. "
+            "Use the link below to set your password and sign in:\n\n"
+            f"{invite_link}\n\n"
+            "This link will expire in "
+            f"{c.INVITE_EXPIRY_DAYS} days.\n"
+        ),
+    )
+    return bool(getattr(result, "success", False))
+
+
+def _user_to_dict(db: Session, admin: SuperAdmin, inv: Optional[AdminInvitation]) -> dict:
+    return {
+        "id": admin.id,
+        "email": admin.email,
+        "name": admin.name,
+        "is_active": admin.is_active,
+        "status": _invitation_status(admin, inv),
+        "role_ids": repo.list_admin_role_ids(db, admin.id),
+        "invited_at": inv.created_at if inv else None,
+        "created_at": admin.created_at,
+    }
+
+
+def list_users(db: Session) -> List[dict]:
+    admins = repo.list_admins(db)
+    latest = repo.latest_invitations_by_admin(db, [a.id for a in admins])
+    return [_user_to_dict(db, a, latest.get(a.id)) for a in admins]
+
+
+def invite_user(db: Session, payload: InviteUserRequest, *, actor_id: int, actor: str) -> dict:
+    if repo.get_admin_by_email(db, payload.email):
+        raise HTTPException(status_code=409, detail="A user with that email already exists.")
+
+    # Validate roles up front.
+    valid_ids: List[str] = []
+    for rid in list(dict.fromkeys(payload.role_ids or [])):
+        role = repo.get_role(db, rid)
+        if not role:
+            raise HTTPException(status_code=400, detail="One or more roles are invalid.")
+        valid_ids.append(rid)
+
+    # Inactive account with an unusable random password until the invite is accepted.
+    admin = repo.create_admin(
+        db,
+        email=payload.email,
+        name=payload.name,
+        hashed_password=SuperAdmin.hash_password(secrets.token_urlsafe(32)),
+        is_active=False,
+    )
+    for rid in valid_ids:
+        repo.add_admin_role(db, admin.id, rid, created_by=actor_id)
+
+    raw_token = _issue_invitation(db, admin, actor_id=actor_id)
+    invite_link = _build_invite_link(raw_token)
+    email_sent = _send_invite_email(admin, invite_link)
+
+    record_audit(
+        db, c.AUDIT_USER_INVITED, c.AUDIT_ENTITY_USER, str(admin.id), actor=actor,
+        metadata={"email": mask_email(admin.email), "role_count": len(valid_ids),
+                  "email_sent": email_sent},
+    )
+    db.commit()
+
+    latest = repo.latest_invitations_by_admin(db, [admin.id]).get(admin.id)
+    return {
+        "user": _user_to_dict(db, admin, latest),
+        "invite_token": raw_token,
+        "invite_link": invite_link,
+        "email_sent": email_sent,
+    }
+
+
+def resend_invite(db: Session, admin_id: int, *, actor_id: int, actor: str) -> dict:
+    admin = repo.get_admin(db, admin_id)
+    if not admin:
+        raise HTTPException(status_code=404, detail="User not found.")
+    latest = repo.latest_invitations_by_admin(db, [admin.id]).get(admin.id)
+    if admin.is_active or _is_onboarded(latest):
+        raise HTTPException(status_code=400, detail="This user has already accepted their invitation.")
+
+    raw_token = _issue_invitation(db, admin, actor_id=actor_id)
+    invite_link = _build_invite_link(raw_token)
+    email_sent = _send_invite_email(admin, invite_link)
+
+    record_audit(
+        db, c.AUDIT_USER_INVITE_RESENT, c.AUDIT_ENTITY_USER, str(admin.id), actor=actor,
+        metadata={"email": mask_email(admin.email), "email_sent": email_sent},
+    )
+    db.commit()
+
+    latest = repo.latest_invitations_by_admin(db, [admin.id]).get(admin.id)
+    return {
+        "user": _user_to_dict(db, admin, latest),
+        "invite_token": raw_token,
+        "invite_link": invite_link,
+        "email_sent": email_sent,
+    }
+
+
+def set_user_active(db: Session, admin_id: int, is_active: bool, *,
+                    actor_id: int, actor: str) -> dict:
+    admin = repo.get_admin(db, admin_id)
+    if not admin:
+        raise HTTPException(status_code=404, detail="User not found.")
+    if not is_active and admin.id == actor_id:
+        raise HTTPException(status_code=400, detail="You cannot deactivate your own account.")
+
+    latest = repo.latest_invitations_by_admin(db, [admin.id]).get(admin.id)
+    if is_active and not admin.is_active and not _is_onboarded(latest):
+        # An account can only be (re)activated once it has completed onboarding.
+        raise HTTPException(status_code=400, detail="This user has not accepted their invitation yet.")
+    if admin.is_active == is_active:
+        raise HTTPException(
+            status_code=400,
+            detail="User is already active." if is_active else "User is already inactive.",
+        )
+
+    repo.set_admin_active(db, admin, is_active)
+    record_audit(
+        db,
+        c.AUDIT_USER_ACTIVATED if is_active else c.AUDIT_USER_DEACTIVATED,
+        c.AUDIT_ENTITY_USER, str(admin.id), actor=actor,
+        metadata={"email": mask_email(admin.email)},
+    )
+    db.commit()
+    latest = repo.latest_invitations_by_admin(db, [admin.id]).get(admin.id)
+    return _user_to_dict(db, admin, latest)
+
+
+def delete_pending_user(db: Session, admin_id: int, *, actor_id: int, actor: str) -> None:
+    admin = repo.get_admin(db, admin_id)
+    if not admin:
+        raise HTTPException(status_code=404, detail="User not found.")
+    if admin.email == c.DEFAULT_SUPERADMIN_EMAIL:
+        raise HTTPException(status_code=400, detail="The default superadmin cannot be removed.")
+    if admin.is_active:
+        raise HTTPException(
+            status_code=400,
+            detail="Active users cannot be deleted — deactivate the account instead.",
+        )
+    latest = repo.latest_invitations_by_admin(db, [admin.id]).get(admin.id)
+    if _is_onboarded(latest):
+        # Onboarded users are deactivated, never hard-deleted, to preserve audit trails.
+        raise HTTPException(
+            status_code=400,
+            detail="Only users with a pending invitation can be removed.",
+        )
+
+    masked = mask_email(admin.email)
+    repo.delete_admin(db, admin)
+    record_audit(
+        db, c.AUDIT_USER_DELETED, c.AUDIT_ENTITY_USER, str(admin_id), actor=actor,
+        metadata={"email": masked},
+    )
+    db.commit()
+
+
+# ── Public invitation acceptance ─────────────────────────────────────────────
+def _resolve_open_invitation(db: Session, token: str) -> tuple[AdminInvitation, SuperAdmin]:
+    inv = repo.get_invitation_by_token_hash(db, _hash_token(token or ""))
+    if not inv or inv.is_revoked or inv.accepted_at is not None:
+        raise HTTPException(status_code=404, detail="This invitation is invalid or has already been used.")
+    if inv.expires_at and inv.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=410, detail="This invitation has expired.")
+    admin = repo.get_admin(db, inv.admin_id)
+    if not admin:
+        raise HTTPException(status_code=404, detail="This invitation is invalid or has already been used.")
+    return inv, admin
+
+
+def get_invitation(db: Session, token: str) -> dict:
+    inv, admin = _resolve_open_invitation(db, token)
+    return {"email": admin.email, "name": admin.name, "expires_at": inv.expires_at}
+
+
+def accept_invitation(db: Session, token: str, password: str) -> dict:
+    inv, admin = _resolve_open_invitation(db, token)
+    repo.set_admin_password(db, admin, SuperAdmin.hash_password(password))
+    repo.set_admin_active(db, admin, True)
+    inv.accepted_at = datetime.utcnow()
+    db.flush()
+    record_audit(
+        db, c.AUDIT_USER_INVITE_ACCEPTED, c.AUDIT_ENTITY_USER, str(admin.id),
+        actor=mask_email(admin.email),
+        metadata={"email": mask_email(admin.email)},
+    )
+    db.commit()
+    return {"email": admin.email, "name": admin.name}

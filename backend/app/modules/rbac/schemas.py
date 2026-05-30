@@ -59,3 +59,34 @@ class RoleUpdateRequest(BaseModel):
 class AssignRolesRequest(BaseModel):
     """Full-replace set of role ids for an admin account."""
     role_ids: List[str] = Field(default_factory=list)
+
+
+class InviteUserRequest(BaseModel):
+    """Invite a new admin: creates an inactive account + an invitation link."""
+    email: str = Field(..., max_length=c.USER_NAME_MAX_LEN)
+    name: Optional[str] = Field(None, max_length=c.USER_NAME_MAX_LEN)
+    role_ids: List[str] = Field(default_factory=list)
+
+    @field_validator("email")
+    @classmethod
+    def _normalize_email(cls, v: str) -> str:
+        v = (v or "").strip().lower()
+        if not v or "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("A valid email address is required.")
+        return v
+
+    @field_validator("name")
+    @classmethod
+    def _trim_name(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        return v.strip() or None
+
+
+class SetActiveRequest(BaseModel):
+    is_active: bool
+
+
+class AcceptInvitationRequest(BaseModel):
+    """Public — set a password against a valid invitation token."""
+    password: str = Field(..., min_length=c.PASSWORD_MIN_LEN, max_length=c.PASSWORD_MAX_LEN)

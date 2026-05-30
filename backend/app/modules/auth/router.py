@@ -13,6 +13,7 @@ from backend.app.core.security import (
 from backend.app.database.platform import get_platform_db
 from backend.app.platform.superadmin.models import SuperAdmin
 from backend.app.modules.rbac import service as rbac_service
+from backend.app.modules.rbac.schemas import AcceptInvitationRequest
 from jose import JWTError
 
 router = APIRouter()
@@ -166,3 +167,20 @@ def refresh_token(payload: RefreshRequest):
 @router.post("/logout")
 def logout(payload: LogoutRequest):
     return {"message": "Logged out successfully"}
+
+
+# ── Public invitation acceptance (no auth) ───────────────────────────────────
+@router.get("/invitations/{token}")
+def get_invitation(token: str, db: Session = Depends(get_platform_db)):
+    """Resolve an invitation token → the invited email/name (for the accept form)."""
+    return rbac_service.get_invitation(db, token)
+
+
+@router.post("/invitations/{token}/accept")
+def accept_invitation(
+    token: str,
+    payload: AcceptInvitationRequest,
+    db: Session = Depends(get_platform_db),
+):
+    """Set the account password and activate it, consuming the invitation token."""
+    return rbac_service.accept_invitation(db, token, payload.password)

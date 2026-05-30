@@ -6,6 +6,7 @@ import LandingPage from "./pages/landing/LandingPage";
 import EnquiryPage from "./pages/enquiry/EnquiryPage";
 import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
 import AdminLoginPage from "./pages/login/AdminLoginPage";
+import AcceptInvitePage from "./pages/login/AcceptInvitePage";
 import DashboardPage from "./pages/dashboard/DashboardPage";
 import SecurityPage from "./pages/superadmin/SecurityPage";
 import EnquiryList from "./pages/superadmin/enquiries/EnquiryList";
@@ -42,6 +43,7 @@ function AppRoutes() {
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <AdminLoginPage />} />
       <Route path="/admin" element={user ? <Navigate to="/dashboard" replace /> : <AdminLoginPage />} />
+      <Route path="/accept-invite" element={<AcceptInvitePage />} />
 
       {/* Protected — general */}
       <Route

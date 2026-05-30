@@ -99,7 +99,12 @@ The frontend proxies `/api` to the backend via Vite.
 - `/superadmin/settings` → protected (redirects to `/settings/profile`); SettingsLayout wraps a left section
   nav card + content. `/superadmin/settings/profile` (Profile Information + Change Password; universal,
   reached from the topbar profile dropdown "My Profile"); `/superadmin/settings/roles` (Roles &
-  Permissions; nav item gated by `rbac.role.view`)
+  Permissions; nav item gated by `rbac.role.view`; 3 tabs — **Users** (invite users by email +
+  copyable invite link, assign roles, resend invite, activate/deactivate, remove pending),
+  **Roles** (create/edit/delete roles + permission toggles), **Permissions** (read-only catalog of
+  ALL system permissions grouped by module with view/create/edit/delete/download action badges))
+- `/accept-invite?token=…` → AcceptInvitePage (public, login-styled; set password to activate an
+  invited account, then redirect to `/login`)
 - `/superadmin/clients` → protected (Client list); `/new`, `/:id`, `/:id/edit` (Client = tenant)
 - `/contact` → EnquiryPage (public lead capture / "Request Demo" form)
 - `/privacy-policy` → PrivacyPolicyPage (public, linked from enquiry consent)
@@ -122,6 +127,23 @@ POST /api/v1/auth/logout
 GET   /api/v1/auth/profile          (own name/email/phone/role)
 PATCH /api/v1/auth/profile          ({name?, phone?} — email is read-only)
 POST  /api/v1/auth/change-password  ({current_password, new_password min 8})
+
+# Public — user invitation acceptance (no auth)
+GET   /api/v1/auth/invitations/{token}          (returns {email, name, expires_at}; 404 if invalid/expired)
+POST  /api/v1/auth/invitations/{token}/accept   ({password min 8} → activates account + sets password)
+
+# Superadmin — RBAC roles, permissions & users (gated by rbac.*/user.* perms)
+GET    /api/v1/superadmin/rbac/permissions      (catalog grouped by module: {modules:[{module, module_label, permissions:[{name, description}]}]})
+GET    /api/v1/superadmin/rbac/roles            (list)
+POST   /api/v1/superadmin/rbac/roles            (create; permission_ids[])
+PATCH  /api/v1/superadmin/rbac/roles/{role_id}  (rename/describe + permission_ids[])
+DELETE /api/v1/superadmin/rbac/roles/{role_id}  (built-in Superadmin role protected)
+GET    /api/v1/superadmin/rbac/users            (list users: id, email, name, is_active, status active|invited|expired, role_ids[])
+POST   /api/v1/superadmin/rbac/users            ({email, name?, role_ids[]} → invites; returns {user, invite_token, invite_link, email_sent})
+POST   /api/v1/superadmin/rbac/users/{id}/resend-invite  (re-issues token; returns same invite payload)
+PATCH  /api/v1/superadmin/rbac/users/{id}/status         ({is_active} bool)
+DELETE /api/v1/superadmin/rbac/users/{id}                (removes a pending/invited user)
+POST   /api/v1/superadmin/rbac/admins/{id}/assign-roles  ({role_ids[]})
 
 # Superadmin — secret rotation
 POST /api/v1/superadmin/rotate-secrets

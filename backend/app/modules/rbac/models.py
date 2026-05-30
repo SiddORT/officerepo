@@ -91,3 +91,26 @@ class AdminRole(Base):
         UniqueConstraint("admin_id", "role_id", name="uq_admin_role"),
         Index("ix_admin_roles_admin_role", "admin_id", "role_id"),
     )
+
+
+class AdminInvitation(Base):
+    """A single-use invitation that lets an invited admin set their password.
+
+    Inviting a user creates an *inactive* SuperAdmin account plus one of these
+    rows. The raw token is shown to the inviter once (as a copyable link) and
+    only its SHA-256 hash is stored. Accepting the invite sets the account
+    password, activates it and stamps ``accepted_at``. Resending revokes the
+    prior open invitation and issues a fresh one.
+    """
+    __tablename__ = "admin_invitations"
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    admin_id = Column(Integer, ForeignKey("superadmins.id"), nullable=False, index=True)
+    email = Column(String(255), nullable=False, index=True)
+    token_hash = Column(String(64), nullable=False, unique=True, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    accepted_at = Column(DateTime, nullable=True)
+    is_revoked = Column(Boolean, nullable=False, default=False, index=True)
+
+    created_by = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

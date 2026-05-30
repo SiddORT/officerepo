@@ -17,6 +17,7 @@ from backend.app.modules.rbac import constants as c
 from backend.app.modules.rbac import service
 from backend.app.modules.rbac.schemas import (
     RoleCreateRequest, RoleUpdateRequest, AssignRolesRequest,
+    InviteUserRequest, SetActiveRequest,
 )
 from backend.shared.response import ApiResponse
 
@@ -110,3 +111,56 @@ def assign_roles(
 ):
     data = service.assign_roles(db, admin_id, payload, actor_id=admin["user_id"], actor=admin["email"])
     return ApiResponse.ok(data, message="Roles updated.").model_dump()
+
+
+# ── User management (invitations + account status) ───────────────────────────
+@router.get("/users", summary="List users with status and assigned roles")
+def list_users(
+    db: Session = Depends(get_platform_db),
+    _admin: dict = Depends(require_permission(c.PERM_USER_VIEW)),
+):
+    return ApiResponse.ok(service.list_users(db)).model_dump()
+
+
+@router.post("/users", status_code=status.HTTP_201_CREATED, summary="Invite a new user")
+def invite_user(
+    payload: InviteUserRequest,
+    db: Session = Depends(get_platform_db),
+    admin: dict = Depends(require_permission(c.PERM_USER_INVITE)),
+):
+    data = service.invite_user(db, payload, actor_id=admin["user_id"], actor=admin["email"])
+    return ApiResponse.ok(data, message="Invitation created.").model_dump()
+
+
+@router.post("/users/{admin_id}/resend-invite", summary="Re-issue a user's invitation link")
+def resend_invite(
+    admin_id: int,
+    db: Session = Depends(get_platform_db),
+    admin: dict = Depends(require_permission(c.PERM_USER_INVITE)),
+):
+    data = service.resend_invite(db, admin_id, actor_id=admin["user_id"], actor=admin["email"])
+    return ApiResponse.ok(data, message="Invitation re-issued.").model_dump()
+
+
+@router.patch("/users/{admin_id}/status", summary="Activate or deactivate a user")
+def set_user_status(
+    admin_id: int,
+    payload: SetActiveRequest,
+    db: Session = Depends(get_platform_db),
+    admin: dict = Depends(require_permission(c.PERM_USER_UPDATE)),
+):
+    data = service.set_user_active(
+        db, admin_id, payload.is_active, actor_id=admin["user_id"], actor=admin["email"],
+    )
+    msg = "User activated." if payload.is_active else "User deactivated."
+    return ApiResponse.ok(data, message=msg).model_dump()
+
+
+@router.delete("/users/{admin_id}", summary="Remove a pending invited user")
+def delete_user(
+    admin_id: int,
+    db: Session = Depends(get_platform_db),
+    admin: dict = Depends(require_permission(c.PERM_USER_DELETE)),
+):
+    service.delete_pending_user(db, admin_id, actor_id=admin["user_id"], actor=admin["email"])
+    return ApiResponse.ok(message="User removed.").model_dump()

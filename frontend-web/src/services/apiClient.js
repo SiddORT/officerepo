@@ -75,6 +75,21 @@ export const rbacApi = {
   listAdmins: () => apiClient.get(`${RBAC}/admins`),
   assignRoles: (adminId, roleIds) =>
     apiClient.put(`${RBAC}/admins/${adminId}/roles`, { role_ids: roleIds }),
+
+  // Users (invitations + account status)
+  listUsers: () => apiClient.get(`${RBAC}/users`),
+  inviteUser: (data) => apiClient.post(`${RBAC}/users`, data),
+  resendInvite: (adminId) => apiClient.post(`${RBAC}/users/${adminId}/resend-invite`),
+  setUserStatus: (adminId, isActive) =>
+    apiClient.patch(`${RBAC}/users/${adminId}/status`, { is_active: isActive }),
+  deleteUser: (adminId) => apiClient.delete(`${RBAC}/users/${adminId}`),
+};
+
+// ── Public — Invitation acceptance (no auth) ──────────────────────────────────
+export const invitationApi = {
+  get: (token) => apiClient.get(`/auth/invitations/${token}`),
+  accept: (token, password) =>
+    apiClient.post(`/auth/invitations/${token}/accept`, { password }),
 };
 
 // ── Secrets / Security ────────────────────────────────────────────────────────

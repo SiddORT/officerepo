@@ -12,9 +12,32 @@ const PERM = {
   update: "rbac.role.update",
   delete: "rbac.role.delete",
   assign: "rbac.role.assign",
+  userView: "user.view",
+  userInvite: "user.create",
+  userUpdate: "user.update",
+  userDelete: "user.delete",
 };
 
 const unwrap = (res) => res?.data?.data ?? res?.data;
+
+// Action → swatch for the read-only Permissions catalog.
+const ACTION_META = {
+  view: { label: "View", variant: "pending" },
+  create: { label: "Create", variant: "active" },
+  update: { label: "Edit", variant: "trial" },
+  delete: { label: "Delete", variant: "suspended" },
+  download: { label: "Download", variant: "default" },
+};
+const actionOf = (name) => (name || "").split(".").pop();
+
+const USER_STATUS = {
+  active: { variant: "active", label: "Active" },
+  inactive: { variant: "inactive", label: "Deactivated" },
+  invited: { variant: "pending", label: "Invited" },
+  expired: { variant: "suspended", label: "Invite expired" },
+};
+// "Pending" = never accepted → can resend / remove. active/inactive → can toggle status.
+const isPendingStatus = (s) => s === "invited" || s === "expired";
 
 function TabButton({ active, onClick, children }) {
   return (
@@ -33,28 +56,31 @@ function TabButton({ active, onClick, children }) {
 }
 
 export default function RolesPermissionsPage() {
-  const { hasPermission, refreshPermissions } = useAuth();
-  const [tab, setTab] = useState("roles");
+  const { user, hasPermission, refreshPermissions } = useAuth();
+  const [tab, setTab] = useState("users");
 
   return (
     <div>
       <div className="mb-6">
         <h2 className="text-xl font-bold t-heading">Roles &amp; Permissions</h2>
         <p className="text-sm t-muted mt-1">
-          Define roles, assign permissions, and control which admins hold them.
+          Invite users, define roles, and review the full permission catalog.
         </p>
       </div>
 
       <div className="flex items-center gap-2 mb-5">
+        <TabButton active={tab === "users"} onClick={() => setTab("users")}>Users</TabButton>
         <TabButton active={tab === "roles"} onClick={() => setTab("roles")}>Roles</TabButton>
-        <TabButton active={tab === "admins"} onClick={() => setTab("admins")}>Admins</TabButton>
+        <TabButton active={tab === "permissions"} onClick={() => setTab("permissions")}>Permissions</TabButton>
       </div>
 
-      {tab === "roles" ? (
-        <RolesTab hasPermission={hasPermission} refreshPermissions={refreshPermissions} />
-      ) : (
-        <AdminsTab hasPermission={hasPermission} refreshPermissions={refreshPermissions} />
+      {tab === "users" && (
+        <UsersTab user={user} hasPermission={hasPermission} refreshPermissions={refreshPermissions} />
       )}
+      {tab === "roles" && (
+        <RolesTab hasPermission={hasPermission} refreshPermissions={refreshPermissions} />
+      )}
+      {tab === "permissions" && <PermissionsTab />}
     </div>
   );
 }
@@ -369,22 +395,31 @@ function RoleEditorModal({ role, onClose, onSaved }) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// Admins tab — assign roles to admin accounts
+// Users tab — invite users, assign roles, manage account status
 // ════════════════════════════════════════════════════════════════════════════
-function AdminsTab({ hasPermission, refreshPermissions }) {
-  const [admins, setAdmins] = useState([]);
+function UsersTab({ user, hasPermission, refreshPermissions }) {
+  const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [assigning, setAssigning] = useState(null); // admin object
+  const [assigning, setAssigning] = useState(null); // user object
+  const [inviting, setInviting] = useState(false);
+  const [inviteResult, setInviteResult] = useState(null); // {user, invite_token, email_sent}
+  const [busyId, setBusyId] = useState(null);
+  const [error, setError] = useState("");
+
+  const canInvite = hasPermission(PERM.userInvite);
+  const canAssign = hasPermission(PERM.assign);
+  const canUpdate = hasPermission(PERM.userUpdate);
+  const canDelete = hasPermission(PERM.userDelete);
 
   const load = useCallback(() => {
     setLoading(true);
-    Promise.all([rbacApi.listAdmins(), rbacApi.listRoles({ page: 1, page_size: 100 })])
-      .then(([adminRes, roleRes]) => {
-        setAdmins(unwrap(adminRes) ?? []);
+    Promise.all([rbacApi.listUsers(), rbacApi.listRoles({ page: 1, page_size: 100 })])
+      .then(([userRes, roleRes]) => {
+        setUsers(unwrap(userRes) ?? []);
         setRoles(unwrap(roleRes)?.items ?? []);
       })
-      .catch(() => { setAdmins([]); setRoles([]); })
+      .catch(() => { setUsers([]); setRoles([]); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -396,13 +431,62 @@ function AdminsTab({ hasPermission, refreshPermissions }) {
     return map;
   }, [roles]);
 
+  const toggleActive = async (row) => {
+    setBusyId(row.id);
+    setError("");
+    try {
+      await rbacApi.setUserStatus(row.id, !row.is_active);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to update status.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const resend = async (row) => {
+    setBusyId(row.id);
+    setError("");
+    try {
+      const res = await rbacApi.resendInvite(row.id);
+      setInviteResult(unwrap(res));
+      load();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to resend invite.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const removeUser = async (row) => {
+    if (!window.confirm(`Remove pending invite for ${row.email}? This cannot be undone.`)) return;
+    setBusyId(row.id);
+    setError("");
+    try {
+      await rbacApi.deleteUser(row.id);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to remove user.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const columns = [
-    { key: "email", label: "Admin", render: (v, row) => (
+    { key: "email", label: "User", render: (v, row) => (
       <div>
-        <span className="block font-medium t-body">{v}</span>
-        {row.name && <span className="block text-xs t-muted">{row.name}</span>}
+        <span className="block font-medium t-body">{row.name || v}</span>
+        {row.name && <span className="block text-xs t-muted">{v}</span>}
       </div>
     ) },
+    {
+      key: "status",
+      label: "Status",
+      render: (s) => {
+        const meta = USER_STATUS[s] || { variant: "default", label: s || "—" };
+        return <Badge variant={meta.variant} label={meta.label} />;
+      },
+    },
     {
       key: "role_ids",
       label: "Roles",
@@ -424,21 +508,84 @@ function AdminsTab({ hasPermission, refreshPermissions }) {
     {
       key: "actions",
       label: "",
-      width: 120,
-      render: (_v, row) =>
-        hasPermission(PERM.assign) ? (
-          <div className="flex justify-end">
-            <button onClick={() => setAssigning(row)} className="text-xs px-2 py-1 rounded-lg layout-nav-idle">
-              Manage
-            </button>
+      width: 240,
+      render: (_v, row) => {
+        const isSelf = user?.user_id === row.id;
+        const pending = isPendingStatus(row.status);
+        return (
+          <div className="flex justify-end items-center gap-2 flex-wrap">
+            {canAssign && (
+              <button
+                onClick={() => setAssigning(row)}
+                disabled={busyId === row.id}
+                className="text-xs px-2 py-1 rounded-lg layout-nav-idle"
+              >
+                Roles
+              </button>
+            )}
+            {pending && canInvite && (
+              <button
+                onClick={() => resend(row)}
+                disabled={busyId === row.id}
+                className="text-xs px-2 py-1 rounded-lg layout-nav-idle"
+              >
+                Resend
+              </button>
+            )}
+            {!pending && canUpdate && !isSelf && (
+              <button
+                onClick={() => toggleActive(row)}
+                disabled={busyId === row.id}
+                className="text-xs px-2 py-1 rounded-lg layout-nav-idle"
+                style={{ color: row.is_active ? "#ef4444" : "#10b981" }}
+              >
+                {row.is_active ? "Deactivate" : "Activate"}
+              </button>
+            )}
+            {pending && canDelete && (
+              <button
+                onClick={() => removeUser(row)}
+                disabled={busyId === row.id}
+                className="text-xs px-2 py-1 rounded-lg layout-nav-idle"
+                style={{ color: "#ef4444" }}
+              >
+                Remove
+              </button>
+            )}
           </div>
-        ) : null,
+        );
+      },
     },
   ];
 
   return (
     <div>
-      <Table columns={columns} data={admins} loading={loading} emptyMessage="No admin accounts." />
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm t-muted">
+          Invite teammates by email, assign their roles, and manage account access.
+        </p>
+        {canInvite && (
+          <button onClick={() => setInviting(true)} className="btn-primary text-sm whitespace-nowrap">
+            + Invite User
+          </button>
+        )}
+      </div>
+
+      {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
+
+      <Table columns={columns} data={users} loading={loading} emptyMessage="No users yet." />
+
+      {inviting && (
+        <InviteUserModal
+          roles={roles}
+          onClose={() => setInviting(false)}
+          onInvited={(res) => { setInviting(false); setInviteResult(res); load(); }}
+        />
+      )}
+
+      {inviteResult && (
+        <InviteLinkModal result={inviteResult} onClose={() => setInviteResult(null)} />
+      )}
 
       {assigning && (
         <AssignRolesModal
@@ -448,6 +595,218 @@ function AdminsTab({ hasPermission, refreshPermissions }) {
           onSaved={() => { setAssigning(null); load(); refreshPermissions?.(); }}
         />
       )}
+    </div>
+  );
+}
+
+// Invite modal — email + name + role checkboxes
+function InviteUserModal({ roles, onClose, onInvited }) {
+  const assignable = roles.filter((r) => !r.is_system);
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [selected, setSelected] = useState(new Set());
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const toggle = (id) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const submit = async () => {
+    const trimmed = email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      const res = await rbacApi.inviteUser({
+        email: trimmed,
+        name: name.trim() || null,
+        role_ids: Array.from(selected),
+      });
+      onInvited(unwrap(res));
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to send invite.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Invite User"
+      footer={
+        <>
+          <button onClick={onClose} className="btn-secondary">Cancel</button>
+          <button onClick={submit} disabled={saving} className="btn-primary">
+            {saving ? "Sending…" : "Send Invite"}
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Input
+          label="Email"
+          required
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="teammate@officerepo.com"
+        />
+        <Input
+          label="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Optional display name"
+        />
+        <div>
+          <label className="block text-sm font-medium t-body mb-2">Assign roles</label>
+          {assignable.length === 0 ? (
+            <p className="text-sm t-muted">No assignable roles yet. Create a role first.</p>
+          ) : (
+            <div className="space-y-2 max-h-56 overflow-y-auto">
+              {assignable.map((r) => (
+                <label
+                  key={r.id}
+                  className="flex items-start gap-2 cursor-pointer select-none p-2.5 rounded-lg layout-nav-idle"
+                  style={{ border: "1px solid var(--c-border)" }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.has(r.id)}
+                    onChange={() => toggle(r.id)}
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded cursor-pointer accent-cyan-500"
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm t-body font-medium">{r.name}</span>
+                    {r.description && <span className="block text-xs t-muted">{r.description}</span>}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+        {error && <p className="text-xs text-red-400">{error}</p>}
+      </div>
+    </Modal>
+  );
+}
+
+// Shows the copyable invite link after a successful invite / resend.
+function InviteLinkModal({ result, onClose }) {
+  const [copied, setCopied] = useState(false);
+  const link = useMemo(() => {
+    if (result?.invite_token) {
+      return `${window.location.origin}/accept-invite?token=${result.invite_token}`;
+    }
+    return result?.invite_link || "";
+  }, [result]);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Invitation Ready"
+      footer={<button onClick={onClose} className="btn-primary">Done</button>}
+    >
+      <div className="space-y-3">
+        <p className="text-sm t-body">
+          {result?.email_sent
+            ? "An invitation email has been sent. You can also share this link directly:"
+            : "Email delivery isn't configured, so share this invite link with the user directly:"}
+        </p>
+        <div
+          className="flex items-center gap-2 p-2.5 rounded-lg"
+          style={{ border: "1px solid var(--c-border)", background: "var(--c-surface-2, rgba(0,0,0,0.03))" }}
+        >
+          <code className="text-xs t-body break-all flex-1">{link}</code>
+          <button onClick={copy} className="btn-secondary text-xs whitespace-nowrap">
+            {copied ? "Copied!" : "Copy"}
+          </button>
+        </div>
+        <p className="text-xs t-muted">The link expires after 7 days for security.</p>
+      </div>
+    </Modal>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// Permissions tab — read-only catalog of all system permissions, grouped by module
+// ════════════════════════════════════════════════════════════════════════════
+function PermissionsTab() {
+  const [modules, setModules] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    rbacApi
+      .permissions()
+      .then((res) => setModules(unwrap(res)?.modules ?? unwrap(res) ?? []))
+      .catch(() => setModules([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return <p className="text-sm t-muted py-6">Loading permissions…</p>;
+  }
+  if (!modules.length) {
+    return <p className="text-sm t-muted py-6">No permissions found.</p>;
+  }
+
+  return (
+    <div>
+      <p className="text-sm t-muted mb-4">
+        The complete catalog of permissions available across the platform. Assign these to roles in the Roles tab.
+      </p>
+      <div className="space-y-5">
+        {modules.map((m) => (
+          <div
+            key={m.module}
+            className="rounded-xl overflow-hidden"
+            style={{ border: "1px solid var(--c-border)" }}
+          >
+            <div
+              className="px-4 py-3 flex items-center justify-between"
+              style={{ background: "var(--c-surface-2, rgba(0,0,0,0.03))", borderBottom: "1px solid var(--c-border)" }}
+            >
+              <h3 className="text-sm font-semibold t-heading">{m.module_label || m.module}</h3>
+              <span className="text-xs t-muted">{(m.permissions || []).length} permissions</span>
+            </div>
+            <div className="divide-y" style={{ borderColor: "var(--c-border)" }}>
+              {(m.permissions || []).map((p) => {
+                const meta = ACTION_META[actionOf(p.name)] || { label: actionOf(p.name), variant: "default" };
+                return (
+                  <div key={p.name} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <code className="text-xs t-body">{p.name}</code>
+                      {p.description && <span className="block text-xs t-muted mt-0.5">{p.description}</span>}
+                    </div>
+                    <Badge variant={meta.variant} label={meta.label} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

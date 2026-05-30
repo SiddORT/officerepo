@@ -33,7 +33,7 @@ from backend.app.modules.client_management.models import (
 from backend.shared.audit.models import AuditLog
 from backend.app.modules.cors_report.models import CorsRejection
 from backend.app.modules.rbac.models import (
-    Permission, Role, RolePermission, AdminRole,
+    Permission, Role, RolePermission, AdminRole, AdminInvitation,
 )
 
 # Routers

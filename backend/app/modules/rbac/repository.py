@@ -9,8 +9,10 @@ from typing import List, Optional, Tuple
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from datetime import datetime
+
 from backend.app.modules.rbac.models import (
-    Permission, Role, RolePermission, AdminRole,
+    Permission, Role, RolePermission, AdminRole, AdminInvitation,
 )
 from backend.app.platform.superadmin.models import SuperAdmin
 
@@ -186,3 +188,86 @@ def get_admin(db: Session, admin_id: int) -> Optional[SuperAdmin]:
 
 def get_admin_by_email(db: Session, email: str) -> Optional[SuperAdmin]:
     return db.query(SuperAdmin).filter(SuperAdmin.email == email).first()
+
+
+def create_admin(
+    db: Session, *, email: str, name: Optional[str], hashed_password: str,
+    is_active: bool = True,
+) -> SuperAdmin:
+    admin = SuperAdmin(
+        email=email, name=name, hashed_password=hashed_password, is_active=is_active,
+    )
+    db.add(admin)
+    db.flush()
+    return admin
+
+
+def set_admin_active(db: Session, admin: SuperAdmin, is_active: bool) -> SuperAdmin:
+    admin.is_active = is_active
+    db.flush()
+    return admin
+
+
+def set_admin_password(db: Session, admin: SuperAdmin, hashed_password: str) -> SuperAdmin:
+    admin.hashed_password = hashed_password
+    db.flush()
+    return admin
+
+
+def delete_admin(db: Session, admin: SuperAdmin) -> None:
+    db.query(AdminRole).filter(AdminRole.admin_id == admin.id).delete(synchronize_session=False)
+    db.query(AdminInvitation).filter(AdminInvitation.admin_id == admin.id).delete(synchronize_session=False)
+    db.delete(admin)
+    db.flush()
+
+
+# ── Invitations ──────────────────────────────────────────────────────────────
+def create_invitation(
+    db: Session, *, admin_id: int, email: str, token_hash: str,
+    expires_at: datetime, created_by: Optional[int],
+) -> AdminInvitation:
+    inv = AdminInvitation(
+        admin_id=admin_id, email=email, token_hash=token_hash,
+        expires_at=expires_at, created_by=created_by,
+    )
+    db.add(inv)
+    db.flush()
+    return inv
+
+
+def get_invitation_by_token_hash(db: Session, token_hash: str) -> Optional[AdminInvitation]:
+    return (
+        db.query(AdminInvitation)
+        .filter(AdminInvitation.token_hash == token_hash)
+        .first()
+    )
+
+
+def revoke_open_invitations(db: Session, admin_id: int) -> None:
+    (
+        db.query(AdminInvitation)
+        .filter(
+            AdminInvitation.admin_id == admin_id,
+            AdminInvitation.accepted_at.is_(None),
+            AdminInvitation.is_revoked.is_(False),
+        )
+        .update({AdminInvitation.is_revoked: True}, synchronize_session=False)
+    )
+    db.flush()
+
+
+def latest_invitations_by_admin(db: Session, admin_ids: List[int]) -> dict:
+    """Return {admin_id: most-recent AdminInvitation} for the given admins."""
+    if not admin_ids:
+        return {}
+    rows = (
+        db.query(AdminInvitation)
+        .filter(AdminInvitation.admin_id.in_(admin_ids))
+        .order_by(AdminInvitation.admin_id, AdminInvitation.created_at.desc())
+        .all()
+    )
+    latest: dict = {}
+    for row in rows:
+        if row.admin_id not in latest:
+            latest[row.admin_id] = row
+    return latest
