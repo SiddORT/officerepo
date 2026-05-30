@@ -5,6 +5,7 @@ import Table from "../../../components/ui/Table";
 import Pagination from "../../../components/ui/Pagination";
 import SearchBar from "../../../components/ui/SearchBar";
 import Select from "../../../components/ui/Select";
+import CollapsibleFilters from "../../../components/ui/CollapsibleFilters";
 import { STATUS_COLORS, toOptions, formatDate } from "./constants";
 
 function StatusPill({ status }) {
@@ -93,6 +94,8 @@ export default function EnquiryList() {
 
   const resetPage = (setter) => (value) => { setter(value); setPage(1); };
 
+  const activeFilterCount = [search, status, spam].filter(Boolean).length;
+
   const columns = [
     {
       key: "_sr",
@@ -172,12 +175,11 @@ export default function EnquiryList() {
       <Dashboard stats={stats} />
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 rounded-xl px-4 py-3"
-        style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+      <CollapsibleFilters activeCount={activeFilterCount} storageKey="enquiries">
         <SearchBar value={search} onChange={resetPage(setSearch)} placeholder="Search company, name, enquiry #..." className="flex-1 min-w-[200px] max-w-sm" />
         <Select value={status} onChange={(e) => resetPage(setStatus)(e.target.value)} options={toOptions(options.all_statuses)} placeholder="All Statuses" selectClassName="text-sm" className="w-40" />
         <Select value={spam} onChange={(e) => resetPage(setSpam)(e.target.value)} options={SPAM_FILTERS} placeholder="All Enquiries" selectClassName="text-sm" className="w-40" />
-      </div>
+      </CollapsibleFilters>
 
       {error && (
         <div className="rounded-lg px-4 py-3 text-sm text-red-400" style={{ backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>

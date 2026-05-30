@@ -5,6 +5,7 @@ import Table from "../../../components/ui/Table";
 import Pagination from "../../../components/ui/Pagination";
 import SearchBar from "../../../components/ui/SearchBar";
 import Select from "../../../components/ui/Select";
+import CollapsibleFilters from "../../../components/ui/CollapsibleFilters";
 import Modal from "../../../components/ui/Modal";
 import { StageBadge, StatusBadge } from "./components/StageBadge";
 import ScoreBadge from "./components/ScoreBadge";
@@ -86,6 +87,8 @@ export default function LeadList() {
   };
 
   const resetPage = (setter) => (value) => { setter(value); setPage(1); };
+
+  const activeFilterCount = [search, stage, status, source, scoreLabel].filter(Boolean).length;
 
   const executeDelete = async () => {
     if (!confirmDelete) return;
@@ -180,14 +183,13 @@ export default function LeadList() {
       <Dashboard stats={stats} />
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 rounded-xl px-4 py-3"
-        style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+      <CollapsibleFilters activeCount={activeFilterCount} storageKey="leads">
         <SearchBar value={search} onChange={resetPage(setSearch)} placeholder="Search company, contact, lead #..." className="flex-1 min-w-[200px] max-w-sm" />
         <Select value={stage} onChange={(e) => resetPage(setStage)(e.target.value)} options={toOptions(options.stages)} placeholder="All Stages" selectClassName="text-sm" className="w-40" />
         <Select value={status} onChange={(e) => resetPage(setStatus)(e.target.value)} options={toOptions(options.statuses)} placeholder="All Statuses" selectClassName="text-sm" className="w-36" />
         <Select value={source} onChange={(e) => resetPage(setSource)(e.target.value)} options={toOptions(options.sources)} placeholder="All Sources" selectClassName="text-sm" className="w-40" />
         <Select value={scoreLabel} onChange={(e) => resetPage(setScoreLabel)(e.target.value)} options={toOptions(options.score_labels)} placeholder="All Scores" selectClassName="text-sm" className="w-36" />
-      </div>
+      </CollapsibleFilters>
 
       {error && (
         <div className="rounded-lg px-4 py-3 text-sm text-red-400" style={{ backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
