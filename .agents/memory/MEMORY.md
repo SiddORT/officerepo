@@ -16,3 +16,4 @@
 - [.env files are unwritable](env-file-restriction.md) — the platform blocks writing any .env file (secrets anti-pattern); commit .env.example templates instead, .env stays git-ignored and dev runs on settings fallbacks.
 - [Enquiry→Lead conversion paths](enquiry-lead-conversion-paths.md) — two conversion endpoints exist; both must stamp enquiry.converted_lead_id (forward) + lead.source_enquiry_id (reverse) or traceability silently breaks.
 - [CORS silent rejection logging](cors-rejection-logging.md) — Starlette CORSMiddleware blocks bad origins with no server log; a parallel http middleware logs + throttled-webhooks them via is_origin_allowed/mask_origin.
+- [RBAC permission resolution](rbac-permission-resolution.md) — permissions resolved per-request from DB (not JWT-embedded) so revocation is immediate; system roles => wildcard "*"; gate routes with require_permission, frontend hasPermission is UX-only.

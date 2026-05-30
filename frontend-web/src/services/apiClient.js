@@ -55,6 +55,23 @@ export const authApi = {
   superAdminLogin: (email, password) =>
     apiClient.post("/auth/superadmin/login", { email, password }),
   logout: () => apiClient.post("/auth/logout", {}),
+  me: () => apiClient.get("/auth/me"),
+};
+
+// ── RBAC — Roles & Permissions (superadmin) ───────────────────────────────────
+const RBAC = "/superadmin/rbac";
+export const rbacApi = {
+  permissions: () => apiClient.get(`${RBAC}/permissions`),
+
+  listRoles: (params) => apiClient.get(`${RBAC}/roles`, { params }),
+  getRole: (id) => apiClient.get(`${RBAC}/roles/${id}`),
+  createRole: (data) => apiClient.post(`${RBAC}/roles`, data),
+  updateRole: (id, data) => apiClient.patch(`${RBAC}/roles/${id}`, data),
+  deleteRole: (id) => apiClient.delete(`${RBAC}/roles/${id}`),
+
+  listAdmins: () => apiClient.get(`${RBAC}/admins`),
+  assignRoles: (adminId, roleIds) =>
+    apiClient.put(`${RBAC}/admins/${adminId}/roles`, { role_ids: roleIds }),
 };
 
 // ── Secrets / Security ────────────────────────────────────────────────────────

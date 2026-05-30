@@ -19,6 +19,7 @@ import ClientList from "./pages/superadmin/clients/ClientList";
 import CreateClient from "./pages/superadmin/clients/CreateClient";
 import EditClient from "./pages/superadmin/clients/EditClient";
 import ClientDetails from "./pages/superadmin/clients/ClientDetails";
+import RolesPermissionsPage from "./pages/superadmin/settings/RolesPermissionsPage";
 import Layout from "./components/Layout";
 
 function ProtectedRoute({ children, requireRole }) {
@@ -150,6 +151,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireRole="superadmin">
             <Layout><EditClient /></Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Protected — Settings → Roles & Permissions */}
+      <Route
+        path="/superadmin/settings/roles"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><RolesPermissionsPage /></Layout>
           </ProtectedRoute>
         }
       />

@@ -74,6 +74,29 @@ const NAV_ITEMS = [
   },
 ];
 
+// Grouped nav sections rendered with a section heading. Items may carry an
+// optional `permission` — when set, the item only shows if the current admin
+// holds that permission (or full access "*").
+const NAV_GROUPS = [
+  {
+    label: "Settings",
+    items: [
+      {
+        label: "Roles & Permissions",
+        path: "/superadmin/settings/roles",
+        roles: ["superadmin"],
+        permission: "rbac.role.view",
+        icon: (
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        ),
+      },
+    ],
+  },
+];
+
 function SunIcon() {
   return (
     <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -118,6 +141,7 @@ function getPageTitle(pathname) {
   if (pathname.startsWith("/superadmin/leads/")) return "Lead Details";
   if (pathname.startsWith("/superadmin/leads")) return "Lead Management";
   if (pathname === "/superadmin/security") return "Security";
+  if (pathname.startsWith("/superadmin/settings/roles")) return "Roles & Permissions";
   if (pathname === "/dashboard") return "Dashboard";
   return "Office Repo";
 }
@@ -214,7 +238,7 @@ function NotificationBell() {
 }
 
 export default function Layout({ children }) {
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const { toggle, isDark } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -238,7 +262,13 @@ export default function Layout({ children }) {
     navigate("/");
   };
 
-  const visibleNav = NAV_ITEMS.filter((item) => item.roles.includes(user?.role));
+  const canSee = (item) =>
+    item.roles.includes(user?.role) && (!item.permission || hasPermission(item.permission));
+
+  const visibleNav = NAV_ITEMS.filter(canSee);
+  const visibleGroups = NAV_GROUPS
+    .map((g) => ({ ...g, items: g.items.filter(canSee) }))
+    .filter((g) => g.items.length > 0);
 
   const isActive = (path) =>
     path === "/superadmin/leads"
@@ -304,6 +334,31 @@ export default function Layout({ children }) {
               {item.icon}
               {!collapsed && <span className="truncate">{item.label}</span>}
             </Link>
+          ))}
+
+          {visibleGroups.map((group) => (
+            <div key={group.label} className="pt-3 mt-2 border-t layout-border">
+              {!collapsed && (
+                <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-widest layout-label-muted">
+                  {group.label}
+                </p>
+              )}
+              {group.items.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  title={collapsed ? item.label : undefined}
+                  className={[
+                    "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+                    collapsed ? "justify-center" : "",
+                    isActive(item.path) ? "nav-active text-white" : "layout-nav-idle",
+                  ].join(" ")}
+                >
+                  {item.icon}
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                </Link>
+              ))}
+            </div>
           ))}
         </nav>
 

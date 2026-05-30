@@ -1,6 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { authApi } from "../services/apiClient";
 
 const AuthContext = createContext(null);
+
+const FULL_ACCESS = "*";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -31,8 +34,43 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  // Refresh effective permissions from the server (resolved per-request, so a
+  // revoked role takes effect on the next refresh). Called once after mount when
+  // a session exists, keeping the cached permission set live.
+  const refreshPermissions = useCallback(async () => {
+    try {
+      const { data } = await authApi.me();
+      setUser((prev) => {
+        const next = { ...(prev || {}), ...data };
+        localStorage.setItem("user", JSON.stringify(next));
+        return next;
+      });
+    } catch {
+      // 401s are handled by the apiClient interceptor; ignore here.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!loading && localStorage.getItem("access_token")) {
+      refreshPermissions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
+  const hasPermission = useCallback(
+    (permission) => {
+      const perms = user?.permissions || [];
+      if (perms.includes(FULL_ACCESS)) return true;
+      if (!permission) return true;
+      return perms.includes(permission);
+    },
+    [user]
+  );
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider
+      value={{ user, login, logout, loading, hasPermission, refreshPermissions }}
+    >
       {children}
     </AuthContext.Provider>
   );

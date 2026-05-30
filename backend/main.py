@@ -32,9 +32,17 @@ from backend.app.modules.client_management.models import (
 )
 from backend.shared.audit.models import AuditLog
 from backend.app.modules.cors_report.models import CorsRejection
+from backend.app.modules.rbac.models import (
+    Permission, Role, RolePermission, AdminRole,
+)
 
 # Routers
 from backend.app.modules.auth.router import router as auth_router
+from backend.app.modules.rbac.router import router as rbac_router
+
+# RBAC seeding + permission-denied envelope handler
+from backend.app.modules.rbac.service import seed_rbac
+from backend.app.core.permissions import PermissionDenied
 from backend.app.modules.csp_report.router import router as csp_report_router
 from backend.app.modules.cors_report.router import router as cors_report_router
 from backend.app.modules.enquiry.router import router as enquiry_router
@@ -238,6 +246,19 @@ def init_database() -> None:
     run_schema_migrations()
     sync_rotation_timestamp_with_db()
     seed_default_data()
+    _seed_rbac_data()
+
+
+def _seed_rbac_data() -> None:
+    """Seed the RBAC permission catalog + built-in Superadmin role."""
+    db = SessionLocal()
+    try:
+        seed_rbac(db)
+        print("RBAC seeded: permission catalog + built-in Superadmin role.")
+    except Exception as e:
+        print(f"RBAC seed error: {e}")
+    finally:
+        db.close()
 
 
 def create_app(app_settings=settings) -> FastAPI:
@@ -298,8 +319,25 @@ def create_app(app_settings=settings) -> FastAPI:
     # CORS rejection panel (superadmin) — recently blocked cross-origin requests
     app.include_router(cors_report_router, prefix=f"{prefix}/superadmin", tags=["superadmin - security"])
 
+    # Permission-denied → standard ApiResponse envelope (403). Scoped to the
+    # custom PermissionDenied exception so existing HTTPException error shapes
+    # (consumed as `error.response.data.detail` on the frontend) are unaffected.
+    from fastapi.responses import JSONResponse
+
+    @app.exception_handler(PermissionDenied)
+    async def _permission_denied_handler(request, exc: PermissionDenied):
+        from backend.shared.response import ApiResponse
+        body = ApiResponse.fail(
+            message="You do not have permission to perform this action.",
+            errors=[f"missing_permission:{exc.permission}"],
+        ).model_dump()
+        return JSONResponse(status_code=403, content=body)
+
     # Auth (superadmin login)
     app.include_router(auth_router, prefix=f"{prefix}/auth", tags=["auth"])
+
+    # RBAC — roles & permissions management (superadmin, permission-guarded)
+    app.include_router(rbac_router, prefix=f"{prefix}/superadmin/rbac", tags=["rbac"])
 
     # Superadmin — secret rotation
     app.include_router(rotation_router, prefix=f"{prefix}/superadmin", tags=["superadmin - secrets"])
