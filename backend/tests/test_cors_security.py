@@ -27,11 +27,15 @@ if _BACKEND_DIR not in sys.path:
     sys.path.insert(0, _BACKEND_DIR)
 
 # ---------------------------------------------------------------------------
-# CORS constants — kept in sync with backend/main.py CORSMiddleware config.
-# If you change allow_methods or allow_headers in main.py, update these too.
+# CORS constants — imported from the single source of truth
+# (backend/app/core/cors.py) so the app and tests can never drift apart.
 # ---------------------------------------------------------------------------
-_CORS_ALLOW_METHODS: list[str] = ["GET", "POST", "PATCH", "DELETE"]
-_CORS_ALLOW_HEADERS: list[str] = ["Authorization", "Content-Type", "X-Tenant-ID"]
+from app.core.cors import (
+    CORS_ALLOW_METHODS as _CORS_ALLOW_METHODS,
+    CORS_ALLOW_HEADERS as _CORS_ALLOW_HEADERS,
+    OFFICEREPO_ORIGIN_REGEX,
+    build_cors_kwargs,
+)
 
 # Fully-set production env with valid secrets — only ALLOWED_ORIGINS varies
 _PROD_SECRETS = {
@@ -733,6 +737,82 @@ class TestCorsOriginEdgeCases(unittest.TestCase):
             vary.lower(),
             "OPTIONS without Origin header must not add Origin to the Vary header",
         )
+
+
+class TestCorsOfficerepoSubdomain(unittest.TestCase):
+    """officerepo.com and its subdomains must be allowed in restricted envs.
+
+    Builds the app exactly the way main.py does — via build_cors_kwargs — so
+    the subdomain regex behaviour is verified against the real policy.
+    """
+
+    LISTED = "https://app.officerepo.io"  # explicit exact-match entry
+
+    def _prod_client(self, allowed_origins: str = LISTED) -> TestClient:
+        kwargs = build_cors_kwargs("production", allowed_origins)
+        app = FastAPI()
+        app.add_middleware(CORSMiddleware, **kwargs)
+
+        @app.get("/ping")
+        def ping():
+            return {"ok": True}
+
+        return TestClient(app)
+
+    def _acao(self, origin: str, allowed_origins: str = LISTED):
+        client = self._prod_client(allowed_origins)
+        resp = client.get("/ping", headers={"Origin": origin})
+        return resp.headers.get("access-control-allow-origin")
+
+    # ── allowed: apex + subdomains over https ──────────────────────────────
+
+    def test_apex_domain_is_allowed(self):
+        self.assertEqual(self._acao("https://officerepo.com"), "https://officerepo.com")
+
+    def test_single_subdomain_is_allowed(self):
+        self.assertEqual(
+            self._acao("https://app.officerepo.com"), "https://app.officerepo.com"
+        )
+
+    def test_tenant_subdomain_is_allowed(self):
+        self.assertEqual(
+            self._acao("https://acme.officerepo.com"), "https://acme.officerepo.com"
+        )
+
+    def test_deep_subdomain_is_allowed(self):
+        self.assertEqual(
+            self._acao("https://a.b.officerepo.com"), "https://a.b.officerepo.com"
+        )
+
+    def test_explicit_listed_origin_still_allowed_alongside_regex(self):
+        self.assertEqual(self._acao(self.LISTED), self.LISTED)
+
+    # ── rejected: lookalikes, suffix attacks, wrong scheme, others ─────────
+
+    def test_unrelated_origin_is_rejected(self):
+        self.assertIsNone(self._acao("https://evil.example.com"))
+
+    def test_lookalike_domain_is_rejected(self):
+        # "evilofficerepo.com" is NOT a subdomain of officerepo.com.
+        self.assertIsNone(self._acao("https://evilofficerepo.com"))
+
+    def test_suffix_attack_domain_is_rejected(self):
+        # "officerepo.com.evil.com" must not match.
+        self.assertIsNone(self._acao("https://officerepo.com.evil.com"))
+
+    def test_non_https_subdomain_is_rejected(self):
+        self.assertIsNone(self._acao("http://app.officerepo.com"))
+
+    # ── policy wiring sanity ───────────────────────────────────────────────
+
+    def test_regex_present_in_restricted_kwargs(self):
+        kwargs = build_cors_kwargs("production", self.LISTED)
+        self.assertEqual(kwargs.get("allow_origin_regex"), OFFICEREPO_ORIGIN_REGEX)
+
+    def test_regex_absent_in_development_kwargs(self):
+        kwargs = build_cors_kwargs("development", "")
+        self.assertNotIn("allow_origin_regex", kwargs)
+        self.assertEqual(kwargs["allow_origins"], ["*"])
 
 
 if __name__ == "__main__":

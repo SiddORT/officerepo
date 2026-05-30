@@ -68,6 +68,11 @@ frontend-web/
 
 The frontend proxies `/api` to the backend via Vite.
 
+### Self-hosting (outside Replit)
+- `.env.example` (root) + `frontend-web/.env.example` document every config key; copy each to `.env` (git-ignored) and fill in real values.
+- `ecosystem.config.cjs` (root) runs the backend (uvicorn) and optional frontend preview under PM2: `set -a && . ./.env && set +a && pm2 start ecosystem.config.cjs`.
+- CORS policy lives in one place — `backend/app/core/cors.py` (imported by `main.py` and the tests).
+
 ## Default Credentials
 
 | Role       | Email                   | Password  |
@@ -228,7 +233,12 @@ PREVIOUS_SECRET_CHECK_INTERVAL_HOURS  How often monitor runs (default: 1)
 ROTATE_SECRETS_COOLDOWN_MINUTES     Min minutes between rotations via API (default: 60, 0 disables)
 SECRET_ROTATION_ALERT_URL           Optional webhook URL for stale-secret alerts
 ENVIRONMENT                         development | production (default: development)
-ALLOWED_ORIGINS                     Comma-separated CORS origins (auto-detects REPLIT_DOMAINS)
+ALLOWED_ORIGINS                     Comma-separated exact CORS origins (auto-detects REPLIT_DOMAINS).
+                                    In non-development envs, officerepo.com and all *.officerepo.com
+                                    subdomains are ALSO allowed automatically (subdomain regex).
+BACKEND_PORT                        Port uvicorn binds to under PM2 (default: 8000)
+FRONTEND_PORT                       Port the frontend preview binds to under PM2 (default: 5000)
+TURNSTILE_SECRET_KEY                Cloudflare Turnstile secret (blank = bot check disabled)
 ENQUIRY_ENCRYPTION_KEYS             Comma-separated Fernet keys for enquiry PII (1st = primary
                                     for encryption, rest for decryption/rotation). Falls back to
                                     a key derived from SESSION_SECRET/JWT_SECRET via HKDF.

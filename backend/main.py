@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from backend.app.config.settings import settings
+from backend.app.core.cors import build_cors_kwargs
 from backend.app.core.secret_rotation_monitor import run_monitor
 from backend.app.core.security_headers import CSP_POLICY, CSP_EXEMPT_PATHS, add_security_headers
 from backend.app.database.platform import Base, engine, SessionLocal
@@ -197,19 +198,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — wildcard only in development; restricted to ALLOWED_ORIGINS in all other environments
-_is_restricted = settings.ENVIRONMENT.lower() != "development"
-if _is_restricted:
-    _cors_origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
-else:
-    _cors_origins = ["*"]
-
+# CORS — wildcard only in development; restricted to ALLOWED_ORIGINS plus the
+# officerepo.com subdomain regex in all other environments. The policy itself
+# lives in backend/app/core/cors.py so the app and tests can't drift apart.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    **build_cors_kwargs(settings.ENVIRONMENT, settings.ALLOWED_ORIGINS),
 )
 
 # Content-Security-Policy — policy and middleware live in security_headers.py
