@@ -177,7 +177,7 @@ export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl mx-auto">
       {serverError && (
         <div className="rounded-lg px-4 py-3 text-sm text-red-400" style={{ backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)" }}>
           {serverError}
