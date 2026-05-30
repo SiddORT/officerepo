@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
 import {
   motion,
   AnimatePresence,
@@ -8,6 +9,71 @@ import {
   useSpring,
 } from "framer-motion";
 import { authApi } from "../../services/apiClient";
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THEME PALETTE — dark/light aware colors (accents stay constant)
+══════════════════════════════════════════════════════════════════════════ */
+function getPalette(isDark) {
+  return {
+    pageBg:       isDark ? "#081018"                : "#eef2f7",
+    textStrong:   isDark ? "#f8fafc"                : "#0f172a",
+    textBody:     isDark ? "#94a3b8"                : "#475569",
+    textMuted:    isDark ? "#64748b"                : "#64748b",
+    textFaint:    isDark ? "#475569"                : "#94a3b8",
+    textDim:      isDark ? "#334155"                : "#94a3b8",
+    navBg:        isDark ? "rgba(8,16,24,0.7)"      : "rgba(255,255,255,0.75)",
+    navBorder:    isDark ? "rgba(255,255,255,0.05)" : "rgba(15,23,42,0.07)",
+    glassBg:      isDark ? "rgba(17,24,39,0.78)"    : "rgba(255,255,255,0.82)",
+    glassBorder:  isDark ? "rgba(255,255,255,0.07)" : "rgba(15,23,42,0.09)",
+    widgetBg:     isDark ? "rgba(17,24,39,0.72)"    : "rgba(255,255,255,0.85)",
+    widgetBorder: isDark ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.08)",
+    widgetShadow: isDark ? "0 8px 32px rgba(0,0,0,0.4)"  : "0 8px 32px rgba(15,23,42,0.12)",
+    cardShadow:   isDark ? "0 32px 64px rgba(0,0,0,0.6)" : "0 32px 64px rgba(15,23,42,0.18)",
+    inputBg:      isDark ? "rgba(255,255,255,0.03)" : "rgba(15,23,42,0.03)",
+    inputBorder:  isDark ? "rgba(255,255,255,0.07)" : "rgba(15,23,42,0.1)",
+    footerBorder: isDark ? "rgba(255,255,255,0.05)" : "rgba(15,23,42,0.07)",
+    particle:     isDark ? "#ffffff"                : "#64748b",
+    gridDot:      isDark ? "rgba(255,255,255,0.04)" : "rgba(15,23,42,0.05)",
+    iconIdle:     isDark ? "#334155"                : "#94a3b8",
+    inset:        isDark ? "rgba(255,255,255,0.03)" : "rgba(15,23,42,0.02)",
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THEME TOGGLE — sun/moon switch for the landing page
+══════════════════════════════════════════════════════════════════════════ */
+function ThemeToggle({ isDark, toggle, p }) {
+  return (
+    <motion.button
+      whileHover={{ scale: 1.08 }}
+      whileTap={{ scale: 0.92 }}
+      onClick={toggle}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      style={{
+        width: 38, height: 38, borderRadius: 10,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: p.glassBg,
+        border: `1px solid ${p.glassBorder}`,
+        color: isDark ? "#fbbf24" : "#0ea5e9",
+        cursor: "pointer",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+      }}
+    >
+      {isDark ? (
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="4" strokeWidth={2} />
+          <path strokeLinecap="round" strokeWidth={2} d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41" />
+        </svg>
+      ) : (
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+      )}
+    </motion.button>
+  );
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    ANIMATION CONFIGS — reusable motion presets
@@ -45,7 +111,7 @@ const PARTICLES = Array.from({ length: 28 }, (_, i) => ({
   opacity: Math.random() * 0.35 + 0.05,
 }));
 
-function ParticleField() {
+function ParticleField({ p: palette }) {
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden">
       {PARTICLES.map((p) => (
@@ -57,7 +123,7 @@ function ParticleField() {
             top: `${p.y}%`,
             width: p.size,
             height: p.size,
-            backgroundColor: p.id % 3 === 0 ? "#00aeec" : p.id % 3 === 1 ? "#ff7a1a" : "#ffffff",
+            backgroundColor: p.id % 3 === 0 ? "#00aeec" : p.id % 3 === 1 ? "#ff7a1a" : palette.particle,
             opacity: p.opacity,
           }}
           animate={{
@@ -80,13 +146,13 @@ function ParticleField() {
 /* ══════════════════════════════════════════════════════════════════════════
    ANIMATED GRID — subtle dot-grid background
 ══════════════════════════════════════════════════════════════════════════ */
-function AnimatedGrid() {
+function AnimatedGrid({ p }) {
   return (
     <div
       className="fixed inset-0 pointer-events-none"
       style={{
         backgroundImage: `
-          radial-gradient(circle at 1px 1px, rgba(255,255,255,0.04) 1px, transparent 0)
+          radial-gradient(circle at 1px 1px, ${p.gridDot} 1px, transparent 0)
         `,
         backgroundSize: "40px 40px",
       }}
@@ -215,7 +281,7 @@ const WIDGETS = [
   },
 ];
 
-function FloatingWidgets() {
+function FloatingWidgets({ p }) {
   return (
     <>
       {WIDGETS.map((w, i) => (
@@ -233,22 +299,22 @@ function FloatingWidgets() {
             whileHover={{ scale: 1.04, y: -4 }}
             className="cursor-default"
             style={{
-              background: "rgba(17,24,39,0.72)",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: p.widgetBg,
+              border: `1px solid ${p.widgetBorder}`,
               borderRadius: 16,
               padding: "16px 20px",
               backdropFilter: "blur(20px)",
-              boxShadow: `0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04), 0 0 20px ${w.color}18`,
+              boxShadow: `${p.widgetShadow}, 0 0 20px ${w.color}18`,
               minWidth: 160,
             }}
           >
             <div className="flex items-center gap-2 mb-2">
               <span style={{ fontSize: 16 }}>{w.icon}</span>
-              <span style={{ fontSize: 11, color: "#64748b", fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+              <span style={{ fontSize: 11, color: p.textMuted, fontWeight: 500, letterSpacing: "0.04em", textTransform: "uppercase" }}>
                 {w.label}
               </span>
             </div>
-            <p style={{ fontSize: 26, fontWeight: 800, color: "#f8fafc", lineHeight: 1 }}>{w.value}</p>
+            <p style={{ fontSize: 26, fontWeight: 800, color: p.textStrong, lineHeight: 1 }}>{w.value}</p>
             <p style={{ fontSize: 11, color: w.color, marginTop: 4 }}>{w.delta}</p>
           </motion.div>
         </motion.div>
@@ -260,7 +326,7 @@ function FloatingWidgets() {
 /* ══════════════════════════════════════════════════════════════════════════
    LANDING HERO — main landing content
 ══════════════════════════════════════════════════════════════════════════ */
-function LandingHero({ onEnter, user }) {
+function LandingHero({ onEnter, user, p, isDark, toggle }) {
   const navigate = useNavigate();
 
   return (
@@ -275,7 +341,7 @@ function LandingHero({ onEnter, user }) {
       {/* Nav */}
       <motion.div
         className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 h-16"
-        style={{ background: "rgba(8,16,24,0.7)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+        style={{ background: p.navBg, backdropFilter: "blur(20px)", borderBottom: `1px solid ${p.navBorder}` }}
         variants={fadeUp}
       >
         <div className="flex items-center gap-2.5">
@@ -284,36 +350,39 @@ function LandingHero({ onEnter, user }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           </div>
-          <span style={{ fontWeight: 700, fontSize: 16, color: "#f8fafc", letterSpacing: "-0.01em" }}>Office Repo</span>
+          <span style={{ fontWeight: 700, fontSize: 16, color: p.textStrong, letterSpacing: "-0.01em" }}>Office Repo</span>
         </div>
-        <nav className="hidden md:flex items-center gap-8 text-sm" style={{ color: "#64748b" }}>
-          <a href="#features" style={{ transition: "color 0.15s" }} onMouseEnter={e => e.target.style.color="#f8fafc"} onMouseLeave={e => e.target.style.color="#64748b"}>Features</a>
-          <a href="#platform" style={{ transition: "color 0.15s" }} onMouseEnter={e => e.target.style.color="#f8fafc"} onMouseLeave={e => e.target.style.color="#64748b"}>Platform</a>
+        <nav className="hidden md:flex items-center gap-8 text-sm" style={{ color: p.textMuted }}>
+          <a href="#features" style={{ transition: "color 0.15s" }} onMouseEnter={e => e.target.style.color=p.textStrong} onMouseLeave={e => e.target.style.color=p.textMuted}>Features</a>
+          <a href="#platform" style={{ transition: "color 0.15s" }} onMouseEnter={e => e.target.style.color=p.textStrong} onMouseLeave={e => e.target.style.color=p.textMuted}>Platform</a>
         </nav>
-        {user ? (
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate("/dashboard")}
-            style={{ background: "linear-gradient(135deg, #00aeec, #0090c8)", color: "#fff", border: "none", borderRadius: 10, padding: "8px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: "0 0 16px rgba(0,174,236,0.35)" }}
-          >
-            Dashboard
-          </motion.button>
-        ) : (
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={onEnter}
-            style={{ background: "rgba(0,174,236,0.12)", color: "#00aeec", border: "1px solid rgba(0,174,236,0.3)", borderRadius: 10, padding: "8px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
-          >
-            Sign in
-          </motion.button>
-        )}
+        <div className="flex items-center gap-3">
+          <ThemeToggle isDark={isDark} toggle={toggle} p={p} />
+          {user ? (
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => navigate("/dashboard")}
+              style={{ background: "linear-gradient(135deg, #00aeec, #0090c8)", color: "#fff", border: "none", borderRadius: 10, padding: "8px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: "0 0 16px rgba(0,174,236,0.35)" }}
+            >
+              Dashboard
+            </motion.button>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={onEnter}
+              style={{ background: "rgba(0,174,236,0.12)", color: "#00aeec", border: "1px solid rgba(0,174,236,0.3)", borderRadius: 10, padding: "8px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+            >
+              Sign in
+            </motion.button>
+          )}
+        </div>
       </motion.div>
 
       {/* Floating widgets */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <FloatingWidgets />
+        <FloatingWidgets p={p} />
       </div>
 
       {/* Badge */}
@@ -340,7 +409,7 @@ function LandingHero({ onEnter, user }) {
       {/* Headline */}
       <motion.h1
         variants={fadeUp}
-        style={{ fontSize: "clamp(2.5rem, 7vw, 5rem)", fontWeight: 800, color: "#f8fafc", letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 24, maxWidth: 820 }}
+        style={{ fontSize: "clamp(2.5rem, 7vw, 5rem)", fontWeight: 800, color: p.textStrong, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 24, maxWidth: 820 }}
       >
         The Operating System{" "}
         <span
@@ -358,7 +427,7 @@ function LandingHero({ onEnter, user }) {
       {/* Subhead */}
       <motion.p
         variants={fadeUp}
-        style={{ fontSize: 18, color: "#94a3b8", maxWidth: 560, lineHeight: 1.7, marginBottom: 48 }}
+        style={{ fontSize: 18, color: p.textBody, maxWidth: 560, lineHeight: 1.7, marginBottom: 48 }}
       >
         Fully-isolated multi-tenant architecture with JWT auth, role-based access,
         feature flags, and enterprise HR modules — built to scale.
@@ -409,7 +478,7 @@ function LandingHero({ onEnter, user }) {
       <motion.div
         variants={fadeUp}
         className="mt-8"
-        style={{ color: "#334155", fontSize: 12, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}
+        style={{ color: p.textDim, fontSize: 12, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}
       >
         <motion.div
           style={{ width: 1, height: 40, background: "linear-gradient(to bottom, transparent, rgba(0,174,236,0.4))" }}
@@ -425,7 +494,7 @@ function LandingHero({ onEnter, user }) {
 /* ══════════════════════════════════════════════════════════════════════════
    LOGIN PANEL — glassmorphism auth form
 ══════════════════════════════════════════════════════════════════════════ */
-function LoginPanel({ onBack }) {
+function LoginPanel({ onBack, p, isDark, toggle }) {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -471,15 +540,25 @@ function LoginPanel({ onBack }) {
         transition={{ delay: 0.7, duration: 0.5, ease: EASE_CINEMA }}
         onClick={onBack}
         className="fixed top-6 left-6 z-50 flex items-center gap-2"
-        style={{ color: "#64748b", fontSize: 13, fontWeight: 500, background: "none", border: "none", cursor: "pointer", transition: "color 0.2s" }}
-        onMouseEnter={e => e.currentTarget.style.color = "#94a3b8"}
-        onMouseLeave={e => e.currentTarget.style.color = "#64748b"}
+        style={{ color: p.textMuted, fontSize: 13, fontWeight: 500, background: "none", border: "none", cursor: "pointer", transition: "color 0.2s" }}
+        onMouseEnter={e => e.currentTarget.style.color = p.textStrong}
+        onMouseLeave={e => e.currentTarget.style.color = p.textMuted}
       >
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
         Back
       </motion.button>
+
+      {/* Theme toggle */}
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.7, duration: 0.5, ease: EASE_CINEMA }}
+        className="fixed top-6 right-6 z-50"
+      >
+        <ThemeToggle isDark={isDark} toggle={toggle} p={p} />
+      </motion.div>
 
       {/* Wordmark above card */}
       <motion.div
@@ -494,9 +573,9 @@ function LoginPanel({ onBack }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
           </div>
-          <span style={{ fontSize: 20, fontWeight: 800, color: "#f8fafc", letterSpacing: "-0.02em" }}>Office Repo</span>
+          <span style={{ fontSize: 20, fontWeight: 800, color: p.textStrong, letterSpacing: "-0.02em" }}>Office Repo</span>
         </div>
-        <p style={{ fontSize: 13, color: "#475569", letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 500 }}>
+        <p style={{ fontSize: 13, color: p.textFaint, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 500 }}>
           Unified Workplace Management
         </p>
       </motion.div>
@@ -534,13 +613,13 @@ function LoginPanel({ onBack }) {
           style={{
             position: "relative", zIndex: 1,
             width: "100%",
-            background: "rgba(17,24,39,0.78)",
+            background: p.glassBg,
             borderRadius: 24,
             backdropFilter: "blur(32px)",
             WebkitBackdropFilter: "blur(32px)",
-            border: "1px solid rgba(255,255,255,0.07)",
+            border: `1px solid ${p.glassBorder}`,
             overflow: "hidden",
-            boxShadow: "0 32px 64px rgba(0,0,0,0.6)",
+            boxShadow: p.cardShadow,
           }}
         >
         {/* Card top accent bar */}
@@ -556,9 +635,9 @@ function LoginPanel({ onBack }) {
             <motion.div variants={loginFieldVariant}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
                 <div style={{ width: 3, height: 22, background: "linear-gradient(to bottom, #00aeec, #ff7a1a)", borderRadius: 2 }} />
-                <h2 style={{ fontSize: 22, fontWeight: 800, color: "#f8fafc", letterSpacing: "-0.02em" }}>Admin Access</h2>
+                <h2 style={{ fontSize: 22, fontWeight: 800, color: p.textStrong, letterSpacing: "-0.02em" }}>Admin Access</h2>
               </div>
-              <p style={{ fontSize: 14, color: "#475569", marginBottom: 28, marginLeft: 13 }}>
+              <p style={{ fontSize: 14, color: p.textFaint, marginBottom: 28, marginLeft: 13 }}>
                 Authenticate to continue into OfficeRepo
               </p>
             </motion.div>
@@ -591,11 +670,11 @@ function LoginPanel({ onBack }) {
             <form onSubmit={handleSubmit}>
               {/* Email */}
               <motion.div variants={loginFieldVariant} style={{ marginBottom: 14 }}>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: p.textMuted, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
                   Email
                 </label>
                 <div style={{ position: "relative" }}>
-                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: focusedField === "email" ? "#00aeec" : "#334155", transition: "color 0.2s" }}>
+                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: focusedField === "email" ? "#00aeec" : p.iconIdle, transition: "color 0.2s" }}>
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                     </svg>
@@ -610,13 +689,13 @@ function LoginPanel({ onBack }) {
                     autoComplete="email"
                     style={{
                       width: "100%", boxSizing: "border-box",
-                      background: focusedField === "email" ? "rgba(0,174,236,0.06)" : "rgba(255,255,255,0.03)",
-                      border: focusedField === "email" ? "1px solid rgba(0,174,236,0.45)" : "1px solid rgba(255,255,255,0.07)",
+                      background: focusedField === "email" ? "rgba(0,174,236,0.06)" : p.inputBg,
+                      border: focusedField === "email" ? "1px solid rgba(0,174,236,0.45)" : `1px solid ${p.inputBorder}`,
                       borderRadius: 12, padding: "12px 14px 12px 44px",
-                      fontSize: 14, color: "#f8fafc",
+                      fontSize: 14, color: p.textStrong,
                       outline: "none",
                       transition: "all 0.25s",
-                      boxShadow: focusedField === "email" ? "0 0 0 3px rgba(0,174,236,0.12), inset 0 1px 0 rgba(255,255,255,0.03)" : "inset 0 1px 0 rgba(255,255,255,0.03)",
+                      boxShadow: focusedField === "email" ? `0 0 0 3px rgba(0,174,236,0.12), inset 0 1px 0 ${p.inset}` : `inset 0 1px 0 ${p.inset}`,
                     }}
                   />
                 </div>
@@ -624,11 +703,11 @@ function LoginPanel({ onBack }) {
 
               {/* Password */}
               <motion.div variants={loginFieldVariant} style={{ marginBottom: 24 }}>
-                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#64748b", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: p.textMuted, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
                   Password
                 </label>
                 <div style={{ position: "relative" }}>
-                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: focusedField === "password" ? "#00aeec" : "#334155", transition: "color 0.2s" }}>
+                  <div style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: focusedField === "password" ? "#00aeec" : p.iconIdle, transition: "color 0.2s" }}>
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
@@ -643,19 +722,19 @@ function LoginPanel({ onBack }) {
                     autoComplete="current-password"
                     style={{
                       width: "100%", boxSizing: "border-box",
-                      background: focusedField === "password" ? "rgba(0,174,236,0.06)" : "rgba(255,255,255,0.03)",
-                      border: focusedField === "password" ? "1px solid rgba(0,174,236,0.45)" : "1px solid rgba(255,255,255,0.07)",
+                      background: focusedField === "password" ? "rgba(0,174,236,0.06)" : p.inputBg,
+                      border: focusedField === "password" ? "1px solid rgba(0,174,236,0.45)" : `1px solid ${p.inputBorder}`,
                       borderRadius: 12, padding: "12px 44px 12px 44px",
-                      fontSize: 14, color: "#f8fafc",
+                      fontSize: 14, color: p.textStrong,
                       outline: "none",
                       transition: "all 0.25s",
-                      boxShadow: focusedField === "password" ? "0 0 0 3px rgba(0,174,236,0.12), inset 0 1px 0 rgba(255,255,255,0.03)" : "inset 0 1px 0 rgba(255,255,255,0.03)",
+                      boxShadow: focusedField === "password" ? `0 0 0 3px rgba(0,174,236,0.12), inset 0 1px 0 ${p.inset}` : `inset 0 1px 0 ${p.inset}`,
                     }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPass(s => !s)}
-                    style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#334155", padding: 4 }}
+                    style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: p.iconIdle, padding: 4 }}
                   >
                     {showPass ? (
                       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -714,8 +793,8 @@ function LoginPanel({ onBack }) {
         </div>
 
         {/* Card footer */}
-        <div style={{ padding: "18px 36px 26px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 12, color: "#475569", letterSpacing: "0.04em" }}>Restricted access</span>
+        <div style={{ padding: "18px 36px 26px", borderTop: `1px solid ${p.footerBorder}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 12, color: p.textFaint, letterSpacing: "0.04em" }}>Restricted access</span>
 
           {/* Animated ORT brand */}
           <motion.div
@@ -724,7 +803,7 @@ function LoginPanel({ onBack }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.2, duration: 0.6, ease: EASE_CINEMA }}
           >
-            <span style={{ fontSize: 12, color: "#334155", letterSpacing: "0.04em" }}>by</span>
+            <span style={{ fontSize: 12, color: p.textDim, letterSpacing: "0.04em" }}>by</span>
             <motion.div
               style={{ position: "relative", display: "flex", alignItems: "center" }}
               whileHover={{ scale: 1.05 }}
@@ -778,8 +857,10 @@ function LoginPanel({ onBack }) {
 ══════════════════════════════════════════════════════════════════════════ */
 export default function LandingPage() {
   const { user } = useAuth();
+  const { isDark, toggle } = useTheme();
   const navigate = useNavigate();
   const [phase, setPhase] = useState("landing"); // "landing" | "sweeping" | "login"
+  const p = getPalette(isDark);
 
   // If already logged in, go to dashboard
   useEffect(() => {
@@ -800,16 +881,17 @@ export default function LandingPage() {
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#081018",
-        color: "#f8fafc",
+        backgroundColor: p.pageBg,
+        color: p.textStrong,
         overflowX: "hidden",
         position: "relative",
+        transition: "background-color 0.4s ease",
       }}
     >
       {/* Always-present background layers */}
       <AmbientOrbs zoomed={phase === "login"} />
-      <AnimatedGrid />
-      <ParticleField />
+      <AnimatedGrid p={p} />
+      <ParticleField p={p} />
       <SpotlightCursor />
 
       {/* Cinematic sweep overlay */}
@@ -820,9 +902,9 @@ export default function LandingPage() {
       {/* Main content — landing or login */}
       <AnimatePresence mode="wait">
         {phase !== "login" ? (
-          <LandingHero key="landing" onEnter={handleEnterWorkspace} user={user} />
+          <LandingHero key="landing" onEnter={handleEnterWorkspace} user={user} p={p} isDark={isDark} toggle={toggle} />
         ) : (
-          <LoginPanel key="login" onBack={handleBack} />
+          <LoginPanel key="login" onBack={handleBack} p={p} isDark={isDark} toggle={toggle} />
         )}
       </AnimatePresence>
     </div>
