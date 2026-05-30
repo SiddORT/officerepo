@@ -815,5 +815,236 @@ class TestCorsOfficerepoSubdomain(unittest.TestCase):
         self.assertEqual(kwargs["allow_origins"], ["*"])
 
 
+import asyncio
+from datetime import datetime
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock
+
+from app.core.cors import is_origin_allowed, mask_origin, MAX_LOGGED_ORIGIN_LEN
+from app.core import cors_monitor
+from app.core.cors_monitor import (
+    make_cors_rejection_logger,
+    handle_cors_rejection,
+    _should_alert,
+)
+
+_MONITOR_LOGGER = "app.core.cors_monitor"
+
+
+def _monitor_settings(
+    *,
+    environment: str = "production",
+    allowed_origins: str = "https://app.officerepo.io",
+    alert_url: str = "",
+    severity: str = "",
+    env_tag: str = "",
+    cooldown_minutes: int = 60,
+) -> SimpleNamespace:
+    """Build a minimal settings-like object for the CORS monitor."""
+    return SimpleNamespace(
+        ENVIRONMENT=environment,
+        ALLOWED_ORIGINS=allowed_origins,
+        CORS_REJECTION_ALERT_URL=alert_url,
+        CORS_REJECTION_ALERT_SEVERITY=severity,
+        CORS_REJECTION_ALERT_ENV_TAG=env_tag,
+        CORS_REJECTION_ALERT_COOLDOWN_MINUTES=cooldown_minutes,
+    )
+
+
+def _run(coro):
+    return asyncio.get_event_loop().run_until_complete(coro)
+
+
+class TestIsOriginAllowed(unittest.TestCase):
+    """The origin-matching helper must mirror the running CORS policy."""
+
+    ALLOWED = "https://app.officerepo.io"
+
+    def test_development_allows_any_origin(self):
+        self.assertTrue(is_origin_allowed("https://anything.example.com", "development", ""))
+
+    def test_no_origin_is_treated_as_allowed(self):
+        self.assertTrue(is_origin_allowed("", "production", self.ALLOWED))
+        self.assertTrue(is_origin_allowed(None, "production", self.ALLOWED))
+
+    def test_listed_origin_is_allowed_in_production(self):
+        self.assertTrue(is_origin_allowed(self.ALLOWED, "production", self.ALLOWED))
+
+    def test_officerepo_subdomain_allowed_via_regex(self):
+        self.assertTrue(is_origin_allowed("https://tenant.officerepo.com", "production", self.ALLOWED))
+
+    def test_unlisted_origin_is_rejected_in_production(self):
+        self.assertFalse(is_origin_allowed("https://evil.example.com", "production", self.ALLOWED))
+
+    def test_suffix_attack_origin_is_rejected(self):
+        self.assertFalse(is_origin_allowed("https://officerepo.com.evil.com", "production", self.ALLOWED))
+
+    def test_non_https_subdomain_is_rejected(self):
+        self.assertFalse(is_origin_allowed("http://app.officerepo.com", "production", self.ALLOWED))
+
+
+class TestMaskOrigin(unittest.TestCase):
+    """mask_origin must bound and sanitise the attacker-controlled Origin."""
+
+    def test_none_becomes_placeholder(self):
+        self.assertEqual(mask_origin(None), "<none>")
+        self.assertEqual(mask_origin(""), "<none>")
+
+    def test_short_origin_passes_through_trimmed(self):
+        self.assertEqual(mask_origin("  https://app.officerepo.io  "), "https://app.officerepo.io")
+
+    def test_long_origin_is_truncated(self):
+        long_origin = "https://" + ("a" * 500) + ".example.com"
+        masked = mask_origin(long_origin)
+        self.assertTrue(masked.endswith("...(truncated)"))
+        self.assertLessEqual(len(masked), MAX_LOGGED_ORIGIN_LEN + len("...(truncated)"))
+
+
+class TestCorsRejectionMiddleware(unittest.TestCase):
+    """The middleware logs rejected origins and stays silent for allowed ones."""
+
+    ALLOWED = "https://app.officerepo.io"
+    BLOCKED = "https://evil.example.com"
+
+    def setUp(self):
+        cors_monitor._last_alert_at.clear()
+
+    def _client(self, settings) -> TestClient:
+        app = FastAPI()
+        app.middleware("http")(make_cors_rejection_logger(settings))
+
+        @app.get("/ping")
+        def ping():
+            return {"ok": True}
+
+        return TestClient(app)
+
+    def test_blocked_origin_produces_log_entry(self):
+        settings = _monitor_settings()
+        client = self._client(settings)
+        with self.assertLogs(_MONITOR_LOGGER, level="WARNING") as cm:
+            client.get("/ping", headers={"Origin": self.BLOCKED})
+        log_text = " ".join(cm.output)
+        self.assertIn("blocked cross-origin request", log_text)
+        self.assertIn(self.BLOCKED, log_text)
+
+    def test_allowed_origin_produces_no_log(self):
+        settings = _monitor_settings()
+        client = self._client(settings)
+        with self.assertNoLogs(_MONITOR_LOGGER, level="WARNING"):
+            client.get("/ping", headers={"Origin": self.ALLOWED})
+
+    def test_no_origin_header_produces_no_log(self):
+        settings = _monitor_settings()
+        client = self._client(settings)
+        with self.assertNoLogs(_MONITOR_LOGGER, level="WARNING"):
+            client.get("/ping")
+
+    def test_development_never_logs(self):
+        settings = _monitor_settings(environment="development", allowed_origins="")
+        client = self._client(settings)
+        with self.assertNoLogs(_MONITOR_LOGGER, level="WARNING"):
+            client.get("/ping", headers={"Origin": self.BLOCKED})
+
+    def test_officerepo_subdomain_not_logged(self):
+        settings = _monitor_settings()
+        client = self._client(settings)
+        with self.assertNoLogs(_MONITOR_LOGGER, level="WARNING"):
+            client.get("/ping", headers={"Origin": "https://tenant.officerepo.com"})
+
+
+class TestCorsRejectionAlerting(unittest.TestCase):
+    """handle_cors_rejection fires the optional webhook reusing the alert pattern."""
+
+    BLOCKED = "https://evil.example.com"
+
+    def setUp(self):
+        cors_monitor._last_alert_at.clear()
+
+    @staticmethod
+    def _mock_client(status_code: int = 200):
+        mock_response = MagicMock()
+        mock_response.status_code = status_code
+        instance = AsyncMock()
+        instance.post = AsyncMock(return_value=mock_response)
+        instance.__aenter__ = AsyncMock(return_value=instance)
+        instance.__aexit__ = AsyncMock(return_value=False)
+        return instance
+
+    def test_no_webhook_when_url_blank(self):
+        settings = _monitor_settings(alert_url="")
+        with patch("app.core.cors_monitor.httpx.AsyncClient") as mock_client:
+            with self.assertLogs(_MONITOR_LOGGER, level="WARNING"):
+                _run(handle_cors_rejection(self.BLOCKED, "GET", "/ping", settings))
+        mock_client.assert_not_called()
+
+    def test_no_webhook_when_url_whitespace_only(self):
+        settings = _monitor_settings(alert_url="   ")
+        with patch("app.core.cors_monitor.httpx.AsyncClient") as mock_client:
+            with self.assertLogs(_MONITOR_LOGGER, level="WARNING"):
+                _run(handle_cors_rejection(self.BLOCKED, "GET", "/ping", settings))
+        mock_client.assert_not_called()
+
+    def test_webhook_posted_when_url_set(self):
+        alert_url = "https://hooks.example.com/cors-alert"
+        settings = _monitor_settings(alert_url=alert_url)
+        instance = self._mock_client()
+        with patch("app.core.cors_monitor.httpx.AsyncClient", return_value=instance):
+            with self.assertLogs(_MONITOR_LOGGER, level="WARNING"):
+                _run(handle_cors_rejection(self.BLOCKED, "GET", "/ping", settings))
+        instance.post.assert_awaited_once()
+        self.assertEqual(instance.post.call_args[0][0], alert_url)
+
+    def test_webhook_payload_structure_and_values(self):
+        settings = _monitor_settings(alert_url="https://hooks.example.com/cors-alert")
+        instance = self._mock_client()
+        with patch("app.core.cors_monitor.httpx.AsyncClient", return_value=instance):
+            with self.assertLogs(_MONITOR_LOGGER, level="WARNING"):
+                _run(handle_cors_rejection(self.BLOCKED, "POST", "/api/v1/x", settings))
+        payload = instance.post.call_args[1]["json"]
+        for key in ("alert", "message", "severity", "environment", "origin", "method", "path", "detected_at"):
+            self.assertIn(key, payload)
+        self.assertEqual(payload["alert"], "cors_origin_rejected")
+        self.assertEqual(payload["origin"], self.BLOCKED)
+        self.assertEqual(payload["method"], "POST")
+        self.assertEqual(payload["path"], "/api/v1/x")
+        self.assertEqual(payload["severity"], "warning")  # default
+        self.assertEqual(payload["environment"], "production")  # falls back to ENVIRONMENT
+        datetime.fromisoformat(payload["detected_at"])  # valid ISO-8601
+
+    def test_custom_severity_and_env_tag_used(self):
+        settings = _monitor_settings(
+            alert_url="https://hooks.example.com/cors-alert",
+            severity="critical",
+            env_tag="staging",
+        )
+        instance = self._mock_client()
+        with patch("app.core.cors_monitor.httpx.AsyncClient", return_value=instance):
+            with self.assertLogs(_MONITOR_LOGGER, level="WARNING"):
+                _run(handle_cors_rejection(self.BLOCKED, "GET", "/ping", settings))
+        payload = instance.post.call_args[1]["json"]
+        self.assertEqual(payload["severity"], "critical")
+        self.assertEqual(payload["environment"], "staging")
+
+    def test_repeated_origin_is_throttled(self):
+        settings = _monitor_settings(
+            alert_url="https://hooks.example.com/cors-alert", cooldown_minutes=60
+        )
+        instance = self._mock_client()
+        with patch("app.core.cors_monitor.httpx.AsyncClient", return_value=instance):
+            with self.assertLogs(_MONITOR_LOGGER, level="WARNING"):
+                _run(handle_cors_rejection(self.BLOCKED, "GET", "/ping", settings))
+                _run(handle_cors_rejection(self.BLOCKED, "GET", "/ping", settings))
+        # Two log lines, but only one webhook POST due to per-origin cooldown.
+        instance.post.assert_awaited_once()
+
+    def test_cooldown_zero_disables_throttle(self):
+        from datetime import datetime as _dt, timezone as _tz
+        cors_monitor._last_alert_at.clear()
+        now = _dt.now(tz=_tz.utc)
+        self.assertTrue(_should_alert("https://a.example.com", 0, now=now))
+        self.assertTrue(_should_alert("https://a.example.com", 0, now=now))
+
+
 if __name__ == "__main__":
     unittest.main()

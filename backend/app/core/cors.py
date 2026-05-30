@@ -71,3 +71,48 @@ def build_cors_kwargs(environment: str, allowed_origins: str) -> dict:
     if is_restricted_environment(environment):
         kwargs["allow_origin_regex"] = OFFICEREPO_ORIGIN_REGEX
     return kwargs
+
+
+def is_origin_allowed(origin: str, environment: str, allowed_origins: str) -> bool:
+    """Return True if *origin* would be accepted by the CORS policy.
+
+    Mirrors the matching that Starlette's CORSMiddleware performs given the
+    kwargs from :func:`build_cors_kwargs`:
+      - In development the wildcard accepts every origin.
+      - In restricted environments an origin is allowed only if it is in the
+        exact ALLOWED_ORIGINS list OR matches the officerepo.com subdomain
+        regex (OFFICEREPO_ORIGIN_PATTERN).
+
+    A request with no Origin header is not a cross-origin browser request and
+    is therefore treated as allowed (it is not a CORS rejection). The incoming
+    origin is matched verbatim (no whitespace stripping) so this helper agrees
+    with what CORSMiddleware actually accepts.
+    """
+    if not is_restricted_environment(environment):
+        return True
+    if not origin:
+        return True
+    if origin in build_cors_origins(environment, allowed_origins):
+        return True
+    return bool(OFFICEREPO_ORIGIN_PATTERN.match(origin))
+
+
+# Maximum length to which a logged/alerted Origin value is truncated. The Origin
+# header is attacker-controlled, so we bound it to keep log lines tidy and avoid
+# echoing an unbounded value into logs/alerts.
+MAX_LOGGED_ORIGIN_LEN: int = 128
+
+
+def mask_origin(origin: str) -> str:
+    """Return a log-safe representation of an Origin header value.
+
+    The Origin is not a secret, but it is attacker-controlled, so the value is
+    truncated to :data:`MAX_LOGGED_ORIGIN_LEN` characters. ``None``/empty input
+    becomes ``"<none>"``.
+    """
+    if not origin:
+        return "<none>"
+    origin = origin.strip()
+    if len(origin) > MAX_LOGGED_ORIGIN_LEN:
+        return origin[:MAX_LOGGED_ORIGIN_LEN] + "...(truncated)"
+    return origin

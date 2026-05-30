@@ -274,6 +274,11 @@ ENVIRONMENT                         development | production (default: developme
 ALLOWED_ORIGINS                     Comma-separated exact CORS origins (auto-detects REPLIT_DOMAINS).
                                     In non-development envs, officerepo.com and all *.officerepo.com
                                     subdomains are ALSO allowed automatically (subdomain regex).
+CORS_REJECTION_ALERT_URL            Optional webhook for blocked-origin alerts (blank = log only)
+CORS_REJECTION_ALERT_SEVERITY       Severity label in the CORS alert payload (default: warning)
+CORS_REJECTION_ALERT_ENV_TAG        Environment tag in the CORS alert payload (default: ENVIRONMENT)
+CORS_REJECTION_ALERT_COOLDOWN_MINUTES  Min minutes between webhook alerts per rejected origin
+                                    (default: 60, 0 disables; the log line is never throttled)
 BACKEND_PORT                        Port uvicorn binds to under PM2 (default: 8000)
 FRONTEND_PORT                       Port the frontend preview binds to under PM2 (default: 5000)
 TURNSTILE_SECRET_KEY                Cloudflare Turnstile secret (blank = bot check disabled)

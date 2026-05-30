@@ -10,6 +10,7 @@ from sqlalchemy import text
 
 from backend.app.config.settings import settings
 from backend.app.core.cors import build_cors_kwargs
+from backend.app.core.cors_monitor import make_cors_rejection_logger
 from backend.app.core.secret_rotation_monitor import run_monitor
 from backend.app.core.security_headers import CSP_POLICY, CSP_EXEMPT_PATHS, add_security_headers
 from backend.app.database.platform import Base, engine, SessionLocal
@@ -222,6 +223,12 @@ app.add_middleware(
 # Content-Security-Policy — policy and middleware live in security_headers.py
 # so tests can import the real constants without triggering DB side-effects.
 app.middleware("http")(add_security_headers)
+
+# CORS rejection monitor — logs (and optionally alerts on) browser requests
+# whose Origin is blocked by the CORS policy, so a misconfigured ALLOWED_ORIGINS
+# entry or typo'd subdomain is diagnosable instead of failing silently in the
+# browser. No-op in development (wildcard CORS rejects nothing).
+app.middleware("http")(make_cors_rejection_logger(settings))
 
 
 PREFIX = settings.API_V1_PREFIX

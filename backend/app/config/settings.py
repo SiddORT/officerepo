@@ -87,6 +87,27 @@ class Settings(BaseSettings):
     SECRET_ROTATION_ALERT_SEVERITY: str = ""
     SECRET_ROTATION_ALERT_ENV_TAG: str = ""
 
+    # CORS rejection alerting — when a browser request arrives with an Origin
+    # that the CORS policy does not allow (a typo'd ALLOWED_ORIGINS entry or a
+    # misconfigured tenant subdomain), the rejection is logged server-side and,
+    # if CORS_REJECTION_ALERT_URL is set, a JSON payload is POSTed to it.
+    # Mirrors the SECRET_ROTATION_ALERT_* pattern.
+    #
+    # CORS_REJECTION_ALERT_URL
+    #   Optional webhook URL. Leave blank to disable webhooks (logging stays on).
+    # CORS_REJECTION_ALERT_SEVERITY
+    #   Free-form severity label included as "severity" (default "warning").
+    # CORS_REJECTION_ALERT_ENV_TAG
+    #   Free-form environment tag included as "environment" (default ENVIRONMENT).
+    # CORS_REJECTION_ALERT_COOLDOWN_MINUTES
+    #   Minimum minutes between webhook alerts for the SAME rejected origin, so a
+    #   retrying misconfigured client cannot flood the receiver. The log line is
+    #   always emitted; only the webhook is throttled. 0 disables throttling.
+    CORS_REJECTION_ALERT_URL: str = ""
+    CORS_REJECTION_ALERT_SEVERITY: str = ""
+    CORS_REJECTION_ALERT_ENV_TAG: str = ""
+    CORS_REJECTION_ALERT_COOLDOWN_MINUTES: int = 60
+
     # Minimum number of minutes that must elapse between two successful
     # in-process secret rotations via POST /superadmin/rotate-secrets.
     # Prevents accidental or malicious rapid rotation that could lock out
