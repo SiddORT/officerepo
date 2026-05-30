@@ -64,7 +64,7 @@ The frontend proxies `/api` to the backend via Vite.
 
 | Role       | Email                   | Password  |
 |------------|-------------------------|-----------|
-| Superadmin | admin@officerepo.io     | admin123  |
+| Superadmin | admin@officerepo.com    | admin123  |
 
 ## Routing
 - `/` → LandingPage (public)

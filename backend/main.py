@@ -309,10 +309,10 @@ def seed_default_data():
     """Seed a default superadmin and sample plans on first run."""
     db = SessionLocal()
     try:
-        admin = db.query(SuperAdmin).filter(SuperAdmin.email == "admin@officerepo.io").first()
+        admin = db.query(SuperAdmin).filter(SuperAdmin.email == "admin@officerepo.com").first()
         if not admin:
             admin = SuperAdmin(
-                email="admin@officerepo.io",
+                email="admin@officerepo.com",
                 hashed_password=SuperAdmin.hash_password("admin123"),
                 name="Super Admin",
             )
@@ -328,7 +328,7 @@ def seed_default_data():
             db.add_all(plans)
 
         db.commit()
-        print("Default data seeded: superadmin (admin@officerepo.io / admin123) and plans.")
+        print("Default data seeded: superadmin (admin@officerepo.com / admin123) and plans.")
     except Exception as e:
         db.rollback()
         print(f"Seed error: {e}")

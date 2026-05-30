@@ -39,7 +39,7 @@ def _make_token(role: str, secret: str = _SUPERADMIN_JWT_SECRET) -> str:
         "user_id": 1,
         "tenant_id": "platform" if role == "superadmin" else "acme",
         "role": role,
-        "email": "admin@officerepo.io",
+        "email": "admin@officerepo.com",
         "type": "access",
         "exp": datetime.utcnow() + timedelta(hours=1),
     }

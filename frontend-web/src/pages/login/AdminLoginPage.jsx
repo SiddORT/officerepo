@@ -329,7 +329,7 @@ export default function AdminLoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   onFocus={() => setFocusedField("email")}
                   onBlur={() => setFocusedField(null)}
-                  placeholder="admin@officerepo.io"
+                  placeholder="admin@officerepo.com"
                   autoComplete="email"
                   required
                   style={inputStyle("email")}

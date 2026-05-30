@@ -686,7 +686,7 @@ function LoginPanel({ onBack, p, isDark, toggle }) {
                     onChange={e => setEmail(e.target.value)}
                     onFocus={() => setFocusedField("email")}
                     onBlur={() => setFocusedField(null)}
-                    placeholder="admin@officerepo.io"
+                    placeholder="admin@officerepo.com"
                     autoComplete="email"
                     style={{
                       width: "100%", boxSizing: "border-box",
