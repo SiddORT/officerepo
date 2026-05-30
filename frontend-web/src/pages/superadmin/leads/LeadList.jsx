@@ -256,6 +256,49 @@ function Dashboard({ stats }) {
           <MiniStat label="Overdue Follow-ups" value={stats.overdue_followups_count ?? 0} color="#ef4444" />
         </div>
       )}
+
+      <NotificationsPanel notifications={stats.notifications} />
+    </div>
+  );
+}
+
+function NotificationsPanel({ notifications }) {
+  const navigate = useNavigate();
+  if (!notifications || notifications.length === 0) return null;
+  return (
+    <div className="rounded-xl px-4 py-3" style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)" }}>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: "#f59e0b" }} />
+        <h3 className="text-sm font-semibold t-heading">Needs attention</h3>
+        <span className="text-xs t-muted">({notifications.length})</span>
+      </div>
+      <ul className="space-y-1.5 max-h-64 overflow-y-auto">
+        {notifications.map((n, i) => {
+          const overdue = n.urgency === "overdue";
+          return (
+            <li key={`${n.type}-${n.lead_id}-${i}`}>
+              <button
+                onClick={() => navigate(`/superadmin/leads/${n.lead_id}`)}
+                className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-left transition-all"
+                style={{ background: "var(--c-surface2)", border: "1px solid var(--c-border)" }}
+              >
+                <div className="min-w-0">
+                  <p className="text-sm t-body truncate">{n.title}</p>
+                  <p className="text-xs t-muted truncate">{n.lead_name}{n.date ? ` · ${formatDate(n.date)}` : ""}</p>
+                </div>
+                <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded flex-shrink-0"
+                  style={{
+                    background: overdue ? "rgba(239,68,68,0.12)" : "rgba(245,158,11,0.12)",
+                    color: overdue ? "#ef4444" : "#f59e0b",
+                    border: `1px solid ${overdue ? "rgba(239,68,68,0.25)" : "rgba(245,158,11,0.25)"}`,
+                  }}>
+                  {overdue ? "Overdue" : "Due"}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

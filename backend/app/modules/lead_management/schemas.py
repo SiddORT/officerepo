@@ -22,6 +22,7 @@ class LeadCreateRequest(BaseModel):
     contact_name: str = Field(..., max_length=120)
     email: Optional[str] = Field(None, max_length=255)
     phone: Optional[str] = Field(None, max_length=30)
+    country_code: Optional[str] = Field(None, max_length=8)
     designation: Optional[str] = Field(None, max_length=120)
     website: Optional[str] = Field(None, max_length=255)
     industry: Optional[str] = Field(None, max_length=120)
@@ -55,6 +56,11 @@ class LeadCreateRequest(BaseModel):
     def _phone(cls, val):
         return v.validate_phone(val, field="phone")
 
+    @field_validator("country_code")
+    @classmethod
+    def _country_code(cls, val):
+        return v.validate_country_code(val, field="country_code")
+
     @field_validator("designation", "industry", "country", "company_size", "website", "interested_modules")
     @classmethod
     def _opt_text(cls, val):
@@ -78,6 +84,7 @@ class LeadUpdateRequest(BaseModel):
     contact_name: Optional[str] = Field(None, max_length=120)
     email: Optional[str] = Field(None, max_length=255)
     phone: Optional[str] = Field(None, max_length=30)
+    country_code: Optional[str] = Field(None, max_length=8)
     designation: Optional[str] = Field(None, max_length=120)
     website: Optional[str] = Field(None, max_length=255)
     industry: Optional[str] = Field(None, max_length=120)
@@ -110,6 +117,11 @@ class LeadUpdateRequest(BaseModel):
     def _phone(cls, val):
         return v.validate_phone(val, field="phone")
 
+    @field_validator("country_code")
+    @classmethod
+    def _country_code(cls, val):
+        return v.validate_country_code(val, field="country_code")
+
     @field_validator("designation", "industry", "country", "company_size", "website", "interested_modules")
     @classmethod
     def _opt_text(cls, val):
@@ -121,6 +133,22 @@ class LeadUpdateRequest(BaseModel):
         if val is None:
             return None
         return v.validate_choice(val, c.LEAD_SOURCES, field="lead_source")
+
+
+class ScoreLabelRequest(BaseModel):
+    """Manual Hot/Warm/Cold override. ``label=None`` clears the override."""
+    label: Optional[str] = None
+
+    @field_validator("label")
+    @classmethod
+    def _label(cls, val):
+        if val is None:
+            return None
+        cleaned = v.clean_text(val, collapse_spaces=True)
+        if not cleaned:
+            return None
+        allowed = [c.SCORE_LABEL_HOT, c.SCORE_LABEL_WARM, c.SCORE_LABEL_COLD]
+        return v.validate_choice(cleaned, allowed, field="label", required=True)
 
 
 class StageUpdateRequest(BaseModel):
@@ -153,6 +181,7 @@ class ActivityCreateRequest(BaseModel):
     activity_type: str
     activity_date: Optional[datetime] = None
     remarks: Optional[str] = Field(None, max_length=2000)
+    next_action: Optional[str] = Field(None, max_length=2000)
     next_action_date: Optional[datetime] = None
 
     @field_validator("activity_type")
@@ -160,7 +189,7 @@ class ActivityCreateRequest(BaseModel):
     def _type(cls, val):
         return v.validate_choice(val, c.ACTIVITY_TYPES, field="activity_type", required=True)
 
-    @field_validator("remarks")
+    @field_validator("remarks", "next_action")
     @classmethod
     def _remarks(cls, val):
         return v.clean_text(val, collapse_spaces=False)
@@ -170,6 +199,7 @@ class ActivityUpdateRequest(BaseModel):
     activity_type: Optional[str] = None
     activity_date: Optional[datetime] = None
     remarks: Optional[str] = Field(None, max_length=2000)
+    next_action: Optional[str] = Field(None, max_length=2000)
     next_action_date: Optional[datetime] = None
 
     @field_validator("activity_type")
@@ -179,7 +209,7 @@ class ActivityUpdateRequest(BaseModel):
             return None
         return v.validate_choice(val, c.ACTIVITY_TYPES, field="activity_type")
 
-    @field_validator("remarks")
+    @field_validator("remarks", "next_action")
     @classmethod
     def _remarks(cls, val):
         return v.clean_text(val, collapse_spaces=False)
@@ -405,3 +435,72 @@ class ConvertClientRequest(BaseModel):
     @classmethod
     def _slug(cls, val):
         return v.clean_text(val)
+
+
+# ── Spokespersons (additional points of contact) ─────────────────────────────
+class SpokespersonCreateRequest(BaseModel):
+    name: str = Field(..., max_length=120)
+    designation: Optional[str] = Field(None, max_length=120)
+    email: Optional[str] = Field(None, max_length=255)
+    phone: Optional[str] = Field(None, max_length=30)
+    country_code: Optional[str] = Field(None, max_length=8)
+    is_primary: Optional[bool] = False
+
+    @field_validator("name")
+    @classmethod
+    def _name(cls, val):
+        return v.validate_length(val, field="name", min_len=2, max_len=120, required=True)
+
+    @field_validator("designation")
+    @classmethod
+    def _designation(cls, val):
+        return v.clean_text(val)
+
+    @field_validator("email")
+    @classmethod
+    def _email(cls, val):
+        return v.validate_email(val, field="email")
+
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, val):
+        return v.validate_phone(val, field="phone")
+
+    @field_validator("country_code")
+    @classmethod
+    def _country_code(cls, val):
+        return v.validate_country_code(val, field="country_code")
+
+
+class SpokespersonUpdateRequest(BaseModel):
+    name: Optional[str] = Field(None, max_length=120)
+    designation: Optional[str] = Field(None, max_length=120)
+    email: Optional[str] = Field(None, max_length=255)
+    phone: Optional[str] = Field(None, max_length=30)
+    country_code: Optional[str] = Field(None, max_length=8)
+    is_primary: Optional[bool] = None
+
+    @field_validator("name")
+    @classmethod
+    def _name(cls, val):
+        return v.validate_length(val, field="name", min_len=2, max_len=120)
+
+    @field_validator("designation")
+    @classmethod
+    def _designation(cls, val):
+        return v.clean_text(val)
+
+    @field_validator("email")
+    @classmethod
+    def _email(cls, val):
+        return v.validate_email(val, field="email")
+
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, val):
+        return v.validate_phone(val, field="phone")
+
+    @field_validator("country_code")
+    @classmethod
+    def _country_code(cls, val):
+        return v.validate_country_code(val, field="country_code")

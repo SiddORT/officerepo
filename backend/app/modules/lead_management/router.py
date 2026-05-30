@@ -7,6 +7,7 @@ the standard ApiResponse. No business logic lives here.
 from __future__ import annotations
 
 import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -26,6 +27,7 @@ from backend.app.modules.lead_management.schemas import (
     FollowupCreateRequest, FollowupUpdateRequest,
     NoteCreateRequest, ProposalCreateRequest, ProposalUpdateRequest,
     NegotiationCreateRequest, ConvertEnquiryRequest, ConvertClientRequest,
+    ScoreLabelRequest, SpokespersonCreateRequest, SpokespersonUpdateRequest,
 )
 from backend.shared.response import ApiResponse
 from backend.shared.storage.file_handler import (
@@ -101,6 +103,40 @@ def dashboard(db: Session = Depends(get_platform_db), _admin: dict = Depends(_cu
     return ApiResponse.ok(service.dashboard(db)).model_dump()
 
 
+# ── Calendar ─────────────────────────────────────────────────────────────────
+def _parse_dt(value: Optional[str], fallback: datetime) -> datetime:
+    """Parse an ISO-8601 string into a naive UTC datetime (DB stores naive UTC).
+
+    Timezone-aware inputs (e.g. `...Z` or `+05:30`) are converted to UTC, then
+    tzinfo is dropped so comparisons line up with the naive UTC columns.
+    """
+    if not value:
+        return fallback
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return fallback
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return parsed
+
+
+@router.get("/calendar/events", summary="Scheduled demos, follow-ups & next-actions in a date range")
+def calendar_events(
+    start: Optional[str] = Query(None),
+    end: Optional[str] = Query(None),
+    db: Session = Depends(get_platform_db),
+    _admin: dict = Depends(_current_admin),
+):
+    now = datetime.utcnow()
+    month_start = datetime(now.year, now.month, 1)
+    start_dt = _parse_dt(start, month_start)
+    end_dt = _parse_dt(end, month_start + timedelta(days=42))
+    if end_dt <= start_dt:
+        end_dt = start_dt + timedelta(days=1)
+    return ApiResponse.ok(service.calendar_events(db, start=start_dt, end=end_dt)).model_dump()
+
+
 # ── Lead CRUD ────────────────────────────────────────────────────────────────
 @router.get("", summary="List leads (paginated, filterable, sortable)")
 def list_leads(
@@ -161,6 +197,42 @@ def mark_lost(lead_id: str, payload: LeadLostRequest, db: Session = Depends(get_
               admin: dict = Depends(_current_admin)):
     return ApiResponse.ok(service.mark_lost(db, lead_id, payload, actor=admin["email"]),
                           "Lead marked as lost.").model_dump()
+
+
+@router.post("/{lead_id}/score-label", summary="Set or clear the manual Hot/Warm/Cold override")
+def set_score_label(lead_id: str, payload: ScoreLabelRequest, db: Session = Depends(get_platform_db),
+                    admin: dict = Depends(_current_admin)):
+    msg = "Score override cleared." if payload.label is None else "Score override set."
+    return ApiResponse.ok(service.set_score_label(db, lead_id, payload, actor=admin["email"]), msg).model_dump()
+
+
+# ── Spokespersons ────────────────────────────────────────────────────────────
+@router.get("/{lead_id}/spokespersons")
+def list_spokespersons(lead_id: str, db: Session = Depends(get_platform_db), _admin: dict = Depends(_current_admin)):
+    return ApiResponse.ok(service.list_spokespersons(db, lead_id)).model_dump()
+
+
+@router.post("/{lead_id}/spokespersons")
+def add_spokesperson(lead_id: str, payload: SpokespersonCreateRequest, db: Session = Depends(get_platform_db),
+                     admin: dict = Depends(_current_admin)):
+    return ApiResponse.ok(
+        service.add_spokesperson(db, lead_id, payload, actor_id=admin["user_id"], actor=admin["email"]),
+        "Spokesperson added.").model_dump()
+
+
+@router.patch("/{lead_id}/spokespersons/{spokesperson_id}")
+def update_spokesperson(lead_id: str, spokesperson_id: str, payload: SpokespersonUpdateRequest,
+                        db: Session = Depends(get_platform_db), admin: dict = Depends(_current_admin)):
+    return ApiResponse.ok(
+        service.update_spokesperson(db, lead_id, spokesperson_id, payload, actor=admin["email"]),
+        "Spokesperson updated.").model_dump()
+
+
+@router.delete("/{lead_id}/spokespersons/{spokesperson_id}")
+def delete_spokesperson(lead_id: str, spokesperson_id: str, db: Session = Depends(get_platform_db),
+                        admin: dict = Depends(_current_admin)):
+    service.delete_spokesperson(db, lead_id, spokesperson_id, actor=admin["email"])
+    return ApiResponse.ok(None, "Spokesperson deleted.").model_dump()
 
 
 # ── Activities ───────────────────────────────────────────────────────────────

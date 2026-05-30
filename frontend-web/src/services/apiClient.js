@@ -164,6 +164,8 @@ export const leadsApi = {
   options: () => apiClient.get(`${LEADS}/meta/options`),
   dashboard: () => apiClient.get(`${LEADS}/dashboard`),
 
+  calendar: (params) => apiClient.get(`${LEADS}/calendar/events`, { params }),
+
   list: (params) => apiClient.get(LEADS, { params }),
   get: (id) => apiClient.get(`${LEADS}/${id}`),
   create: (data) => apiClient.post(LEADS, data),
@@ -171,6 +173,12 @@ export const leadsApi = {
   remove: (id) => apiClient.delete(`${LEADS}/${id}`),
   setStage: (id, stage) => apiClient.post(`${LEADS}/${id}/stage`, { stage }),
   markLost: (id, data) => apiClient.post(`${LEADS}/${id}/lost`, data),
+  setScoreLabel: (id, label) => apiClient.post(`${LEADS}/${id}/score-label`, { label }),
+
+  spokespersons: (id) => apiClient.get(`${LEADS}/${id}/spokespersons`),
+  addSpokesperson: (id, data) => apiClient.post(`${LEADS}/${id}/spokespersons`, data),
+  updateSpokesperson: (id, sid, data) => apiClient.patch(`${LEADS}/${id}/spokespersons/${sid}`, data),
+  deleteSpokesperson: (id, sid) => apiClient.delete(`${LEADS}/${id}/spokespersons/${sid}`),
 
   timeline: (id) => apiClient.get(`${LEADS}/${id}/timeline`),
 

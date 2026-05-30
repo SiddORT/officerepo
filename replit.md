@@ -53,12 +53,16 @@ frontend-web/
       login/AdminLoginPage.jsx Platform admin login (route: /admin, hidden) — full-bleed office background + floating glassmorphic card with mouse-driven 3D tilt, cyan accent
       dashboard/DashboardPage  Module overview dashboard
       superadmin/              Tenant list, create, activate/suspend, feature flags
-      superadmin/leads/        Lead CRM: LeadList, CreateLead, EditLead, LeadDetails
-                               (tabs: Overview, Activities, Demos, Follow-ups, Notes,
-                               Documents, Proposals, Negotiations, Conversions, Timeline);
+      superadmin/leads/        Lead CRM: LeadList, CreateLead, EditLead, LeadDetails,
+                               CalendarPage (month grid of demos/follow-ups/next-actions)
+                               (tabs: Overview, Spokespersons, Activities, Demos, Follow-ups,
+                               Notes, Documents, Proposals, Negotiations, Conversions, Timeline);
+                               LeadList shows a "Needs attention" notifications panel;
+                               LeadDetails header has Auto/Hot/Warm/Cold score override control;
                                components/ (StageBadge, ScoreBadge, Timeline, LeadForm);
                                constants.js (helpers + enum→option mappers)
-    components/Layout.jsx      Sidebar navigation, logout → /
+    components/Layout.jsx      Sidebar nav (incl. Calendar for superadmin), logout → /;
+                               NotificationBell dropdown (superadmin) → due/overdue items
 ```
 
 ## Running
@@ -81,6 +85,7 @@ The frontend proxies `/api` to the backend via Vite.
 - `/login` → LoginPage (tenant only, redirect to dashboard if logged in)
 - `/admin` → AdminLoginPage (hidden, not linked anywhere; full-bleed office background `admin-bg.png` + floating glass card with 3D tilt, cyan accent)
 - `/dashboard` → protected
+- `/superadmin/leads/calendar` → protected (superadmin Calendar; route declared before `/leads/:id`)
 - `/superadmin` → protected
 - `/contact` → EnquiryPage (public lead capture / "Request Demo" form)
 - `/privacy-policy` → PrivacyPolicyPage (public, linked from enquiry consent)
@@ -123,7 +128,8 @@ POST /api/v1/public/enquiries        (public; GDPR-aware lead capture)
 
 # Lead Management & Sales Pipeline (superadmin; platform-scoped)
 GET    /api/v1/superadmin/leads/meta/options
-GET    /api/v1/superadmin/leads/dashboard
+GET    /api/v1/superadmin/leads/dashboard               (stats + due/overdue counts + notifications[])
+GET    /api/v1/superadmin/leads/calendar/events         (?start&end ISO — demos/follow-ups/next-actions)
 GET    /api/v1/superadmin/leads                          (list: page/page_size/sort/search/filters)
 POST   /api/v1/superadmin/leads
 GET    /api/v1/superadmin/leads/{lead_id}
@@ -131,6 +137,8 @@ PATCH  /api/v1/superadmin/leads/{lead_id}
 DELETE /api/v1/superadmin/leads/{lead_id}                (soft delete)
 POST   /api/v1/superadmin/leads/{lead_id}/stage          (advance pipeline stage)
 POST   /api/v1/superadmin/leads/{lead_id}/lost           (mark lost + reason)
+POST   /api/v1/superadmin/leads/{lead_id}/score-label    (manual Hot/Warm/Cold override; null = auto)
+GET/POST/PATCH/DELETE  .../leads/{lead_id}/spokespersons[/{spokesperson_id}]
 GET/POST/PATCH/DELETE  .../leads/{lead_id}/activities[/{activity_id}]
 GET/POST/PATCH/DELETE  .../leads/{lead_id}/demos[/{demo_id}]
 GET/POST/PATCH/DELETE  .../leads/{lead_id}/followups[/{followup_id}]
@@ -172,10 +180,22 @@ POST   /api/v1/superadmin/leads/convert-enquiry/{enquiry_id}  (idempotent)
   `created_at`/`updated_at`/`is_deleted`/`deleted_at` columns; `created_by` where applicable.
 - **PII at rest encrypted** (contact email/phone via shared encryption helper);
   `dedupe_hash` blind index for duplicate detection.
-- **Pipeline stages** ordered (see `STAGE_ORDER`); `/stage` advances, `/lost` records
-  reason. Each lead gets a `lead_number` (`LEAD-YYYYMMDD-XXXXXXXX`).
+- **Pipeline stages** ordered (see `STAGE_ORDER`, includes "No Response" after Contacted);
+  `/stage` advances, `/lost` records reason. Each lead gets a `lead_number`
+  (`LEAD-YYYYMMDD-XXXXXXXX`).
 - **Lead scoring** computed from demo/proposal/revenue/company-size/users →
-  Hot / Warm / Cold (`ScoreBadge`).
+  Hot / Warm / Cold (`ScoreBadge`). A manual `score_label_override` (set via
+  `/score-label`, null = auto) takes precedence over the computed label.
+- **Phone country code**: leads store a plaintext `country_code` alongside the encrypted phone.
+- **Spokespersons**: each lead can have multiple contacts (name/designation/email/phone/
+  country_code/is_primary); email & phone are encrypted PII. CRUD writes masked-PII audit entries.
+- **Activities** carry a free-text `next_action` (what to do next) plus `next_action_date`.
+- **Dashboard notifications**: `/dashboard` returns due/overdue counts + a `notifications[]`
+  list (type, urgency=due|overdue, date, lead_id, lead_name, title) surfaced in the LeadList
+  panel and the topbar NotificationBell.
+- **Calendar**: `/calendar/events?start&end` returns scheduled demos + pending follow-ups +
+  activity next-actions ({id,type,date,lead_id,lead_name,title,status}); times are naive UTC
+  (router `_parse_dt` normalizes tz-aware input to UTC-naive to match DB columns).
 - **Conversion metrics** computed: lead age, sales cycle, time-to-demo, time-to-proposal,
   time-to-conversion (surfaced in the Conversions tab).
 - **Convert Enquiry→Lead**: idempotent (reuses existing lead via `source_enquiry_id`,

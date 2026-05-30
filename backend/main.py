@@ -24,7 +24,7 @@ from backend.app.platform.tenant_management.models import TenantBranding, Tenant
 from backend.app.platform.config.models import PlatformConfig
 from backend.app.modules.enquiry.models import Enquiry
 from backend.app.modules.lead_management.models import (
-    Lead, LeadActivity, LeadDemo, LeadFollowup, LeadNote,
+    Lead, LeadActivity, LeadSpokesperson, LeadDemo, LeadFollowup, LeadNote,
     LeadDocument, LeadProposal, LeadNegotiation, LeadConversion,
 )
 from backend.shared.audit.models import AuditLog
@@ -108,6 +108,12 @@ def run_schema_migrations():
         "CREATE UNIQUE INDEX IF NOT EXISTS ix_enquiries_enquiry_number ON enquiries (enquiry_number)",
         "CREATE INDEX IF NOT EXISTS ix_enquiries_dedupe_hash ON enquiries (dedupe_hash)",
         "CREATE INDEX IF NOT EXISTS ix_enquiries_dedupe_created ON enquiries (dedupe_hash, created_at)",
+
+        # leads — phone country code + manual score override
+        "ALTER TABLE leads ADD COLUMN IF NOT EXISTS country_code VARCHAR(8)",
+        "ALTER TABLE leads ADD COLUMN IF NOT EXISTS score_label_override VARCHAR(10)",
+        # lead_activities — richer free-text next action
+        "ALTER TABLE lead_activities ADD COLUMN IF NOT EXISTS next_action TEXT",
     ]
     try:
         with engine.connect() as conn:

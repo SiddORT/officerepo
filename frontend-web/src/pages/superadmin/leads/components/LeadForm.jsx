@@ -8,11 +8,13 @@ import { toOptions, toInputDate } from "../constants";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/.+/i;
+const COUNTRY_CODE_RE = /^\+?[0-9]{1,4}$/;
 
 const EMPTY = {
   company_name: "",
   contact_name: "",
   email: "",
+  country_code: "",
   phone: "",
   designation: "",
   website: "",
@@ -74,6 +76,8 @@ export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit 
     if (!form.lead_source) e.lead_source = "Lead source is required.";
 
     if (form.email.trim() && !EMAIL_RE.test(form.email.trim())) e.email = "Enter a valid email address.";
+    if (form.country_code.trim() && !COUNTRY_CODE_RE.test(form.country_code.trim().replace(/\s/g, "")))
+      e.country_code = "Use a dialing code like +1 or +44.";
     if (form.website.trim() && !URL_RE.test(form.website.trim())) e.website = "Must start with http:// or https://";
     if (form.expected_revenue !== "" && Number(form.expected_revenue) < 0) e.expected_revenue = "Cannot be negative.";
     if (form.expected_user_count !== "" && (!Number.isInteger(Number(form.expected_user_count)) || Number(form.expected_user_count) < 0))
@@ -90,7 +94,7 @@ export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit 
       contact_name: trim(form.contact_name),
       lead_source: form.lead_source,
     };
-    const optionalText = ["email", "phone", "designation", "website", "industry", "country", "company_size", "interested_modules"];
+    const optionalText = ["email", "country_code", "phone", "designation", "website", "industry", "country", "company_size", "interested_modules"];
     optionalText.forEach((k) => {
       const v = trim(form[k]);
       if (v) payload[k] = v;
@@ -129,7 +133,12 @@ export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit 
         <Input label="Contact Name" required value={form.contact_name} onChange={(e) => setField("contact_name", e.target.value)} error={errors.contact_name} placeholder="Jane Doe" maxLength={150} />
         <Input label="Designation" value={form.designation} onChange={(e) => setField("designation", e.target.value)} placeholder="VP of Operations" maxLength={120} />
         <Input label="Email" type="email" value={form.email} onChange={(e) => setField("email", e.target.value)} error={errors.email} placeholder="jane@acme.com" />
-        <Input label="Phone" value={form.phone} onChange={(e) => setField("phone", e.target.value)} placeholder="+1 555 000 0000" maxLength={30} />
+        <div className="grid grid-cols-3 gap-3">
+          <Input label="Code" value={form.country_code} onChange={(e) => setField("country_code", e.target.value)} error={errors.country_code} placeholder="+1" maxLength={8} />
+          <div className="col-span-2">
+            <Input label="Phone" value={form.phone} onChange={(e) => setField("phone", e.target.value)} placeholder="555 000 0000" maxLength={30} />
+          </div>
+        </div>
         <Input label="Website" value={form.website} onChange={(e) => setField("website", e.target.value)} error={errors.website} placeholder="https://acme.com" />
       </Section>
 

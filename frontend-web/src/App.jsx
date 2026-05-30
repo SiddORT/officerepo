@@ -15,6 +15,7 @@ import CreateTenant from "./pages/superadmin/tenants/CreateTenant";
 import EditTenant from "./pages/superadmin/tenants/EditTenant";
 import TenantDetails from "./pages/superadmin/tenants/TenantDetails";
 import LeadList from "./pages/superadmin/leads/LeadList";
+import CalendarPage from "./pages/superadmin/leads/CalendarPage";
 import CreateLead from "./pages/superadmin/leads/CreateLead";
 import EditLead from "./pages/superadmin/leads/EditLead";
 import LeadDetails from "./pages/superadmin/leads/LeadDetails";
@@ -109,6 +110,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireRole="superadmin">
             <Layout><LeadList /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/leads/calendar"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><CalendarPage /></Layout>
           </ProtectedRoute>
         }
       />

@@ -13,7 +13,7 @@ import {
 } from "./constants";
 
 const TABS = [
-  "Overview", "Activities", "Demos", "Follow-ups",
+  "Overview", "Spokespersons", "Activities", "Demos", "Follow-ups",
   "Notes", "Documents", "Proposals", "Negotiations", "Conversions", "Timeline",
 ];
 
@@ -80,6 +80,7 @@ export default function LeadDetails() {
             <StageBadge stage={lead.current_stage} />
             <StatusBadge status={lead.status} />
             <ScoreBadge score={lead.lead_score} label={lead.lead_score_label} />
+            <ScoreOverride lead={lead} options={options} onChange={() => { loadLead(); flash("Score updated."); }} />
           </div>
           <p className="text-sm t-muted mt-1">
             {lead.contact_name}{lead.designation ? ` · ${lead.designation}` : ""} · <code className="font-mono text-xs">{lead.lead_number}</code>
@@ -110,6 +111,7 @@ export default function LeadDetails() {
 
       <div>
         {tab === "Overview" && <Overview lead={lead} />}
+        {tab === "Spokespersons" && <SpokespersonsTab leadId={id} />}
         {tab === "Activities" && <ActivitiesTab leadId={id} options={options} onMutate={loadLead} />}
         {tab === "Demos" && <DemosTab leadId={id} options={options} onMutate={loadLead} />}
         {tab === "Follow-ups" && <FollowupsTab leadId={id} options={options} />}
@@ -262,8 +264,11 @@ function ConvertModal({ open, onClose, leadId, onDone }) {
 /* ── Overview ────────────────────────────────────────────────────────────── */
 function Overview({ lead }) {
   const m = lead.metrics || {};
+  const phoneDisplay = lead.phone
+    ? `${lead.country_code ? `${lead.country_code} ` : ""}${lead.phone}`
+    : "";
   const rows = [
-    ["Email", lead.email], ["Phone", lead.phone], ["Website", lead.website],
+    ["Email", lead.email], ["Phone", phoneDisplay], ["Website", lead.website],
     ["Industry", lead.industry], ["Country", lead.country], ["Company Size", lead.company_size],
     ["Expected Users", lead.expected_user_count], ["Expected Revenue", formatCurrency(lead.expected_revenue)],
     ["Interested Modules", lead.interested_modules], ["Source", lead.lead_source],
@@ -313,6 +318,40 @@ function Overview({ lead }) {
   );
 }
 
+/* ── Score override (manual Hot/Warm/Cold) ───────────────────────────────── */
+function ScoreOverride({ lead, options, onChange }) {
+  const [saving, setSaving] = useState(false);
+  const labels = options.score_labels || ["Hot", "Warm", "Cold"];
+
+  const apply = async (value) => {
+    setSaving(true);
+    try {
+      await leadsApi.setScoreLabel(lead.id, value === "auto" ? null : value);
+      onChange();
+    } catch (e) {
+      alert(e.response?.data?.detail || "Failed to update score.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <Select
+        value={lead.score_label_override || "auto"}
+        onChange={(e) => apply(e.target.value)}
+        options={[{ value: "auto", label: "Auto score" }, ...toOptions(labels)]}
+        selectClassName="text-xs py-1"
+        className="w-32"
+        disabled={saving}
+      />
+      {lead.score_label_override && (
+        <span className="text-[10px] uppercase tracking-wide t-muted">manual</span>
+      )}
+    </span>
+  );
+}
+
 /* ── Generic list helpers ────────────────────────────────────────────────── */
 function TabShell({ title, onAdd, addLabel = "Add", children }) {
   return (
@@ -344,11 +383,126 @@ function useList(fetcher, deps = []) {
   return [items, loading, reload];
 }
 
+/* ── Spokespersons ───────────────────────────────────────────────────────── */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CODE_RE = /^\+?[0-9]{1,4}$/;
+
+function SpokespersonsTab({ leadId }) {
+  const [items, loading, reload] = useList(() => leadsApi.spokespersons(leadId), [leadId]);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const EMPTY_FORM = { name: "", designation: "", email: "", country_code: "", phone: "", is_primary: false };
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); setErrors({}); setErr(""); setOpen(true); };
+  const openEdit = (s) => {
+    setEditing(s);
+    setForm({
+      name: s.name || "", designation: s.designation || "", email: s.email || "",
+      country_code: s.country_code || "", phone: s.phone || "", is_primary: !!s.is_primary,
+    });
+    setErrors({}); setErr(""); setOpen(true);
+  };
+
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = "Name is required.";
+    else if (form.name.trim().length > 120) e.name = "Must be under 120 characters.";
+    if (form.email.trim() && !EMAIL_RE.test(form.email.trim())) e.email = "Enter a valid email address.";
+    if (form.country_code.trim() && !CODE_RE.test(form.country_code.trim().replace(/\s/g, "")))
+      e.country_code = "Use a dialing code like +1 or +44.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const submit = async () => {
+    if (!validate()) return;
+    setSaving(true); setErr("");
+    const trim = (v) => (typeof v === "string" ? v.trim() : v);
+    const payload = {
+      name: trim(form.name),
+      designation: trim(form.designation) || undefined,
+      email: trim(form.email) || undefined,
+      country_code: trim(form.country_code) || undefined,
+      phone: trim(form.phone) || undefined,
+      is_primary: form.is_primary,
+    };
+    try {
+      if (editing) await leadsApi.updateSpokesperson(leadId, editing.id, payload);
+      else await leadsApi.addSpokesperson(leadId, payload);
+      setOpen(false); reload();
+    } catch (e) { setErr(e.response?.data?.detail || "Failed."); } finally { setSaving(false); }
+  };
+
+  const remove = async (sid) => {
+    if (!window.confirm("Delete this spokesperson?")) return;
+    await leadsApi.deleteSpokesperson(leadId, sid); reload();
+  };
+
+  const setField = (k, v) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    if (errors[k]) setErrors((e) => ({ ...e, [k]: undefined }));
+  };
+
+  return (
+    <TabShell title="Spokespersons" addLabel="Add Spokesperson" onAdd={openCreate}>
+      {loading ? <Empty text="Loading…" /> : items.length === 0 ? <Empty text="No spokespersons added yet." /> : (
+        <ul className="space-y-2">
+          {items.map((s) => (
+            <li key={s.id} className="flex items-start justify-between gap-3 p-3 rounded-lg" style={{ background: "var(--c-surface2)", border: "1px solid var(--c-border)" }}>
+              <div>
+                <p className="text-sm font-medium t-heading flex items-center gap-2">
+                  {s.name}
+                  {s.designation && <span className="text-xs t-muted font-normal">· {s.designation}</span>}
+                  {s.is_primary && (
+                    <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded" style={{ background: "rgba(0,174,236,0.12)", color: "#00aeec", border: "1px solid rgba(0,174,236,0.25)" }}>Primary</span>
+                  )}
+                </p>
+                <p className="text-xs t-muted mt-0.5">
+                  {s.email || "—"}
+                  {s.phone ? ` · ${s.country_code ? `${s.country_code} ` : ""}${s.phone}` : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <button onClick={() => openEdit(s)} className="text-xs t-muted hover:t-accent">Edit</button>
+                <button onClick={() => remove(s.id)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Modal open={open} onClose={() => setOpen(false)} title={editing ? "Edit Spokesperson" : "Add Spokesperson"} size="md"
+        footer={<><button className="btn-secondary" onClick={() => setOpen(false)}>Cancel</button><button className="btn-primary" disabled={saving} onClick={submit}>{saving ? "Saving..." : "Save"}</button></>}>
+        <div className="space-y-4">
+          {err && <p className="text-xs text-red-400">{err}</p>}
+          <Input label="Name" required value={form.name} onChange={(e) => setField("name", e.target.value)} error={errors.name} placeholder="Jane Doe" maxLength={120} />
+          <Input label="Designation" value={form.designation} onChange={(e) => setField("designation", e.target.value)} placeholder="VP of Operations" maxLength={120} />
+          <Input label="Email" type="email" value={form.email} onChange={(e) => setField("email", e.target.value)} error={errors.email} placeholder="jane@acme.com" />
+          <div className="grid grid-cols-3 gap-3">
+            <Input label="Code" value={form.country_code} onChange={(e) => setField("country_code", e.target.value)} error={errors.country_code} placeholder="+1" maxLength={8} />
+            <div className="col-span-2">
+              <Input label="Phone" value={form.phone} onChange={(e) => setField("phone", e.target.value)} placeholder="555 000 0000" maxLength={30} />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm t-body cursor-pointer">
+            <input type="checkbox" checked={form.is_primary} onChange={(e) => setField("is_primary", e.target.checked)} />
+            Primary spokesperson
+          </label>
+        </div>
+      </Modal>
+    </TabShell>
+  );
+}
+
 /* ── Activities ──────────────────────────────────────────────────────────── */
 function ActivitiesTab({ leadId, options, onMutate }) {
   const [items, loading, reload] = useList(() => leadsApi.activities(leadId), [leadId]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ activity_type: "", activity_date: "", remarks: "", next_action_date: "" });
+  const EMPTY_FORM = { activity_type: "", activity_date: "", remarks: "", next_action: "", next_action_date: "" };
+  const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
@@ -360,9 +514,10 @@ function ActivitiesTab({ leadId, options, onMutate }) {
         activity_type: form.activity_type,
         activity_date: form.activity_date || undefined,
         remarks: form.remarks || undefined,
+        next_action: form.next_action || undefined,
         next_action_date: form.next_action_date || undefined,
       });
-      setOpen(false); setForm({ activity_type: "", activity_date: "", remarks: "", next_action_date: "" });
+      setOpen(false); setForm(EMPTY_FORM);
       reload(); onMutate?.();
     } catch (e) { setErr(e.response?.data?.detail || "Failed."); } finally { setSaving(false); }
   };
@@ -381,7 +536,11 @@ function ActivitiesTab({ leadId, options, onMutate }) {
               <div>
                 <p className="text-sm font-medium t-heading">{a.activity_type} <span className="text-xs t-muted font-normal">· {formatDateTime(a.activity_date)}</span></p>
                 {a.remarks && <p className="text-sm t-body mt-0.5">{a.remarks}</p>}
-                {a.next_action_date && <p className="text-xs t-muted mt-0.5">Next action: {formatDate(a.next_action_date)}</p>}
+                {(a.next_action || a.next_action_date) && (
+                  <p className="text-xs t-muted mt-0.5">
+                    Next action{a.next_action ? `: ${a.next_action}` : ""}{a.next_action_date ? ` (${formatDate(a.next_action_date)})` : ""}
+                  </p>
+                )}
               </div>
               <button onClick={() => remove(a.id)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
             </li>
@@ -395,6 +554,7 @@ function ActivitiesTab({ leadId, options, onMutate }) {
           <Select label="Activity Type" required value={form.activity_type} onChange={(e) => setForm((f) => ({ ...f, activity_type: e.target.value }))} options={toOptions(options.activity_types)} placeholder="Select type" />
           <Input label="Activity Date" type="datetime-local" value={form.activity_date} onChange={(e) => setForm((f) => ({ ...f, activity_date: e.target.value }))} />
           <Textarea label="Remarks" value={form.remarks} onChange={(e) => setForm((f) => ({ ...f, remarks: e.target.value }))} rows={3} />
+          <Textarea label="Next Action" value={form.next_action} onChange={(e) => setForm((f) => ({ ...f, next_action: e.target.value }))} rows={2} placeholder="What needs to happen next? e.g. Send pricing breakdown to procurement" />
           <Input label="Next Action Date" type="date" value={form.next_action_date} onChange={(e) => setForm((f) => ({ ...f, next_action_date: e.target.value }))} />
         </div>
       </Modal>

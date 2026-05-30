@@ -39,6 +39,7 @@ class Lead(Base):
     # Blind index (keyed HMAC of email|company) for duplicate detection
     dedupe_hash = Column(String(64), nullable=True, index=True)
 
+    country_code = Column(String(8), nullable=True)
     designation = Column(String(120), nullable=True)
     website = Column(String(255), nullable=True)
     industry = Column(String(120), nullable=True)
@@ -64,6 +65,8 @@ class Lead(Base):
     # Lead scoring
     lead_score = Column(Integer, nullable=False, default=0)
     lead_score_label = Column(String(10), nullable=False, default="Cold", index=True)
+    # Manual Hot/Warm/Cold override — when set, takes precedence over the computed label
+    score_label_override = Column(String(10), nullable=True)
 
     # Lost-lead analysis
     loss_reason = Column(String(60), nullable=True)
@@ -101,7 +104,32 @@ class LeadActivity(Base):
     activity_type = Column(String(40), nullable=False)
     activity_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     remarks = Column(Text, nullable=True)
+    next_action = Column(Text, nullable=True)
     next_action_date = Column(DateTime, nullable=True)
+    created_by = Column(Integer, nullable=True)
+    is_deleted = Column(Boolean, nullable=False, default=False)
+    deleted_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class LeadSpokesperson(Base):
+    """Additional point-of-contact for a lead. PII (email, phone) encrypted at rest."""
+    __tablename__ = "lead_spokespersons"
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    lead_id = Column(String(36), ForeignKey("leads.id"), nullable=False, index=True)
+
+    name = Column(String(120), nullable=False)
+    designation = Column(String(120), nullable=True)
+
+    # Encrypted PII (Fernet tokens — never plaintext at rest)
+    email_encrypted = Column(Text, nullable=True)
+    phone_encrypted = Column(Text, nullable=True)
+    country_code = Column(String(8), nullable=True)
+
+    is_primary = Column(Boolean, nullable=False, default=False)
+
     created_by = Column(Integer, nullable=True)
     is_deleted = Column(Boolean, nullable=False, default=False)
     deleted_at = Column(DateTime, nullable=True)

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { leadsApi } from "../services/apiClient";
 
 const NAV_ITEMS = [
   {
@@ -35,6 +36,17 @@ const NAV_ITEMS = [
       <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
           d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+      </svg>
+    ),
+  },
+  {
+    label: "Calendar",
+    path: "/superadmin/leads/calendar",
+    roles: ["superadmin"],
+    icon: (
+      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
       </svg>
     ),
   },
@@ -103,6 +115,7 @@ function getPageTitle(pathname) {
   if (pathname.startsWith("/superadmin/tenants/new")) return "New Tenant";
   if (pathname.startsWith("/superadmin/tenants/")) return "Tenant Details";
   if (pathname.startsWith("/superadmin/tenants")) return "Tenant Management";
+  if (pathname.startsWith("/superadmin/leads/calendar")) return "Calendar";
   if (pathname.startsWith("/superadmin/leads/") && pathname.endsWith("/edit")) return "Edit Lead";
   if (pathname.startsWith("/superadmin/leads/new")) return "New Lead";
   if (pathname.startsWith("/superadmin/leads/")) return "Lead Details";
@@ -111,6 +124,97 @@ function getPageTitle(pathname) {
   if (pathname === "/superadmin") return "Platform Admin";
   if (pathname === "/dashboard") return "Dashboard";
   return "Office Repo";
+}
+
+function NotificationBell() {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const ref = useRef(null);
+
+  const load = () => {
+    leadsApi.dashboard()
+      .then((res) => {
+        const d = res.data?.data ?? res.data;
+        setNotifications(d?.notifications ?? []);
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const count = notifications.length;
+
+  const go = (leadId) => {
+    setOpen(false);
+    navigate(`/superadmin/leads/${leadId}`);
+  };
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => { if (!open) load(); setOpen((o) => !o); }}
+        className="topbar-btn relative"
+        title="Notifications"
+      >
+        <BellIcon />
+        {count > 0 && (
+          <span className="absolute top-0.5 right-0.5 min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-bold text-white flex items-center justify-center"
+            style={{ background: "#ef4444" }}>
+            {count > 9 ? "9+" : count}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-[calc(100%+8px)] w-80 layout-dropdown rounded-xl shadow-2xl z-50 border layout-border overflow-hidden">
+          <div className="px-4 py-3 border-b layout-border flex items-center justify-between">
+            <p className="text-sm font-semibold layout-title">Notifications</p>
+            <span className="text-xs layout-label-muted">{count} due / overdue</span>
+          </div>
+          <div className="max-h-80 overflow-y-auto p-1.5">
+            {count === 0 ? (
+              <p className="text-sm layout-label-muted text-center py-6">You're all caught up.</p>
+            ) : (
+              notifications.map((n, i) => {
+                const overdue = n.urgency === "overdue";
+                return (
+                  <button
+                    key={`${n.type}-${n.lead_id}-${i}`}
+                    onClick={() => go(n.lead_id)}
+                    className="w-full flex items-start gap-2.5 px-3 py-2 rounded-lg layout-nav-idle transition-all text-left"
+                  >
+                    <span className="mt-1 w-2 h-2 rounded-full flex-shrink-0" style={{ background: overdue ? "#ef4444" : "#f59e0b" }} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm layout-title truncate">{n.title}</p>
+                      <p className="text-xs layout-label-muted truncate">
+                        {n.lead_name}{n.date ? ` · ${new Date(n.date).toLocaleDateString()}` : ""}
+                      </p>
+                    </div>
+                    <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded flex-shrink-0"
+                      style={{
+                        background: overdue ? "rgba(239,68,68,0.12)" : "rgba(245,158,11,0.12)",
+                        color: overdue ? "#ef4444" : "#f59e0b",
+                      }}>
+                      {overdue ? "Overdue" : "Due"}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Layout({ children }) {
@@ -324,10 +428,14 @@ export default function Layout({ children }) {
             </button>
 
             {/* Notification bell */}
-            <button className="topbar-btn relative" title="Notifications">
-              <BellIcon />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#00aeec]" />
-            </button>
+            {user?.role === "superadmin" ? (
+              <NotificationBell />
+            ) : (
+              <button className="topbar-btn relative" title="Notifications">
+                <BellIcon />
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#00aeec]" />
+              </button>
+            )}
 
             {/* Divider */}
             <div className="w-px h-5 layout-divider mx-1" />

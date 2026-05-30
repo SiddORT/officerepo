@@ -11,6 +11,7 @@ LEAD_NUMBER_PREFIX = "LEAD"
 # ── Lead stages (pipeline position) ──────────────────────────────────────────
 STAGE_NEW = "New"
 STAGE_CONTACTED = "Contacted"
+STAGE_NO_RESPONSE = "No Response"
 STAGE_QUALIFIED = "Qualified"
 STAGE_DEMO_SCHEDULED = "Demo Scheduled"
 STAGE_DEMO_COMPLETED = "Demo Completed"
@@ -22,6 +23,7 @@ STAGE_LOST = "Lost"
 LEAD_STAGES = [
     STAGE_NEW,
     STAGE_CONTACTED,
+    STAGE_NO_RESPONSE,
     STAGE_QUALIFIED,
     STAGE_DEMO_SCHEDULED,
     STAGE_DEMO_COMPLETED,
@@ -30,6 +32,10 @@ LEAD_STAGES = [
     STAGE_WON,
     STAGE_LOST,
 ]
+
+# Stages considered "early" — a demo/proposal/follow-up can still advance a lead
+# out of these. "No Response" is treated as early so re-engagement moves it forward.
+EARLY_STAGES = (STAGE_NEW, STAGE_CONTACTED, STAGE_NO_RESPONSE, STAGE_QUALIFIED)
 
 # ── Lead lifecycle status ────────────────────────────────────────────────────
 STATUS_OPEN = "Open"
@@ -135,6 +141,10 @@ SCORE_WARM_THRESHOLD = 40
 AUDIT_ENTITY = "Lead"
 AUDIT_LEAD_CREATED = "LEAD_CREATED"
 AUDIT_LEAD_UPDATED = "LEAD_UPDATED"
+AUDIT_SCORE_OVERRIDE = "LEAD_SCORE_OVERRIDE"
+AUDIT_SPOKESPERSON_ADDED = "LEAD_SPOKESPERSON_ADDED"
+AUDIT_SPOKESPERSON_UPDATED = "LEAD_SPOKESPERSON_UPDATED"
+AUDIT_SPOKESPERSON_DELETED = "LEAD_SPOKESPERSON_DELETED"
 AUDIT_ACTIVITY_ADDED = "LEAD_ACTIVITY_ADDED"
 AUDIT_DEMO_SCHEDULED = "LEAD_DEMO_SCHEDULED"
 AUDIT_DEMO_COMPLETED = "LEAD_DEMO_COMPLETED"

@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 from backend.app.modules.lead_management import constants as c
 from backend.app.modules.lead_management import repository as repo
 from backend.app.modules.lead_management.models import (
-    Lead, LeadActivity, LeadDemo, LeadFollowup, LeadNote,
+    Lead, LeadActivity, LeadSpokesperson, LeadDemo, LeadFollowup, LeadNote,
     LeadDocument, LeadProposal, LeadNegotiation, LeadConversion,
 )
 from backend.app.modules.lead_management.schemas import (
@@ -33,6 +33,7 @@ from backend.app.modules.lead_management.schemas import (
     FollowupCreateRequest, FollowupUpdateRequest,
     NoteCreateRequest, ProposalCreateRequest, ProposalUpdateRequest,
     NegotiationCreateRequest, ConvertEnquiryRequest, ConvertClientRequest,
+    ScoreLabelRequest, SpokespersonCreateRequest, SpokespersonUpdateRequest,
 )
 from backend.shared.security.encryption import encrypt_value, decrypt_value, blind_index
 from backend.shared.audit.audit_logger import record_audit, mask_email, mask_value
@@ -132,7 +133,10 @@ def compute_score(db: Session, lead: Lead) -> tuple[int, str]:
 
 
 def _recompute_score(db: Session, lead: Lead) -> None:
-    lead.lead_score, lead.lead_score_label = compute_score(db, lead)
+    """Recompute the numeric score; a manual label override (if set) wins for the label."""
+    score, computed_label = compute_score(db, lead)
+    lead.lead_score = score
+    lead.lead_score_label = lead.score_label_override or computed_label
 
 
 def _days_between(later: Optional[datetime], earlier: Optional[datetime]) -> Optional[int]:
@@ -181,6 +185,8 @@ def lead_to_detail(lead: Lead) -> dict:
         {
             "email": _safe_decrypt(lead.email_encrypted),
             "phone": _safe_decrypt(lead.phone_encrypted),
+            "country_code": lead.country_code,
+            "score_label_override": lead.score_label_override,
             "website": lead.website,
             "industry": lead.industry,
             "country": lead.country,
@@ -210,8 +216,21 @@ def activity_to_dict(a: LeadActivity) -> dict:
     return {
         "id": a.id, "lead_id": a.lead_id, "activity_type": a.activity_type,
         "activity_date": a.activity_date, "remarks": a.remarks,
+        "next_action": a.next_action,
         "next_action_date": a.next_action_date, "created_by": a.created_by,
         "created_at": a.created_at,
+    }
+
+
+def spokesperson_to_dict(s: LeadSpokesperson) -> dict:
+    return {
+        "id": s.id, "lead_id": s.lead_id, "name": s.name,
+        "designation": s.designation,
+        "email": _safe_decrypt(s.email_encrypted),
+        "phone": _safe_decrypt(s.phone_encrypted),
+        "country_code": s.country_code,
+        "is_primary": s.is_primary,
+        "created_by": s.created_by, "created_at": s.created_at,
     }
 
 
@@ -308,6 +327,7 @@ def create_lead(db: Session, payload: LeadCreateRequest, *, actor_id: Optional[i
         contact_name=payload.contact_name,
         email_encrypted=encrypt_value(payload.email) if payload.email else None,
         phone_encrypted=encrypt_value(payload.phone) if payload.phone else None,
+        country_code=payload.country_code,
         dedupe_hash=dedupe,
         designation=payload.designation,
         website=payload.website,
@@ -430,6 +450,85 @@ def mark_lost(db: Session, lead_id: str, payload: LeadLostRequest, *, actor: Opt
     return lead_to_detail(lead)
 
 
+# ── Manual score label override ──────────────────────────────────────────────
+def set_score_label(db: Session, lead_id: str, payload: ScoreLabelRequest, *, actor: Optional[str]) -> dict:
+    """Set or clear the manual Hot/Warm/Cold override. ``label=None`` reverts to auto-scoring."""
+    lead = _require_lead(db, lead_id)
+    lead.score_label_override = payload.label
+    _recompute_score(db, lead)
+    record_audit(db, c.AUDIT_SCORE_OVERRIDE, c.AUDIT_ENTITY, lead.lead_number, actor=actor,
+                 metadata={"override": payload.label})
+    db.commit()
+    db.refresh(lead)
+    return lead_to_detail(lead)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# Spokespersons (additional points of contact; PII encrypted at rest)
+# ════════════════════════════════════════════════════════════════════════════
+def list_spokespersons(db: Session, lead_id: str) -> list[dict]:
+    _require_lead(db, lead_id)
+    return [spokesperson_to_dict(s) for s in repo.list_spokespersons(db, lead_id)]
+
+
+def add_spokesperson(db: Session, lead_id: str, payload: SpokespersonCreateRequest, *, actor_id, actor) -> dict:
+    lead = _require_lead(db, lead_id)
+    sp = LeadSpokesperson(
+        lead_id=lead.id,
+        name=payload.name,
+        designation=payload.designation,
+        email_encrypted=encrypt_value(payload.email) if payload.email else None,
+        phone_encrypted=encrypt_value(payload.phone) if payload.phone else None,
+        country_code=payload.country_code,
+        is_primary=bool(payload.is_primary),
+        created_by=actor_id,
+    )
+    repo.add(db, sp)
+    if sp.is_primary:
+        repo.clear_primary_spokesperson(db, lead.id, exclude_id=sp.id)
+    record_audit(db, c.AUDIT_SPOKESPERSON_ADDED, c.AUDIT_ENTITY, lead.lead_number, actor=actor,
+                 metadata={"name": sp.name, "email": mask_email(payload.email) if payload.email else None})
+    db.commit()
+    db.refresh(sp)
+    return spokesperson_to_dict(sp)
+
+
+def update_spokesperson(db: Session, lead_id: str, spokesperson_id: str,
+                        payload: SpokespersonUpdateRequest, *, actor) -> dict:
+    lead = _require_lead(db, lead_id)
+    sp = repo.get_child(db, LeadSpokesperson, spokesperson_id, lead.id)
+    if not sp:
+        raise HTTPException(status_code=404, detail="Spokesperson not found.")
+    data = payload.model_dump(exclude_unset=True)
+    if "email" in data:
+        email = data.pop("email")
+        sp.email_encrypted = encrypt_value(email) if email else None
+    if "phone" in data:
+        phone = data.pop("phone")
+        sp.phone_encrypted = encrypt_value(phone) if phone else None
+    for field, value in data.items():
+        setattr(sp, field, value)
+    if data.get("is_primary"):
+        repo.clear_primary_spokesperson(db, lead.id, exclude_id=sp.id)
+    record_audit(db, c.AUDIT_SPOKESPERSON_UPDATED, c.AUDIT_ENTITY, lead.lead_number, actor=actor,
+                 metadata={"spokesperson_id": sp.id, "fields": list(data.keys())})
+    db.commit()
+    db.refresh(sp)
+    return spokesperson_to_dict(sp)
+
+
+def delete_spokesperson(db: Session, lead_id: str, spokesperson_id: str, *, actor: Optional[str]) -> None:
+    lead = _require_lead(db, lead_id)
+    sp = repo.get_child(db, LeadSpokesperson, spokesperson_id, lead.id)
+    if not sp:
+        raise HTTPException(status_code=404, detail="Spokesperson not found.")
+    sp.is_deleted = True
+    sp.deleted_at = datetime.utcnow()
+    record_audit(db, c.AUDIT_SPOKESPERSON_DELETED, c.AUDIT_ENTITY, lead.lead_number, actor=actor,
+                 metadata={"spokesperson_id": sp.id})
+    db.commit()
+
+
 # ════════════════════════════════════════════════════════════════════════════
 # Activities
 # ════════════════════════════════════════════════════════════════════════════
@@ -440,6 +539,7 @@ def add_activity(db: Session, lead_id: str, payload: ActivityCreateRequest, *, a
         activity_type=payload.activity_type,
         activity_date=payload.activity_date or datetime.utcnow(),
         remarks=payload.remarks,
+        next_action=payload.next_action,
         next_action_date=payload.next_action_date,
         created_by=actor_id,
     )
@@ -521,11 +621,11 @@ def update_demo(db: Session, lead_id: str, demo_id: str, payload: DemoUpdateRequ
 def _apply_demo_side_effects(db: Session, lead: Lead, demo: LeadDemo) -> None:
     """Advance stage / anchor metric dates based on demo status."""
     if demo.status == c.DEMO_STATUS_SCHEDULED:
-        if lead.current_stage in (c.STAGE_NEW, c.STAGE_CONTACTED, c.STAGE_QUALIFIED):
+        if lead.current_stage in c.EARLY_STAGES:
             lead.current_stage = c.STAGE_DEMO_SCHEDULED
     elif demo.status == c.DEMO_STATUS_COMPLETED:
         lead.demo_date = lead.demo_date or demo.demo_date or datetime.utcnow()
-        if lead.current_stage in (c.STAGE_NEW, c.STAGE_CONTACTED, c.STAGE_QUALIFIED, c.STAGE_DEMO_SCHEDULED):
+        if lead.current_stage in c.EARLY_STAGES + (c.STAGE_DEMO_SCHEDULED,):
             lead.current_stage = c.STAGE_DEMO_COMPLETED
 
 
@@ -682,8 +782,7 @@ def add_proposal(db: Session, lead_id: str, payload: ProposalCreateRequest, *,
     repo.add(db, proposal)
     if proposal.status in (c.PROPOSAL_STATUS_SENT, c.PROPOSAL_STATUS_ACCEPTED):
         lead.proposal_date = lead.proposal_date or proposal.proposal_date
-        if lead.current_stage in (c.STAGE_NEW, c.STAGE_CONTACTED, c.STAGE_QUALIFIED,
-                                   c.STAGE_DEMO_SCHEDULED, c.STAGE_DEMO_COMPLETED):
+        if lead.current_stage in c.EARLY_STAGES + (c.STAGE_DEMO_SCHEDULED, c.STAGE_DEMO_COMPLETED):
             lead.current_stage = c.STAGE_PROPOSAL_SENT
         record_audit(db, c.AUDIT_PROPOSAL_SENT, c.AUDIT_ENTITY, lead.lead_number, actor=actor,
                      metadata={"version": version, "amount": proposal.quoted_amount})
@@ -704,8 +803,7 @@ def update_proposal(db: Session, lead_id: str, proposal_id: str, payload: Propos
     if proposal.status in (c.PROPOSAL_STATUS_SENT, c.PROPOSAL_STATUS_ACCEPTED) and \
             prev_status not in (c.PROPOSAL_STATUS_SENT, c.PROPOSAL_STATUS_ACCEPTED):
         lead.proposal_date = lead.proposal_date or proposal.proposal_date
-        if lead.current_stage in (c.STAGE_NEW, c.STAGE_CONTACTED, c.STAGE_QUALIFIED,
-                                   c.STAGE_DEMO_SCHEDULED, c.STAGE_DEMO_COMPLETED):
+        if lead.current_stage in c.EARLY_STAGES + (c.STAGE_DEMO_SCHEDULED, c.STAGE_DEMO_COMPLETED):
             lead.current_stage = c.STAGE_PROPOSAL_SENT
         record_audit(db, c.AUDIT_PROPOSAL_SENT, c.AUDIT_ENTITY, lead.lead_number, actor=actor,
                      metadata={"version": proposal.proposal_version})
@@ -756,8 +854,11 @@ def get_timeline(db: Session, lead_id: str) -> list[dict]:
         "detail": f"{lead.lead_number} · {lead.lead_source}",
     }]
     for a in repo.list_activities(db, lead_id):
+        detail = a.remarks
+        if a.next_action:
+            detail = f"{detail} · Next: {a.next_action}" if detail else f"Next: {a.next_action}"
         events.append({"type": "activity", "title": f"Activity · {a.activity_type}",
-                       "date": a.activity_date, "detail": a.remarks})
+                       "date": a.activity_date, "detail": detail})
     for d in repo.list_demos(db, lead_id):
         events.append({"type": "demo", "title": f"Demo · {d.status}", "date": d.demo_date,
                        "detail": d.feedback or d.next_steps})
@@ -938,6 +1039,19 @@ def dashboard(db: Session) -> dict:
     upcoming = repo.followups_due(db, start=today_start, end=today_end)
     overdue = repo.followups_overdue(db, now=now)
 
+    # Notifications — due-today + overdue across follow-ups, demos, and activity next-actions.
+    due_demos = repo.demos_due(db, start=today_start, end=today_end)
+    overdue_demos = repo.demos_overdue(db, now=now)
+    due_activities = repo.activities_due(db, start=today_start, end=today_end)
+    overdue_activities = repo.activities_overdue(db, now=now)
+
+    notifications = _build_notifications(
+        db,
+        followups_due=upcoming, followups_overdue=overdue,
+        demos_due=due_demos, demos_overdue=overdue_demos,
+        activities_due=due_activities, activities_overdue=overdue_activities,
+    )
+
     return {
         "total_leads": total,
         "qualified_leads": stages.get(c.STAGE_QUALIFIED, 0),
@@ -952,4 +1066,87 @@ def dashboard(db: Session) -> dict:
         "overdue_followups_count": len(overdue),
         "upcoming_followups": [followup_to_dict(f) for f in upcoming[:10]],
         "overdue_followups": [followup_to_dict(f) for f in overdue[:10]],
+        "due_demos_count": len(due_demos),
+        "overdue_demos_count": len(overdue_demos),
+        "due_activities_count": len(due_activities),
+        "overdue_activities_count": len(overdue_activities),
+        "notifications_count": len(notifications),
+        "notifications": notifications[:20],
     }
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# Notifications & Calendar
+# ════════════════════════════════════════════════════════════════════════════
+def _lead_label(lead: Optional[Lead]) -> str:
+    if not lead:
+        return "Lead"
+    return lead.company_name or lead.lead_number or "Lead"
+
+
+def _build_notifications(db: Session, *, followups_due, followups_overdue,
+                         demos_due, demos_overdue, activities_due, activities_overdue) -> list[dict]:
+    """Flatten due/overdue items into a single, date-sorted notification feed."""
+    lead_ids = (
+        [f.lead_id for f in followups_due] + [f.lead_id for f in followups_overdue] +
+        [d.lead_id for d in demos_due] + [d.lead_id for d in demos_overdue] +
+        [a.lead_id for a in activities_due] + [a.lead_id for a in activities_overdue]
+    )
+    leads = repo.leads_by_ids(db, lead_ids)
+
+    items: list[dict] = []
+
+    def _add(kind, urgency, when, lead_id, title):
+        items.append({
+            "type": kind, "urgency": urgency, "date": when,
+            "lead_id": lead_id, "lead_name": _lead_label(leads.get(lead_id)), "title": title,
+        })
+
+    for f in followups_overdue:
+        _add("followup", "overdue", f.followup_date, f.lead_id, f"Overdue follow-up · {f.followup_type or 'Follow-up'}")
+    for f in followups_due:
+        _add("followup", "due", f.followup_date, f.lead_id, f"Follow-up due today · {f.followup_type or 'Follow-up'}")
+    for d in demos_overdue:
+        _add("demo", "overdue", d.demo_date, d.lead_id, f"Overdue demo · {d.demo_type or 'Demo'}")
+    for d in demos_due:
+        _add("demo", "due", d.demo_date, d.lead_id, f"Demo today · {d.demo_type or 'Demo'}")
+    for a in activities_overdue:
+        _add("activity", "overdue", a.next_action_date, a.lead_id, f"Overdue next action · {a.next_action or a.activity_type}")
+    for a in activities_due:
+        _add("activity", "due", a.next_action_date, a.lead_id, f"Next action today · {a.next_action or a.activity_type}")
+
+    # Overdue first, then by soonest date.
+    items.sort(key=lambda x: (0 if x["urgency"] == "overdue" else 1, x["date"] or datetime.max))
+    return items
+
+
+def calendar_events(db: Session, *, start: datetime, end: datetime) -> list[dict]:
+    """Scheduled demos, follow-ups, and activity next-actions within [start, end) for the calendar."""
+    demos = repo.demos_in_range(db, start=start, end=end)
+    followups = repo.followups_in_range(db, start=start, end=end)
+    activities = repo.activities_in_range(db, start=start, end=end)
+
+    lead_ids = [d.lead_id for d in demos] + [f.lead_id for f in followups] + [a.lead_id for a in activities]
+    leads = repo.leads_by_ids(db, lead_ids)
+
+    events: list[dict] = []
+    for d in demos:
+        events.append({
+            "id": d.id, "type": "demo", "date": d.demo_date,
+            "lead_id": d.lead_id, "lead_name": _lead_label(leads.get(d.lead_id)),
+            "title": f"Demo · {d.demo_type or 'Demo'}", "status": d.status,
+        })
+    for f in followups:
+        events.append({
+            "id": f.id, "type": "followup", "date": f.followup_date,
+            "lead_id": f.lead_id, "lead_name": _lead_label(leads.get(f.lead_id)),
+            "title": f"Follow-up · {f.followup_type or 'Follow-up'}", "status": _effective_followup_status(f),
+        })
+    for a in activities:
+        events.append({
+            "id": a.id, "type": "activity", "date": a.next_action_date,
+            "lead_id": a.lead_id, "lead_name": _lead_label(leads.get(a.lead_id)),
+            "title": f"Next action · {a.next_action or a.activity_type}", "status": None,
+        })
+    events.sort(key=lambda e: e["date"] or datetime.max)
+    return events

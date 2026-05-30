@@ -5,6 +5,7 @@
 export const STAGE_ORDER = [
   "New",
   "Contacted",
+  "No Response",
   "Qualified",
   "Demo Scheduled",
   "Demo Completed",
@@ -17,6 +18,7 @@ export const STAGE_ORDER = [
 export const STAGE_COLORS = {
   New: "#64748b",
   Contacted: "#3b82f6",
+  "No Response": "#9ca3af",
   Qualified: "#6366f1",
   "Demo Scheduled": "#8b5cf6",
   "Demo Completed": "#a855f7",

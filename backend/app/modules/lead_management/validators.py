@@ -13,6 +13,7 @@ from typing import Optional
 
 EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$")
 PHONE_RE = re.compile(r"^[+]?[0-9\s\-()]{7,20}$")
+COUNTRY_CODE_RE = re.compile(r"^\+?[0-9]{1,4}$")
 
 # Strip the obvious script-injection vectors. Stored values are never rendered as
 # raw HTML, but we sanitize defensively at the boundary anyway.
@@ -57,6 +58,19 @@ def validate_phone(value: Optional[str], *, required: bool = False, field: str =
         return None
     if not PHONE_RE.match(cleaned):
         raise ValueError(f"{field} is not a valid phone number.")
+    return cleaned
+
+
+def validate_country_code(value: Optional[str], *, field: str = "country_code") -> Optional[str]:
+    """Normalize a dialing code to ``+NN`` form (e.g. ``1`` → ``+1``)."""
+    cleaned = clean_text(value, collapse_spaces=True)
+    if not cleaned:
+        return None
+    cleaned = cleaned.replace(" ", "")
+    if not COUNTRY_CODE_RE.match(cleaned):
+        raise ValueError(f"{field} must be a dialing code like +1 or +44.")
+    if not cleaned.startswith("+"):
+        cleaned = "+" + cleaned
     return cleaned
 
 
