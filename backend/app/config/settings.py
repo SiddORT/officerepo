@@ -87,6 +87,13 @@ class Settings(BaseSettings):
     SECRET_ROTATION_ALERT_SEVERITY: str = ""
     SECRET_ROTATION_ALERT_ENV_TAG: str = ""
 
+    # Minimum number of minutes that must elapse between two successful
+    # in-process secret rotations via POST /superadmin/rotate-secrets.
+    # Prevents accidental or malicious rapid rotation that could lock out
+    # active users faster than the grace period covers them.
+    # Set to 0 to disable the cooldown entirely. Default: 60 minutes.
+    ROTATE_SECRETS_COOLDOWN_MINUTES: int = 60
+
     # App
     APP_NAME: str = "Office Repo"
     API_V1_PREFIX: str = "/api/v1"
@@ -103,6 +110,11 @@ class Settings(BaseSettings):
     # True when _previous_secret_origin was set to startup time as a fallback
     # because neither the env var nor the DB had a value yet.
     _previous_secret_origin_is_fallback: bool = False
+
+    # Internal — wall-clock time of the last successful in-process secret
+    # rotation. Used to enforce ROTATE_SECRETS_COOLDOWN_MINUTES. Not read from
+    # the environment; reset on every restart (in-memory single-instance state).
+    _last_rotation_at: datetime = None
 
     model_config = SettingsConfigDict(env_file=".env", extra="allow")
 
@@ -165,6 +177,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 "PREVIOUS_SECRET_CHECK_INTERVAL_HOURS must be a positive integer (>= 1). "
                 f"Got: {self.PREVIOUS_SECRET_CHECK_INTERVAL_HOURS}"
+            )
+
+        if self.ROTATE_SECRETS_COOLDOWN_MINUTES < 0:
+            raise ValueError(
+                "ROTATE_SECRETS_COOLDOWN_MINUTES must be a non-negative integer (>= 0). "
+                f"Got: {self.ROTATE_SECRETS_COOLDOWN_MINUTES}"
             )
 
         # Resolve the origin timestamp once at startup so all subsequent checks

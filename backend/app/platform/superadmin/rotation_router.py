@@ -43,8 +43,16 @@ def _kid(secret: str) -> str:
         "stamps the grace-period clock. In production the endpoint is disabled and "
         "returns manual rotation instructions instead.\n\n"
         "**Security**: Superadmin JWT required. New secret values are returned once — "
-        "copy them immediately into your secrets manager and redeploy."
+        "copy them immediately into your secrets manager and redeploy.\n\n"
+        "**Rate limit**: Successful rotations are throttled to at most once per "
+        "ROTATE_SECRETS_COOLDOWN_MINUTES (default 60). Calls within the cooldown "
+        "window return 429 with the next allowed rotation time."
     ),
+    responses={
+        429: {
+            "description": "Rotation rate-limited; retry after the cooldown elapses.",
+        }
+    },
 )
 def rotate_secrets(
     _admin: dict = Depends(require_superadmin),
@@ -89,6 +97,41 @@ def rotate_secrets(
 
     now = datetime.now(tz=timezone.utc)
 
+    # ── Rate limiting ─────────────────────────────────────────────────────────
+    # Reject calls made within the cooldown window since the last successful
+    # rotation. The timestamp is held in-memory (single-instance state) and
+    # resets on restart, which is sufficient for the single-instance deployment.
+    cooldown_minutes = settings.ROTATE_SECRETS_COOLDOWN_MINUTES
+    last_rotation_at = settings._last_rotation_at
+    if cooldown_minutes > 0 and last_rotation_at is not None:
+        next_allowed_at = last_rotation_at + timedelta(minutes=cooldown_minutes)
+        if now < next_allowed_at:
+            retry_after_seconds = max(1, int((next_allowed_at - now).total_seconds()))
+            logger.warning(
+                "rotate-secrets rejected (cooldown active): last_rotation_at=%s "
+                "next_allowed_at=%s retry_after_seconds=%d initiated_by=superadmin:user_id=%s",
+                last_rotation_at.isoformat(),
+                next_allowed_at.isoformat(),
+                retry_after_seconds,
+                _admin.get("user_id"),
+            )
+            return JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                headers={"Retry-After": str(retry_after_seconds)},
+                content={
+                    "rotated": False,
+                    "environment": env,
+                    "message": (
+                        "Secret rotation is rate-limited. The last rotation was too "
+                        f"recent. Try again after {next_allowed_at.isoformat()}."
+                    ),
+                    "cooldown_minutes": cooldown_minutes,
+                    "last_rotation_at": last_rotation_at.isoformat(),
+                    "next_rotation_allowed_at": next_allowed_at.isoformat(),
+                    "retry_after_seconds": retry_after_seconds,
+                },
+            )
+
     old_jwt_secret = settings.JWT_SECRET
     old_refresh_secret = settings.REFRESH_SECRET
 
@@ -102,6 +145,8 @@ def rotate_secrets(
 
     settings.JWT_SECRET = new_jwt_secret
     settings.REFRESH_SECRET = new_refresh_secret
+
+    settings._last_rotation_at = now
 
     grace_expires_at = now + timedelta(hours=settings.PREVIOUS_SECRET_GRACE_HOURS)
 

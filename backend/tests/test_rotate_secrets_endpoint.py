@@ -64,6 +64,8 @@ def _make_settings_mock(environment: str = "development") -> MagicMock:
     s.PREVIOUS_SECRET_ISSUED_AT = ""
     s._previous_secret_origin = None
     s.PREVIOUS_SECRET_GRACE_HOURS = 168
+    s.ROTATE_SECRETS_COOLDOWN_MINUTES = 60
+    s._last_rotation_at = None
     s.ENVIRONMENT = environment
     return s
 
@@ -259,6 +261,90 @@ class TestRotateSecretsProduction(unittest.TestCase):
     def test_environment_field_is_production(self):
         data, _ = self._call_rotate_prod()
         self.assertEqual(data["environment"], "production")
+
+
+class TestRotateSecretsCooldown(unittest.TestCase):
+    """The endpoint must reject calls made within the cooldown window."""
+
+    def _call_rotate(self, settings_mock):
+        from backend.main import app
+
+        def _fake_decode(token):
+            return jwt.decode(token, _SUPERADMIN_JWT_SECRET, algorithms=["HS256"])
+
+        client = TestClient(app, raise_server_exceptions=True)
+        token = _make_token("superadmin")
+
+        with patch("backend.app.core.deps.decode_access_token", side_effect=_fake_decode), \
+             patch("backend.app.platform.superadmin.rotation_router.settings", settings_mock):
+            return client.post(
+                "/api/v1/superadmin/rotate-secrets",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+    def test_recent_rotation_is_rejected_with_429(self):
+        s = _make_settings_mock("development")
+        s.ROTATE_SECRETS_COOLDOWN_MINUTES = 60
+        s._last_rotation_at = datetime.now(tz=timezone.utc) - timedelta(minutes=5)
+        resp = self._call_rotate(s)
+        self.assertEqual(resp.status_code, 429)
+
+    def test_429_includes_next_rotation_allowed_at(self):
+        s = _make_settings_mock("development")
+        s.ROTATE_SECRETS_COOLDOWN_MINUTES = 60
+        last = datetime.now(tz=timezone.utc) - timedelta(minutes=5)
+        s._last_rotation_at = last
+        resp = self._call_rotate(s)
+        body = resp.json()
+        expected_next = (last + timedelta(minutes=60))
+        actual_next = datetime.fromisoformat(body["next_rotation_allowed_at"])
+        if actual_next.tzinfo is None:
+            actual_next = actual_next.replace(tzinfo=timezone.utc)
+        self.assertEqual(actual_next, expected_next)
+        self.assertFalse(body["rotated"])
+        self.assertGreater(body["retry_after_seconds"], 0)
+
+    def test_429_sets_retry_after_header(self):
+        s = _make_settings_mock("development")
+        s.ROTATE_SECRETS_COOLDOWN_MINUTES = 60
+        s._last_rotation_at = datetime.now(tz=timezone.utc) - timedelta(minutes=5)
+        resp = self._call_rotate(s)
+        self.assertEqual(resp.status_code, 429)
+        self.assertIn("retry-after", {k.lower() for k in resp.headers.keys()})
+        self.assertGreater(int(resp.headers["Retry-After"]), 0)
+
+    def test_settings_not_mutated_when_rate_limited(self):
+        s = _make_settings_mock("development")
+        s.ROTATE_SECRETS_COOLDOWN_MINUTES = 60
+        s._last_rotation_at = datetime.now(tz=timezone.utc) - timedelta(minutes=5)
+        self._call_rotate(s)
+        self.assertEqual(s.JWT_SECRET, "old-jwt-secret-value")
+        self.assertEqual(s.REFRESH_SECRET, "old-refresh-secret-value")
+        self.assertEqual(s.PREVIOUS_JWT_SECRET, "")
+
+    def test_rotation_allowed_after_cooldown_elapsed(self):
+        s = _make_settings_mock("development")
+        s.ROTATE_SECRETS_COOLDOWN_MINUTES = 60
+        s._last_rotation_at = datetime.now(tz=timezone.utc) - timedelta(minutes=90)
+        resp = self._call_rotate(s)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()["rotated"])
+
+    def test_cooldown_disabled_when_zero(self):
+        s = _make_settings_mock("development")
+        s.ROTATE_SECRETS_COOLDOWN_MINUTES = 0
+        s._last_rotation_at = datetime.now(tz=timezone.utc) - timedelta(seconds=1)
+        resp = self._call_rotate(s)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()["rotated"])
+
+    def test_successful_rotation_records_last_rotation_at(self):
+        s = _make_settings_mock("development")
+        s.ROTATE_SECRETS_COOLDOWN_MINUTES = 60
+        s._last_rotation_at = None
+        resp = self._call_rotate(s)
+        self.assertEqual(resp.status_code, 200)
+        self.assertIsNotNone(s._last_rotation_at)
 
 
 if __name__ == "__main__":

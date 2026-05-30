@@ -129,6 +129,7 @@ PREVIOUS_REFRESH_SECRET             Old refresh secret during grace period rotat
 PREVIOUS_SECRET_ISSUED_AT           ISO-8601 UTC timestamp when rotation was done
 PREVIOUS_SECRET_GRACE_HOURS         Grace period in hours (default: 168 = 7 days)
 PREVIOUS_SECRET_CHECK_INTERVAL_HOURS  How often monitor runs (default: 1)
+ROTATE_SECRETS_COOLDOWN_MINUTES     Min minutes between rotations via API (default: 60, 0 disables)
 SECRET_ROTATION_ALERT_URL           Optional webhook URL for stale-secret alerts
 TENANT_RESOLVER_STRATEGY            header | subdomain | jwt (default: header)
 ENVIRONMENT                         development | production (default: development)
