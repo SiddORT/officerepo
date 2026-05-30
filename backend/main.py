@@ -17,7 +17,7 @@ from backend.app.database.platform import Base, engine, SessionLocal
 # Platform models (import to register with metadata)
 from backend.app.platform.superadmin.models import SuperAdmin
 from backend.app.platform.config.models import PlatformConfig
-from backend.app.modules.enquiry.models import Enquiry
+from backend.app.modules.enquiry.models import Enquiry, EnquiryNote, EnquiryActivity
 from backend.app.modules.lead_management.models import (
     Lead, LeadActivity, LeadSpokesperson, LeadDemo, LeadFollowup, LeadNote,
     LeadDocument, LeadProposal, LeadNegotiation, LeadConversion,
@@ -28,6 +28,7 @@ from backend.shared.audit.models import AuditLog
 from backend.app.modules.auth.router import router as auth_router
 from backend.app.modules.csp_report.router import router as csp_report_router
 from backend.app.modules.enquiry.router import router as enquiry_router
+from backend.app.modules.enquiry.admin_router import router as enquiry_admin_router
 from backend.app.modules.lead_management.router import router as lead_router
 from backend.app.platform.superadmin.rotation_router import router as rotation_router
 from backend.app.platform.superadmin.rotation_status_router import router as rotation_status_router
@@ -56,6 +57,18 @@ def run_schema_migrations():
         "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS referrer_url VARCHAR(1024)",
         "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS retention_until TIMESTAMP",
         "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS deletion_requested BOOLEAN DEFAULT FALSE",
+        # enquiries — superadmin inbox workflow (assignment, spam, convert traceability)
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS assigned_to INTEGER",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS assigned_at TIMESTAMP",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS is_spam BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS spam_marked_at TIMESTAMP",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS converted_lead_id VARCHAR(36)",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS converted_at TIMESTAMP",
+        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP",
+        "CREATE INDEX IF NOT EXISTS ix_enquiries_assigned_to ON enquiries (assigned_to)",
+        "CREATE INDEX IF NOT EXISTS ix_enquiries_is_spam ON enquiries (is_spam)",
+        "CREATE INDEX IF NOT EXISTS ix_enquiries_converted_lead_id ON enquiries (converted_lead_id)",
+        "CREATE INDEX IF NOT EXISTS ix_enquiries_status_spam ON enquiries (status, is_spam)",
         # Drop legacy plaintext PII columns (replaced by encrypted equivalents)
         "ALTER TABLE enquiries DROP COLUMN IF EXISTS work_email",
         "ALTER TABLE enquiries DROP COLUMN IF EXISTS phone_number",
@@ -225,6 +238,9 @@ app.include_router(rotation_status_router, prefix=f"{PREFIX}/superadmin", tags=[
 
 # Lead Management & Sales Pipeline Module (superadmin CRM)
 app.include_router(lead_router, prefix=f"{PREFIX}/superadmin/leads", tags=["lead management"])
+
+# Enquiry Inbox (superadmin CRM)
+app.include_router(enquiry_admin_router, prefix=f"{PREFIX}/superadmin/enquiries", tags=["enquiry inbox"])
 
 # Public marketing site — enquiry / contact form (no auth)
 app.include_router(enquiry_router, prefix=f"{PREFIX}/public/enquiries", tags=["public - enquiries"])

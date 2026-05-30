@@ -3,6 +3,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { Link } from "react-router-dom";
 
 const QUICK_LINKS = [
+  { label: "Enquiries", desc: "Triage website enquiries", link: "/superadmin/enquiries", accent: "#8b5cf6" },
   { label: "Leads", desc: "Manage your sales pipeline", link: "/superadmin/leads", accent: "#00aeec" },
   { label: "Calendar", desc: "Demos, follow-ups & next actions", link: "/superadmin/leads/calendar", accent: "#10b981" },
   { label: "Security", desc: "Secret rotation & status", link: "/superadmin/security", accent: "#f59e0b" },

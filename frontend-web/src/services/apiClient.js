@@ -72,6 +72,27 @@ export const enquiriesApi = {
   submit: (data) => apiClient.post("/public/enquiries", data),
 };
 
+// ── Enquiry Inbox (superadmin CRM) ────────────────────────────────────────────
+const ENQUIRIES = "/superadmin/enquiries";
+export const enquiryInboxApi = {
+  options: () => apiClient.get(`${ENQUIRIES}/meta/options`),
+  dashboard: () => apiClient.get(`${ENQUIRIES}/dashboard`),
+
+  list: (params) => apiClient.get(ENQUIRIES, { params }),
+  get: (id) => apiClient.get(`${ENQUIRIES}/${id}`),
+
+  setStatus: (id, status) => apiClient.patch(`${ENQUIRIES}/${id}/status`, { status }),
+  assign: (id, assignedTo) => apiClient.patch(`${ENQUIRIES}/${id}/assign`, { assigned_to: assignedTo }),
+  setSpam: (id, isSpam) => apiClient.patch(`${ENQUIRIES}/${id}/spam`, { is_spam: isSpam }),
+
+  addNote: (id, note) => apiClient.post(`${ENQUIRIES}/${id}/notes`, { note }),
+  deleteNote: (id, noteId) => apiClient.delete(`${ENQUIRIES}/${id}/notes/${noteId}`),
+
+  timeline: (id) => apiClient.get(`${ENQUIRIES}/${id}/timeline`),
+
+  convertToLead: (id, data) => apiClient.post(`${ENQUIRIES}/${id}/convert-to-lead`, data || {}),
+};
+
 // ── Lead Management & Sales Pipeline (superadmin CRM) ─────────────────────────
 const LEADS = "/superadmin/leads";
 export const leadsApi = {

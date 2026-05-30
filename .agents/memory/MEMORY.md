@@ -12,3 +12,4 @@
 - [S3-ready storage keys](storage-keys-s3-ready.md) — DB stores rootless `{scope}/{module}/{filename}` keys only (no root/URL); one helper + driver seam; legacy full paths stripped on read.
 - [CORS single source of truth](cors-policy.md) — CORS policy (methods/headers/regex) lives in backend/app/core/cors.py; main.py + tests import it; officerepo.com subdomains allowed via allow_origin_regex in restricted envs.
 - [.env files are unwritable](env-file-restriction.md) — the platform blocks writing any .env file (secrets anti-pattern); commit .env.example templates instead, .env stays git-ignored and dev runs on settings fallbacks.
+- [Enquiry→Lead conversion paths](enquiry-lead-conversion-paths.md) — two conversion endpoints exist; both must stamp enquiry.converted_lead_id (forward) + lead.source_enquiry_id (reverse) or traceability silently breaks.

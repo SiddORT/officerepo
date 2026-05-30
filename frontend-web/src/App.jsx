@@ -8,6 +8,8 @@ import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
 import AdminLoginPage from "./pages/login/AdminLoginPage";
 import DashboardPage from "./pages/dashboard/DashboardPage";
 import SecurityPage from "./pages/superadmin/SecurityPage";
+import EnquiryList from "./pages/superadmin/enquiries/EnquiryList";
+import EnquiryDetails from "./pages/superadmin/enquiries/EnquiryDetails";
 import LeadList from "./pages/superadmin/leads/LeadList";
 import CalendarPage from "./pages/superadmin/leads/CalendarPage";
 import CreateLead from "./pages/superadmin/leads/CreateLead";
@@ -50,6 +52,24 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireRole="superadmin">
             <Layout><SecurityPage /></Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Protected — Enquiry Inbox */}
+      <Route
+        path="/superadmin/enquiries"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><EnquiryList /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/enquiries/:id"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><EnquiryDetails /></Layout>
           </ProtectedRoute>
         }
       />

@@ -295,6 +295,7 @@ function Overview({ lead }) {
             </div>
           ))}
         </dl>
+        {lead.source_enquiry && <SourceEnquiry enquiry={lead.source_enquiry} />}
         {lead.status === "Lost" && (
           <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--c-border)" }}>
             <h4 className="text-xs font-semibold text-red-400 mb-2">Loss Analysis</h4>
@@ -314,6 +315,29 @@ function Overview({ lead }) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Source enquiry (reverse traceability: Website Enquiry → Lead) ───────── */
+function SourceEnquiry({ enquiry }) {
+  const navigate = useNavigate();
+  return (
+    <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--c-border)" }}>
+      <h4 className="text-xs font-semibold t-heading mb-2">Source Enquiry</h4>
+      <button
+        onClick={() => navigate(`/superadmin/enquiries/${enquiry.id}`)}
+        className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all"
+        style={{ background: "rgba(139,92,246,0.1)", color: "#8b5cf6", border: "1px solid rgba(139,92,246,0.25)" }}
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <code className="font-mono text-xs">{enquiry.enquiry_number}</code>
+        {enquiry.source && <span className="t-muted text-xs">· {enquiry.source}</span>}
+        <span className="t-muted text-xs">· {formatDate(enquiry.created_at)}</span>
+      </button>
     </div>
   );
 }

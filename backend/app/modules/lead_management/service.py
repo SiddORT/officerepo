@@ -461,7 +461,27 @@ def get_lead_detail(db: Session, lead_id: str) -> dict:
     detail["spokespersons"] = [
         spokesperson_to_dict(s) for s in repo.list_spokespersons(db, lead_id) if not s.is_primary
     ]
+    # Reverse traceability: surface the originating enquiry (Website Enquiry → Lead).
+    detail["source_enquiry"] = _source_enquiry_info(db, lead)
     return detail
+
+
+def _source_enquiry_info(db: Session, lead: Lead) -> Optional[dict]:
+    """Resolve the enquiry a lead originated from, for the traceability panel."""
+    if not lead.source_enquiry_id:
+        return None
+    from backend.app.modules.enquiry.models import Enquiry
+
+    enquiry = db.query(Enquiry).filter(Enquiry.id == lead.source_enquiry_id).first()
+    if not enquiry:
+        return None
+    return {
+        "id": enquiry.id,
+        "enquiry_number": enquiry.enquiry_number,
+        "status": enquiry.status,
+        "source": enquiry.source,
+        "created_at": enquiry.created_at,
+    }
 
 
 def list_leads(db: Session, **kwargs) -> tuple[list[dict], int]:
@@ -1075,6 +1095,10 @@ def convert_enquiry_to_lead(db: Session, enquiry_id: int, payload: ConvertEnquir
     ))
 
     enquiry.status = "Converted"
+    # Stamp the reverse link here too so every conversion path (inbox or legacy
+    # lead route) yields full bidirectional traceability: Enquiry → Lead → Client.
+    enquiry.converted_lead_id = lead.id
+    enquiry.converted_at = datetime.utcnow()
 
     record_audit(db, c.AUDIT_ENQUIRY_CONVERTED, c.AUDIT_ENTITY, lead.lead_number, actor=actor,
                  metadata={"enquiry_number": enquiry.enquiry_number,

@@ -132,3 +132,62 @@ class EnquiryCreateRequest(BaseModel):
             return None
         v = v.strip()[:1024]
         return v or None
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# Superadmin Inbox — request schemas
+# ════════════════════════════════════════════════════════════════════════════
+from backend.app.modules.enquiry.constants import (  # noqa: E402
+    ENQUIRY_STATUSES,
+    NOTE_MIN_LEN,
+    NOTE_MAX_LEN,
+)
+
+
+class EnquiryStatusUpdateRequest(BaseModel):
+    status: str
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v):
+        v = (v or "").strip()
+        if v not in ENQUIRY_STATUSES:
+            raise ValueError(f"Status must be one of: {', '.join(ENQUIRY_STATUSES)}.")
+        return v
+
+
+class EnquiryAssignRequest(BaseModel):
+    # null/omitted clears the assignment (un-assign).
+    assigned_to: Optional[int] = None
+
+    @field_validator("assigned_to")
+    @classmethod
+    def validate_assigned_to(cls, v):
+        if v is None:
+            return None
+        if v <= 0:
+            raise ValueError("assigned_to must be a positive user id.")
+        return v
+
+
+class EnquirySpamRequest(BaseModel):
+    is_spam: bool
+
+
+class EnquiryNoteCreateRequest(BaseModel):
+    note: str
+
+    @field_validator("note")
+    @classmethod
+    def validate_note(cls, v):
+        v = _clean(v)
+        if not v:
+            raise ValueError("Note is required.")
+        if not (NOTE_MIN_LEN <= len(v) <= NOTE_MAX_LEN):
+            raise ValueError(f"Note must be between {NOTE_MIN_LEN} and {NOTE_MAX_LEN} characters.")
+        return _no_xss(v, "Note")
+
+
+class EnquiryConvertRequest(BaseModel):
+    lead_source: Optional[str] = None
+    lead_owner_id: Optional[int] = None

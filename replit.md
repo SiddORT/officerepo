@@ -109,6 +109,18 @@ GET  /api/v1/superadmin/rotation-status
 
 POST /api/v1/public/enquiries        (public; GDPR-aware lead capture)
 
+# Enquiry Inbox (superadmin)
+GET    /api/v1/superadmin/enquiries/meta/options          (statuses, modules)
+GET    /api/v1/superadmin/enquiries/dashboard             (counts by status/spam/unassigned)
+GET    /api/v1/superadmin/enquiries                       (list: page/page_size/sort/search/status/is_spam/assigned_to)
+GET    /api/v1/superadmin/enquiries/{enquiry_id}          (detail: decrypted PII + notes[] + timeline[] + lead{})
+PATCH  /api/v1/superadmin/enquiries/{enquiry_id}/status   (New/In Review/Assigned/Closed; Converted is terminal/auto)
+PATCH  /api/v1/superadmin/enquiries/{enquiry_id}/assign   ({assigned_to} int; null = unassign)
+PATCH  /api/v1/superadmin/enquiries/{enquiry_id}/spam     ({is_spam} bool)
+GET/POST/DELETE  .../enquiries/{enquiry_id}/notes[/{note_id}]
+GET    /api/v1/superadmin/enquiries/{enquiry_id}/timeline
+POST   /api/v1/superadmin/enquiries/{enquiry_id}/convert-to-lead  (blocked if spam or already converted)
+
 # Lead Management & Sales Pipeline (superadmin)
 GET    /api/v1/superadmin/leads/meta/options
 GET    /api/v1/superadmin/leads/dashboard               (stats + due/overdue counts + notifications[])
@@ -156,6 +168,33 @@ POST   /api/v1/superadmin/leads/convert-enquiry/{enquiry_id}  (idempotent)
 - Audit entries written via `backend/shared/audit/` with **masked PII**
   (e.g. `j***e@acme.com`).
 
+## Enquiry Inbox (superadmin)
+- **Scope**: platform-scoped, superadmin JWT guard, platform DB. Layered architecture
+  (`models`/`constants`/`schemas`/`repository`/`admin_service`/`admin_router`).
+- **List/Details**: list supports page/sort/search + status/spam/assigned_to filters.
+  Detail decrypts PII **only into the response** (encrypted at rest stays encrypted)
+  and returns `notes[]`, `timeline[]`, and a resolved `lead{}` object when converted.
+- **Status management**: `New / In Review / Assigned / Closed` are settable; `Converted`
+  is terminal and reached only via Convert-to-Lead. Re-opening a Closed enquiry clears
+  the stale `closed_at`.
+- **Assignment**: `assigned_to` (superadmin user id; null = unassign). The frontend
+  detail view offers "Assign to me" / "Unassign".
+- **Spam management**: orthogonal `is_spam` boolean; spam enquiries cannot be converted.
+- **Notes**: superadmin-only internal notes (soft-deleted); add & delete both journal a
+  timeline activity.
+- **Activity timeline**: every workflow event (created, status_changed, assigned,
+  unassigned, note_added, note_deleted, marked_spam, unmarked_spam, converted_to_lead)
+  is recorded and surfaced in the Timeline tab.
+- **Convert to Lead**: blocked if spam or already converted. Creates a Lead, links it
+  bidirectionally (enquiry `converted_lead_id`/`converted_at` ↔ lead `source_enquiry_id`),
+  preserves the enquiry message as the lead's first note, sets enquiry status=Converted,
+  and writes a masked-PII audit entry. **Both** conversion paths — the inbox
+  `convert-to-lead` endpoint and the legacy `leads/convert-enquiry/{id}` route — stamp the
+  reverse link, so traceability (Website Enquiry → Lead → Client) holds either way and is
+  shown in both records (`SourceEnquiry` on LeadDetails; converted-to bar on EnquiryDetails).
+- Frontend: `pages/superadmin/enquiries/{EnquiryList,EnquiryDetails}.jsx` + `constants.js`;
+  admin `enquiryInboxApi` in `apiClient.js`; nav item "Enquiries" (before Leads).
+
 ## Lead Management & Sales Pipeline (superadmin)
 - **Scope**: platform-scoped, superadmin JWT guard, platform DB (`get_platform_db`).
 - **Tables** (UUID `String(36)` PKs): `leads` + 8 child tables — activities, demos,
@@ -191,7 +230,6 @@ POST   /api/v1/superadmin/leads/convert-enquiry/{enquiry_id}  (idempotent)
 - **Conversion metrics** computed: lead age, sales cycle, time-to-demo, time-to-proposal,
   time-to-conversion (surfaced in the Conversions tab).
 - **Convert Enquiry→Lead**: idempotent (reuses existing lead via `source_enquiry_id`,
-<<<<<<< HEAD
   ignoring soft-delete). **Convert Lead→Client**: only when stage = Won; marks the lead
   converted and records a `lead_conversions` row (client_name + sales-cycle metrics) +
   audit entry. No tenant/subscription is created (multi-tenant removed; conversion is a
