@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Input from "../../../../components/ui/Input";
 import Select from "../../../../components/ui/Select";
 import Textarea from "../../../../components/ui/Textarea";
+import CountryCodeSelect from "../../../../components/ui/CountryCodeSelect";
 import { leadsApi } from "../../../../services/apiClient";
 import { toOptions, toInputDate } from "../constants";
 
@@ -189,7 +190,7 @@ export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit 
         <Input label="Designation" value={form.designation} onChange={(e) => setField("designation", e.target.value)} placeholder="VP of Operations" maxLength={120} />
         <Input label="Email" type="email" value={form.email} onChange={(e) => setField("email", e.target.value)} error={errors.email} placeholder="jane@acme.com" />
         <div className="grid grid-cols-3 gap-3">
-          <Input label="Code" value={form.country_code} onChange={(e) => setField("country_code", e.target.value)} error={errors.country_code} placeholder="+1" maxLength={8} />
+          <CountryCodeSelect value={form.country_code} onChange={(v) => setField("country_code", v)} error={errors.country_code} />
           <div className="col-span-2">
             <Input label="Phone" value={form.phone} onChange={(e) => setField("phone", e.target.value)} placeholder="555 000 0000" maxLength={30} />
           </div>
@@ -229,7 +230,7 @@ export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit 
                   <Input label="Designation" value={sp.designation} onChange={(e) => setSpokespersonField(idx, "designation", e.target.value)} placeholder="CTO" maxLength={120} />
                   <Input label="Email" type="email" value={sp.email} onChange={(e) => setSpokespersonField(idx, "email", e.target.value)} error={spErrors[idx]?.email} placeholder="john@acme.com" />
                   <div className="grid grid-cols-3 gap-3">
-                    <Input label="Code" value={sp.country_code} onChange={(e) => setSpokespersonField(idx, "country_code", e.target.value)} error={spErrors[idx]?.country_code} placeholder="+1" maxLength={8} />
+                    <CountryCodeSelect value={sp.country_code} onChange={(v) => setSpokespersonField(idx, "country_code", v)} error={spErrors[idx]?.country_code} />
                     <div className="col-span-2">
                       <Input label="Phone" value={sp.phone} onChange={(e) => setSpokespersonField(idx, "phone", e.target.value)} placeholder="555 000 0000" maxLength={30} />
                     </div>
