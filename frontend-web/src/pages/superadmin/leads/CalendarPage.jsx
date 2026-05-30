@@ -41,12 +41,41 @@ function sameDay(a, b) {
   );
 }
 
+const pad = (n) => String(n).padStart(2, "0");
+
+// Field name on the PATCH payload + apiClient method for each event type.
+const RESCHEDULE_CONFIG = {
+  demo: { field: "demo_date", call: (api, leadId, id, data) => api.updateDemo(leadId, id, data) },
+  followup: { field: "followup_date", call: (api, leadId, id, data) => api.updateFollowup(leadId, id, data) },
+  activity: { field: "next_action_date", call: (api, leadId, id, data) => api.updateActivity(leadId, id, data) },
+};
+
+// Build a naive (no timezone) ISO string for `targetDay`, preserving the
+// original time-of-day from `originalDate`. The backend stores naive UTC, so we
+// must not let toISOString() shift values by the local offset.
+function rescheduledIso(originalDate, targetDay) {
+  let timePart = "09:00:00";
+  if (typeof originalDate === "string" && originalDate.includes("T")) {
+    const raw = originalDate.split("T")[1];
+    timePart = raw.replace("Z", "").split("+")[0].split("-")[0] || timePart;
+  }
+  const datePart = `${targetDay.getFullYear()}-${pad(targetDay.getMonth() + 1)}-${pad(targetDay.getDate())}`;
+  return `${datePart}T${timePart}`;
+}
+
+function dayKey(d) {
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
 export default function CalendarPage() {
   const navigate = useNavigate();
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [dragEvent, setDragEvent] = useState(null);
+  const [dragOverKey, setDragOverKey] = useState(null);
+  const [savingId, setSavingId] = useState(null);
 
   const grid = useMemo(() => buildGrid(month), [month]);
   const today = new Date();
@@ -90,6 +119,39 @@ export default function CalendarPage() {
   const goNext = () => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1));
   const goToday = () => setMonth(startOfMonth(new Date()));
 
+  const handleDrop = useCallback(async (targetDay) => {
+    const ev = dragEvent;
+    setDragOverKey(null);
+    setDragEvent(null);
+    if (!ev) return;
+
+    const cfg = RESCHEDULE_CONFIG[ev.type];
+    if (!cfg) return;
+
+    // No-op if dropped on the same day it already sits on.
+    const current = ev.date ? new Date(ev.date) : null;
+    if (current && !Number.isNaN(current.getTime()) && sameDay(current, targetDay)) return;
+
+    const newIso = rescheduledIso(ev.date, targetDay);
+    const prevEvents = events;
+
+    // Optimistic update.
+    setEvents((list) =>
+      list.map((e) => (e.type === ev.type && e.id === ev.id ? { ...e, date: newIso } : e)),
+    );
+    setError("");
+    setSavingId(`${ev.type}-${ev.id}`);
+
+    try {
+      await cfg.call(leadsApi, ev.lead_id, ev.id, { [cfg.field]: newIso });
+    } catch (e) {
+      setEvents(prevEvents); // rollback
+      setError(e.response?.data?.detail || "Failed to reschedule. Please try again.");
+    } finally {
+      setSavingId(null);
+    }
+  }, [dragEvent, events]);
+
   return (
     <div className="p-6 space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -98,7 +160,7 @@ export default function CalendarPage() {
             <span className="inline-block w-1 h-5 rounded-full" style={{ background: "linear-gradient(to bottom, #00aeec, #ff7a1a)" }} />
             <h1 className="text-2xl font-bold t-heading">Calendar</h1>
           </div>
-          <p className="text-sm t-muted ml-3">Scheduled demos, follow-ups, and next actions across all leads.</p>
+          <p className="text-sm t-muted ml-3">Scheduled demos, follow-ups, and next actions across all leads. Drag an item to another day to reschedule it.</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={goToday} className="btn-secondary text-sm">Today</button>
@@ -139,14 +201,32 @@ export default function CalendarPage() {
             const dayEvents = eventsByDay[key] || [];
             const inMonth = day.getMonth() === month.getMonth();
             const isToday = sameDay(day, today);
+            const isDropTarget = dragEvent && dragOverKey === key;
             return (
               <div
                 key={key}
-                className="min-h-[104px] p-1.5 flex flex-col gap-1"
+                onDragOver={(e) => {
+                  if (!dragEvent) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                  if (dragOverKey !== key) setDragOverKey(key);
+                }}
+                onDragLeave={() => {
+                  if (dragOverKey === key) setDragOverKey(null);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleDrop(day);
+                }}
+                className="min-h-[104px] p-1.5 flex flex-col gap-1 transition-colors"
                 style={{
                   borderBottom: "1px solid var(--c-border)",
                   borderRight: "1px solid var(--c-border)",
-                  background: inMonth ? "transparent" : "var(--c-surface2)",
+                  background: isDropTarget
+                    ? "rgba(0,174,236,0.12)"
+                    : inMonth ? "transparent" : "var(--c-surface2)",
+                  outline: isDropTarget ? "2px dashed #00aeec" : "none",
+                  outlineOffset: "-2px",
                   opacity: inMonth ? 1 : 0.6,
                 }}
               >
@@ -159,22 +239,37 @@ export default function CalendarPage() {
                   {day.getDate()}
                 </span>
                 <div className="flex flex-col gap-1 overflow-hidden">
-                  {dayEvents.slice(0, 3).map((ev) => (
-                    <button
-                      key={`${ev.type}-${ev.id}`}
-                      onClick={() => navigate(`/superadmin/leads/${ev.lead_id}`)}
-                      title={`${EVENT_LABELS[ev.type]} · ${ev.lead_name} — ${ev.title}`}
-                      className="text-[10px] leading-tight px-1.5 py-1 rounded text-left truncate"
-                      style={{
-                        backgroundColor: `${EVENT_COLORS[ev.type] || "#64748b"}1f`,
-                        color: EVENT_COLORS[ev.type] || "#64748b",
-                        border: `1px solid ${EVENT_COLORS[ev.type] || "#64748b"}40`,
-                      }}
-                    >
-                      <span className="font-semibold">{ev.lead_name}</span>
-                      <span className="block truncate opacity-80">{ev.title}</span>
-                    </button>
-                  ))}
+                  {dayEvents.slice(0, 3).map((ev) => {
+                    const evKey = `${ev.type}-${ev.id}`;
+                    const isSaving = savingId === evKey;
+                    const isDragging = dragEvent && `${dragEvent.type}-${dragEvent.id}` === evKey;
+                    return (
+                      <button
+                        key={evKey}
+                        draggable={!isSaving}
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = "move";
+                          setDragEvent(ev);
+                        }}
+                        onDragEnd={() => {
+                          setDragEvent(null);
+                          setDragOverKey(null);
+                        }}
+                        onClick={() => navigate(`/superadmin/leads/${ev.lead_id}`)}
+                        title={`${EVENT_LABELS[ev.type]} · ${ev.lead_name} — ${ev.title} (drag to reschedule)`}
+                        className="text-[10px] leading-tight px-1.5 py-1 rounded text-left truncate cursor-grab active:cursor-grabbing"
+                        style={{
+                          backgroundColor: `${EVENT_COLORS[ev.type] || "#64748b"}1f`,
+                          color: EVENT_COLORS[ev.type] || "#64748b",
+                          border: `1px solid ${EVENT_COLORS[ev.type] || "#64748b"}40`,
+                          opacity: isDragging ? 0.4 : isSaving ? 0.6 : 1,
+                        }}
+                      >
+                        <span className="font-semibold">{ev.lead_name}</span>
+                        <span className="block truncate opacity-80">{ev.title}</span>
+                      </button>
+                    );
+                  })}
                   {dayEvents.length > 3 && (
                     <span className="text-[10px] t-muted px-1.5">+{dayEvents.length - 3} more</span>
                   )}
