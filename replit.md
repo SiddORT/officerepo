@@ -282,6 +282,11 @@ CORS_REJECTION_ALERT_SEVERITY       Severity label in the CORS alert payload (de
 CORS_REJECTION_ALERT_ENV_TAG        Environment tag in the CORS alert payload (default: ENVIRONMENT)
 CORS_REJECTION_ALERT_COOLDOWN_MINUTES  Min minutes between webhook alerts per rejected origin
                                     (default: 60, 0 disables; the log line is never throttled)
+CORS_REJECTION_RETENTION_DAYS       Prune cors_rejections rows whose last_seen_at is older than this
+                                    many days (default: 30, 0 disables time-based pruning). Keeps the
+                                    attacker-controlled-Origin table bounded.
+CORS_REJECTION_MAX_ORIGINS          Hard cap on distinct origin rows kept; least-recently-seen rows are
+                                    evicted beyond the cap (default: 1000, 0 disables the cap)
 BACKEND_PORT                        Port uvicorn binds to under PM2 (default: 8000)
 FRONTEND_PORT                       Port the frontend preview binds to under PM2 (default: 5000)
 TURNSTILE_SECRET_KEY                Cloudflare Turnstile secret (blank = bot check disabled)

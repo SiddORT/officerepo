@@ -3,6 +3,7 @@ import logging
 
 from sqlalchemy.orm import Session
 
+from backend.app.config.settings import settings
 from backend.app.core.cors import mask_origin
 from backend.app.database.platform import SessionLocal
 from backend.app.modules.cors_report import repository
@@ -25,6 +26,13 @@ def record_rejection_event(origin: str, method: str, path: str) -> None:
     db = SessionLocal()
     try:
         repository.upsert_rejection(db, masked, method, path)
+        # Bound the table after every write so an attacker-controlled Origin
+        # header can never grow it without limit.
+        repository.prune_rejections(
+            db,
+            retention_days=settings.CORS_REJECTION_RETENTION_DAYS,
+            max_origins=settings.CORS_REJECTION_MAX_ORIGINS,
+        )
     except Exception as exc:  # pragma: no cover - defensive, never raise
         logger.warning("cors_report: could not persist rejection: %s", exc)
         try:

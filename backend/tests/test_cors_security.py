@@ -1214,5 +1214,173 @@ class TestCorsRejectionWiredStackIntegration(unittest.TestCase):
         )
 
 
+# ---------------------------------------------------------------------------
+# Retention / cap pruning for the cors_rejections table.
+#
+# The Origin header is attacker-controlled, so without bounding the table a
+# malicious or buggy client could create unboundedly many distinct origin rows.
+# repository.prune_rejections enforces a time-based retention window and/or a
+# hard cap on the number of distinct origins. These tests exercise the SQL
+# directly against an in-memory SQLite DB (the model uses portable column types).
+# ---------------------------------------------------------------------------
+
+from datetime import timedelta as _timedelta
+
+from sqlalchemy import create_engine as _create_engine
+from sqlalchemy.orm import sessionmaker as _sessionmaker
+
+from backend.app.modules.cors_report.models import CorsRejection as _CorsRejection
+from backend.app.modules.cors_report import repository as _cors_repo
+
+
+class TestCorsRejectionRetention(unittest.TestCase):
+    """prune_rejections must keep the cors_rejections table bounded."""
+
+    def setUp(self):
+        self.engine = _create_engine("sqlite:///:memory:")
+        _CorsRejection.metadata.create_all(self.engine)
+        self.Session = _sessionmaker(bind=self.engine)
+        self.db = self.Session()
+
+    def tearDown(self):
+        self.db.close()
+        self.engine.dispose()
+
+    def _add(self, origin: str, last_seen_at):
+        row = _CorsRejection(
+            origin=origin,
+            hit_count=1,
+            last_method="GET",
+            last_path="/ping",
+            first_seen_at=last_seen_at,
+            last_seen_at=last_seen_at,
+        )
+        self.db.add(row)
+        self.db.commit()
+        return row
+
+    def _origins(self):
+        return {r.origin for r in self.db.query(_CorsRejection).all()}
+
+    def test_retention_window_prunes_old_rows(self):
+        now = datetime.utcnow()
+        self._add("https://fresh.example.com", now - _timedelta(days=1))
+        self._add("https://stale.example.com", now - _timedelta(days=40))
+
+        removed = _cors_repo.prune_rejections(self.db, retention_days=30, max_origins=0)
+
+        self.assertEqual(removed, 1)
+        self.assertEqual(self._origins(), {"https://fresh.example.com"})
+
+    def test_retention_zero_disables_time_pruning(self):
+        now = datetime.utcnow()
+        self._add("https://ancient.example.com", now - _timedelta(days=999))
+
+        removed = _cors_repo.prune_rejections(self.db, retention_days=0, max_origins=0)
+
+        self.assertEqual(removed, 0)
+        self.assertEqual(self._origins(), {"https://ancient.example.com"})
+
+    def test_max_origins_evicts_least_recently_seen(self):
+        now = datetime.utcnow()
+        for i in range(5):
+            self._add(f"https://o{i}.example.com", now - _timedelta(minutes=i))
+        # o0 is the most recent, o4 the oldest.
+
+        removed = _cors_repo.prune_rejections(self.db, retention_days=0, max_origins=3)
+
+        self.assertEqual(removed, 2)
+        self.assertEqual(
+            self._origins(),
+            {
+                "https://o0.example.com",
+                "https://o1.example.com",
+                "https://o2.example.com",
+            },
+        )
+
+    def test_max_origins_zero_disables_cap(self):
+        now = datetime.utcnow()
+        for i in range(10):
+            self._add(f"https://o{i}.example.com", now - _timedelta(minutes=i))
+
+        removed = _cors_repo.prune_rejections(self.db, retention_days=0, max_origins=0)
+
+        self.assertEqual(removed, 0)
+        self.assertEqual(len(self._origins()), 10)
+
+    def test_cap_not_exceeded_is_noop(self):
+        now = datetime.utcnow()
+        for i in range(3):
+            self._add(f"https://o{i}.example.com", now - _timedelta(minutes=i))
+
+        removed = _cors_repo.prune_rejections(self.db, retention_days=0, max_origins=10)
+
+        self.assertEqual(removed, 0)
+        self.assertEqual(len(self._origins()), 3)
+
+    def test_both_strategies_combine(self):
+        now = datetime.utcnow()
+        # Two stale rows (pruned by retention) + four fresh rows (capped to 2).
+        self._add("https://stale1.example.com", now - _timedelta(days=40))
+        self._add("https://stale2.example.com", now - _timedelta(days=50))
+        for i in range(4):
+            self._add(f"https://fresh{i}.example.com", now - _timedelta(minutes=i))
+
+        removed = _cors_repo.prune_rejections(self.db, retention_days=30, max_origins=2)
+
+        # 2 stale removed by retention, then 2 of the 4 fresh evicted by the cap.
+        self.assertEqual(removed, 4)
+        self.assertEqual(
+            self._origins(),
+            {"https://fresh0.example.com", "https://fresh1.example.com"},
+        )
+
+
+class TestCorsRejectionRetentionSettings(unittest.TestCase):
+    """Settings must validate the retention knobs and accept overrides."""
+
+    def test_defaults_present(self):
+        s = _make_settings({**_DEV_BASE_ENV})
+        self.assertEqual(s.CORS_REJECTION_RETENTION_DAYS, 30)
+        self.assertEqual(s.CORS_REJECTION_MAX_ORIGINS, 1000)
+
+    def test_overrides_applied(self):
+        s = _make_settings(
+            {
+                **_DEV_BASE_ENV,
+                "CORS_REJECTION_RETENTION_DAYS": "7",
+                "CORS_REJECTION_MAX_ORIGINS": "50",
+            }
+        )
+        self.assertEqual(s.CORS_REJECTION_RETENTION_DAYS, 7)
+        self.assertEqual(s.CORS_REJECTION_MAX_ORIGINS, 50)
+
+    def test_zero_allowed_to_disable(self):
+        s = _make_settings(
+            {
+                **_DEV_BASE_ENV,
+                "CORS_REJECTION_RETENTION_DAYS": "0",
+                "CORS_REJECTION_MAX_ORIGINS": "0",
+            }
+        )
+        self.assertEqual(s.CORS_REJECTION_RETENTION_DAYS, 0)
+        self.assertEqual(s.CORS_REJECTION_MAX_ORIGINS, 0)
+
+    def test_negative_retention_days_rejected(self):
+        _assert_cors_guard_raised(
+            self,
+            {**_DEV_BASE_ENV, "CORS_REJECTION_RETENTION_DAYS": "-1"},
+            "CORS_REJECTION_RETENTION_DAYS",
+        )
+
+    def test_negative_max_origins_rejected(self):
+        _assert_cors_guard_raised(
+            self,
+            {**_DEV_BASE_ENV, "CORS_REJECTION_MAX_ORIGINS": "-5"},
+            "CORS_REJECTION_MAX_ORIGINS",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

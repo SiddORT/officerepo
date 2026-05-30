@@ -108,6 +108,22 @@ class Settings(BaseSettings):
     CORS_REJECTION_ALERT_ENV_TAG: str = ""
     CORS_REJECTION_ALERT_COOLDOWN_MINUTES: int = 60
 
+    # CORS rejection retention — the Origin header is attacker-controlled, so a
+    # malicious or buggy client could otherwise grow the cors_rejections table
+    # without bound (one row per distinct origin). Two complementary caps keep
+    # the table bounded; pruning runs automatically whenever a rejection is
+    # recorded.
+    #
+    # CORS_REJECTION_RETENTION_DAYS
+    #   Rejection rows whose last_seen_at is older than this many days are
+    #   pruned automatically. 0 disables time-based pruning. Default: 30.
+    # CORS_REJECTION_MAX_ORIGINS
+    #   Hard cap on the number of distinct origin rows retained; when exceeded,
+    #   the least-recently-seen rows are evicted so only the most relevant
+    #   recent offenders remain. 0 disables the cap. Default: 1000.
+    CORS_REJECTION_RETENTION_DAYS: int = 30
+    CORS_REJECTION_MAX_ORIGINS: int = 1000
+
     # Minimum number of minutes that must elapse between two successful
     # in-process secret rotations via POST /superadmin/rotate-secrets.
     # Prevents accidental or malicious rapid rotation that could lock out
@@ -233,6 +249,18 @@ class Settings(BaseSettings):
             raise ValueError(
                 "ROTATE_SECRETS_COOLDOWN_MINUTES must be a non-negative integer (>= 0). "
                 f"Got: {self.ROTATE_SECRETS_COOLDOWN_MINUTES}"
+            )
+
+        if self.CORS_REJECTION_RETENTION_DAYS < 0:
+            raise ValueError(
+                "CORS_REJECTION_RETENTION_DAYS must be a non-negative integer (>= 0). "
+                f"Got: {self.CORS_REJECTION_RETENTION_DAYS}"
+            )
+
+        if self.CORS_REJECTION_MAX_ORIGINS < 0:
+            raise ValueError(
+                "CORS_REJECTION_MAX_ORIGINS must be a non-negative integer (>= 0). "
+                f"Got: {self.CORS_REJECTION_MAX_ORIGINS}"
             )
 
         # Resolve the origin timestamp once at startup so all subsequent checks
