@@ -244,36 +244,25 @@ class TestCorsWildcardDevelopmentOnly(unittest.TestCase):
 
 
 class TestCorsMainAppWiring(unittest.TestCase):
-    """Verify that main.py's origin-derivation logic wires the middleware correctly.
+    """Verify that the REAL app wires CORS correctly across environments.
 
-    backend/main.py cannot be imported directly in this test runner because it
-    uses `from backend.app.*` absolute imports (designed for the workspace root)
-    and triggers DB/seeding side-effects at import time.  Instead, these tests
-    replicate the exact derivation logic from main.py:
+    backend.main.create_app() now returns the genuine FastAPI app without any
+    DB side-effects at construction time (the create_all / migrations / seeding
+    bootstrap runs only inside the lifespan startup, which a plain TestClient
+    does not enter). These tests therefore boot the real app object directly
+    from a real Settings object and assert that production restricts origins to
+    ALLOWED_ORIGINS while development reflects any origin (wildcard).
 
-        _is_restricted = settings.ENVIRONMENT.lower() != "development"
-        if _is_restricted:
-            _cors_origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
-        else:
-            _cors_origins = ["*"]
-
-    ensuring that whatever Settings produces is handled the same way the app
-    will handle it in production.
+    The real app exposes /health (not /ping), so requests target that route.
     """
 
-    @staticmethod
-    def _derive_origins(settings_obj) -> list[str]:
-        """Mirror the origin-derivation logic from backend/main.py."""
-        is_restricted = settings_obj.ENVIRONMENT.lower() != "development"
-        if is_restricted:
-            return [o.strip() for o in settings_obj.ALLOWED_ORIGINS.split(",") if o.strip()]
-        return ["*"]
+    # The real app exposes /health; hit a route it actually serves.
+    ROUTE = "/health"
 
     def _client_from_env(self, env: dict) -> TestClient:
         s = _make_settings(env)
-        origins = self._derive_origins(s)
-        app = _build_cors_app(origins)
-        return TestClient(app)
+        # Boot the genuine app (no `with`, so the lifespan/DB bootstrap never runs).
+        return TestClient(_create_app(s))
 
     def test_production_listed_origin_is_allowed(self):
         env = {
@@ -281,7 +270,7 @@ class TestCorsMainAppWiring(unittest.TestCase):
             "ALLOWED_ORIGINS": "https://app.officerepo.io",
         }
         client = self._client_from_env(env)
-        resp = client.get("/ping", headers={"Origin": "https://app.officerepo.io"})
+        resp = client.get(self.ROUTE, headers={"Origin": "https://app.officerepo.io"})
         self.assertEqual(
             resp.headers.get("access-control-allow-origin"),
             "https://app.officerepo.io",
@@ -295,7 +284,7 @@ class TestCorsMainAppWiring(unittest.TestCase):
         }
         client = self._client_from_env(env)
         resp = client.options(
-            "/ping",
+            self.ROUTE,
             headers={
                 "Origin": "https://evil.example.com",
                 "Access-Control-Request-Method": "GET",
@@ -315,7 +304,7 @@ class TestCorsMainAppWiring(unittest.TestCase):
     def test_development_wildcard_allows_any_origin(self):
         env = {**_DEV_BASE_ENV}
         client = self._client_from_env(env)
-        resp = client.get("/ping", headers={"Origin": "https://anywhere.example.com"})
+        resp = client.get(self.ROUTE, headers={"Origin": "https://anywhere.example.com"})
         acao = resp.headers.get("access-control-allow-origin")
         self.assertIsNotNone(acao, "Development mode must set Access-Control-Allow-Origin")
         self.assertIn(
@@ -332,7 +321,7 @@ class TestCorsMainAppWiring(unittest.TestCase):
         client = self._client_from_env(env)
 
         resp_allowed = client.get(
-            "/ping", headers={"Origin": "https://www.officerepo.io"}
+            self.ROUTE, headers={"Origin": "https://www.officerepo.io"}
         )
         self.assertEqual(
             resp_allowed.headers.get("access-control-allow-origin"),
@@ -340,7 +329,7 @@ class TestCorsMainAppWiring(unittest.TestCase):
         )
 
         resp_blocked = client.get(
-            "/ping", headers={"Origin": "https://evil.example.com"}
+            self.ROUTE, headers={"Origin": "https://evil.example.com"}
         )
         self.assertNotIn("access-control-allow-origin", resp_blocked.headers)
 
@@ -1047,32 +1036,39 @@ class TestCorsRejectionAlerting(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# Integration test — the wired stack with a REAL webhook receiver.
+# Integration test — the REAL wired app with a REAL webhook receiver.
 #
 # The class-based tests above either (a) drive CORSMiddleware in isolation or
 # (b) drive the cors_monitor middleware with httpx mocked out. This integration
-# test closes the gap to the actual wired stack by booting an app assembled
-# exactly the way backend/main.py assembles it — CORSMiddleware (via the shared
+# test closes the gap to the actual wired stack by booting the GENUINE app
+# object produced by backend.main.create_app — CORSMiddleware (via the shared
 # build_cors_kwargs), the security-headers middleware, and the cors-rejection
-# monitor (via make_cors_rejection_logger), in the same order — driven by a real
-# production Settings object, and pointed at a real local HTTP webhook receiver
-# (no httpx mocking). A disallowed Origin must produce BOTH the WARNING server
-# log AND an actual webhook POST whose JSON body carries the expected payload;
-# an allowed Origin must produce neither.
+# monitor (via make_cors_rejection_logger), in the exact order main.py wires
+# them — driven by a real production Settings object, and pointed at a real
+# local HTTP webhook receiver (no httpx mocking). A disallowed Origin must
+# produce BOTH the WARNING server log AND an actual webhook POST whose JSON body
+# carries the expected payload; an allowed Origin must produce neither.
 #
-# backend/main.py itself is not imported (its `from backend.app.*` absolute
-# imports plus DB create_all / migrations / seeding side-effects at import time
-# make it unsuitable for this runner — see TestCorsMainAppWiring), so the wiring
-# is reproduced here using the very same shared helpers main.py calls.
+# backend.main.create_app() performs NO DB side-effects at construction time
+# (the create_all / migrations / seeding bootstrap runs only from the lifespan
+# startup, which a plain TestClient does not enter), so the real app can be
+# imported and exercised here without touching the database. Because main.py
+# imports via `backend.app.*`, the monitor module it wires is
+# `backend.app.core.cors_monitor` — a distinct module object from the bare
+# `app.core.cors_monitor` used elsewhere in this file — so the integration test
+# below references the backend-rooted module for log capture and throttle reset.
 # ---------------------------------------------------------------------------
 
 import json as _json
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from app.core.cors import build_cors_kwargs as _build_cors_kwargs
-from app.core.cors_monitor import make_cors_rejection_logger as _make_logger
-from app.core.security_headers import add_security_headers as _add_security_headers
+from backend.main import create_app as _create_app
+from backend.app.core import cors_monitor as _real_cors_monitor
+
+# Logger name of the monitor module the real app actually wires (it imports via
+# `backend.app.*`, so __name__ is `backend.app.core.cors_monitor`).
+_REAL_MONITOR_LOGGER = "backend.app.core.cors_monitor"
 
 
 class _StubWebhookReceiver:
@@ -1129,13 +1125,22 @@ class _StubWebhookReceiver:
 
 
 class TestCorsRejectionWiredStackIntegration(unittest.TestCase):
-    """Boot the wired stack in production mode and verify real webhook delivery."""
+    """Boot the REAL app in production mode and verify real webhook delivery.
+
+    This exercises the genuine application object returned by
+    backend.main.create_app — the same middleware stack, in the same order,
+    that production runs — driven against a real local webhook receiver. No DB
+    is touched because create_app performs its bootstrap only inside the
+    lifespan startup, which a plain TestClient does not enter.
+    """
 
     ALLOWED = "https://app.officerepo.io"
     BLOCKED = "https://evil.example.com"
+    # The real app exposes /health (no /ping); hit a route it actually serves.
+    ROUTE = "/health"
 
     def setUp(self):
-        cors_monitor._last_alert_at.clear()
+        _real_cors_monitor._last_alert_at.clear()
         self.receiver = _StubWebhookReceiver().start()
         # A real production Settings object — restricted CORS, alert URL set,
         # throttle disabled so each request that should alert actually does.
@@ -1147,34 +1152,17 @@ class TestCorsRejectionWiredStackIntegration(unittest.TestCase):
                 "CORS_REJECTION_ALERT_COOLDOWN_MINUTES": "0",
             }
         )
-        self.client = TestClient(self._build_wired_app(self.settings))
+        # Boot the genuine app object (no `with`, so the lifespan/DB bootstrap
+        # never runs).
+        self.client = TestClient(_create_app(self.settings))
 
     def tearDown(self):
         self.receiver.stop()
-        cors_monitor._last_alert_at.clear()
-
-    @staticmethod
-    def _build_wired_app(settings_obj) -> FastAPI:
-        """Assemble the app exactly as backend/main.py does (same order)."""
-        app = FastAPI()
-        app.add_middleware(
-            CORSMiddleware,
-            **_build_cors_kwargs(
-                settings_obj.ENVIRONMENT, settings_obj.ALLOWED_ORIGINS
-            ),
-        )
-        app.middleware("http")(_add_security_headers)
-        app.middleware("http")(_make_logger(settings_obj))
-
-        @app.get("/ping")
-        def ping():
-            return {"ok": True}
-
-        return app
+        _real_cors_monitor._last_alert_at.clear()
 
     def test_blocked_origin_logs_and_delivers_real_webhook(self):
-        with self.assertLogs(_MONITOR_LOGGER, level="WARNING") as cm:
-            resp = self.client.get("/ping", headers={"Origin": self.BLOCKED})
+        with self.assertLogs(_REAL_MONITOR_LOGGER, level="WARNING") as cm:
+            resp = self.client.get(self.ROUTE, headers={"Origin": self.BLOCKED})
 
         # The request itself still succeeds — the monitor never blocks traffic.
         self.assertEqual(resp.status_code, 200)
@@ -1204,14 +1192,14 @@ class TestCorsRejectionWiredStackIntegration(unittest.TestCase):
         self.assertEqual(payload["alert"], "cors_origin_rejected")
         self.assertEqual(payload["origin"], self.BLOCKED)
         self.assertEqual(payload["method"], "GET")
-        self.assertEqual(payload["path"], "/ping")
+        self.assertEqual(payload["path"], self.ROUTE)
         self.assertEqual(payload["severity"], "warning")  # default
         self.assertEqual(payload["environment"], "production")  # from ENVIRONMENT
         datetime.fromisoformat(payload["detected_at"])  # valid ISO-8601
 
     def test_allowed_origin_neither_logs_nor_delivers_webhook(self):
-        with self.assertNoLogs(_MONITOR_LOGGER, level="WARNING"):
-            resp = self.client.get("/ping", headers={"Origin": self.ALLOWED})
+        with self.assertNoLogs(_REAL_MONITOR_LOGGER, level="WARNING"):
+            resp = self.client.get(self.ROUTE, headers={"Origin": self.ALLOWED})
 
         self.assertEqual(resp.status_code, 200)
         # Allowed origin IS reflected by CORSMiddleware.

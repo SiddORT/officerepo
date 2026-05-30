@@ -1,8 +1,10 @@
 import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone as _tz
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -12,7 +14,7 @@ from backend.app.config.settings import settings
 from backend.app.core.cors import build_cors_kwargs
 from backend.app.core.cors_monitor import make_cors_rejection_logger
 from backend.app.core.secret_rotation_monitor import run_monitor
-from backend.app.core.security_headers import CSP_POLICY, CSP_EXEMPT_PATHS, add_security_headers
+from backend.app.core.security_headers import add_security_headers
 from backend.app.database.platform import Base, engine, SessionLocal
 
 # Platform models (import to register with metadata)
@@ -36,9 +38,19 @@ from backend.app.modules.lead_management.router import router as lead_router
 from backend.app.platform.superadmin.rotation_router import router as rotation_router
 from backend.app.platform.superadmin.rotation_status_router import router as rotation_status_router
 
-# Create all platform tables (new tables only; existing are not altered)
-Base.metadata.create_all(bind=engine)
+_startup_log = logging.getLogger(__name__)
 
+_ROTATION_TS_KEY = "previous_secret_issued_at"
+
+
+# ---------------------------------------------------------------------------
+# Database bootstrap helpers.
+#
+# None of these run at import time. They are invoked by init_database(), which
+# in turn runs from the application lifespan startup (or can be called
+# explicitly against a test database). This lets the genuine app object be
+# imported and exercised in tests without any DB side-effects.
+# ---------------------------------------------------------------------------
 
 def run_schema_migrations():
     """
@@ -100,19 +112,8 @@ def run_schema_migrations():
         print(f"Migration error: {e}")
 
 
-run_schema_migrations()
-
-
-import logging as _startup_logger
-
-_startup_log = _startup_logger.getLogger(__name__)
-
-_ROTATION_TS_KEY = "previous_secret_issued_at"
-
-
 def _upsert_platform_config(db, key: str, value: str) -> None:
     """Insert or update a single key in platform_config."""
-    from datetime import datetime, timezone as _tz
     row = db.query(PlatformConfig).filter(PlatformConfig.key == key).first()
     if row:
         row.value = value
@@ -191,97 +192,6 @@ def sync_rotation_timestamp_with_db() -> None:
         db.close()
 
 
-sync_rotation_timestamp_with_db()
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    monitor_task = asyncio.create_task(run_monitor(settings))
-    try:
-        yield
-    finally:
-        monitor_task.cancel()
-        try:
-            await monitor_task
-        except asyncio.CancelledError:
-            pass
-
-
-app = FastAPI(
-    title="Office Repo API",
-    description="Lead Management & Sales Pipeline platform (superadmin CRM + public enquiries).",
-    version="1.0.0",
-    lifespan=lifespan,
-)
-
-# CORS — wildcard only in development; restricted to ALLOWED_ORIGINS plus the
-# officerepo.com subdomain regex in all other environments. The policy itself
-# lives in backend/app/core/cors.py so the app and tests can't drift apart.
-app.add_middleware(
-    CORSMiddleware,
-    **build_cors_kwargs(settings.ENVIRONMENT, settings.ALLOWED_ORIGINS),
-)
-
-# Content-Security-Policy — policy and middleware live in security_headers.py
-# so tests can import the real constants without triggering DB side-effects.
-app.middleware("http")(add_security_headers)
-
-# CORS rejection monitor — logs (and optionally alerts on) browser requests
-# whose Origin is blocked by the CORS policy, so a misconfigured ALLOWED_ORIGINS
-# entry or typo'd subdomain is diagnosable instead of failing silently in the
-# browser. No-op in development (wildcard CORS rejects nothing).
-app.middleware("http")(make_cors_rejection_logger(settings))
-
-
-PREFIX = settings.API_V1_PREFIX
-
-# CSP violation reporting
-app.include_router(csp_report_router, prefix=f"{PREFIX}", tags=["security"])
-
-# CORS rejection panel (superadmin) — recently blocked cross-origin requests
-app.include_router(cors_report_router, prefix=f"{PREFIX}/superadmin", tags=["superadmin - security"])
-
-# Auth (superadmin login)
-app.include_router(auth_router, prefix=f"{PREFIX}/auth", tags=["auth"])
-
-# Superadmin — secret rotation
-app.include_router(rotation_router, prefix=f"{PREFIX}/superadmin", tags=["superadmin - secrets"])
-app.include_router(rotation_status_router, prefix=f"{PREFIX}/superadmin", tags=["superadmin - rotation"])
-
-# Lead Management & Sales Pipeline Module (superadmin CRM)
-app.include_router(lead_router, prefix=f"{PREFIX}/superadmin/leads", tags=["lead management"])
-
-# Enquiry Inbox (superadmin CRM)
-app.include_router(enquiry_admin_router, prefix=f"{PREFIX}/superadmin/enquiries", tags=["enquiry inbox"])
-
-# Public marketing site — enquiry / contact form (no auth)
-app.include_router(enquiry_router, prefix=f"{PREFIX}/public/enquiries", tags=["public - enquiries"])
-
-# Serve uploaded files statically
-_uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
-os.makedirs(_uploads_dir, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=_uploads_dir), name="uploads")
-
-
-@app.get("/", tags=["root"])
-def root():
-    dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend-web", "dist"))
-    index = os.path.join(dist, "index.html")
-    if os.path.isfile(index):
-        return FileResponse(index)
-    return {
-        "app": "Office Repo",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "api_prefix": PREFIX,
-    }
-
-
-@app.get("/health", tags=["root"])
-def health():
-    return {"status": "ok"}
-
-
 def seed_default_data():
     """Seed a default superadmin on first run."""
     db = SessionLocal()
@@ -304,18 +214,132 @@ def seed_default_data():
         db.close()
 
 
-seed_default_data()
+def init_database() -> None:
+    """Run every database side-effect needed to bring the app online.
 
-# Serve compiled React frontend in production
-_frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend-web", "dist"))
-if os.path.isdir(_frontend_dist):
-    _index_html = os.path.join(_frontend_dist, "index.html")
+    Creates tables (new ones only), applies idempotent schema migrations,
+    synchronises the secret-rotation timestamp, and seeds the default
+    superadmin. Safe to call repeatedly. This is intentionally NOT executed at
+    module import — it runs from the application lifespan startup (see
+    ``create_app``) or can be called explicitly against a test database.
+    """
+    Base.metadata.create_all(bind=engine)
+    run_schema_migrations()
+    sync_rotation_timestamp_with_db()
+    seed_default_data()
 
-    app.mount("/assets", StaticFiles(directory=os.path.join(_frontend_dist, "assets")), name="assets")
 
-    @app.get("/{full_path:path}", include_in_schema=False)
-    def serve_spa(full_path: str):
-        if full_path.startswith("api/") or full_path in ("docs", "openapi.json", "redoc"):
-            from fastapi import HTTPException
-            raise HTTPException(status_code=404)
-        return FileResponse(_index_html)
+def create_app(app_settings=settings) -> FastAPI:
+    """Build and return the configured FastAPI application.
+
+    Wires routers, middleware, and static mounts but performs NO database
+    side-effects at construction time. The DB bootstrap (``init_database``)
+    runs from the lifespan startup hook, so importing this module — or calling
+    ``create_app`` — never touches the database. Tests can therefore boot the
+    genuine app object directly (without entering the lifespan) and exercise
+    the real middleware stack against any settings they choose.
+    """
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        # DB bootstrap happens here (startup), not at import time.
+        init_database()
+        monitor_task = asyncio.create_task(run_monitor(app_settings))
+        try:
+            yield
+        finally:
+            monitor_task.cancel()
+            try:
+                await monitor_task
+            except asyncio.CancelledError:
+                pass
+
+    app = FastAPI(
+        title="Office Repo API",
+        description="Lead Management & Sales Pipeline platform (superadmin CRM + public enquiries).",
+        version="1.0.0",
+        lifespan=lifespan,
+    )
+
+    # CORS — wildcard only in development; restricted to ALLOWED_ORIGINS plus the
+    # officerepo.com subdomain regex in all other environments. The policy itself
+    # lives in backend/app/core/cors.py so the app and tests can't drift apart.
+    app.add_middleware(
+        CORSMiddleware,
+        **build_cors_kwargs(app_settings.ENVIRONMENT, app_settings.ALLOWED_ORIGINS),
+    )
+
+    # Content-Security-Policy — policy and middleware live in security_headers.py
+    # so tests can import the real constants without triggering DB side-effects.
+    app.middleware("http")(add_security_headers)
+
+    # CORS rejection monitor — logs (and optionally alerts on) browser requests
+    # whose Origin is blocked by the CORS policy, so a misconfigured ALLOWED_ORIGINS
+    # entry or typo'd subdomain is diagnosable instead of failing silently in the
+    # browser. No-op in development (wildcard CORS rejects nothing).
+    app.middleware("http")(make_cors_rejection_logger(app_settings))
+
+    prefix = app_settings.API_V1_PREFIX
+
+    # CSP violation reporting
+    app.include_router(csp_report_router, prefix=f"{prefix}", tags=["security"])
+
+    # CORS rejection panel (superadmin) — recently blocked cross-origin requests
+    app.include_router(cors_report_router, prefix=f"{prefix}/superadmin", tags=["superadmin - security"])
+
+    # Auth (superadmin login)
+    app.include_router(auth_router, prefix=f"{prefix}/auth", tags=["auth"])
+
+    # Superadmin — secret rotation
+    app.include_router(rotation_router, prefix=f"{prefix}/superadmin", tags=["superadmin - secrets"])
+    app.include_router(rotation_status_router, prefix=f"{prefix}/superadmin", tags=["superadmin - rotation"])
+
+    # Lead Management & Sales Pipeline Module (superadmin CRM)
+    app.include_router(lead_router, prefix=f"{prefix}/superadmin/leads", tags=["lead management"])
+
+    # Enquiry Inbox (superadmin CRM)
+    app.include_router(enquiry_admin_router, prefix=f"{prefix}/superadmin/enquiries", tags=["enquiry inbox"])
+
+    # Public marketing site — enquiry / contact form (no auth)
+    app.include_router(enquiry_router, prefix=f"{prefix}/public/enquiries", tags=["public - enquiries"])
+
+    # Serve uploaded files statically
+    uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
+    os.makedirs(uploads_dir, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
+    @app.get("/", tags=["root"])
+    def root():
+        dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend-web", "dist"))
+        index = os.path.join(dist, "index.html")
+        if os.path.isfile(index):
+            return FileResponse(index)
+        return {
+            "app": "Office Repo",
+            "version": "1.0.0",
+            "docs": "/docs",
+            "api_prefix": prefix,
+        }
+
+    @app.get("/health", tags=["root"])
+    def health():
+        return {"status": "ok"}
+
+    # Serve compiled React frontend in production
+    frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend-web", "dist"))
+    if os.path.isdir(frontend_dist):
+        index_html = os.path.join(frontend_dist, "index.html")
+
+        app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+
+        @app.get("/{full_path:path}", include_in_schema=False)
+        def serve_spa(full_path: str):
+            if full_path.startswith("api/") or full_path in ("docs", "openapi.json", "redoc"):
+                from fastapi import HTTPException
+                raise HTTPException(status_code=404)
+            return FileResponse(index_html)
+
+    return app
+
+
+app = create_app()
