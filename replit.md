@@ -45,7 +45,7 @@ frontend-web/
     pages/
       landing/LandingPage.jsx  Futuristic public landing page (route: /)
       login/LoginPage.jsx      Tenant holographic login (route: /login) — cyan theme
-      login/AdminLoginPage.jsx Platform admin login (route: /admin, hidden) — violet theme
+      login/AdminLoginPage.jsx Platform admin login (route: /admin, hidden) — full-bleed office background + floating glassmorphic card with mouse-driven 3D tilt, cyan accent
       dashboard/DashboardPage  Module overview dashboard
       superadmin/              Tenant list, create, activate/suspend, feature flags
     components/Layout.jsx      Sidebar navigation, logout → /
@@ -69,7 +69,7 @@ The frontend proxies `/api` to the backend via Vite.
 ## Routing
 - `/` → LandingPage (public)
 - `/login` → LoginPage (tenant only, redirect to dashboard if logged in)
-- `/admin` → AdminLoginPage (hidden, not linked anywhere, violet theme)
+- `/admin` → AdminLoginPage (hidden, not linked anywhere; full-bleed office background `admin-bg.png` + floating glass card with 3D tilt, cyan accent)
 - `/dashboard` → protected
 - `/superadmin` → protected
 - `/contact` → EnquiryPage (public lead capture / "Request Demo" form)
