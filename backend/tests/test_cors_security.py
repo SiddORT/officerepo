@@ -1046,5 +1046,185 @@ class TestCorsRejectionAlerting(unittest.TestCase):
         self.assertTrue(_should_alert("https://a.example.com", 0, now=now))
 
 
+# ---------------------------------------------------------------------------
+# Integration test — the wired stack with a REAL webhook receiver.
+#
+# The class-based tests above either (a) drive CORSMiddleware in isolation or
+# (b) drive the cors_monitor middleware with httpx mocked out. This integration
+# test closes the gap to the actual wired stack by booting an app assembled
+# exactly the way backend/main.py assembles it — CORSMiddleware (via the shared
+# build_cors_kwargs), the security-headers middleware, and the cors-rejection
+# monitor (via make_cors_rejection_logger), in the same order — driven by a real
+# production Settings object, and pointed at a real local HTTP webhook receiver
+# (no httpx mocking). A disallowed Origin must produce BOTH the WARNING server
+# log AND an actual webhook POST whose JSON body carries the expected payload;
+# an allowed Origin must produce neither.
+#
+# backend/main.py itself is not imported (its `from backend.app.*` absolute
+# imports plus DB create_all / migrations / seeding side-effects at import time
+# make it unsuitable for this runner — see TestCorsMainAppWiring), so the wiring
+# is reproduced here using the very same shared helpers main.py calls.
+# ---------------------------------------------------------------------------
+
+import json as _json
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+from app.core.cors import build_cors_kwargs as _build_cors_kwargs
+from app.core.cors_monitor import make_cors_rejection_logger as _make_logger
+from app.core.security_headers import add_security_headers as _add_security_headers
+
+
+class _StubWebhookReceiver:
+    """A throwaway local HTTP server that records every POST it receives.
+
+    Used as the CORS_REJECTION_ALERT_URL target so the integration test can
+    assert against a *real* webhook delivery instead of a mocked httpx client.
+    """
+
+    def __init__(self):
+        self.received = []
+        self._server = None
+        self._thread = None
+        self.port = None
+
+    def start(self):
+        received = self.received
+
+        class _Handler(BaseHTTPRequestHandler):
+            def do_POST(self):  # noqa: N802 (BaseHTTPRequestHandler API)
+                length = int(self.headers.get("Content-Length", 0) or 0)
+                raw = self.rfile.read(length) if length else b""
+                try:
+                    payload = _json.loads(raw.decode("utf-8"))
+                except Exception:
+                    payload = None
+                received.append({"path": self.path, "payload": payload})
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(b'{"ok": true}')
+
+            def log_message(self, *args, **kwargs):  # silence stderr noise
+                pass
+
+        self._server = HTTPServer(("127.0.0.1", 0), _Handler)
+        self.port = self._server.server_address[1]
+        self._thread = threading.Thread(
+            target=self._server.serve_forever, daemon=True
+        )
+        self._thread.start()
+        return self
+
+    @property
+    def url(self) -> str:
+        return f"http://127.0.0.1:{self.port}/cors-alert"
+
+    def stop(self):
+        if self._server is not None:
+            self._server.shutdown()
+            self._server.server_close()
+        if self._thread is not None:
+            self._thread.join(timeout=5)
+
+
+class TestCorsRejectionWiredStackIntegration(unittest.TestCase):
+    """Boot the wired stack in production mode and verify real webhook delivery."""
+
+    ALLOWED = "https://app.officerepo.io"
+    BLOCKED = "https://evil.example.com"
+
+    def setUp(self):
+        cors_monitor._last_alert_at.clear()
+        self.receiver = _StubWebhookReceiver().start()
+        # A real production Settings object — restricted CORS, alert URL set,
+        # throttle disabled so each request that should alert actually does.
+        self.settings = _make_settings(
+            {
+                **_PROD_SECRETS,
+                "ALLOWED_ORIGINS": self.ALLOWED,
+                "CORS_REJECTION_ALERT_URL": self.receiver.url,
+                "CORS_REJECTION_ALERT_COOLDOWN_MINUTES": "0",
+            }
+        )
+        self.client = TestClient(self._build_wired_app(self.settings))
+
+    def tearDown(self):
+        self.receiver.stop()
+        cors_monitor._last_alert_at.clear()
+
+    @staticmethod
+    def _build_wired_app(settings_obj) -> FastAPI:
+        """Assemble the app exactly as backend/main.py does (same order)."""
+        app = FastAPI()
+        app.add_middleware(
+            CORSMiddleware,
+            **_build_cors_kwargs(
+                settings_obj.ENVIRONMENT, settings_obj.ALLOWED_ORIGINS
+            ),
+        )
+        app.middleware("http")(_add_security_headers)
+        app.middleware("http")(_make_logger(settings_obj))
+
+        @app.get("/ping")
+        def ping():
+            return {"ok": True}
+
+        return app
+
+    def test_blocked_origin_logs_and_delivers_real_webhook(self):
+        with self.assertLogs(_MONITOR_LOGGER, level="WARNING") as cm:
+            resp = self.client.get("/ping", headers={"Origin": self.BLOCKED})
+
+        # The request itself still succeeds — the monitor never blocks traffic.
+        self.assertEqual(resp.status_code, 200)
+        # CORSMiddleware refuses to reflect the disallowed origin.
+        self.assertNotIn("access-control-allow-origin", resp.headers)
+
+        # 1) WARNING server log line names the blocked origin.
+        log_text = " ".join(cm.output)
+        self.assertIn("blocked cross-origin request", log_text)
+        self.assertIn(self.BLOCKED, log_text)
+
+        # 2) A real webhook POST landed at the stub receiver with the right body.
+        self.assertEqual(
+            len(self.receiver.received),
+            1,
+            f"Expected exactly one webhook POST, got {self.receiver.received}",
+        )
+        delivery = self.receiver.received[0]
+        self.assertEqual(delivery["path"], "/cors-alert")
+        payload = delivery["payload"]
+        self.assertIsInstance(payload, dict)
+        for key in (
+            "alert", "message", "severity", "environment",
+            "origin", "method", "path", "detected_at",
+        ):
+            self.assertIn(key, payload)
+        self.assertEqual(payload["alert"], "cors_origin_rejected")
+        self.assertEqual(payload["origin"], self.BLOCKED)
+        self.assertEqual(payload["method"], "GET")
+        self.assertEqual(payload["path"], "/ping")
+        self.assertEqual(payload["severity"], "warning")  # default
+        self.assertEqual(payload["environment"], "production")  # from ENVIRONMENT
+        datetime.fromisoformat(payload["detected_at"])  # valid ISO-8601
+
+    def test_allowed_origin_neither_logs_nor_delivers_webhook(self):
+        with self.assertNoLogs(_MONITOR_LOGGER, level="WARNING"):
+            resp = self.client.get("/ping", headers={"Origin": self.ALLOWED})
+
+        self.assertEqual(resp.status_code, 200)
+        # Allowed origin IS reflected by CORSMiddleware.
+        self.assertEqual(
+            resp.headers.get("access-control-allow-origin"), self.ALLOWED
+        )
+        # No webhook delivery for an allowed origin.
+        self.assertEqual(
+            self.receiver.received,
+            [],
+            f"Allowed origin must not trigger a webhook, got {self.receiver.received}",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
