@@ -257,7 +257,7 @@ export default function EditTenant() {
 
         <div className="mb-6">
           <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="inline-block w-0.5 h-4 rounded-full" style={{ background: "linear-gradient(to bottom, #00aeec, #8b5cf6)" }} />
+            <span className="inline-block w-0.5 h-4 rounded-full" style={{ background: "linear-gradient(to bottom, #00aeec, #ff7a1a)" }} />
             <h1 className="text-base font-bold t-heading leading-snug">Edit Tenant</h1>
           </div>
           <p className="text-xs t-muted ml-2">Save each section independently.</p>
@@ -292,7 +292,7 @@ export default function EditTenant() {
                   <p
                     className="text-sm font-medium leading-tight"
                     style={isActive
-                      ? { background: "linear-gradient(135deg,#00aeec,#8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }
+                      ? { background: "linear-gradient(135deg,#00aeec,#ff7a1a)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }
                       : { color: "var(--c-text2)" }}
                   >
                     {s.label}
@@ -328,7 +328,7 @@ export default function EditTenant() {
             <div className="flex items-center gap-3 mb-1">
               <span
                 className="inline-block w-0.5 h-5 rounded-full"
-                style={{ background: "linear-gradient(to bottom, #00aeec, #8b5cf6)" }}
+                style={{ background: "linear-gradient(to bottom, #00aeec, #ff7a1a)" }}
               />
               <span className="text-xl">{SECTIONS[activeSection].icon}</span>
               <h2 className="text-xl font-bold t-heading">{SECTIONS[activeSection].label}</h2>
@@ -362,7 +362,7 @@ export default function EditTenant() {
               overflow: "hidden",
             }}
           >
-            <div style={{ height: 3, background: "linear-gradient(90deg, #00aeec, #8b5cf6)" }} />
+            <div style={{ height: 3, background: "linear-gradient(90deg, #00aeec, #ff7a1a)" }} />
             <div className="p-6">
               {activeSection === 0 && (
                 <SectionBasicInfo form={form} set={set} errors={errors} />

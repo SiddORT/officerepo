@@ -146,7 +146,7 @@ export default function Layout({ children }) {
               onClick={() => setCollapsed(false)}
               title="Expand sidebar"
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all layout-nav-idle"
-              style={{ background: "linear-gradient(135deg,#00aeec,#8b5cf6)" }}
+              style={{ background: "linear-gradient(135deg,#00aeec,#ff7a1a)" }}
             >
               <svg className="w-4 h-4 text-white" fill="none" stroke="white" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
@@ -271,7 +271,7 @@ export default function Layout({ children }) {
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   style={{
                     fontSize: 13, fontWeight: 700, fontFamily: "monospace", letterSpacing: "0.04em",
-                    background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
+                    background: "linear-gradient(135deg, #00aeec, #ff7a1a)",
                     WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                     backgroundClip: "text", position: "relative", cursor: "default",
                   }}
@@ -324,7 +324,7 @@ export default function Layout({ children }) {
                 className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg layout-nav-idle transition-all"
               >
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                  style={{ background: "linear-gradient(135deg, #00aeec, #8b5cf6)" }}>
+                  style={{ background: "linear-gradient(135deg, #00aeec, #ff7a1a)" }}>
                   {initials}
                 </div>
                 {!collapsed && (
@@ -343,7 +343,7 @@ export default function Layout({ children }) {
                   <div className="px-4 py-3 border-b layout-border">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                        style={{ background: "linear-gradient(135deg, #00aeec, #8b5cf6)" }}>
+                        style={{ background: "linear-gradient(135deg, #00aeec, #ff7a1a)" }}>
                         {initials}
                       </div>
                       <div className="min-w-0">

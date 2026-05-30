@@ -78,7 +78,7 @@ export default function TenantDetails() {
             <div className="flex items-center gap-2.5 flex-wrap mb-0.5">
               <span
                 className="inline-block w-0.5 h-5 rounded-full flex-shrink-0"
-                style={{ background: "linear-gradient(to bottom, #00aeec, #8b5cf6)" }}
+                style={{ background: "linear-gradient(to bottom, #00aeec, #ff7a1a)" }}
               />
               <h1 className="text-2xl font-bold t-heading">{tenant.tenant_name}</h1>
               <Badge status={tenant.status} />
@@ -137,7 +137,7 @@ export default function TenantDetails() {
                   ? "#10b981"
                   : pct >= 60
                   ? "linear-gradient(90deg, #f59e0b, #fb923c)"
-                  : "linear-gradient(90deg, #00aeec, #8b5cf6)",
+                  : "linear-gradient(90deg, #00aeec, #ff7a1a)",
               }}
             />
           </div>
@@ -179,7 +179,7 @@ export default function TenantDetails() {
                 {tab === i && (
                   <span
                     className="absolute bottom-0 left-0 right-0 h-0.5 rounded-t"
-                    style={{ background: "linear-gradient(90deg, #00aeec, #8b5cf6)" }}
+                    style={{ background: "linear-gradient(90deg, #00aeec, #ff7a1a)" }}
                   />
                 )}
               </button>
@@ -409,7 +409,7 @@ function ActivityTab({ logs }) {
         >
           <div
             className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #00aeec, #8b5cf6)" }}
+            style={{ background: "linear-gradient(135deg, #00aeec, #ff7a1a)" }}
           />
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -442,7 +442,7 @@ function SectionCard({ title, icon, children }) {
       <div
         style={{
           position: "absolute", top: 0, left: 0, right: 0, height: 2,
-          background: "linear-gradient(90deg, #00aeec, #8b5cf6)",
+          background: "linear-gradient(90deg, #00aeec, #ff7a1a)",
         }}
       />
       <div className="p-5 pt-6">

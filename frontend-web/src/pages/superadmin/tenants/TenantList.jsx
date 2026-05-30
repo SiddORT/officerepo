@@ -169,7 +169,7 @@ export default function TenantList() {
           <div className="flex items-center gap-2 mb-0.5">
             <span
               className="inline-block w-1 h-5 rounded-full"
-              style={{ background: "linear-gradient(to bottom, #00aeec, #8b5cf6)" }}
+              style={{ background: "linear-gradient(to bottom, #00aeec, #ff7a1a)" }}
             />
             <h1 className="text-2xl font-bold t-heading">Tenant Management</h1>
           </div>
@@ -451,7 +451,7 @@ function ActionsDropdown({ row, onView, onEdit, onSuspend, onActivate }) {
           onClick={(e) => e.stopPropagation()}
         >
           {/* Gradient top accent */}
-          <div style={{ height: 2, background: "linear-gradient(90deg, #00aeec, #8b5cf6)" }} />
+          <div style={{ height: 2, background: "linear-gradient(90deg, #00aeec, #ff7a1a)" }} />
 
           <div style={{ padding: "4px 0" }}>
             {items.map((item, i) =>

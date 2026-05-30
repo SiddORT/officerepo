@@ -18,7 +18,7 @@ export default function Table({
       {/* Gradient top accent bar */}
       <div style={{
         height: 3,
-        background: "linear-gradient(90deg, #00aeec 0%, #8b5cf6 100%)",
+        background: "linear-gradient(90deg, #00aeec 0%, #ff7a1a 100%)",
         position: "absolute", top: 0, left: 0, right: 0, zIndex: 1,
       }} />
 
@@ -42,7 +42,7 @@ export default function Table({
                     className="inline-flex items-center gap-1.5"
                     style={
                       col.sortable && sortKey === col.key
-                        ? { background: "linear-gradient(135deg,#00aeec,#8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }
+                        ? { background: "linear-gradient(135deg,#00aeec,#ff7a1a)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }
                         : { color: "var(--c-muted)" }
                     }
                   >
@@ -69,7 +69,7 @@ export default function Table({
                   <div className="flex flex-col items-center gap-3">
                     <div style={{
                       width: 36, height: 36, borderRadius: "50%",
-                      background: "conic-gradient(from 0deg, #00aeec, #8b5cf6, transparent)",
+                      background: "conic-gradient(from 0deg, #00aeec, #ff7a1a, transparent)",
                       animation: "spin 0.8s linear infinite",
                     }} />
                     <span className="text-xs t-muted tracking-wide">Loading data…</span>
@@ -107,7 +107,7 @@ export default function Table({
                   style={{
                     borderTop: "1px solid var(--c-border)",
                     background: hoveredRow === i
-                      ? "linear-gradient(90deg, rgba(0,174,236,0.04) 0%, rgba(139,92,246,0.03) 100%)"
+                      ? "linear-gradient(90deg, rgba(0,174,236,0.04) 0%, rgba(255,122,26,0.03) 100%)"
                       : "transparent",
                     transition: "background 0.15s ease",
                     position: "relative",

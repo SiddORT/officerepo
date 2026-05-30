@@ -66,15 +66,15 @@ function PageBtn({ label, onClick, disabled, active }) {
   };
 
   const activeStyle = {
-    background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
+    background: "linear-gradient(135deg, #00aeec, #ff7a1a)",
     color: "#fff",
-    boxShadow: "0 2px 12px rgba(0,174,236,0.35), 0 1px 4px rgba(139,92,246,0.22)",
+    boxShadow: "0 2px 12px rgba(0,174,236,0.35), 0 1px 4px rgba(255,122,26,0.22)",
     border: "1px solid transparent",
     transform: "translateY(-1px)",
   };
 
   const hoveredStyle = {
-    background: "linear-gradient(135deg, rgba(0,174,236,0.18), rgba(139,92,246,0.15))",
+    background: "linear-gradient(135deg, rgba(0,174,236,0.18), rgba(255,122,26,0.15))",
     color: "#00aeec",
     border: "1px solid rgba(0,174,236,0.50)",
     boxShadow: "0 4px 14px rgba(0,174,236,0.25), 0 0 0 2px rgba(0,174,236,0.10)",

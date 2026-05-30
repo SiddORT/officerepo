@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 const MODULES = [
   { name: "HRMS", desc: "Manage employees, departments, attendance", accent: "#6366f1" },
-  { name: "Assets", desc: "Track company assets and assignments", accent: "#8b5cf6" },
+  { name: "Assets", desc: "Track company assets and assignments", accent: "#ff7a1a" },
   { name: "Billing", desc: "Invoices, subscriptions, payments", accent: "#0ea5e9" },
   { name: "Attendance", desc: "Time tracking, schedules, leaves", accent: "#10b981" },
   { name: "Payroll", desc: "Salaries, deductions, payslips", accent: "#f59e0b" },
@@ -32,7 +32,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {[
             { label: "Manage Tenants", desc: "Create, activate, suspend tenants", link: "/superadmin/tenants", accent: "#00aeec" },
-            { label: "API Docs", desc: "Interactive Swagger UI", link: `${window.location.origin.replace(":5000", ":8000")}/docs`, external: true, accent: "#8b5cf6" },
+            { label: "API Docs", desc: "Interactive Swagger UI", link: `${window.location.origin.replace(":5000", ":8000")}/docs`, external: true, accent: "#ff7a1a" },
             { label: "Feature Flags", desc: "Enable modules per tenant", link: "/superadmin", accent: "#10b981" },
           ].map((card) => (
             <div

@@ -237,23 +237,23 @@ export default function CreateTenant() {
                 fontSize: 11, fontWeight: 700, flexShrink: 0,
               };
               if (isCompleted && isHovered) return { ...base,
-                background: "linear-gradient(135deg, #00aeec, #8b5cf6)", color: "#fff",
+                background: "linear-gradient(135deg, #00aeec, #ff7a1a)", color: "#fff",
                 transform: "scale(1.18)",
-                boxShadow: "0 0 0 4px rgba(0,174,236,0.28), 0 4px 14px rgba(139,92,246,0.30)",
+                boxShadow: "0 0 0 4px rgba(0,174,236,0.28), 0 4px 14px rgba(255,122,26,0.30)",
               };
               if (isActive && isHovered) return { ...base,
-                background: "linear-gradient(135deg, #00c4ff, #a78bfa)", color: "#fff",
+                background: "linear-gradient(135deg, #00c4ff, #ff9a4d)", color: "#fff",
                 transform: "scale(1.10)",
-                boxShadow: "0 0 0 5px rgba(0,174,236,0.30), 0 0 0 8px rgba(139,92,246,0.14)",
+                boxShadow: "0 0 0 5px rgba(0,174,236,0.30), 0 0 0 8px rgba(255,122,26,0.14)",
               };
               if (isPending && isHovered) return { ...base,
-                background: "linear-gradient(135deg, rgba(0,174,236,0.18), rgba(139,92,246,0.15))",
+                background: "linear-gradient(135deg, rgba(0,174,236,0.18), rgba(255,122,26,0.15))",
                 color: "#00aeec", border: "1px solid rgba(0,174,236,0.40)",
                 transform: "scale(1.10)", boxShadow: "0 2px 10px rgba(0,174,236,0.18)",
               };
               if (isActive || isCompleted) return { ...base,
-                background: "linear-gradient(135deg, #00aeec, #8b5cf6)", color: "#fff",
-                boxShadow: isActive ? "0 0 0 3px rgba(0,174,236,0.22), 0 0 0 5px rgba(139,92,246,0.10)" : "none",
+                background: "linear-gradient(135deg, #00aeec, #ff7a1a)", color: "#fff",
+                boxShadow: isActive ? "0 0 0 3px rgba(0,174,236,0.22), 0 0 0 5px rgba(255,122,26,0.10)" : "none",
               };
               return { ...base,
                 backgroundColor: "var(--c-surface2)", color: "var(--c-muted)",
@@ -275,7 +275,7 @@ export default function CreateTenant() {
                     <div style={{
                       width: 1, flex: 1, minHeight: 28, margin: "4px 0",
                       transition: "background 0.3s ease",
-                      background: isCompleted ? "linear-gradient(to bottom, #00aeec, #8b5cf6)" : "var(--c-border)",
+                      background: isCompleted ? "linear-gradient(to bottom, #00aeec, #ff7a1a)" : "var(--c-border)",
                     }} />
                   )}
                 </div>
@@ -294,7 +294,7 @@ export default function CreateTenant() {
                       style={{
                         transition: "all 0.18s ease",
                         ...(isActive
-                          ? { background: "linear-gradient(135deg,#00aeec,#8b5cf6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }
+                          ? { background: "linear-gradient(135deg,#00aeec,#ff7a1a)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }
                           : isHovered && isCompleted
                             ? { color: "#00aeec" }
                             : { color: isCompleted ? "var(--c-text)" : "var(--c-muted)" }),
@@ -333,7 +333,7 @@ export default function CreateTenant() {
               className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${(step / (STEPS.length - 1)) * 100}%`,
-                background: "linear-gradient(90deg, #00aeec, #8b5cf6)",
+                background: "linear-gradient(90deg, #00aeec, #ff7a1a)",
               }}
             />
           </div>
@@ -355,7 +355,7 @@ export default function CreateTenant() {
             <div className="flex items-center gap-3 mb-1">
               <span
                 className="inline-block w-0.5 h-5 rounded-full"
-                style={{ background: "linear-gradient(to bottom, #00aeec, #8b5cf6)" }}
+                style={{ background: "linear-gradient(to bottom, #00aeec, #ff7a1a)" }}
               />
               <h2 className="text-xl font-bold t-heading">{STEPS[step].label}</h2>
               {savedStep === step && <SavedBadge show />}
@@ -383,7 +383,7 @@ export default function CreateTenant() {
           >
             <div style={{
               position: "absolute", top: 0, left: 0, right: 0, height: 3,
-              background: "linear-gradient(90deg, #00aeec, #8b5cf6)",
+              background: "linear-gradient(90deg, #00aeec, #ff7a1a)",
             }} />
             {step === 0 && <StepBasicInfo    form={form} set={set} errors={errors} autoCode={autoCode} />}
             {step === 1 && <StepDomain       form={form} set={set} errors={errors} />}

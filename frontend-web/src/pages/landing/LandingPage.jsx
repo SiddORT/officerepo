@@ -57,7 +57,7 @@ function ParticleField() {
             top: `${p.y}%`,
             width: p.size,
             height: p.size,
-            backgroundColor: p.id % 3 === 0 ? "#00aeec" : p.id % 3 === 1 ? "#8b5cf6" : "#ffffff",
+            backgroundColor: p.id % 3 === 0 ? "#00aeec" : p.id % 3 === 1 ? "#ff7a1a" : "#ffffff",
             opacity: p.opacity,
           }}
           animate={{
@@ -121,7 +121,7 @@ function AmbientOrbs({ zoomed }) {
         style={{
           bottom: "-10%", left: "-10%",
           width: 600, height: 600,
-          background: "radial-gradient(circle, rgba(139,92,246,0.10) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(255,122,26,0.10) 0%, transparent 70%)",
           borderRadius: "50%",
           filter: "blur(40px)",
         }}
@@ -205,7 +205,7 @@ const WIDGETS = [
   },
   {
     label: "Auth Response", value: "48ms", delta: "↓ 12ms faster",
-    color: "#8b5cf6", icon: "⚡",
+    color: "#ff7a1a", icon: "⚡",
     pos: { bottom: "22%", left: "4%", rotate: -2 },
   },
   {
@@ -279,7 +279,7 @@ function LandingHero({ onEnter, user }) {
         variants={fadeUp}
       >
         <div className="flex items-center gap-2.5">
-          <div style={{ width: 30, height: 30, background: "linear-gradient(135deg, #00aeec, #8b5cf6)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 12px rgba(0,174,236,0.4)" }}>
+          <div style={{ width: 30, height: 30, background: "linear-gradient(135deg, #00aeec, #ff7a1a)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 12px rgba(0,174,236,0.4)" }}>
             <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
@@ -345,7 +345,7 @@ function LandingHero({ onEnter, user }) {
         The Operating System{" "}
         <span
           style={{
-            backgroundImage: "linear-gradient(135deg, #00aeec 0%, #8b5cf6 50%, #67e8f9 100%)",
+            backgroundImage: "linear-gradient(135deg, #00aeec 0%, #ff7a1a 55%, #ffb066 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
@@ -489,7 +489,7 @@ function LoginPanel({ onBack }) {
         className="text-center mb-8"
       >
         <div className="flex items-center justify-center gap-2.5 mb-2">
-          <div style={{ width: 34, height: 34, background: "linear-gradient(135deg, #00aeec, #8b5cf6)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 16px rgba(0,174,236,0.45)" }}>
+          <div style={{ width: 34, height: 34, background: "linear-gradient(135deg, #00aeec, #ff7a1a)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 16px rgba(0,174,236,0.45)" }}>
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
@@ -544,7 +544,7 @@ function LoginPanel({ onBack }) {
           }}
         >
         {/* Card top accent bar */}
-        <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #00aeec, #8b5cf6, transparent)" }} />
+        <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #00aeec, #ff7a1a, transparent)" }} />
 
         <div style={{ padding: "36px 36px 32px" }}>
           {/* Title */}
@@ -555,7 +555,7 @@ function LoginPanel({ onBack }) {
           >
             <motion.div variants={loginFieldVariant}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                <div style={{ width: 3, height: 22, background: "linear-gradient(to bottom, #00aeec, #8b5cf6)", borderRadius: 2 }} />
+                <div style={{ width: 3, height: 22, background: "linear-gradient(to bottom, #00aeec, #ff7a1a)", borderRadius: 2 }} />
                 <h2 style={{ fontSize: 22, fontWeight: 800, color: "#f8fafc", letterSpacing: "-0.02em" }}>Admin Access</h2>
               </div>
               <p style={{ fontSize: 14, color: "#475569", marginBottom: 28, marginLeft: 13 }}>
@@ -756,7 +756,7 @@ function LoginPanel({ onBack }) {
                   fontWeight: 800,
                   fontFamily: "monospace",
                   letterSpacing: "0.06em",
-                  background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
+                  background: "linear-gradient(135deg, #00aeec, #ff7a1a)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   backgroundClip: "text",

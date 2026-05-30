@@ -31,7 +31,7 @@ const PARTICLES = Array.from({ length: 24 }, (_, i) => ({
   dur: Math.random() * 12 + 10,
   delay: Math.random() * 8,
   opacity: Math.random() * 0.3 + 0.05,
-  color: i % 3 === 0 ? "#00aeec" : i % 3 === 1 ? "#8b5cf6" : "#ffffff",
+  color: i % 3 === 0 ? "#00aeec" : i % 3 === 1 ? "#ff7a1a" : "#ffffff",
 }));
 
 function ParticleField() {
@@ -73,7 +73,7 @@ function AmbientOrbs() {
         transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
       />
       <motion.div
-        style={{ position: "absolute", bottom: "-15%", left: "-10%", width: 580, height: 580, background: "radial-gradient(circle, rgba(139,92,246,0.09) 0%, transparent 70%)", borderRadius: "50%", filter: "blur(40px)" }}
+        style={{ position: "absolute", bottom: "-15%", left: "-10%", width: 580, height: 580, background: "radial-gradient(circle, rgba(255,122,26,0.09) 0%, transparent 70%)", borderRadius: "50%", filter: "blur(40px)" }}
         animate={{ scale: [1, 1.14, 1], opacity: [0.5, 0.9, 0.5] }}
         transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
       />
@@ -181,7 +181,7 @@ export default function AdminLoginPage() {
           className="text-center mb-8"
         >
           <div className="flex items-center justify-center gap-2.5 mb-2">
-            <div style={{ width: 34, height: 34, background: "linear-gradient(135deg, #00aeec, #8b5cf6)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 16px rgba(0,174,236,0.45)" }}>
+            <div style={{ width: 34, height: 34, background: "linear-gradient(135deg, #00aeec, #ff7a1a)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 16px rgba(0,174,236,0.45)" }}>
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
@@ -227,7 +227,7 @@ export default function AdminLoginPage() {
             }}
           >
             {/* Top accent bar */}
-            <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #00aeec, #8b5cf6, transparent)" }} />
+            <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #00aeec, #ff7a1a, transparent)" }} />
 
             <div style={{ padding: "36px 36px 32px" }}>
               {/* Form content with stagger */}
@@ -236,7 +236,7 @@ export default function AdminLoginPage() {
                 {/* Title */}
                 <motion.div variants={fadeSlide} style={{ marginBottom: 28 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5 }}>
-                    <div style={{ width: 3, height: 22, background: "linear-gradient(to bottom, #00aeec, #8b5cf6)", borderRadius: 2 }} />
+                    <div style={{ width: 3, height: 22, background: "linear-gradient(to bottom, #00aeec, #ff7a1a)", borderRadius: 2 }} />
                     <h1 style={{ fontSize: 22, fontWeight: 800, color: "#f8fafc", letterSpacing: "-0.02em", margin: 0 }}>Admin Access</h1>
                   </div>
                   <p style={{ fontSize: 13, color: "#475569", marginLeft: 13, margin: "4px 0 0 13px" }}>
@@ -433,7 +433,7 @@ export default function AdminLoginPage() {
                       fontWeight: 800,
                       fontFamily: "monospace",
                       letterSpacing: "0.06em",
-                      background: "linear-gradient(135deg, #00aeec, #8b5cf6)",
+                      background: "linear-gradient(135deg, #00aeec, #ff7a1a)",
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                       backgroundClip: "text",
