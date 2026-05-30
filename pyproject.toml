@@ -21,6 +21,20 @@ dependencies = [
     "uvicorn[standard]>=0.46.0",
 ]
 
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+# Pin package discovery to the real Python packages. Without this, setuptools'
+# flat-layout auto-discovery sees the data dirs (uploads/, attached_assets/,
+# private_storage/) as top-level packages and aborts the editable install
+# ("Multiple top-level packages discovered in a flat-layout"), which fails the
+# deployment build.
+[tool.setuptools.packages.find]
+include = ["backend*"]
+exclude = ["uploads*", "attached_assets*", "private_storage*", "frontend-web*", "scripts*", "tests*"]
+namespaces = false
+
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
 pythonpath = ["backend"]
