@@ -489,6 +489,166 @@ class CurrencyPermissionGatingTests(unittest.TestCase):
 
 
 # ════════════════════════════════════════════════════════════════════════════
+# Request-level validation (schema → router → 422) via TestClient
+# ════════════════════════════════════════════════════════════════════════════
+class CurrencyRequestValidationTests(unittest.TestCase):
+    """Malformed payloads must be rejected with 422 at the API edge.
+
+    The validator unit tests prove the helpers reject bad input, but they don't
+    confirm the full request path (Pydantic schema -> router -> 422 response)
+    actually surfaces those rejections. A regression where a schema stops wiring
+    a ``field_validator`` would slip past the helper tests; these drive the real
+    FastAPI app to close that gap. Requests authenticate as a privileged admin so
+    permission gating never masks a validation result.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.engine = create_engine(
+            "sqlite://", connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+        for t in _TABLES:
+            t.create(bind=cls.engine)
+        cls.Session = sessionmaker(bind=cls.engine, autoflush=False, autocommit=False)
+
+        from backend.main import app
+        from backend.app.database.platform import get_platform_db
+
+        cls.app = app
+        cls._dep = get_platform_db
+
+        def _override_db():
+            db = cls.Session()
+            try:
+                yield db
+            finally:
+                db.close()
+
+        app.dependency_overrides[get_platform_db] = _override_db
+        cls.client = TestClient(app, raise_server_exceptions=False)
+
+        # A single privileged admin (system role => wildcard permissions) so every
+        # request reaches the schema/validation layer rather than being gated out.
+        db = cls.Session()
+        try:
+            privileged = SuperAdmin(
+                email="validator@co.com", name="Root",
+                hashed_password=SuperAdmin.hash_password("x"), is_active=True,
+            )
+            db.add(privileged)
+            db.commit()
+            db.refresh(privileged)
+            cls.privileged_id = privileged.id
+
+            system_role = Role(name="Superadmin", is_system=True)
+            db.add(system_role)
+            db.commit()
+            db.refresh(system_role)
+            db.add(AdminRole(admin_id=privileged.id, role_id=system_role.id))
+            db.commit()
+        finally:
+            db.close()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.app.dependency_overrides.pop(cls._dep, None)
+
+    def setUp(self):
+        self._auth = patch(
+            "backend.app.core.permissions.decode_access_token",
+            side_effect=lambda _t: {
+                "user_id": self.privileged_id, "role": "superadmin", "email": "validator@co.com",
+            },
+        )
+        self._auth.start()
+
+    def tearDown(self):
+        self._auth.stop()
+
+    _HEADERS = {"Authorization": "Bearer test.token"}
+
+    def _valid_body(self, **overrides):
+        body = {
+            "currency_code": "JPY",
+            "currency_name": "Japanese Yen",
+            "currency_symbol": "¥",
+            "country": "Japan",
+        }
+        body.update(overrides)
+        return body
+
+    # ── create: malformed payloads are rejected (422) ────────────────────────
+    def test_create_rejects_malformed_payloads(self):
+        cases = {
+            "bad_code": self._valid_body(currency_code="US"),
+            "non_alpha_code": self._valid_body(currency_code="US1"),
+            "rate_zero": self._valid_body(exchange_rate=0),
+            "rate_negative": self._valid_body(exchange_rate=-5),
+            "rate_over_max": self._valid_body(exchange_rate=c.RATE_MAX + 1),
+            "decimal_places_high": self._valid_body(decimal_places=c.DECIMAL_PLACES_MAX + 1),
+            "decimal_places_low": self._valid_body(decimal_places=c.DECIMAL_PLACES_MIN - 1),
+            "invalid_status": self._valid_body(status="Pending"),
+            "invalid_rate_source": self._valid_body(rate_source="Guess"),
+            # Name made of nothing but markup strips to empty -> required error.
+            "script_tag_name": self._valid_body(currency_name="<script></script>"),
+            "name_too_short": self._valid_body(currency_name="A"),
+        }
+        for label, body in cases.items():
+            with self.subTest(case=label):
+                resp = self.client.post(_PREFIX, json=body, headers=self._HEADERS)
+                self.assertEqual(resp.status_code, 422, msg=f"{label}: {resp.text}")
+
+    # ── create: a clean payload is accepted and normalised ───────────────────
+    def test_create_accepts_and_normalises_valid_payload(self):
+        body = self._valid_body(currency_code="gbp", currency_name="  Pound   Sterling  ")
+        resp = self.client.post(_PREFIX, json=body, headers=self._HEADERS)
+        self.assertEqual(resp.status_code, 201, msg=resp.text)
+        data = resp.json()["data"]
+        # Lowercase code is stored uppercased; internal whitespace collapsed.
+        self.assertEqual(data["currency_code"], "GBP")
+        self.assertEqual(data["currency_name"], "Pound Sterling")
+
+    # ── update: malformed payloads are rejected (422) ────────────────────────
+    def test_update_rejects_malformed_payloads(self):
+        created = self.client.post(
+            _PREFIX, json=self._valid_body(currency_code="AUD"), headers=self._HEADERS,
+        )
+        self.assertEqual(created.status_code, 201, msg=created.text)
+        currency_id = created.json()["data"]["id"]
+
+        cases = {
+            "invalid_status": {"status": "Pending"},
+            "decimal_places_high": {"decimal_places": c.DECIMAL_PLACES_MAX + 1},
+            "name_too_short": {"currency_name": "A"},
+            "name_too_long": {"currency_name": "A" * (c.CURRENCY_NAME_MAX_LEN + 1)},
+            "symbol_too_long": {"currency_symbol": "$" * (c.CURRENCY_SYMBOL_MAX_LEN + 1)},
+        }
+        for label, body in cases.items():
+            with self.subTest(case=label):
+                resp = self.client.patch(
+                    f"{_PREFIX}/{currency_id}", json=body, headers=self._HEADERS,
+                )
+                self.assertEqual(resp.status_code, 422, msg=f"{label}: {resp.text}")
+
+    # ── rate endpoint: bad rate is rejected (422) ────────────────────────────
+    def test_update_rate_rejects_non_positive_rate(self):
+        created = self.client.post(
+            _PREFIX, json=self._valid_body(currency_code="CHF"), headers=self._HEADERS,
+        )
+        self.assertEqual(created.status_code, 201, msg=created.text)
+        currency_id = created.json()["data"]["id"]
+
+        for bad in (0, -1, c.RATE_MAX + 1):
+            with self.subTest(rate=bad):
+                resp = self.client.put(
+                    f"{_PREFIX}/{currency_id}/rate",
+                    json={"exchange_rate": bad}, headers=self._HEADERS,
+                )
+                self.assertEqual(resp.status_code, 422, msg=resp.text)
+
+
+# ════════════════════════════════════════════════════════════════════════════
 # Input validators (sanitisation layer)
 # ════════════════════════════════════════════════════════════════════════════
 class CurrencyValidatorTests(unittest.TestCase):
