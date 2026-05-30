@@ -54,12 +54,12 @@ outputType = "webview"
 name = "cors-config-tests"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python -m unittest backend.tests.test_cors_security backend.tests.test_settings_secrets_guard -v"
-
 [workflows.workflow.metadata]
 isValidation = true
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m unittest backend.tests.test_cors_security backend.tests.test_cors_rejection_panel backend.tests.test_settings_secrets_guard -v"
 
 [[ports]]
 localPort = 5000
