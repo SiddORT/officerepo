@@ -430,8 +430,8 @@ function LandingHero({ onEnter, user, p, isDark, toggle }) {
         variants={fadeUp}
         style={{ fontSize: 18, color: p.textBody, maxWidth: 560, lineHeight: 1.7, marginBottom: 48 }}
       >
-        Fully-isolated multi-tenant architecture with JWT auth, role-based access,
-        feature flags, and enterprise HR modules — built to scale.
+        A unified lead management & sales pipeline platform with secure JWT auth,
+        GDPR-aware enquiry capture, and full CRM tooling — built to scale.
       </motion.p>
 
       {/* CTA */}
@@ -514,7 +514,7 @@ function LoginPanel({ onBack, p, isDark, toggle }) {
       const res = await authApi.superAdminLogin(email, password);
       const data = res.data;
       login(
-        { email, role: data.role, tenant_id: data.tenant_id, user_id: data.user_id },
+        { email, role: data.role, user_id: data.user_id },
         { access_token: data.access_token, refresh_token: data.refresh_token }
       );
       navigate("/dashboard");

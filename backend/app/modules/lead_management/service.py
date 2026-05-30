@@ -6,8 +6,8 @@ Responsibilities:
   - Lead numbering, scoring (Hot/Warm/Cold), stage transitions & metric anchoring.
   - CRUD for leads + child entities (activities, demos, follow-ups, notes,
     documents, proposals, negotiations).
-  - Convert Enquiry→Lead (idempotent) and Lead→Client (Won only) with placeholder
-    tenant + subscription + immutable conversion record.
+  - Convert Enquiry→Lead (idempotent) and Lead→Client (Won only) — records an
+    immutable lead_conversions row (no tenant/subscription created).
   - Audit logging with masked PII; standardized DTOs (PII decrypted only here).
 """
 from __future__ import annotations
@@ -1084,71 +1084,28 @@ def convert_enquiry_to_lead(db: Session, enquiry_id: int, payload: ConvertEnquir
     return lead_to_detail(lead)
 
 
-def _slugify(value: str) -> str:
-    base = re.sub(r"[^a-z0-9]+", "-", (value or "").lower()).strip("-")
-    return base or f"client-{uuid.uuid4().hex[:8]}"
-
-
 def convert_lead_to_client(db: Session, lead_id: str, payload: ConvertClientRequest, *,
                            actor_id, actor) -> dict:
-    """Convert a Won lead into a client: placeholder Tenant + Subscription + record."""
-    from backend.app.platform.tenants.models import Tenant
-    from backend.app.platform.subscriptions.models import Subscription, Plan
-
+    """Convert a Won lead into a client: records the conversion snapshot + metrics."""
     lead = _require_lead(db, lead_id)
     if lead.current_stage != c.STAGE_WON:
         raise HTTPException(status_code=400, detail="Lead can only be converted to a client when stage is 'Won'.")
     if lead.converted_to_client:
         raise HTTPException(status_code=409, detail="Lead has already been converted to a client.")
 
-    # Unique slug
-    slug = _slugify(payload.slug or lead.company_name)
-    if db.query(Tenant).filter(Tenant.slug == slug).first():
-        slug = f"{slug}-{uuid.uuid4().hex[:6]}"
-
     now = datetime.utcnow()
-    client = Tenant(
-        name=lead.company_name,
-        slug=slug,
-        is_active=False,          # provisioning placeholder — not live yet
-        is_suspended=False,
-        company_email=_safe_decrypt(lead.email_encrypted),
-        contact_number=_safe_decrypt(lead.phone_encrypted),
-        company_website=lead.website,
-        region=lead.country,
-        created_by=actor_id,
-    )
-    repo.add(db, client)
-
-    # Subscription placeholder (trial) — optionally tied to a chosen plan.
-    plan = None
-    if payload.plan_id:
-        plan = db.query(Plan).filter(Plan.id == payload.plan_id).first()
-    if not plan:
-        plan = db.query(Plan).filter(Plan.is_active.is_(True)).order_by(Plan.id.asc()).first()
-
-    subscription = None
-    if plan:
-        subscription = Subscription(
-            tenant_id=client.id, plan_id=plan.id, status="trial", billing_cycle="monthly",
-            starts_at=now, plan_name=plan.name,
-            trial_start=now, trial_end=now + timedelta(days=14),
-            user_limit=lead.expected_user_count or plan.max_users or 10,
-        )
-        repo.add(db, subscription)
+    client_name = payload.client_name or lead.company_name
 
     # Lead state → converted
     lead.conversion_date = now
     lead.converted_to_client = True
-    lead.converted_client_id = client.id
     lead.status = c.STATUS_CONVERTED
     if not lead.won_date:
         lead.won_date = now
 
     metrics = compute_metrics(lead)
     conversion = LeadConversion(
-        lead_id=lead.id, client_id=client.id, client_name=client.name,
-        subscription_id=subscription.id if subscription else None,
+        lead_id=lead.id, client_name=client_name,
         lead_age_days=metrics["lead_age_days"],
         sales_cycle_days=metrics["sales_cycle_days"],
         time_to_demo_days=metrics["time_to_demo_days"],
@@ -1159,8 +1116,7 @@ def convert_lead_to_client(db: Session, lead_id: str, payload: ConvertClientRequ
     repo.add(db, conversion)
 
     record_audit(db, c.AUDIT_LEAD_CONVERTED, c.AUDIT_ENTITY, lead.lead_number, actor=actor,
-                 metadata={"client_id": client.id, "client_slug": slug,
-                           "subscription_id": subscription.id if subscription else None})
+                 metadata={"client_name": client_name})
     db.commit()
     db.refresh(lead)
     return {"lead": lead_to_detail(lead), "conversion": conversion_to_dict(conversion)}

@@ -22,7 +22,6 @@ export function AuthProvider({ children }) {
   const login = (userData, tokens) => {
     localStorage.setItem("access_token", tokens.access_token);
     localStorage.setItem("refresh_token", tokens.refresh_token);
-    localStorage.setItem("tenant_id", userData.tenant_id);
     localStorage.setItem("user", JSON.stringify(userData));
     setUser(userData);
   };

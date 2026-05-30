@@ -9,18 +9,12 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from backend.app.config.settings import settings
-from backend.app.core.middleware import TenantMiddleware
 from backend.app.core.secret_rotation_monitor import run_monitor
 from backend.app.core.security_headers import CSP_POLICY, CSP_EXEMPT_PATHS, add_security_headers
 from backend.app.database.platform import Base, engine, SessionLocal
 
 # Platform models (import to register with metadata)
-from backend.app.platform.tenants.models import Tenant, TenantDomain, TenantDbConnection, TenantIdpConfig
-from backend.app.platform.subscriptions.models import Plan, Subscription
-from backend.app.platform.feature_flags.models import FeatureFlag
 from backend.app.platform.superadmin.models import SuperAdmin
-from backend.app.platform.mobile.models import MobileDeviceSession
-from backend.app.platform.tenant_management.models import TenantBranding, TenantActivityLog
 from backend.app.platform.config.models import PlatformConfig
 from backend.app.modules.enquiry.models import Enquiry
 from backend.app.modules.lead_management.models import (
@@ -32,13 +26,8 @@ from backend.shared.audit.models import AuditLog
 # Routers
 from backend.app.modules.auth.router import router as auth_router
 from backend.app.modules.csp_report.router import router as csp_report_router
-from backend.app.modules.employee.router import router as employee_router
 from backend.app.modules.enquiry.router import router as enquiry_router
 from backend.app.modules.lead_management.router import router as lead_router
-from backend.app.platform.tenants.router import router as tenants_router
-from backend.app.platform.feature_flags.router import router as flags_router
-from backend.app.platform.subscriptions.router import router as subscriptions_router
-from backend.app.platform.tenant_management.router import router as tenant_mgmt_router
 from backend.app.platform.superadmin.rotation_router import router as rotation_router
 from backend.app.platform.superadmin.rotation_status_router import router as rotation_status_router
 
@@ -52,40 +41,6 @@ def run_schema_migrations():
     Uses IF NOT EXISTS so it is safe to run on every startup.
     """
     migrations = [
-        # tenants — extended fields
-        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS company_email VARCHAR(255)",
-        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS contact_number VARCHAR(50)",
-        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS company_website VARCHAR(500)",
-        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS timezone VARCHAR(100) DEFAULT 'UTC'",
-        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS region VARCHAR(100)",
-        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS logo_path VARCHAR(500)",
-        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS created_by INTEGER",
-        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE",
-        "ALTER TABLE tenants ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP",
-
-        # tenant_domains — subdomain / custom_domain split
-        "ALTER TABLE tenant_domains ALTER COLUMN domain DROP NOT NULL",
-        "ALTER TABLE tenant_domains DROP CONSTRAINT IF EXISTS tenant_domains_domain_key",
-        "ALTER TABLE tenant_domains ADD COLUMN IF NOT EXISTS subdomain VARCHAR(255)",
-        "ALTER TABLE tenant_domains ADD COLUMN IF NOT EXISTS custom_domain VARCHAR(255)",
-
-        # tenant_db_connections — structured credential fields
-        "ALTER TABLE tenant_db_connections ALTER COLUMN db_url DROP NOT NULL",
-        "ALTER TABLE tenant_db_connections ADD COLUMN IF NOT EXISTS db_name VARCHAR(255)",
-        "ALTER TABLE tenant_db_connections ADD COLUMN IF NOT EXISTS db_host VARCHAR(255)",
-        "ALTER TABLE tenant_db_connections ADD COLUMN IF NOT EXISTS db_port INTEGER DEFAULT 5432",
-        "ALTER TABLE tenant_db_connections ADD COLUMN IF NOT EXISTS db_username VARCHAR(255)",
-        "ALTER TABLE tenant_db_connections ADD COLUMN IF NOT EXISTS db_password_encrypted TEXT",
-        "ALTER TABLE tenant_db_connections ADD COLUMN IF NOT EXISTS db_status VARCHAR(50) DEFAULT 'pending'",
-        "ALTER TABLE tenant_db_connections ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP",
-
-        # subscriptions — trial + limits
-        "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS plan_name VARCHAR(100)",
-        "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS trial_start TIMESTAMP",
-        "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS trial_end TIMESTAMP",
-        "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS user_limit INTEGER DEFAULT 10",
-        "ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS storage_limit INTEGER DEFAULT 1024",
-
         # enquiries — GDPR/privacy-aware lead capture (encryption, consent, compliance)
         "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS enquiry_number VARCHAR(40)",
         "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS email_encrypted TEXT",
@@ -237,7 +192,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Office Repo API",
-    description="Multi-tenant SaaS platform for HR, Assets & Billing management.",
+    description="Lead Management & Sales Pipeline platform (superadmin CRM + public enquiries).",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -254,11 +209,8 @@ app.add_middleware(
     allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Tenant-ID"],
+    allow_headers=["Authorization", "Content-Type"],
 )
-
-# Tenant resolver middleware
-app.add_middleware(TenantMiddleware)
 
 # Content-Security-Policy — policy and middleware live in security_headers.py
 # so tests can import the real constants without triggering DB side-effects.
@@ -270,26 +222,15 @@ PREFIX = settings.API_V1_PREFIX
 # CSP violation reporting
 app.include_router(csp_report_router, prefix=f"{PREFIX}", tags=["security"])
 
-# Auth (superadmin + tenant login)
+# Auth (superadmin login)
 app.include_router(auth_router, prefix=f"{PREFIX}/auth", tags=["auth"])
 
-# Superadmin — legacy routes (keep for backward compat)
-app.include_router(tenants_router, prefix=f"{PREFIX}/superadmin/tenants", tags=["superadmin - tenants (legacy)"])
-app.include_router(flags_router, prefix=f"{PREFIX}/superadmin", tags=["superadmin - feature flags"])
-app.include_router(subscriptions_router, prefix=f"{PREFIX}/superadmin/subscriptions", tags=["superadmin - subscriptions"])
+# Superadmin — secret rotation
 app.include_router(rotation_router, prefix=f"{PREFIX}/superadmin", tags=["superadmin - secrets"])
-
-# Superadmin — rotation status
 app.include_router(rotation_status_router, prefix=f"{PREFIX}/superadmin", tags=["superadmin - rotation"])
-
-# Tenant Management Module (new, full-featured)
-app.include_router(tenant_mgmt_router, prefix=f"{PREFIX}/superadmin/manage/tenants", tags=["tenant management"])
 
 # Lead Management & Sales Pipeline Module (superadmin CRM)
 app.include_router(lead_router, prefix=f"{PREFIX}/superadmin/leads", tags=["lead management"])
-
-# Tenant-scoped modules
-app.include_router(employee_router, prefix=f"{PREFIX}/tenant/employees", tags=["tenant - employees"])
 
 # Public marketing site — enquiry / contact form (no auth)
 app.include_router(enquiry_router, prefix=f"{PREFIX}/public/enquiries", tags=["public - enquiries"])
@@ -320,7 +261,7 @@ def health():
 
 
 def seed_default_data():
-    """Seed a default superadmin and sample plans on first run."""
+    """Seed a default superadmin on first run."""
     db = SessionLocal()
     try:
         admin = db.query(SuperAdmin).filter(SuperAdmin.email == "admin@officerepo.com").first()
@@ -332,17 +273,8 @@ def seed_default_data():
             )
             db.add(admin)
 
-        plan = db.query(Plan).filter(Plan.name == "Starter").first()
-        if not plan:
-            plans = [
-                Plan(name="Starter", price_monthly=29.0, price_yearly=290.0, max_users=25),
-                Plan(name="Growth", price_monthly=99.0, price_yearly=990.0, max_users=100),
-                Plan(name="Enterprise", price_monthly=299.0, price_yearly=2990.0, max_users=1000),
-            ]
-            db.add_all(plans)
-
         db.commit()
-        print("Default data seeded: superadmin (admin@officerepo.com / admin123) and plans.")
+        print("Default data seeded: superadmin (admin@officerepo.com / admin123).")
     except Exception as e:
         db.rollback()
         print(f"Seed error: {e}")

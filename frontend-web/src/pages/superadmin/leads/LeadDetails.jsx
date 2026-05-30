@@ -231,7 +231,7 @@ function MarkLostModal({ open, onClose, leadId, options, onDone }) {
 }
 
 function ConvertModal({ open, onClose, leadId, onDone }) {
-  const [form, setForm] = useState({ slug: "" });
+  const [form, setForm] = useState({ client_name: "" });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
@@ -239,7 +239,7 @@ function ConvertModal({ open, onClose, leadId, onDone }) {
     setSaving(true); setErr("");
     try {
       const payload = {};
-      if (form.slug.trim()) payload.slug = form.slug.trim();
+      if (form.client_name.trim()) payload.client_name = form.client_name.trim();
       await leadsApi.convertToClient(leadId, payload);
       onDone();
     } catch (e) {
@@ -254,8 +254,8 @@ function ConvertModal({ open, onClose, leadId, onDone }) {
       footer={<><button className="btn-secondary" onClick={onClose}>Cancel</button><button className="btn-primary" disabled={saving} onClick={submit}>{saving ? "Converting..." : "Convert"}</button></>}>
       <div className="space-y-4">
         {err && <p className="text-xs text-red-400">{err}</p>}
-        <p className="text-sm t-body">This creates a new tenant (client) and a trial subscription placeholder from this lead, then records the conversion with sales-cycle metrics.</p>
-        <Input label="Client Slug (optional)" value={form.slug} onChange={(e) => setForm({ slug: e.target.value })} placeholder="auto-generated from company name" hint="Lowercase identifier; leave blank to auto-generate." />
+        <p className="text-sm t-body">This marks the lead as converted and records the conversion with sales-cycle metrics.</p>
+        <Input label="Client Name (optional)" value={form.client_name} onChange={(e) => setForm({ client_name: e.target.value })} placeholder="defaults to company name" hint="Leave blank to use the lead's company name." />
       </div>
     </Modal>
   );

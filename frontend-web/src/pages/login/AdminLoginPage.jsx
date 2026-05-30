@@ -106,7 +106,7 @@ export default function AdminLoginPage() {
       const res = await authApi.superAdminLogin(email, password);
       const data = res.data;
       login(
-        { email, role: data.role, tenant_id: data.tenant_id, user_id: data.user_id },
+        { email, role: data.role, user_id: data.user_id },
         { access_token: data.access_token, refresh_token: data.refresh_token }
       );
       navigate("/dashboard");

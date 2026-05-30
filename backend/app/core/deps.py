@@ -19,7 +19,7 @@ def require_superadmin(
     Returns the decoded token payload on success.
     Raises HTTP 401 for invalid/expired tokens and HTTP 403 for non-superadmin roles.
 
-    Sets ``request.state.token_kid`` so the TenantMiddleware can emit a
+    Sets ``request.state.token_kid`` so downstream logging can emit a
     structured log record for each successfully authenticated request.
     """
     token = credentials.credentials

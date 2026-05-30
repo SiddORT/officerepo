@@ -1,42 +1,36 @@
-# Office Repo — Multi-Tenant SaaS Platform
+# Office Repo — Lead Management & Sales Pipeline Platform
 
-A production-grade SaaS platform with FastAPI backend, React + Tailwind frontend, and PostgreSQL database.
+A production-grade single-platform app with FastAPI backend, React + Tailwind frontend, and PostgreSQL database. Surface area: public Landing + Enquiry capture and a superadmin Lead CRM (with superadmin auth/security). The multi-tenant system was removed; this is now a single platform (no tenants/subscriptions/plans/feature-flags/employee modules).
 
 ## Architecture
 
-### Multi-Tenant Design
-- **Platform DB** — PostgreSQL (Replit built-in) stores all tenant metadata: tenants, subscriptions, plans, feature flags, mobile device sessions, superadmins
-- **Tenant DBs** — Each tenant gets its own database connection (configure via superadmin API)
-- **Tenant Resolver** — Detects tenant from `X-Tenant-ID` header, JWT payload, or subdomain
+### Design
+- **Platform DB** — PostgreSQL (Replit built-in) stores everything: superadmins, platform_config, enquiries, leads + lead child tables, audit_logs.
+- **Auth** — superadmin JWT (access + refresh). No tenant scoping.
 
 ### Repository Structure
 ```
 backend/
-  main.py                      FastAPI entry point, creates platform tables, seeds default data, lifespan
+  main.py                      FastAPI entry point, creates tables, seeds superadmin, lifespan
   app/
     config/settings.py         Environment config (DATABASE_URL, JWT_SECRET, etc.)
     core/
       security.py              JWT creation/decoding, bcrypt password hashing, kid embedding
-      tenant_resolver.py       Multi-strategy tenant detection
-      middleware.py            TenantMiddleware — attaches tenant DB to request.state
-      db_router.py             FastAPI dependencies for tenant-scoped DB access
+      deps.py                  Superadmin JWT guard dependency
       secret_rotation_monitor.py  Async background monitor for stale PREVIOUS_* secrets
     database/
-      platform.py              Platform DB engine + session
-      tenant.py                Dynamic tenant DB engine pool + initialization
+      platform.py              DB engine + session (get_platform_db)
     platform/
-      tenants/                 Tenant CRUD + activate/suspend/DB config/IDP config
-      subscriptions/           Plans + subscription assignment
-      feature_flags/           Per-tenant module enable/disable
-      superadmin/              SuperAdmin model
-      mobile/                  MobileDeviceSession model
+      superadmin/              SuperAdmin model + secret rotation routers
+      config/                  PlatformConfig model
     modules/
-      auth/                    Login (superadmin + tenant), refresh, logout
-      employee/                Employee + Department CRUD (tenant-scoped)
-      lead_management/         Lead & Sales Pipeline CRM (platform-scoped, superadmin)
+      auth/                    Superadmin login, refresh, logout
+      lead_management/         Lead & Sales Pipeline CRM (superadmin)
                                constants/validators/models/schemas/repository/service/router
                                leads + 8 child tables (activities, demos, follow-ups, notes,
                                documents, proposals, negotiations, conversions)
+      enquiry/                 Public GDPR-aware enquiry capture
+      csp_report/              CSP violation reporting
   shared/storage/             Storage helper (public uploads/ + private_storage/ roots)
   shared/notifications/       Multi-channel notification helpers (email/SMS/WhatsApp/push):
                               base + config + dispatcher + one provider module per channel
@@ -51,10 +45,8 @@ frontend-web/
     services/apiClient.js      Axios client with JWT interceptor + auto-refresh
     pages/
       landing/LandingPage.jsx  Futuristic public landing page (route: /)
-      login/LoginPage.jsx      Tenant holographic login (route: /login) — cyan theme
-      login/AdminLoginPage.jsx Platform admin login (route: /admin, hidden) — full-bleed office background + floating glassmorphic card with mouse-driven 3D tilt, cyan accent
-      dashboard/DashboardPage  Module overview dashboard
-      superadmin/              Tenant list, create, activate/suspend, feature flags
+      login/AdminLoginPage.jsx Superadmin login (routes: /login and /admin) — full-bleed office background + floating glassmorphic card with mouse-driven 3D tilt, cyan accent
+      dashboard/DashboardPage  Superadmin overview (quick links to Leads/Calendar/Security/API docs)
       superadmin/leads/        Lead CRM: LeadList, CreateLead, EditLead, LeadDetails,
                                CalendarPage (month grid of demos/follow-ups/next-actions)
                                (tabs: Overview, Spokespersons, Activities, Demos, Follow-ups,
@@ -84,11 +76,11 @@ The frontend proxies `/api` to the backend via Vite.
 
 ## Routing
 - `/` → LandingPage (public)
-- `/login` → LoginPage (tenant only, redirect to dashboard if logged in)
-- `/admin` → AdminLoginPage (hidden, not linked anywhere; full-bleed office background `admin-bg.png` + floating glass card with 3D tilt, cyan accent)
+- `/login` → AdminLoginPage (superadmin login, redirect to dashboard if logged in)
+- `/admin` → AdminLoginPage (same superadmin login; full-bleed office background + floating glass card with 3D tilt, cyan accent)
 - `/dashboard` → protected
 - `/superadmin/leads/calendar` → protected (superadmin Calendar; route declared before `/leads/:id`)
-- `/superadmin` → protected
+- `/superadmin/security` → protected (secret rotation status)
 - `/contact` → EnquiryPage (public lead capture / "Request Demo" form)
 - `/privacy-policy` → PrivacyPolicyPage (public, linked from enquiry consent)
 - Unknown routes → `/`
@@ -97,38 +89,22 @@ The frontend proxies `/api` to the backend via Vite.
 ## Branding
 - **Product**: Office Repo — "Unified Workplace Management"
 - **Made by**: ORT (One Roof Tech) — logo files in `frontend-web/public/`
-- Both login pages show: Office Repo wordmark + tagline above card, "by ort_" in card footer
+- The login page shows: Office Repo wordmark + tagline above card, "by ort_" in card footer
 
 ## API Routes
 
 ```
 POST /api/v1/auth/superadmin/login
-POST /api/v1/auth/tenant/login       (requires X-Tenant-ID header)
 POST /api/v1/auth/refresh
 POST /api/v1/auth/logout
 
-GET  /api/v1/superadmin/tenants
-POST /api/v1/superadmin/tenants
-POST /api/v1/superadmin/tenants/{id}/activate
-POST /api/v1/superadmin/tenants/{id}/suspend
-POST /api/v1/superadmin/tenants/{id}/db-connection
-POST /api/v1/superadmin/tenants/{id}/idp-config
-
-GET  /api/v1/superadmin/{tenant_id}/features
-POST /api/v1/superadmin/{tenant_id}/features
-
-GET  /api/v1/superadmin/subscriptions/plans
-POST /api/v1/superadmin/subscriptions/assign
-
-GET  /api/v1/tenant/employees       (requires X-Tenant-ID)
-POST /api/v1/tenant/employees
-GET  /api/v1/tenant/employees/{id}
-PATCH /api/v1/tenant/employees/{id}
-DELETE /api/v1/tenant/employees/{id}
+# Superadmin — secret rotation
+POST /api/v1/superadmin/rotate-secrets
+GET  /api/v1/superadmin/rotation-status
 
 POST /api/v1/public/enquiries        (public; GDPR-aware lead capture)
 
-# Lead Management & Sales Pipeline (superadmin; platform-scoped)
+# Lead Management & Sales Pipeline (superadmin)
 GET    /api/v1/superadmin/leads/meta/options
 GET    /api/v1/superadmin/leads/dashboard               (stats + due/overdue counts + notifications[])
 GET    /api/v1/superadmin/leads/calendar/events         (?start&end ISO — demos/follow-ups/next-actions)
@@ -210,8 +186,10 @@ POST   /api/v1/superadmin/leads/convert-enquiry/{enquiry_id}  (idempotent)
 - **Conversion metrics** computed: lead age, sales cycle, time-to-demo, time-to-proposal,
   time-to-conversion (surfaced in the Conversions tab).
 - **Convert Enquiry→Lead**: idempotent (reuses existing lead via `source_enquiry_id`,
-  ignoring soft-delete). **Convert Lead→Client**: only when stage = Won; creates Tenant +
-  Subscription placeholders + a conversion record + audit entry.
+  ignoring soft-delete). **Convert Lead→Client**: only when stage = Won; marks the lead
+  converted and records a `lead_conversions` row (client_name + sales-cycle metrics) +
+  audit entry. No tenant/subscription is created (multi-tenant removed; conversion is a
+  record-only step to be rebuilt later).
 - **Document/proposal files are PRIVATE**: stored under `LEAD_PRIVATE_STORAGE_ROOT`
   (`private_storage/`, NOT the public `/uploads` mount) with randomized filenames.
   Downloads go through **authenticated** endpoints returning `FileResponse` (superadmin
@@ -224,10 +202,9 @@ POST   /api/v1/superadmin/leads/convert-enquiry/{enquiry_id}  (idempotent)
 ```json
 {
   "user_id": 1,
-  "tenant_id": "acme-corp",
-  "role": "admin",
+  "role": "superadmin",
   "device_type": "web",
-  "email": "user@example.com"
+  "email": "admin@officerepo.com"
 }
 ```
 
@@ -243,7 +220,6 @@ PREVIOUS_SECRET_GRACE_HOURS         Grace period in hours (default: 168 = 7 days
 PREVIOUS_SECRET_CHECK_INTERVAL_HOURS  How often monitor runs (default: 1)
 ROTATE_SECRETS_COOLDOWN_MINUTES     Min minutes between rotations via API (default: 60, 0 disables)
 SECRET_ROTATION_ALERT_URL           Optional webhook URL for stale-secret alerts
-TENANT_RESOLVER_STRATEGY            header | subdomain | jwt (default: header)
 ENVIRONMENT                         development | production (default: development)
 ALLOWED_ORIGINS                     Comma-separated CORS origins (auto-detects REPLIT_DOMAINS)
 ENQUIRY_ENCRYPTION_KEYS             Comma-separated Fernet keys for enquiry PII (1st = primary
@@ -429,15 +405,11 @@ Reusable audit log helper tracking: create, update, delete, login, file upload, 
 
 ---
 
-### 11. Superadmin Panel — Tenant Management Module (priority build)
+### 11. Multi-Tenant — REMOVED
 
-Features:
-- Create / Edit Tenant
-- Suspend / Activate Tenant
-- Tenant Details view
-- Tenant Database Mapping
-- Tenant Domain / Subdomain config
-- Module Enablement per tenant
-- Tenant Status indicator
-- Tenant Logo Upload
-- Tenant Theme Config
+The multi-tenant system (tenants, subscriptions, plans, feature flags, employee
+module, tenant-scoped DBs, tenant resolver/middleware) has been fully removed.
+This is now a single platform. Do **not** re-introduce tenant scoping, `X-Tenant-ID`
+headers, per-tenant DBs, or subscription/plan modules unless explicitly requested.
+Lead→Client conversion is currently a record-only step (writes a `lead_conversions`
+row) and is intended to be rebuilt later.

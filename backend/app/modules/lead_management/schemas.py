@@ -472,12 +472,11 @@ class ConvertEnquiryRequest(BaseModel):
 
 
 class ConvertClientRequest(BaseModel):
-    plan_id: Optional[int] = None
-    slug: Optional[str] = Field(None, max_length=100)
+    client_name: Optional[str] = Field(None, max_length=255)
 
-    @field_validator("slug")
+    @field_validator("client_name")
     @classmethod
-    def _slug(cls, val):
+    def _client_name(cls, val):
         return v.clean_text(val)
 
 
