@@ -4,6 +4,7 @@
 - [Client IP behind Replit proxy](client-ip-proxy.md) — left-most X-Forwarded-For is spoofable; take the entry N hops from the RIGHT (TRUSTED_PROXY_HOPS, default 1).
 - [Cloudflare Turnstile integration](turnstile-integration.md) — explicit-render widget + CSP allowances + frontend token gating are all required for it to be genuinely "ready".
 - [Enquiry PII encryption & dedup](enquiry-pii-encryption.md) — encrypted columns aren't queryable; store an HMAC blind-index (email|company) for duplicate detection, never decrypt-and-scan.
+- [Client = tenant model](client-as-tenant.md) — multi-tenancy reinstated as Client Management (client IS the tenant); overrides the old "multi-tenant removed" preference; db-per-client deferred.
 - [setuptools flat-layout build](setuptools-flat-layout.md) — deploy build does `pip install -e .`; pyproject must pin packages.find to `backend*` or auto-discovery aborts on the data dirs.
 - [CSP blocks external images](csp-and-flags.md) — `img-src 'self' data:` silently blocks flag CDNs; use emoji flags (flagEmoji from ISO-2) for country pickers.
 - [Notification helpers](notification-helpers.md) — backend/shared/notifications: provider-agnostic, env-config, returns NOT_CONFIGURED instead of raising when creds absent.

@@ -293,6 +293,7 @@ def negotiation_to_dict(n: LeadNegotiation) -> dict:
 def conversion_to_dict(cv: LeadConversion) -> dict:
     return {
         "id": cv.id, "lead_id": cv.lead_id, "client_id": cv.client_id,
+        "client_uuid": cv.client_uuid,
         "client_name": cv.client_name, "subscription_id": cv.subscription_id,
         "lead_age_days": cv.lead_age_days, "sales_cycle_days": cv.sales_cycle_days,
         "time_to_demo_days": cv.time_to_demo_days,
@@ -1120,16 +1121,26 @@ def convert_lead_to_client(db: Session, lead_id: str, payload: ConvertClientRequ
     now = datetime.utcnow()
     client_name = payload.client_name or lead.company_name
 
-    # Lead state → converted
+    # Create the full Client graph (Client IS the tenant). Imported here to avoid
+    # a circular import between the lead and client modules. NO commit inside —
+    # it participates in this transaction so the conversion is atomic.
+    from backend.app.modules.client_management import service as client_service
+
+    client = client_service.create_client_from_lead(
+        db, lead, client_name=client_name, actor_id=actor_id, actor=actor,
+    )
+
+    # Lead state → converted (reverse link via UUID column; legacy INTEGER column unused)
     lead.conversion_date = now
     lead.converted_to_client = True
+    lead.converted_client_uuid = client.id
     lead.status = c.STATUS_CONVERTED
     if not lead.won_date:
         lead.won_date = now
 
     metrics = compute_metrics(lead)
     conversion = LeadConversion(
-        lead_id=lead.id, client_name=client_name,
+        lead_id=lead.id, client_name=client_name, client_uuid=client.id,
         lead_age_days=metrics["lead_age_days"],
         sales_cycle_days=metrics["sales_cycle_days"],
         time_to_demo_days=metrics["time_to_demo_days"],
@@ -1140,10 +1151,12 @@ def convert_lead_to_client(db: Session, lead_id: str, payload: ConvertClientRequ
     repo.add(db, conversion)
 
     record_audit(db, c.AUDIT_LEAD_CONVERTED, c.AUDIT_ENTITY, lead.lead_number, actor=actor,
-                 metadata={"client_name": client_name})
+                 metadata={"client_name": client_name, "client_code": client.client_code})
     db.commit()
     db.refresh(lead)
-    return {"lead": lead_to_detail(lead), "conversion": conversion_to_dict(conversion)}
+    result = {"lead": lead_to_detail(lead), "conversion": conversion_to_dict(conversion)}
+    result["client"] = {"id": client.id, "client_code": client.client_code}
+    return result
 
 
 # ════════════════════════════════════════════════════════════════════════════

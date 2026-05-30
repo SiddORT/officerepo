@@ -60,7 +60,8 @@ class Lead(Base):
 
     # Conversion to client
     converted_to_client = Column(Boolean, nullable=False, default=False, index=True)
-    converted_client_id = Column(Integer, nullable=True)
+    converted_client_id = Column(Integer, nullable=True)  # legacy (unused; UUID below)
+    converted_client_uuid = Column(String(36), nullable=True, index=True)
 
     # Lead scoring
     lead_score = Column(Integer, nullable=False, default=0)
@@ -241,7 +242,8 @@ class LeadConversion(Base):
 
     id = Column(String(36), primary_key=True, default=_uuid)
     lead_id = Column(String(36), ForeignKey("leads.id"), nullable=False, index=True)
-    client_id = Column(Integer, nullable=True)
+    client_id = Column(Integer, nullable=True)  # legacy (unused; UUID below)
+    client_uuid = Column(String(36), nullable=True, index=True)
     client_name = Column(String(255), nullable=True)
     subscription_id = Column(Integer, nullable=True)
 

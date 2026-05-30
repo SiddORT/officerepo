@@ -25,6 +25,11 @@ from backend.app.modules.lead_management.models import (
     Lead, LeadActivity, LeadSpokesperson, LeadDemo, LeadFollowup, LeadNote,
     LeadDocument, LeadProposal, LeadNegotiation, LeadConversion,
 )
+from backend.app.modules.client_management.models import (
+    Client, ClientContact, ClientBillingProfile, ClientDbConnection,
+    ClientSubscription, ClientModule, ClientDocument, ClientActivityLog,
+    ClientDomain, ClientAdminUser,
+)
 from backend.shared.audit.models import AuditLog
 from backend.app.modules.cors_report.models import CorsRejection
 
@@ -35,6 +40,7 @@ from backend.app.modules.cors_report.router import router as cors_report_router
 from backend.app.modules.enquiry.router import router as enquiry_router
 from backend.app.modules.enquiry.admin_router import router as enquiry_admin_router
 from backend.app.modules.lead_management.router import router as lead_router
+from backend.app.modules.client_management.router import router as client_router
 from backend.app.platform.superadmin.rotation_router import router as rotation_router
 from backend.app.platform.superadmin.rotation_status_router import router as rotation_status_router
 
@@ -98,6 +104,11 @@ def run_schema_migrations():
         "ALTER TABLE leads ADD COLUMN IF NOT EXISTS score_label_override VARCHAR(10)",
         # lead_activities — richer free-text next action
         "ALTER TABLE lead_activities ADD COLUMN IF NOT EXISTS next_action TEXT",
+
+        # leads / lead_conversions — Lead→Client reverse link (UUID client id;
+        # legacy converted_client_id is INTEGER and cannot hold a UUID).
+        "ALTER TABLE leads ADD COLUMN IF NOT EXISTS converted_client_uuid VARCHAR(36)",
+        "ALTER TABLE lead_conversions ADD COLUMN IF NOT EXISTS client_uuid VARCHAR(36)",
     ]
     try:
         with engine.connect() as conn:
@@ -296,6 +307,9 @@ def create_app(app_settings=settings) -> FastAPI:
 
     # Lead Management & Sales Pipeline Module (superadmin CRM)
     app.include_router(lead_router, prefix=f"{prefix}/superadmin/leads", tags=["lead management"])
+
+    # Client Management Module (superadmin — Client IS the tenant)
+    app.include_router(client_router, prefix=f"{prefix}/superadmin/clients", tags=["client management"])
 
     # Enquiry Inbox (superadmin CRM)
     app.include_router(enquiry_admin_router, prefix=f"{prefix}/superadmin/enquiries", tags=["enquiry inbox"])

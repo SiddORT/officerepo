@@ -40,6 +40,17 @@ const NAV_ITEMS = [
     ),
   },
   {
+    label: "Clients",
+    path: "/superadmin/clients",
+    roles: ["superadmin"],
+    icon: (
+      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0H5m14 0h2M5 21H3m4-14h2m-2 4h2m-2 4h2m4-8h2m-2 4h2m-2 4h2" />
+      </svg>
+    ),
+  },
+  {
     label: "Calendar",
     path: "/superadmin/leads/calendar",
     roles: ["superadmin"],

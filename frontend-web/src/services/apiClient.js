@@ -178,3 +178,59 @@ export const leadsApi = {
   convertToClient: (id, data) => apiClient.post(`${LEADS}/${id}/convert-to-client`, data || {}),
   convertEnquiry: (enquiryId, data) => apiClient.post(`${LEADS}/convert-enquiry/${enquiryId}`, data || {}),
 };
+
+// ── Client Management (Client = tenant) ─────────────────────────────────────────
+const CLIENTS = "/superadmin/clients";
+
+export const clientsApi = {
+  options: () => apiClient.get(`${CLIENTS}/meta/options`),
+  dashboard: () => apiClient.get(`${CLIENTS}/dashboard`),
+
+  list: (params) => apiClient.get(CLIENTS, { params }),
+  get: (id) => apiClient.get(`${CLIENTS}/${id}`),
+  create: (data) => apiClient.post(CLIENTS, data),
+  update: (id, data) => apiClient.patch(`${CLIENTS}/${id}`, data),
+  setStatus: (id, status) => apiClient.post(`${CLIENTS}/${id}/status`, { status }),
+  remove: (id) => apiClient.delete(`${CLIENTS}/${id}`),
+
+  contacts: (id) => apiClient.get(`${CLIENTS}/${id}/contacts`),
+  addContact: (id, data) => apiClient.post(`${CLIENTS}/${id}/contacts`, data),
+  updateContact: (id, cid, data) => apiClient.patch(`${CLIENTS}/${id}/contacts/${cid}`, data),
+  deleteContact: (id, cid) => apiClient.delete(`${CLIENTS}/${id}/contacts/${cid}`),
+
+  billing: (id) => apiClient.get(`${CLIENTS}/${id}/billing`),
+  saveBilling: (id, data) => apiClient.put(`${CLIENTS}/${id}/billing`, data),
+
+  subscription: (id) => apiClient.get(`${CLIENTS}/${id}/subscription`),
+  saveSubscription: (id, data) => apiClient.put(`${CLIENTS}/${id}/subscription`, data),
+
+  modules: (id) => apiClient.get(`${CLIENTS}/${id}/modules`),
+  toggleModule: (id, moduleName, isEnabled) =>
+    apiClient.post(`${CLIENTS}/${id}/modules`, { module_name: moduleName, is_enabled: isEnabled }),
+
+  database: (id) => apiClient.get(`${CLIENTS}/${id}/database`),
+  saveDatabase: (id, data) => apiClient.put(`${CLIENTS}/${id}/database`, data),
+
+  domains: (id) => apiClient.get(`${CLIENTS}/${id}/domains`),
+  addDomain: (id, data) => apiClient.post(`${CLIENTS}/${id}/domains`, data),
+  deleteDomain: (id, did) => apiClient.delete(`${CLIENTS}/${id}/domains/${did}`),
+
+  adminUsers: (id) => apiClient.get(`${CLIENTS}/${id}/admin-users`),
+  addAdminUser: (id, data) => apiClient.post(`${CLIENTS}/${id}/admin-users`, data),
+  updateAdminUser: (id, aid, data) => apiClient.patch(`${CLIENTS}/${id}/admin-users/${aid}`, data),
+
+  activities: (id) => apiClient.get(`${CLIENTS}/${id}/activities`),
+
+  documents: (id) => apiClient.get(`${CLIENTS}/${id}/documents`),
+  uploadDocument: (id, file, documentType) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("document_type", documentType || "Other");
+    return apiClient.post(`${CLIENTS}/${id}/documents`, fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  downloadDocument: (id, docId) =>
+    apiClient.get(`${CLIENTS}/${id}/documents/${docId}/download`, { responseType: "blob" }),
+  deleteDocument: (id, docId) => apiClient.delete(`${CLIENTS}/${id}/documents/${docId}`),
+};

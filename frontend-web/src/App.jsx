@@ -15,6 +15,10 @@ import CalendarPage from "./pages/superadmin/leads/CalendarPage";
 import CreateLead from "./pages/superadmin/leads/CreateLead";
 import EditLead from "./pages/superadmin/leads/EditLead";
 import LeadDetails from "./pages/superadmin/leads/LeadDetails";
+import ClientList from "./pages/superadmin/clients/ClientList";
+import CreateClient from "./pages/superadmin/clients/CreateClient";
+import EditClient from "./pages/superadmin/clients/EditClient";
+import ClientDetails from "./pages/superadmin/clients/ClientDetails";
 import Layout from "./components/Layout";
 
 function ProtectedRoute({ children, requireRole }) {
@@ -112,6 +116,40 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireRole="superadmin">
             <Layout><EditLead /></Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Protected — Client Management (Client = tenant) */}
+      <Route
+        path="/superadmin/clients"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><ClientList /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/clients/new"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><CreateClient /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/clients/:id"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><ClientDetails /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/clients/:id/edit"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><EditClient /></Layout>
           </ProtectedRoute>
         }
       />

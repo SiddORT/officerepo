@@ -1,6 +1,6 @@
 # Office Repo — Lead Management & Sales Pipeline Platform
 
-A production-grade single-platform app with FastAPI backend, React + Tailwind frontend, and PostgreSQL database. Surface area: public Landing + Enquiry capture and a superadmin Lead CRM (with superadmin auth/security). The multi-tenant system was removed; this is now a single platform (no tenants/subscriptions/plans/feature-flags/employee modules).
+A production-grade app with FastAPI backend, React + Tailwind frontend, and PostgreSQL database. Surface area: public Landing + Enquiry capture, a superadmin Lead CRM, and a superadmin Client Management module (with superadmin auth/security). **Client = tenant**: each Client is one organization with its own contacts, commercials, subscription, modules, documents, domains, admin users and an intended per-client database (provisioning deferred — db status defaults "Not Provisioned"). See section 11 for the multi-tenant model.
 
 ## Architecture
 
@@ -29,6 +29,11 @@ backend/
                                constants/validators/models/schemas/repository/service/router
                                leads + 8 child tables (activities, demos, follow-ups, notes,
                                documents, proposals, negotiations, conversions)
+      client_management/       Client Management — Client = tenant (superadmin)
+                               constants/validators/models/schemas/repository/service/router
+                               clients + 9 child tables (contacts, billing_profiles,
+                               subscriptions, db_connections, modules, documents,
+                               activity_logs, domains, admin_users); db provisioning deferred
       enquiry/                 Public GDPR-aware enquiry capture
       csp_report/              CSP violation reporting
   shared/storage/             Storage helper (public uploads/ + private_storage/ roots)
@@ -55,6 +60,11 @@ frontend-web/
                                LeadDetails header has Auto/Hot/Warm/Cold score override control;
                                components/ (StageBadge, ScoreBadge, Timeline, LeadForm);
                                constants.js (helpers + enum→option mappers)
+      superadmin/clients/      Client Management (Client = tenant): ClientList, CreateClient,
+                               EditClient, ClientDetails (10 tabs: Overview, Contacts,
+                               Commercials, Modules, Subscription, Documents, Activities,
+                               Database, Domains, Admin Users);
+                               components/ (StatusBadge, ClientForm); constants.js
     components/Layout.jsx      Sidebar nav (incl. Calendar for superadmin), logout → /;
                                NotificationBell dropdown (superadmin) → due/overdue items
 ```
@@ -86,6 +96,7 @@ The frontend proxies `/api` to the backend via Vite.
 - `/dashboard` → protected
 - `/superadmin/leads/calendar` → protected (superadmin Calendar; route declared before `/leads/:id`)
 - `/superadmin/security` → protected (secret rotation status)
+- `/superadmin/clients` → protected (Client list); `/new`, `/:id`, `/:id/edit` (Client = tenant)
 - `/contact` → EnquiryPage (public lead capture / "Request Demo" form)
 - `/privacy-policy` → PrivacyPolicyPage (public, linked from enquiry consent)
 - Unknown routes → `/`
@@ -148,8 +159,33 @@ GET    .../leads/{lead_id}/proposals/{proposal_id}/download   (authenticated Fil
 GET/POST               .../leads/{lead_id}/negotiations
 GET    /api/v1/superadmin/leads/{lead_id}/timeline
 GET    /api/v1/superadmin/leads/{lead_id}/conversions
-POST   /api/v1/superadmin/leads/{lead_id}/convert-to-client   (only stage=Won)
+POST   /api/v1/superadmin/leads/{lead_id}/convert-to-client   (only stage=Won → creates a Client)
 POST   /api/v1/superadmin/leads/convert-enquiry/{enquiry_id}  (idempotent)
+
+# Client Management (superadmin) — Client = tenant
+GET    /api/v1/superadmin/clients/meta/options          (statuses, contact_types, db_statuses,
+                                                         admin_statuses, subscription_statuses,
+                                                         billing_cycles, modules, document_types,
+                                                         payment_terms, currencies)
+GET    /api/v1/superadmin/clients/dashboard             (counts by status)
+GET    /api/v1/superadmin/clients                       (list: page/page_size/sort/search/status/industry/country)
+POST   /api/v1/superadmin/clients                       (body may include contacts[] = primary contact)
+GET    /api/v1/superadmin/clients/{client_id}           (detail: contacts[], billing_profile, db_connection,
+                                                         subscription, modules[], documents[], domains[], admin_users[])
+PATCH  /api/v1/superadmin/clients/{client_id}
+DELETE /api/v1/superadmin/clients/{client_id}           (soft delete / archive)
+POST   /api/v1/superadmin/clients/{client_id}/status    ({status})
+GET/POST/PATCH/DELETE  .../clients/{client_id}/contacts[/{contact_id}]
+GET/PUT                .../clients/{client_id}/billing       (1:1 commercials/billing profile — upsert)
+GET/PUT                .../clients/{client_id}/subscription  (1:1 — upsert)
+GET    .../clients/{client_id}/modules
+POST   .../clients/{client_id}/modules                  (toggle {module_name, is_enabled})
+GET/PUT                .../clients/{client_id}/database      (1:1 db connection — upsert; db_status defaults "Not Provisioned")
+GET/POST/DELETE        .../clients/{client_id}/domains[/{domain_id}]
+GET/POST/PATCH         .../clients/{client_id}/admin-users[/{admin_id}]
+GET    .../clients/{client_id}/activities
+GET/POST/DELETE        .../clients/{client_id}/documents[/{document_id}]
+GET    .../clients/{client_id}/documents/{document_id}/download   (authenticated FileResponse)
 ```
 
 ## Public Enquiries (GDPR-aware lead capture)
@@ -234,9 +270,9 @@ POST   /api/v1/superadmin/leads/convert-enquiry/{enquiry_id}  (idempotent)
   time-to-conversion (surfaced in the Conversions tab).
 - **Convert Enquiry→Lead**: idempotent (reuses existing lead via `source_enquiry_id`,
   ignoring soft-delete). **Convert Lead→Client**: only when stage = Won; marks the lead
-  converted and records a `lead_conversions` row (client_name + sales-cycle metrics) +
-  audit entry. No tenant/subscription is created (multi-tenant removed; conversion is a
-  record-only step to be rebuilt later).
+  converted, records a `lead_conversions` row (client_name + sales-cycle metrics) + audit
+  entry, **and provisions a Client record** (the tenant) — see Client Management below.
+  Idempotent & duplicate-safe via the lead's converted flag + `clients.lead_id` reverse link.
 - **Document/proposal files are PRIVATE**: stored via the shared storage helper
   under the PRIVATE root (`private_storage/`, NOT the public `/uploads` mount) with
   randomized filenames. The DB stores only the **rootless storage key**
@@ -473,11 +509,41 @@ Reusable audit log helper tracking: create, update, delete, login, file upload, 
 
 ---
 
-### 11. Multi-Tenant — REMOVED
+### 11. Multi-Tenant — Client Management (Client = tenant)
 
-The multi-tenant system (tenants, subscriptions, plans, feature flags, employee
-module, tenant-scoped DBs, tenant resolver/middleware) has been fully removed.
-This is now a single platform. Do **not** re-introduce tenant scoping, `X-Tenant-ID`
-headers, per-tenant DBs, or subscription/plan modules unless explicitly requested.
-Lead→Client conversion is currently a record-only step (writes a `lead_conversions`
-row) and is intended to be rebuilt later.
+Multi-tenancy is modeled through the **Client Management** module: **a Client IS the
+tenant** — one entity, no separate Tenant/subscription/plan/feature-flag modules.
+The old tenant-resolver/`X-Tenant-ID`/per-tenant-DB-middleware machinery stays gone;
+this module records the tenant and its intended infrastructure as data.
+
+**Module** (`backend/app/modules/client_management/`) mirrors the lead_management layered
+architecture exactly (constants/validators/models/schemas/repository/service/router),
+superadmin JWT guard, platform DB (`get_platform_db`).
+
+**Tables** (10): `clients` (the tenant) + `client_contacts`, `client_billing_profiles`
+(1:1 — Commercials tab), `client_subscriptions` (1:1), `client_db_connections` (1:1),
+`client_modules`, `client_documents`, `client_activity_logs`, `client_domains`,
+`client_admin_users`. Standard `created_at`/`updated_at`/`is_deleted`/`deleted_at`;
+`created_by` where applicable. Each client gets a `client_code` (`CLT-YYYYMMDD-XXXXXXXX`).
+
+- **PII at rest encrypted** (contact email/phone, admin-user email/phone, db password)
+  via the shared encryption helper.
+- **Database-per-client is DEFERRED**: `client_db_connections` records the *intended*
+  connection (name/host/port/username/encrypted password); `database_status` defaults to
+  **"Not Provisioned"**. Actual provisioning + a "Provision" action are future work.
+- **Currency**: stored as an ISO `currency_code` string on the billing profile + a frontend
+  constant list (no Settings→Currency Management module exists — documented deviation).
+- **Documents** are PRIVATE via the shared storage helper (`scope="platform"`,
+  `module="client_documents"`); same rootless-key + authenticated-download pattern as leads.
+- **Convert Lead→Client** (extends the existing `convert-to-client`): creates the Client +
+  primary contact + subscription placeholder + db connection (Not Provisioned) + admin
+  placeholder + activity log; keeps `lead.converted_to_client` + the `lead_conversions` row;
+  duplicate-safe via the lead's converted flag and the `clients.lead_id` reverse link.
+- Mutations write **masked-PII audit entries** via `backend/shared/audit/`.
+- Frontend: `pages/superadmin/clients/{ClientList,CreateClient,EditClient,ClientDetails}.jsx`
+  + `components/{StatusBadge,ClientForm}.jsx` + `constants.js`; `clientsApi` in `apiClient.js`;
+  nav item "Clients" (after Leads). ClientDetails has 10 tabs: Overview, Contacts, Commercials,
+  Modules, Subscription, Documents, Activities, Database, Domains, Admin Users.
+
+Do **not** re-introduce the old tenant-scoping middleware, `X-Tenant-ID` headers, or
+tenant-resolver machinery — tenancy now lives in the Client Management data model.

@@ -1,0 +1,466 @@
+Build Settings → Currency Management Module for Office Repo.
+
+Tech Stack:
+- React + TailwindCSS
+- FastAPI
+- PostgreSQL
+
+Architecture:
+- Modular Architecture
+- Repository Pattern
+- Service Layer Pattern
+- Multi-Tenant SaaS Ready
+
+Follow all previously defined:
+- Coding Standards
+- Validation Standards
+- Audit Standards
+- Security Standards
+- UI Standards
+
+====================================================
+MODULE PURPOSE
+====================================================
+
+Currency Management is a global settings module.
+
+It will be used by:
+
+- Client Management
+- Subscriptions
+- Invoices
+- Payments
+- Reports
+- Billing
+- Analytics
+
+Currencies are configured centrally and then assigned to clients.
+
+====================================================
+NAVIGATION
+====================================================
+
+Settings
+ └── Currency Management
+
+Pages:
+
+- Currency List
+- Add Currency
+- Edit Currency
+- Currency Details
+- Currency History
+- Exchange Rate Sync Logs
+
+====================================================
+DATABASE TABLES
+====================================================
+
+Create:
+
+currencies
+
+currency_rates
+
+currency_rate_history
+
+currency_sync_logs
+
+====================================================
+TABLE: currencies
+====================================================
+
+Fields:
+
+id (UUID)
+
+currency_code
+
+currency_name
+
+currency_symbol
+
+country
+
+decimal_places
+
+is_base_currency
+
+status
+
+created_at
+
+updated_at
+
+created_by
+
+is_deleted
+
+deleted_at
+
+Examples:
+
+USD
+EUR
+GBP
+INR
+AED
+SGD
+AUD
+
+Status:
+
+Active
+Inactive
+
+Rules:
+
+- Currency Code must be unique
+- ISO 4217 compliant
+- Automatically store uppercase
+
+====================================================
+TABLE: currency_rates
+====================================================
+
+Fields:
+
+id
+
+currency_id
+
+exchange_rate
+
+rate_source
+
+is_manual_override
+
+last_updated_at
+
+updated_by
+
+Rate Sources:
+
+Forex API
+Manual
+Internal
+
+====================================================
+TABLE: currency_rate_history
+====================================================
+
+Fields:
+
+id
+
+currency_id
+
+old_rate
+
+new_rate
+
+rate_source
+
+changed_by
+
+changed_at
+
+Store every exchange rate change.
+
+====================================================
+TABLE: currency_sync_logs
+====================================================
+
+Fields:
+
+id
+
+sync_source
+
+sync_status
+
+currencies_updated
+
+error_message
+
+started_at
+
+completed_at
+
+Statuses:
+
+Success
+Failed
+Partial Success
+
+====================================================
+CURRENCY LIST PAGE
+====================================================
+
+Columns:
+
+Currency Code
+
+Currency Name
+
+Symbol
+
+Country
+
+Exchange Rate
+
+Rate Source
+
+Status
+
+Last Updated
+
+Actions
+
+Actions:
+
+View
+
+Edit
+
+Refresh Rate
+
+Activate
+
+Deactivate
+
+View History
+
+====================================================
+ADD CURRENCY PAGE
+====================================================
+
+Fields:
+
+Currency Code *
+
+Currency Name *
+
+Currency Symbol *
+
+Country *
+
+Decimal Places *
+
+Status *
+
+Validation:
+
+- Required fields
+- Trim whitespace
+- Currency Code uppercase
+- Currency Code unique
+- Decimal Places between 0 and 6
+
+====================================================
+BASE CURRENCY
+====================================================
+
+Only one currency can be Base Currency.
+
+Example:
+
+USD
+
+or
+
+INR
+
+Base Currency is used for:
+
+- Revenue Reporting
+- Consolidated Analytics
+- Currency Conversions
+- Dashboard Reporting
+
+Changing Base Currency requires confirmation.
+
+Track in audit logs.
+
+====================================================
+EXCHANGE RATE MANAGEMENT
+====================================================
+
+Each currency must support:
+
+Current Rate
+
+Rate Source
+
+Auto Sync Enabled
+
+Manual Override
+
+====================================================
+AUTO RATE SYNC
+====================================================
+
+Prepare integration architecture for:
+
+Primary Sources:
+
+- ExchangeRate API
+- Fixer API
+- Open Exchange Rates
+
+Future Sources:
+
+- XE
+- CurrencyLayer
+
+Do not hardcode providers.
+
+Create provider abstraction.
+
+Example:
+
+exchange_rate_provider.py
+
+====================================================
+MANUAL OVERRIDE
+====================================================
+
+Finance/Admin users must be able to:
+
+Override exchange rates manually.
+
+Example:
+
+Forex API:
+1 USD = 83.24 INR
+
+Internal Accounting:
+1 USD = 83.00 INR
+
+Store:
+
+is_manual_override = true
+
+Track all overrides.
+
+====================================================
+RATE HISTORY
+====================================================
+
+Display:
+
+Date
+
+Old Rate
+
+New Rate
+
+Source
+
+Changed By
+
+Changed At
+
+Support filtering.
+
+====================================================
+SYNC LOGS
+====================================================
+
+Display:
+
+Sync Date
+
+Provider
+
+Status
+
+Currencies Updated
+
+Errors
+
+====================================================
+CLIENT INTEGRATION
+====================================================
+
+Future clients will select:
+
+Billing Currency
+
+Reporting Currency
+
+Only Active currencies should be selectable.
+
+====================================================
+AUDIT LOGGING
+====================================================
+
+Track:
+
+Currency Created
+
+Currency Updated
+
+Currency Activated
+
+Currency Deactivated
+
+Rate Updated
+
+Rate Overridden
+
+Base Currency Changed
+
+====================================================
+PERMISSIONS
+====================================================
+
+Create permissions:
+
+currency.view
+
+currency.create
+
+currency.edit
+
+currency.activate
+
+currency.override_rate
+
+currency.view_history
+
+====================================================
+UI REQUIREMENTS
+====================================================
+
+Use Office Repo Design Standards.
+
+Requirements:
+
+- Responsive Design
+- Dark Mode
+- Light Mode
+- Uniform Padding
+- Uniform Spacing
+
+Mandatory fields show RED ASTERISK.
+
+Create reusable:
+
+- Currency Table
+- Currency Form
+- Exchange Rate Card
+- Rate History Grid
+- Sync Log Grid
+
+====================================================
+IMPORTANT
+====================================================
+
+Store exchange rates locally in the database.
+
+Invoices and reports must always use stored rates, not live API calls.
+
+Design architecture for future scheduled sync jobs.
+
+Keep implementation enterprise-ready and scalable.
