@@ -1,0 +1,732 @@
+Build the Client Management module for the Office Repo Superadmin Panel.
+
+Tech Stack:
+- React + TailwindCSS
+- FastAPI
+- PostgreSQL
+
+Architecture:
+- Multi-tenant SaaS
+- Database-per-tenant
+- Clean Architecture
+- Service Layer
+- Repository Pattern
+
+Follow all previously defined:
+
+- Coding Standards
+- Validation Standards
+- Security Standards
+- GDPR Standards
+- Storage Standards
+- UI Standards
+- Audit Standards
+
+Backend must remain Python FastAPI.
+Do NOT generate Node.js backend code.
+
+====================================================
+MODULE PURPOSE
+====================================================
+
+Manage customer organizations after a Lead is converted into a Client.
+
+Flow:
+
+Website Enquiry
+↓
+Lead
+↓
+Demo
+↓
+Proposal
+↓
+Won
+↓
+Convert To Client
+↓
+Client Management
+↓
+Subscription
+↓
+Tenant Provisioning
+
+====================================================
+MENU STRUCTURE
+====================================================
+
+CRM
+ └── Clients
+
+Pages:
+
+- Client List
+- Create Client
+- Edit Client
+- Client Details
+
+====================================================
+DATABASE TABLES
+====================================================
+
+Create:
+
+clients
+
+client_contacts
+
+client_billing_profiles
+
+client_subscriptions
+
+client_modules
+
+client_documents
+
+client_activity_logs
+
+====================================================
+CLIENT MASTER TABLE
+====================================================
+
+Table:
+
+clients
+
+Fields:
+
+id (UUID)
+
+client_code
+
+company_name
+
+legal_name
+
+industry
+
+website
+
+company_size
+
+country
+
+state
+
+city
+
+timezone
+
+status
+
+lead_id
+
+converted_from_lead
+
+created_at
+
+updated_at
+
+created_by
+
+is_deleted
+
+deleted_at
+
+Status Values:
+
+Prospective
+Trial
+Active
+Suspended
+Expired
+Archived
+
+====================================================
+CLIENT CONTACTS
+====================================================
+
+Table:
+
+client_contacts
+
+Fields:
+
+id
+
+client_id
+
+contact_type
+
+first_name
+
+last_name
+
+email
+
+phone
+
+designation
+
+is_primary
+
+created_at
+
+Contact Types:
+
+Primary
+Finance
+HR
+IT
+Procurement
+Decision Maker
+
+Support multiple contacts.
+
+====================================================
+CLIENT BILLING PROFILE
+====================================================
+
+Table:
+
+client_billing_profiles
+
+Fields:
+
+id
+
+client_id
+
+gst_number
+
+pan_number
+
+tax_registration_number
+
+billing_email
+
+payment_terms
+
+currency_id
+
+billing_address_1
+
+billing_address_2
+
+city
+
+state
+
+country
+
+postal_code
+
+created_at
+
+updated_at
+
+Currency must come from:
+
+Settings → Currency Management
+
+====================================================
+CLIENT BANK DETAILS
+====================================================
+
+Table:
+
+client_bank_details
+
+Fields:
+
+id
+
+client_id
+
+account_name
+
+account_number
+
+bank_name
+
+branch_name
+
+ifsc_code
+
+swift_code
+
+iban
+
+upi_id
+
+created_at
+
+updated_at
+
+Access:
+
+Finance Roles Only
+
+====================================================
+CLIENT MODULES
+====================================================
+
+Table:
+
+client_modules
+
+Fields:
+
+id
+
+client_id
+
+module_name
+
+is_enabled
+
+enabled_at
+
+Supported Modules:
+
+Employee Management
+HRMS
+Asset Management
+Billing Management
+Workflow Engine
+Reports
+Knowledge Base
+Helpdesk
+
+====================================================
+CLIENT SUBSCRIPTION PLACEHOLDER
+====================================================
+
+Table:
+
+client_subscriptions
+
+Fields:
+
+id
+
+client_id
+
+plan_name
+
+start_date
+
+end_date
+
+user_limit
+
+storage_limit
+
+billing_cycle
+
+status
+
+created_at
+
+This will be expanded later.
+
+====================================================
+CLIENT DOCUMENTS
+====================================================
+
+Table:
+
+client_documents
+
+Fields:
+
+id
+
+client_id
+
+document_type
+
+file_name
+
+file_path
+
+uploaded_by
+
+created_at
+
+Supported Types:
+
+Proposal
+Agreement
+NDA
+Purchase Order
+Contract
+Invoice
+Receipt
+Other
+
+Use centralized storage helper.
+
+Storage Path:
+
+uploads/
+   client_id/
+      documents/
+
+Store only file path in database.
+
+====================================================
+CLIENT ACTIVITY LOGS
+====================================================
+
+Table:
+
+client_activity_logs
+
+Fields:
+
+id
+
+client_id
+
+action
+
+remarks
+
+performed_by
+
+created_at
+
+Track:
+
+Client Created
+Client Updated
+Contact Added
+Module Enabled
+Subscription Updated
+Document Uploaded
+Tenant Provisioned
+
+====================================================
+CONVERT LEAD TO CLIENT
+====================================================
+
+Implement:
+
+Convert Lead To Client
+
+Button available only when:
+
+Lead Stage = Won
+
+When converting:
+
+Create Client
+
+Create Primary Contact
+
+Create Billing Profile
+
+Create Activity Log
+
+Maintain:
+
+lead_id reference
+
+Store:
+
+converted_from_lead = true
+
+Prevent duplicate conversions.
+
+====================================================
+CLIENT LIST PAGE
+====================================================
+
+Columns:
+
+Client Code
+
+Company Name
+
+Industry
+
+Country
+
+Status
+
+Subscription
+
+Created Date
+
+Actions
+
+Features:
+
+Search
+
+Filter
+
+Sorting
+
+Pagination
+
+Actions:
+
+View
+
+Edit
+
+Suspend
+
+Activate
+
+Archive
+
+====================================================
+CLIENT DETAILS PAGE
+====================================================
+
+Use Tabs.
+
+Tabs:
+
+Overview
+
+Contacts
+
+Commercials
+
+Modules
+
+Subscription
+
+Documents
+
+Activities
+
+Tenant Setup
+
+====================================================
+OVERVIEW TAB
+====================================================
+
+Display:
+
+Client Code
+
+Company Name
+
+Legal Name
+
+Industry
+
+Website
+
+Company Size
+
+Country
+
+Timezone
+
+Status
+
+====================================================
+CONTACTS TAB
+====================================================
+
+Manage:
+
+Primary Contact
+
+Finance Contact
+
+HR Contact
+
+IT Contact
+
+Procurement Contact
+
+====================================================
+COMMERCIALS TAB
+====================================================
+
+Display:
+
+GST Number
+
+PAN Number
+
+Billing Email
+
+Billing Address
+
+Payment Terms
+
+Currency
+
+Bank Details
+
+====================================================
+MODULES TAB
+====================================================
+
+Enable/Disable:
+
+Employee Management
+
+HRMS
+
+Asset Management
+
+Billing
+
+Workflow
+
+Reports
+
+====================================================
+SUBSCRIPTION TAB
+====================================================
+
+Display:
+
+Plan
+
+User Limit
+
+Storage Limit
+
+Start Date
+
+End Date
+
+Status
+
+====================================================
+DOCUMENTS TAB
+====================================================
+
+Upload:
+
+Proposal
+
+Agreement
+
+NDA
+
+Contract
+
+PO
+
+Invoices
+
+Receipts
+
+====================================================
+TENANT SETUP TAB
+====================================================
+
+Display:
+
+Tenant Status
+
+Tenant ID
+
+Database Status
+
+Storage Status
+
+Provisioning Date
+
+Initially:
+
+Not Provisioned
+
+Future:
+
+Provision Tenant Button
+
+====================================================
+VALIDATIONS
+====================================================
+
+All inputs:
+
+- trim whitespace
+- prevent duplicate spaces
+- required validation
+- email validation
+- phone validation
+- URL validation
+- GST validation
+- prevent XSS
+- prevent script injection
+
+Mandatory fields show RED ASTERISK.
+
+====================================================
+UI REQUIREMENTS
+====================================================
+
+Create reusable:
+
+- Client Header
+- Contact Card
+- Billing Card
+- Module Toggle Grid
+- Activity Timeline
+- Document Upload Component
+
+Support:
+
+- Dark Theme
+- Light Theme
+
+Responsive:
+
+Desktop
+Tablet
+Mobile
+
+Maintain uniform spacing and padding.
+
+====================================================
+AUDIT REQUIREMENTS
+====================================================
+
+Track:
+
+Client Created
+
+Client Updated
+
+Status Changed
+
+Contact Added
+
+Module Enabled
+
+Module Disabled
+
+Document Uploaded
+
+Lead Converted
+
+====================================================
+IMPORTANT
+====================================================
+
+This module will become the master entity for:
+
+Subscriptions
+Invoices
+Payments
+Tenant Provisioning
+Admin Users
+HRMS
+Assets
+
+Design the architecture accordingly.
+
+Keep everything reusable and enterprise-ready.
