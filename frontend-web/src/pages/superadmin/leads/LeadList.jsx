@@ -5,7 +5,8 @@ import Table from "../../../components/ui/Table";
 import Pagination from "../../../components/ui/Pagination";
 import SearchBar from "../../../components/ui/SearchBar";
 import Select from "../../../components/ui/Select";
-import CollapsibleFilters from "../../../components/ui/CollapsibleFilters";
+import CollapsibleFilters, { useCollapsibleFilters } from "../../../components/ui/CollapsibleFilters";
+import FilterToggleButton from "../../../components/ui/FilterToggleButton";
 import Modal from "../../../components/ui/Modal";
 import { StageBadge, StatusBadge } from "./components/StageBadge";
 import ScoreBadge from "./components/ScoreBadge";
@@ -34,6 +35,8 @@ export default function LeadList() {
 
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+
+  const { open: filtersOpen, toggle: toggleFilters } = useCollapsibleFilters("leads");
 
   useEffect(() => {
     leadsApi.options()
@@ -89,6 +92,15 @@ export default function LeadList() {
   const resetPage = (setter) => (value) => { setter(value); setPage(1); };
 
   const activeFilterCount = [search, stage, status, source, scoreLabel].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSearch("");
+    setStage("");
+    setStatus("");
+    setSource("");
+    setScoreLabel("");
+    setPage(1);
+  };
 
   const executeDelete = async () => {
     if (!confirmDelete) return;
@@ -171,19 +183,22 @@ export default function LeadList() {
           </div>
           <p className="text-sm t-muted ml-3">Track your sales pipeline from first contact to conversion.</p>
         </div>
-        <button onClick={() => navigate("/superadmin/leads/new")} className="btn-primary flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Lead
-        </button>
+        <div className="flex items-center gap-2">
+          <FilterToggleButton active={filtersOpen} count={activeFilterCount} onClick={toggleFilters} />
+          <button onClick={() => navigate("/superadmin/leads/new")} className="btn-primary flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Lead
+          </button>
+        </div>
       </div>
 
       {/* Dashboard widgets */}
       <Dashboard stats={stats} />
 
       {/* Filters */}
-      <CollapsibleFilters activeCount={activeFilterCount} storageKey="leads">
+      <CollapsibleFilters open={filtersOpen} hideHeader activeCount={activeFilterCount} onClear={clearFilters}>
         <SearchBar value={search} onChange={resetPage(setSearch)} placeholder="Search company, contact, lead #..." className="flex-1 min-w-[200px] max-w-sm" />
         <Select value={stage} onChange={(e) => resetPage(setStage)(e.target.value)} options={toOptions(options.stages)} placeholder="All Stages" selectClassName="text-sm" className="w-40" />
         <Select value={status} onChange={(e) => resetPage(setStatus)(e.target.value)} options={toOptions(options.statuses)} placeholder="All Statuses" selectClassName="text-sm" className="w-36" />

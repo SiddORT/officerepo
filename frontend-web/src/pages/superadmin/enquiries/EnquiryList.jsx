@@ -5,7 +5,8 @@ import Table from "../../../components/ui/Table";
 import Pagination from "../../../components/ui/Pagination";
 import SearchBar from "../../../components/ui/SearchBar";
 import Select from "../../../components/ui/Select";
-import CollapsibleFilters from "../../../components/ui/CollapsibleFilters";
+import CollapsibleFilters, { useCollapsibleFilters } from "../../../components/ui/CollapsibleFilters";
+import FilterToggleButton from "../../../components/ui/FilterToggleButton";
 import { STATUS_COLORS, toOptions, formatDate } from "./constants";
 
 function StatusPill({ status }) {
@@ -42,6 +43,8 @@ export default function EnquiryList() {
   const [pageSize, setPageSize] = useState(20);
   const [sortBy, setSortBy] = useState("created_at");
   const [sortDir, setSortDir] = useState("desc");
+
+  const { open: filtersOpen, toggle: toggleFilters } = useCollapsibleFilters("enquiries");
 
   useEffect(() => {
     enquiryInboxApi.options()
@@ -95,6 +98,13 @@ export default function EnquiryList() {
   const resetPage = (setter) => (value) => { setter(value); setPage(1); };
 
   const activeFilterCount = [search, status, spam].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatus("");
+    setSpam("");
+    setPage(1);
+  };
 
   const columns = [
     {
@@ -169,13 +179,14 @@ export default function EnquiryList() {
           </div>
           <p className="text-sm t-muted ml-3">Every website enquiry lands here. Triage, assign, and convert to leads.</p>
         </div>
+        <FilterToggleButton active={filtersOpen} count={activeFilterCount} onClick={toggleFilters} />
       </div>
 
       {/* Dashboard widgets */}
       <Dashboard stats={stats} />
 
       {/* Filters */}
-      <CollapsibleFilters activeCount={activeFilterCount} storageKey="enquiries">
+      <CollapsibleFilters open={filtersOpen} hideHeader activeCount={activeFilterCount} onClear={clearFilters}>
         <SearchBar value={search} onChange={resetPage(setSearch)} placeholder="Search company, name, enquiry #..." className="flex-1 min-w-[200px] max-w-sm" />
         <Select value={status} onChange={(e) => resetPage(setStatus)(e.target.value)} options={toOptions(options.all_statuses)} placeholder="All Statuses" selectClassName="text-sm" className="w-40" />
         <Select value={spam} onChange={(e) => resetPage(setSpam)(e.target.value)} options={SPAM_FILTERS} placeholder="All Enquiries" selectClassName="text-sm" className="w-40" />
