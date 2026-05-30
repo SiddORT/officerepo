@@ -131,7 +131,7 @@ GET    /api/v1/superadmin/leads/meta/options
 GET    /api/v1/superadmin/leads/dashboard               (stats + due/overdue counts + notifications[])
 GET    /api/v1/superadmin/leads/calendar/events         (?start&end ISO — demos/follow-ups/next-actions)
 GET    /api/v1/superadmin/leads                          (list: page/page_size/sort/search/filters)
-POST   /api/v1/superadmin/leads
+POST   /api/v1/superadmin/leads                          (body may include spokespersons[] = non-primary contacts)
 GET    /api/v1/superadmin/leads/{lead_id}
 PATCH  /api/v1/superadmin/leads/{lead_id}
 DELETE /api/v1/superadmin/leads/{lead_id}                (soft delete)
@@ -189,7 +189,16 @@ POST   /api/v1/superadmin/leads/convert-enquiry/{enquiry_id}  (idempotent)
 - **Phone country code**: leads store a plaintext `country_code` alongside the encrypted phone.
 - **Spokespersons**: each lead can have multiple contacts (name/designation/email/phone/
   country_code/is_primary); email & phone are encrypted PII. CRUD writes masked-PII audit entries.
+  The lead's legacy `contact_*` columns mirror **exactly one primary** LeadSpokesperson row;
+  additional people are non-primary rows. Lead create/update accept a `spokespersons[]` array
+  (each may carry an `id` on update; `update_lead` reconciles via full-replace of non-primary rows)
+  and the lead form edits them inline (top contact fields = primary; "Additional Spokespersons"
+  section = non-primary). Sync is bidirectional: editing legacy contact fields updates the primary
+  row and vice-versa; demoting/deleting a primary promotes the next remaining contact.
+  `get_lead_detail` returns only non-primary rows (for edit prefill).
 - **Activities** carry a free-text `next_action` (what to do next) plus `next_action_date`.
+  The timeline explicitly surfaces both `next_action` and `next_action_date` on activity events
+  (detail text appends "(by YYYY-MM-DD)").
 - **Dashboard notifications**: `/dashboard` returns due/overdue counts + a `notifications[]`
   list (type, urgency=due|overdue, date, lead_id, lead_name, title) surfaced in the LeadList
   panel and the topbar NotificationBell.

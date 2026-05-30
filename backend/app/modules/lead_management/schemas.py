@@ -16,6 +16,48 @@ from backend.app.modules.lead_management import constants as c
 from backend.app.modules.lead_management import validators as v
 
 
+# ── Spokesperson (nested input for lead create/update) ───────────────────────
+class SpokespersonInput(BaseModel):
+    """Additional point-of-contact submitted inline on the lead form.
+
+    ``id`` identifies an existing row on update (omit for new rows). The lead's
+    own contact_* fields are the PRIMARY contact and are kept in sync with a
+    primary spokesperson server-side — these inline rows are additional contacts.
+    """
+    id: Optional[str] = Field(None, max_length=36)
+    name: str = Field(..., max_length=120)
+    designation: Optional[str] = Field(None, max_length=120)
+    email: Optional[str] = Field(None, max_length=255)
+    phone: Optional[str] = Field(None, max_length=30)
+    country_code: Optional[str] = Field(None, max_length=8)
+    is_primary: Optional[bool] = False
+
+    @field_validator("name")
+    @classmethod
+    def _name(cls, val):
+        return v.validate_length(val, field="name", min_len=2, max_len=120, required=True)
+
+    @field_validator("designation")
+    @classmethod
+    def _designation(cls, val):
+        return v.clean_text(val)
+
+    @field_validator("email")
+    @classmethod
+    def _email(cls, val):
+        return v.validate_email(val, field="email")
+
+    @field_validator("phone")
+    @classmethod
+    def _phone(cls, val):
+        return v.validate_phone(val, field="phone")
+
+    @field_validator("country_code")
+    @classmethod
+    def _country_code(cls, val):
+        return v.validate_country_code(val, field="country_code")
+
+
 # ── Leads ────────────────────────────────────────────────────────────────────
 class LeadCreateRequest(BaseModel):
     company_name: str = Field(..., max_length=150)
@@ -35,6 +77,7 @@ class LeadCreateRequest(BaseModel):
     expected_revenue: Optional[float] = Field(None, ge=0)
     expected_go_live_date: Optional[date] = None
     interested_modules: Optional[str] = Field(None, max_length=1000)
+    spokespersons: Optional[List[SpokespersonInput]] = None
 
     @field_validator("company_name")
     @classmethod
@@ -96,6 +139,7 @@ class LeadUpdateRequest(BaseModel):
     expected_revenue: Optional[float] = Field(None, ge=0)
     expected_go_live_date: Optional[date] = None
     interested_modules: Optional[str] = Field(None, max_length=1000)
+    spokespersons: Optional[List[SpokespersonInput]] = None
 
     @field_validator("company_name")
     @classmethod

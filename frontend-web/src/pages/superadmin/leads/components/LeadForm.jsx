@@ -29,9 +29,13 @@ const EMPTY = {
   interested_modules: "",
 };
 
+const EMPTY_SPOKESPERSON = { id: null, name: "", designation: "", email: "", country_code: "", phone: "" };
+
 export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit }) {
   const navigate = useNavigate();
   const [form, setForm] = useState(EMPTY);
+  const [spokespersons, setSpokespersons] = useState([]);
+  const [spErrors, setSpErrors] = useState({});
   const [errors, setErrors] = useState({});
   const [options, setOptions] = useState({ sources: [], stages: [] });
   const [submitting, setSubmitting] = useState(false);
@@ -54,12 +58,36 @@ export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit 
           ])
         ),
       });
+      if (Array.isArray(initial.spokespersons)) {
+        setSpokespersons(
+          initial.spokespersons.map((s) => ({
+            id: s.id,
+            name: s.name || "",
+            designation: s.designation || "",
+            email: s.email || "",
+            country_code: s.country_code || "",
+            phone: s.phone || "",
+          }))
+        );
+      }
     }
   }, [initial]);
 
   const setField = (key, value) => {
     setForm((f) => ({ ...f, [key]: value }));
     if (errors[key]) setErrors((e) => ({ ...e, [key]: undefined }));
+  };
+
+  const addSpokesperson = () => setSpokespersons((rows) => [...rows, { ...EMPTY_SPOKESPERSON }]);
+  const removeSpokesperson = (idx) => {
+    setSpokespersons((rows) => rows.filter((_, i) => i !== idx));
+    setSpErrors((e) => ({ ...e, [idx]: undefined }));
+  };
+  const setSpokespersonField = (idx, key, value) => {
+    setSpokespersons((rows) => rows.map((r, i) => (i === idx ? { ...r, [key]: value } : r)));
+    if (spErrors[idx]?.[key]) {
+      setSpErrors((e) => ({ ...e, [idx]: { ...e[idx], [key]: undefined } }));
+    }
   };
 
   const validate = () => {
@@ -83,8 +111,21 @@ export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit 
     if (form.expected_user_count !== "" && (!Number.isInteger(Number(form.expected_user_count)) || Number(form.expected_user_count) < 0))
       e.expected_user_count = "Must be a positive whole number.";
 
+    const se = {};
+    spokespersons.forEach((sp, idx) => {
+      const rowErr = {};
+      const name = sp.name.trim();
+      if (!name) rowErr.name = "Name is required.";
+      else if (name.length > 150) rowErr.name = "Must be under 150 characters.";
+      if (sp.email.trim() && !EMAIL_RE.test(sp.email.trim())) rowErr.email = "Enter a valid email address.";
+      if (sp.country_code.trim() && !COUNTRY_CODE_RE.test(sp.country_code.trim().replace(/\s/g, "")))
+        rowErr.country_code = "Use a dialing code like +1 or +44.";
+      if (Object.keys(rowErr).length) se[idx] = rowErr;
+    });
+    setSpErrors(se);
+
     setErrors(e);
-    return Object.keys(e).length === 0;
+    return Object.keys(e).length === 0 && Object.keys(se).length === 0;
   };
 
   const buildPayload = () => {
@@ -103,6 +144,20 @@ export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit 
     if (form.expected_revenue !== "") payload.expected_revenue = Number(form.expected_revenue);
     if (form.expected_user_count !== "") payload.expected_user_count = Number(form.expected_user_count);
     if (form.expected_go_live_date) payload.expected_go_live_date = form.expected_go_live_date;
+
+    payload.spokespersons = spokespersons.map((sp) => {
+      const row = { name: trim(sp.name), is_primary: false };
+      if (sp.id) row.id = sp.id;
+      const designation = trim(sp.designation);
+      const email = trim(sp.email);
+      const country_code = trim(sp.country_code);
+      const phone = trim(sp.phone);
+      if (designation) row.designation = designation;
+      if (email) row.email = email;
+      if (country_code) row.country_code = country_code;
+      if (phone) row.phone = phone;
+      return row;
+    });
     return payload;
   };
 
@@ -148,6 +203,43 @@ export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit 
         <Input label="Company Size" value={form.company_size} onChange={(e) => setField("company_size", e.target.value)} placeholder="e.g. 250 or 100-500" maxLength={50} />
         <Input label="Expected User Count" type="number" min="0" value={form.expected_user_count} onChange={(e) => setField("expected_user_count", e.target.value)} error={errors.expected_user_count} placeholder="200" />
       </Section>
+
+      <div className="rounded-xl p-5" style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)" }}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold t-heading flex items-center gap-2">
+            <span className="inline-block w-1 h-4 rounded-full" style={{ background: "linear-gradient(to bottom, #00aeec, #ff7a1a)" }} />
+            Additional Spokespersons
+          </h3>
+          <button type="button" onClick={addSpokesperson} className="btn-secondary text-xs px-3 py-1.5">+ Add Spokesperson</button>
+        </div>
+        {spokespersons.length === 0 ? (
+          <p className="text-xs t-muted">
+            The contact above is the primary spokesperson. Add more people involved with this lead here.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {spokespersons.map((sp, idx) => (
+              <div key={idx} className="rounded-lg p-4" style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)" }}>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-medium t-muted">Spokesperson {idx + 1}</span>
+                  <button type="button" onClick={() => removeSpokesperson(idx)} className="text-xs text-red-400 hover:text-red-300">Remove</button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input label="Name" required value={sp.name} onChange={(e) => setSpokespersonField(idx, "name", e.target.value)} error={spErrors[idx]?.name} placeholder="John Smith" maxLength={150} />
+                  <Input label="Designation" value={sp.designation} onChange={(e) => setSpokespersonField(idx, "designation", e.target.value)} placeholder="CTO" maxLength={120} />
+                  <Input label="Email" type="email" value={sp.email} onChange={(e) => setSpokespersonField(idx, "email", e.target.value)} error={spErrors[idx]?.email} placeholder="john@acme.com" />
+                  <div className="grid grid-cols-3 gap-3">
+                    <Input label="Code" value={sp.country_code} onChange={(e) => setSpokespersonField(idx, "country_code", e.target.value)} error={spErrors[idx]?.country_code} placeholder="+1" maxLength={8} />
+                    <div className="col-span-2">
+                      <Input label="Phone" value={sp.phone} onChange={(e) => setSpokespersonField(idx, "phone", e.target.value)} placeholder="555 000 0000" maxLength={30} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <Section title="Pipeline">
         <Select label="Lead Source" required value={form.lead_source} onChange={(e) => setField("lead_source", e.target.value)} options={toOptions(options.sources)} placeholder="Select source" error={errors.lead_source} />

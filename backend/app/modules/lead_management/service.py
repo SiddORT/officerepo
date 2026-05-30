@@ -310,6 +310,94 @@ def _effective_followup_status(f: LeadFollowup) -> str:
 
 
 # ════════════════════════════════════════════════════════════════════════════
+# Primary contact ⇄ spokesperson synchronization
+#
+# A lead's contact_* columns hold the PRIMARY contact. We mirror them onto a
+# single primary LeadSpokesperson row so the contacts list always includes the
+# primary, and we keep the two in sync in both directions:
+#   - legacy contact fields change  → _sync_primary_from_legacy
+#   - primary spokesperson changes  → _sync_lead_contact_from_primary
+# ════════════════════════════════════════════════════════════════════════════
+def _spokesperson_from_input(lead_id: str, item, actor_id: Optional[int], *, is_primary: bool = False) -> LeadSpokesperson:
+    return LeadSpokesperson(
+        lead_id=lead_id,
+        name=item.name,
+        designation=item.designation,
+        email_encrypted=encrypt_value(item.email) if item.email else None,
+        phone_encrypted=encrypt_value(item.phone) if item.phone else None,
+        country_code=item.country_code,
+        is_primary=is_primary,
+        created_by=actor_id,
+    )
+
+
+def _primary_mirror(lead: Lead, actor_id: Optional[int]) -> LeadSpokesperson:
+    """Build a primary spokesperson mirroring the lead's legacy contact columns."""
+    return LeadSpokesperson(
+        lead_id=lead.id,
+        name=lead.contact_name,
+        designation=lead.designation,
+        email_encrypted=lead.email_encrypted,
+        phone_encrypted=lead.phone_encrypted,
+        country_code=lead.country_code,
+        is_primary=True,
+        created_by=actor_id,
+    )
+
+
+def _sync_lead_contact_from_primary(lead: Lead, primary: Optional[LeadSpokesperson]) -> None:
+    """Copy a primary spokesperson onto the lead's legacy contact columns (+ dedupe hash)."""
+    if primary is None:
+        return
+    lead.contact_name = primary.name
+    lead.designation = primary.designation
+    lead.email_encrypted = primary.email_encrypted
+    lead.phone_encrypted = primary.phone_encrypted
+    lead.country_code = primary.country_code
+    email = _safe_decrypt(primary.email_encrypted)
+    lead.dedupe_hash = blind_index(email or "", lead.company_name) if email else None
+
+
+def _sync_primary_from_legacy(db: Session, lead: Lead, actor_id: Optional[int]) -> None:
+    """Update (or create) the primary spokesperson to mirror the lead's legacy contact columns."""
+    primary = repo.get_primary_spokesperson(db, lead.id)
+    if primary is None:
+        repo.add(db, _primary_mirror(lead, actor_id))
+        return
+    primary.name = lead.contact_name
+    primary.designation = lead.designation
+    primary.email_encrypted = lead.email_encrypted
+    primary.phone_encrypted = lead.phone_encrypted
+    primary.country_code = lead.country_code
+
+
+def _replace_additional_spokespersons(db: Session, lead: Lead, items, actor_id: Optional[int]) -> None:
+    """Full-replace reconcile of the non-primary spokespersons from a lead payload.
+
+    Existing additional rows matched by id are updated; new rows are inserted;
+    additional rows absent from the payload are soft-deleted. The primary row is
+    never touched here (it mirrors the lead's contact_* columns).
+    """
+    existing = {s.id: s for s in repo.list_spokespersons(db, lead.id) if not s.is_primary}
+    incoming_ids: set[str] = set()
+    for item in items:
+        if item.id and item.id in existing:
+            sp = existing[item.id]
+            sp.name = item.name
+            sp.designation = item.designation
+            sp.email_encrypted = encrypt_value(item.email) if item.email else None
+            sp.phone_encrypted = encrypt_value(item.phone) if item.phone else None
+            sp.country_code = item.country_code
+            incoming_ids.add(sp.id)
+        else:
+            repo.add(db, _spokesperson_from_input(lead.id, item, actor_id, is_primary=False))
+    for sid, sp in existing.items():
+        if sid not in incoming_ids:
+            sp.is_deleted = True
+            sp.deleted_at = datetime.utcnow()
+
+
+# ════════════════════════════════════════════════════════════════════════════
 # Lead CRUD
 # ════════════════════════════════════════════════════════════════════════════
 def _require_lead(db: Session, lead_id: str) -> Lead:
@@ -347,6 +435,13 @@ def create_lead(db: Session, payload: LeadCreateRequest, *, actor_id: Optional[i
     if lead.current_stage in (c.STAGE_CONTACTED, c.STAGE_QUALIFIED) and not lead.first_contact_date:
         lead.first_contact_date = datetime.utcnow()
     repo.add(db, lead)
+
+    # The primary contact (lead.contact_*) is mirrored onto a primary spokesperson;
+    # any inline rows from the form are stored as additional (non-primary) contacts.
+    repo.add(db, _primary_mirror(lead, actor_id))
+    for item in (payload.spokespersons or []):
+        repo.add(db, _spokesperson_from_input(lead.id, item, actor_id, is_primary=False))
+
     _recompute_score(db, lead)
 
     record_audit(
@@ -360,7 +455,13 @@ def create_lead(db: Session, payload: LeadCreateRequest, *, actor_id: Optional[i
 
 
 def get_lead_detail(db: Session, lead_id: str) -> dict:
-    return lead_to_detail(_require_lead(db, lead_id))
+    lead = _require_lead(db, lead_id)
+    detail = lead_to_detail(lead)
+    # Additional (non-primary) spokespersons for inline editing on the lead form.
+    detail["spokespersons"] = [
+        spokesperson_to_dict(s) for s in repo.list_spokespersons(db, lead_id) if not s.is_primary
+    ]
+    return detail
 
 
 def list_leads(db: Session, **kwargs) -> tuple[list[dict], int]:
@@ -368,9 +469,15 @@ def list_leads(db: Session, **kwargs) -> tuple[list[dict], int]:
     return [lead_to_summary(x) for x in items], total
 
 
-def update_lead(db: Session, lead_id: str, payload: LeadUpdateRequest, *, actor: Optional[str]) -> dict:
+def update_lead(db: Session, lead_id: str, payload: LeadUpdateRequest, *,
+                actor: Optional[str], actor_id: Optional[int] = None) -> dict:
     lead = _require_lead(db, lead_id)
     data = payload.model_dump(exclude_unset=True)
+    # Pop the dumped copy so it isn't applied via setattr; use the parsed Pydantic
+    # objects from the payload for reconciliation (model_dump turns them into dicts).
+    spokespersons_set = "spokespersons" in data
+    data.pop("spokespersons", None)
+    spokespersons = payload.spokespersons if spokespersons_set else None
 
     if "email" in data:
         email = data.pop("email")
@@ -388,9 +495,18 @@ def update_lead(db: Session, lead_id: str, payload: LeadUpdateRequest, *, actor:
         current_email = _safe_decrypt(lead.email_encrypted)
         lead.dedupe_hash = blind_index(current_email or "", lead.company_name)
 
+    # Keep the primary spokesperson in sync with the (possibly updated) contact fields,
+    # then reconcile any inline additional spokespersons from the form.
+    _sync_primary_from_legacy(db, lead, actor_id)
+    if spokespersons is not None:
+        _replace_additional_spokespersons(db, lead, spokespersons, actor_id)
+
     _recompute_score(db, lead)
+    audit_fields = list(data.keys())
+    if spokespersons is not None:
+        audit_fields.append("spokespersons")
     record_audit(db, c.AUDIT_LEAD_UPDATED, c.AUDIT_ENTITY, lead.lead_number, actor=actor,
-                 metadata={"fields": list(data.keys())})
+                 metadata={"fields": audit_fields})
     db.commit()
     db.refresh(lead)
     return lead_to_detail(lead)
@@ -486,6 +602,7 @@ def add_spokesperson(db: Session, lead_id: str, payload: SpokespersonCreateReque
     repo.add(db, sp)
     if sp.is_primary:
         repo.clear_primary_spokesperson(db, lead.id, exclude_id=sp.id)
+        _sync_lead_contact_from_primary(lead, sp)
     record_audit(db, c.AUDIT_SPOKESPERSON_ADDED, c.AUDIT_ENTITY, lead.lead_number, actor=actor,
                  metadata={"name": sp.name, "email": mask_email(payload.email) if payload.email else None})
     db.commit()
@@ -499,6 +616,7 @@ def update_spokesperson(db: Session, lead_id: str, spokesperson_id: str,
     sp = repo.get_child(db, LeadSpokesperson, spokesperson_id, lead.id)
     if not sp:
         raise HTTPException(status_code=404, detail="Spokesperson not found.")
+    was_primary = sp.is_primary
     data = payload.model_dump(exclude_unset=True)
     if "email" in data:
         email = data.pop("email")
@@ -508,8 +626,24 @@ def update_spokesperson(db: Session, lead_id: str, spokesperson_id: str,
         sp.phone_encrypted = encrypt_value(phone) if phone else None
     for field, value in data.items():
         setattr(sp, field, value)
-    if data.get("is_primary"):
+
+    if sp.is_primary:
+        # Promoting (or editing) this row as primary → ensure it is the only one
+        # and mirror it onto the lead's legacy contact columns.
         repo.clear_primary_spokesperson(db, lead.id, exclude_id=sp.id)
+        _sync_lead_contact_from_primary(lead, sp)
+    elif was_primary:
+        # Demoting the current primary → promote another active contact (if any)
+        # and re-sync legacy fields so exactly one primary mirror is maintained.
+        remaining = [s for s in repo.list_spokespersons(db, lead.id) if s.id != sp.id]
+        if remaining:
+            new_primary = remaining[0]
+            new_primary.is_primary = True
+            _sync_lead_contact_from_primary(lead, new_primary)
+        else:
+            # No other contact to promote — keep this row as the primary mirror.
+            sp.is_primary = True
+            _sync_lead_contact_from_primary(lead, sp)
     record_audit(db, c.AUDIT_SPOKESPERSON_UPDATED, c.AUDIT_ENTITY, lead.lead_number, actor=actor,
                  metadata={"spokesperson_id": sp.id, "fields": list(data.keys())})
     db.commit()
@@ -522,8 +656,16 @@ def delete_spokesperson(db: Session, lead_id: str, spokesperson_id: str, *, acto
     sp = repo.get_child(db, LeadSpokesperson, spokesperson_id, lead.id)
     if not sp:
         raise HTTPException(status_code=404, detail="Spokesperson not found.")
+    was_primary = sp.is_primary
     sp.is_deleted = True
     sp.deleted_at = datetime.utcnow()
+    # If the primary was removed, promote the next remaining contact and re-sync.
+    if was_primary:
+        remaining = [s for s in repo.list_spokespersons(db, lead.id) if s.id != sp.id]
+        if remaining:
+            new_primary = remaining[0]
+            new_primary.is_primary = True
+            _sync_lead_contact_from_primary(lead, new_primary)
     record_audit(db, c.AUDIT_SPOKESPERSON_DELETED, c.AUDIT_ENTITY, lead.lead_number, actor=actor,
                  metadata={"spokesperson_id": sp.id})
     db.commit()
@@ -856,9 +998,13 @@ def get_timeline(db: Session, lead_id: str) -> list[dict]:
     for a in repo.list_activities(db, lead_id):
         detail = a.remarks
         if a.next_action:
-            detail = f"{detail} · Next: {a.next_action}" if detail else f"Next: {a.next_action}"
+            next_txt = f"Next: {a.next_action}"
+            if a.next_action_date:
+                next_txt += f" (by {a.next_action_date.strftime('%Y-%m-%d')})"
+            detail = f"{detail} · {next_txt}" if detail else next_txt
         events.append({"type": "activity", "title": f"Activity · {a.activity_type}",
-                       "date": a.activity_date, "detail": detail})
+                       "date": a.activity_date, "detail": detail,
+                       "next_action": a.next_action, "next_action_date": a.next_action_date})
     for d in repo.list_demos(db, lead_id):
         events.append({"type": "demo", "title": f"Demo · {d.status}", "date": d.demo_date,
                        "detail": d.feedback or d.next_steps})

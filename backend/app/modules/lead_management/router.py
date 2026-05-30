@@ -176,7 +176,10 @@ def get_lead(lead_id: str, db: Session = Depends(get_platform_db), _admin: dict 
 @router.patch("/{lead_id}", summary="Update a lead")
 def update_lead(lead_id: str, payload: LeadUpdateRequest, db: Session = Depends(get_platform_db),
                 admin: dict = Depends(_current_admin)):
-    return ApiResponse.ok(service.update_lead(db, lead_id, payload, actor=admin["email"]), "Lead updated.").model_dump()
+    return ApiResponse.ok(
+        service.update_lead(db, lead_id, payload, actor=admin["email"], actor_id=admin["user_id"]),
+        "Lead updated.",
+    ).model_dump()
 
 
 @router.delete("/{lead_id}", summary="Soft-delete a lead")

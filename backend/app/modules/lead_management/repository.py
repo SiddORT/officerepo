@@ -131,6 +131,20 @@ def list_spokespersons(db: Session, lead_id: str) -> List[LeadSpokesperson]:
     return list_children(db, LeadSpokesperson, lead_id, order_col=LeadSpokesperson.created_at, order_desc=False)
 
 
+def get_primary_spokesperson(db: Session, lead_id: str) -> Optional[LeadSpokesperson]:
+    """Return the lead's active primary spokesperson (oldest first), if any."""
+    return (
+        db.query(LeadSpokesperson)
+        .filter(
+            LeadSpokesperson.lead_id == lead_id,
+            LeadSpokesperson.is_deleted.is_(False),
+            LeadSpokesperson.is_primary.is_(True),
+        )
+        .order_by(LeadSpokesperson.created_at.asc())
+        .first()
+    )
+
+
 def clear_primary_spokesperson(db: Session, lead_id: str, *, exclude_id: Optional[str] = None) -> None:
     """Unset is_primary on all (active) spokespersons for a lead, optionally excluding one."""
     q = (

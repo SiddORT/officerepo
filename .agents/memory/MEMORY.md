@@ -6,3 +6,4 @@
 - [Enquiry PII encryption & dedup](enquiry-pii-encryption.md) — encrypted columns aren't queryable; store an HMAC blind-index (email|company) for duplicate detection, never decrypt-and-scan.
 - [Private file downloads](private-file-downloads.md) — sensitive uploads go to a private root (not /uploads), served via authed FileResponse; frontend must blob-fetch with JWT, not `<a href>`.
 - [Naive UTC datetimes](naive-utc-datetimes.md) — DB datetime cols are naive UTC; normalize tz-aware ISO input to UTC-naive before range queries, never `.split("+")[0]`.
+- [Lead spokesperson primary mirror](lead-spokesperson-mirror.md) — lead legacy contact_* cols mirror exactly one primary LeadSpokesperson row; sync both ways; nested payload objects dump to dicts (use payload.spokespersons).
