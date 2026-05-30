@@ -1,9 +1,11 @@
 # Project Memory — Office Repo
 
-- [Backend test import paths](backend-test-imports.md) — workspace root has a sibling `app/` that shadows `backend/app`; use `backend.app.*` imports and run unittest from workspace root.
+- [Backend test import paths](backend-test-imports.md) — sibling `app/` shadows `backend/app` (use `backend.app.*`, run unittest from root); also covers the settings secrets-guard test-ordering artifact.
 - [Client IP behind Replit proxy](client-ip-proxy.md) — left-most X-Forwarded-For is spoofable; take the entry N hops from the RIGHT (TRUSTED_PROXY_HOPS, default 1).
 - [Cloudflare Turnstile integration](turnstile-integration.md) — explicit-render widget + CSP allowances + frontend token gating are all required for it to be genuinely "ready".
 - [Enquiry PII encryption & dedup](enquiry-pii-encryption.md) — encrypted columns aren't queryable; store an HMAC blind-index (email|company) for duplicate detection, never decrypt-and-scan.
+- [CSP blocks external images](csp-and-flags.md) — `img-src 'self' data:` silently blocks flag CDNs; use emoji flags (flagEmoji from ISO-2) for country pickers.
+- [Notification helpers](notification-helpers.md) — backend/shared/notifications: provider-agnostic, env-config, returns NOT_CONFIGURED instead of raising when creds absent.
 - [Private file downloads](private-file-downloads.md) — sensitive uploads go to a private root (not /uploads), served via authed FileResponse; frontend must blob-fetch with JWT, not `<a href>`.
 - [Naive UTC datetimes](naive-utc-datetimes.md) — DB datetime cols are naive UTC; normalize tz-aware ISO input to UTC-naive before range queries, never `.split("+")[0]`.
 - [Lead spokesperson primary mirror](lead-spokesperson-mirror.md) — lead legacy contact_* cols mirror exactly one primary LeadSpokesperson row; sync both ways; nested payload objects dump to dicts (use payload.spokespersons).

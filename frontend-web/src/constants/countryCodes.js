@@ -62,5 +62,9 @@ export const COUNTRY_CODES = [
   { iso2: "pe", name: "Peru", dial: "+51" },
 ];
 
-export const flagUrl = (iso2) => `https://flagcdn.com/24x18/${iso2}.png`;
-export const flagUrl2x = (iso2) => `https://flagcdn.com/48x36/${iso2}.png`;
+export const flagEmoji = (iso2) =>
+  iso2
+    ? iso2
+        .toUpperCase()
+        .replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)))
+    : "";

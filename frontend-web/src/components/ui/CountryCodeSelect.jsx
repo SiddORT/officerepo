@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
-import { COUNTRY_CODES, flagUrl } from "../../constants/countryCodes";
+import { COUNTRY_CODES, flagEmoji } from "../../constants/countryCodes";
 
 export default function CountryCodeSelect({
   label = "Code",
@@ -77,13 +77,9 @@ export default function CountryCodeSelect({
         >
           {selected ? (
             <>
-              <img
-                src={flagUrl(selected.iso2)}
-                alt=""
-                width={20}
-                height={15}
-                className="rounded-[2px] shrink-0"
-              />
+              <span className="text-base leading-none shrink-0" aria-hidden="true">
+                {flagEmoji(selected.iso2)}
+              </span>
               <span className="t-body">{selected.dial}</span>
             </>
           ) : value ? (
@@ -137,13 +133,9 @@ export default function CountryCodeSelect({
                     role="option"
                     aria-selected={c.dial === value}
                   >
-                    <img
-                      src={flagUrl(c.iso2)}
-                      alt=""
-                      width={20}
-                      height={15}
-                      className="rounded-[2px] shrink-0"
-                    />
+                    <span className="text-base leading-none shrink-0" aria-hidden="true">
+                      {flagEmoji(c.iso2)}
+                    </span>
                     <span className="t-body flex-1 truncate">{c.name}</span>
                     <span className="t-muted">{c.dial}</span>
                   </button>

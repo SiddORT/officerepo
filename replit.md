@@ -38,6 +38,8 @@ backend/
                                leads + 8 child tables (activities, demos, follow-ups, notes,
                                documents, proposals, negotiations, conversions)
   shared/storage/             Storage helper (public uploads/ + private_storage/ roots)
+  shared/notifications/       Multi-channel notification helpers (email/SMS/WhatsApp/push):
+                              base + config + dispatcher + one provider module per channel
 
 frontend-web/
   public/
@@ -249,6 +251,19 @@ ENQUIRY_ENCRYPTION_KEYS             Comma-separated Fernet keys for enquiry PII 
                                     a key derived from SESSION_SECRET/JWT_SECRET via HKDF.
 PRIVACY_POLICY_VERSION              Privacy policy version stamped on enquiries (default: 1.0)
 ENQUIRY_RETENTION_DAYS              Days until enquiry retention_until expiry (default: 365)
+
+# Notifications (all optional — each channel stays disabled until its vars are set)
+SMTP_HOST                           SMTP server host (enables email)
+SMTP_PORT                           SMTP port (default: 587)
+SMTP_USERNAME                       SMTP login username
+SMTP_PASSWORD                       SMTP login password
+SMTP_FROM                           From address (falls back to SMTP_USERNAME)
+SMTP_USE_TLS                        STARTTLS toggle (default: true)
+TWILIO_ACCOUNT_SID                  Twilio account SID (enables SMS + WhatsApp)
+TWILIO_AUTH_TOKEN                   Twilio auth token
+TWILIO_SMS_FROM                     Twilio SMS sender number (enables SMS)
+TWILIO_WHATSAPP_FROM                Twilio WhatsApp sender (enables WhatsApp; "whatsapp:" auto-prefixed)
+FCM_SERVER_KEY                      Firebase Cloud Messaging server key (enables push)
 ```
 
 ## Stack
@@ -345,6 +360,27 @@ uploads/
 ```
 
 Abstraction layer for easy future migration from local → AWS S3.
+
+---
+
+### 5b. Notification Helpers
+
+Centralized, provider-agnostic helpers at `backend/shared/notifications/`.
+
+```python
+from backend.shared.notifications import notifier
+result = notifier.send_email(to="a@b.com", subject="Hi", body="...")  # also send_sms / send_whatsapp / send_push
+if not result.success:
+    ...  # result.status: SENT | FAILED | NOT_CONFIGURED  (recipient is masked in logs)
+```
+
+- **Channels**: email (SMTP), SMS + WhatsApp (Twilio REST via httpx), push (FCM legacy server key).
+- **Config-driven**: every credential comes from env vars (see Environment Variables);
+  `notifier.configured_channels()` reports which are live.
+- **Explicit, non-crashing**: a missing config returns `NOT_CONFIGURED` (never raises),
+  so the helpers can be wired now and "go live" the moment creds are added.
+- **Abstraction layer**: swap a vendor by editing one provider module; callers are unchanged.
+- Recipients are masked (reusing the audit `mask_*` helpers) before logging.
 
 ---
 

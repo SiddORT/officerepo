@@ -19,3 +19,11 @@ sys.path[0] and evicting stale `app.*` modules.
   the workspace root: `python -m unittest backend.tests.<module> -v`.
 - `test_csp.py` uses bare `app.*` and only runs cleanly with cwd=`backend/`
   (`cd backend && python -m unittest tests.test_csp`); don't copy that pattern.
+
+**Test-ordering artifact (pre-existing, not a regression):**
+`test_settings_secrets_guard` asserts (via `assertLogs`) that importing
+`backend.app.config.settings` emits a WARNING. That warning fires only on the
+*first* import of the module. In a full-suite run any earlier test that imports
+settings caches it, so the guard test sees no new warning and "fails". It passes
+in isolation. Don't chase this when validating unrelated work — confirm by running
+the suite without your new files; the failure count stays the same.
