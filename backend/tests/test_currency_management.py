@@ -44,6 +44,10 @@ from backend.app.modules.currency_management.models import (  # noqa: E402
 from backend.app.modules.currency_management.schemas import (  # noqa: E402
     CurrencyCreateRequest, RateUpdateRequest,
 )
+from backend.app.modules.currency_management import providers as providers_pkg  # noqa: E402
+from backend.app.modules.currency_management.providers.base import (  # noqa: E402
+    ExchangeRateProvider, ProviderResult,
+)
 from backend.app.modules.rbac.models import (  # noqa: E402
     Permission, Role, RolePermission, AdminRole,
 )
@@ -232,6 +236,152 @@ class CurrencyServiceTests(unittest.TestCase):
         with self.assertRaises(HTTPException) as ctx:
             service.set_status(self.db, usd["id"], c.STATUS_INACTIVE, actor_id=1, actor="t@co.com")
         self.assertEqual(ctx.exception.status_code, 400)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# Live sync (provider abstraction)
+# ════════════════════════════════════════════════════════════════════════════
+class _StubProvider(ExchangeRateProvider):
+    """In-test provider that returns a canned rate map (and optional error)."""
+
+    name = "Stub"
+
+    def __init__(self, rates, error=None):
+        self._rates = rates
+        self._error = error
+        self.calls = []
+
+    def fetch_rates(self, base, symbols):
+        self.calls.append((base, list(symbols)))
+        return ProviderResult(base=base, rates=dict(self._rates),
+                              fetched_symbols=list(self._rates.keys()), error=self._error)
+
+
+class CurrencySyncTests(unittest.TestCase):
+    """Live-sync orchestration in ``service.run_sync``."""
+
+    _SOURCE = "Stub"
+
+    def setUp(self):
+        self.engine = create_engine(
+            "sqlite://", connect_args={"check_same_thread": False},
+            poolclass=StaticPool,
+        )
+        for t in _TABLES:
+            t.create(bind=self.engine)
+        self.Session = sessionmaker(bind=self.engine, autoflush=False, autocommit=False)
+        self.db = self.Session()
+        # Ensure each test starts from a clean provider registry.
+        self._saved_registry = dict(providers_pkg._REGISTRY)
+        providers_pkg._REGISTRY.clear()
+
+    def tearDown(self):
+        providers_pkg._REGISTRY.clear()
+        providers_pkg._REGISTRY.update(self._saved_registry)
+        self.db.close()
+
+    # ── helpers ──────────────────────────────────────────────────────────────
+    def _create(self, code, *, is_base=False, status=c.STATUS_ACTIVE, rate=None):
+        payload = CurrencyCreateRequest(
+            currency_code=code,
+            currency_name=f"{code} Dollar",
+            currency_symbol="$",
+            country="Testland",
+            is_base_currency=is_base,
+            status=status,
+            exchange_rate=rate,
+        )
+        return service.create_currency(self.db, payload, actor_id=1, actor="t@co.com")
+
+    def _sync(self):
+        return service.run_sync(self.db, sync_source=self._SOURCE, actor_id=1, actor="t@co.com")
+
+    def _assert_one_log_and_audit(self, expected_status):
+        logs = self.db.query(CurrencySyncLog).all()
+        self.assertEqual(len(logs), 1)
+        self.assertEqual(logs[0].sync_status, expected_status)
+        audits = _audit_actions(self.db, c.AUDIT_SYNC_RUN)
+        self.assertEqual(len(audits), 1)
+        self.assertEqual(audits[0].entity_id, logs[0].id)
+        return logs[0]
+
+    # ── no base currency ─────────────────────────────────────────────────────
+    def test_sync_without_base_currency_records_failed_log(self):
+        out = self._sync()
+        self.assertEqual(out["sync_status"], c.SYNC_FAILED)
+        self.assertEqual(out["currencies_updated"], 0)
+        self.assertIsNotNone(out["error_message"])
+        log = self._assert_one_log_and_audit(c.SYNC_FAILED)
+        self.assertIsNotNone(log.error_message)
+
+    # ── no provider configured ───────────────────────────────────────────────
+    def test_sync_without_configured_provider_records_failed_log(self):
+        self._create("USD", is_base=True)
+        self._create("EUR", rate=1.1)
+        out = self._sync()
+        self.assertEqual(out["sync_status"], c.SYNC_FAILED)
+        self.assertEqual(out["currencies_updated"], 0)
+        self.assertIn("Stub", out["error_message"])
+        self._assert_one_log_and_audit(c.SYNC_FAILED)
+
+    # ── full success ─────────────────────────────────────────────────────────
+    def test_sync_with_provider_updates_rates_and_appends_history(self):
+        self._create("USD", is_base=True)
+        eur = self._create("EUR", rate=1.1)
+        inr = self._create("INR", rate=80.0)
+        providers_pkg.register_provider(
+            self._SOURCE, _StubProvider({"EUR": 0.92, "INR": 83.5}),
+        )
+
+        out = self._sync()
+        self.assertEqual(out["sync_status"], c.SYNC_SUCCESS)
+        self.assertEqual(out["currencies_updated"], 2)
+        self.assertIsNone(out["error_message"])
+
+        self.assertEqual(repo.get_rate(self.db, eur["id"]).exchange_rate, 0.92)
+        self.assertEqual(repo.get_rate(self.db, inr["id"]).exchange_rate, 83.5)
+        # The synced rate is sourced from the provider and not a manual override.
+        eur_rate = repo.get_rate(self.db, eur["id"])
+        self.assertEqual(eur_rate.rate_source, self._SOURCE)
+        self.assertFalse(eur_rate.is_manual_override)
+
+        # Initial create row + one synced row per updated currency.
+        _, eur_total = repo.list_rate_history(self.db, currency_id=eur["id"], page=1, page_size=10)
+        self.assertEqual(eur_total, 2)
+        self._assert_one_log_and_audit(c.SYNC_SUCCESS)
+
+    # ── partial success (some symbols missing) ───────────────────────────────
+    def test_sync_with_missing_rate_records_partial_success(self):
+        self._create("USD", is_base=True)
+        eur = self._create("EUR", rate=1.1)
+        inr = self._create("INR", rate=80.0)
+        providers_pkg.register_provider(
+            self._SOURCE, _StubProvider({"EUR": 0.92}),  # INR omitted
+        )
+
+        out = self._sync()
+        self.assertEqual(out["sync_status"], c.SYNC_PARTIAL)
+        self.assertEqual(out["currencies_updated"], 1)
+        self.assertEqual(repo.get_rate(self.db, eur["id"]).exchange_rate, 0.92)
+        # INR keeps its original rate (no history appended).
+        self.assertEqual(repo.get_rate(self.db, inr["id"]).exchange_rate, 80.0)
+        _, inr_total = repo.list_rate_history(self.db, currency_id=inr["id"], page=1, page_size=10)
+        self.assertEqual(inr_total, 1)
+        self._assert_one_log_and_audit(c.SYNC_PARTIAL)
+
+    # ── provider reports an error despite full coverage ──────────────────────
+    def test_sync_full_coverage_with_provider_error_is_partial(self):
+        self._create("USD", is_base=True)
+        self._create("EUR", rate=1.1)
+        providers_pkg.register_provider(
+            self._SOURCE, _StubProvider({"EUR": 0.92}, error="stale upstream"),
+        )
+
+        out = self._sync()
+        self.assertEqual(out["sync_status"], c.SYNC_PARTIAL)
+        self.assertEqual(out["currencies_updated"], 1)
+        self.assertEqual(out["error_message"], "stale upstream")
+        self._assert_one_log_and_audit(c.SYNC_PARTIAL)
 
 
 # ════════════════════════════════════════════════════════════════════════════
