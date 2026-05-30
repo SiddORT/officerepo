@@ -24,10 +24,12 @@ from backend.app.modules.lead_management.models import (
     LeadDocument, LeadProposal, LeadNegotiation, LeadConversion,
 )
 from backend.shared.audit.models import AuditLog
+from backend.app.modules.cors_report.models import CorsRejection
 
 # Routers
 from backend.app.modules.auth.router import router as auth_router
 from backend.app.modules.csp_report.router import router as csp_report_router
+from backend.app.modules.cors_report.router import router as cors_report_router
 from backend.app.modules.enquiry.router import router as enquiry_router
 from backend.app.modules.enquiry.admin_router import router as enquiry_admin_router
 from backend.app.modules.lead_management.router import router as lead_router
@@ -235,6 +237,9 @@ PREFIX = settings.API_V1_PREFIX
 
 # CSP violation reporting
 app.include_router(csp_report_router, prefix=f"{PREFIX}", tags=["security"])
+
+# CORS rejection panel (superadmin) — recently blocked cross-origin requests
+app.include_router(cors_report_router, prefix=f"{PREFIX}/superadmin", tags=["superadmin - security"])
 
 # Auth (superadmin login)
 app.include_router(auth_router, prefix=f"{PREFIX}/auth", tags=["auth"])

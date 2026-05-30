@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { secretsApi } from "../../services/apiClient";
+import { secretsApi, corsRejectionsApi } from "../../services/apiClient";
 
 function formatRemaining(ms) {
   if (ms <= 0) return "expired";
@@ -44,6 +44,133 @@ function SecretRow({ label, value }) {
         <code className="flex-1 input-field font-mono text-xs break-all py-2">{value}</code>
         <CopyButton value={value} />
       </div>
+    </div>
+  );
+}
+
+function formatTimestamp(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString();
+}
+
+function CorsRejectionsPanel() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [data, setData] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await corsRejectionsApi.list();
+      setData(res.data);
+    } catch (e) {
+      setError(e.response?.data?.detail || "Failed to load blocked origins.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const items = data?.items || [];
+
+  return (
+    <div className="card mt-6">
+      <div className="flex items-start justify-between gap-6 mb-4">
+        <div>
+          <h3 className="font-semibold t-heading">Blocked Origins (CORS)</h3>
+          <p className="text-sm t-muted mt-1">
+            Browser requests rejected by the CORS policy. A recurring entry here
+            usually means a typo'd subdomain or a missing{" "}
+            <span className="font-mono">ALLOWED_ORIGINS</span> entry.
+          </p>
+        </div>
+        <button
+          onClick={load}
+          disabled={loading}
+          className="btn-secondary whitespace-nowrap"
+        >
+          {loading ? "Refreshing..." : "Refresh"}
+        </button>
+      </div>
+
+      {data && (
+        <div className="flex gap-6 mb-4">
+          <div>
+            <p className="text-xs t-muted uppercase tracking-wider">Distinct origins</p>
+            <p className="t-heading text-xl font-bold">{data.distinct_origins}</p>
+          </div>
+          <div>
+            <p className="text-xs t-muted uppercase tracking-wider">Total blocks</p>
+            <p className="t-heading text-xl font-bold">{data.total_hits}</p>
+          </div>
+        </div>
+      )}
+
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+
+      {!error && !loading && items.length === 0 && (
+        <div
+          className="rounded-lg p-4 text-sm t-muted"
+          style={{ background: "var(--c-surface2)" }}
+        >
+          No blocked origins recorded. Cross-origin requests are being accepted as
+          configured.
+        </div>
+      )}
+
+      {items.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left t-muted text-xs uppercase tracking-wider">
+                <th className="py-2 pr-4 font-medium">Origin</th>
+                <th className="py-2 pr-4 font-medium">Blocks</th>
+                <th className="py-2 pr-4 font-medium">Last request</th>
+                <th className="py-2 pr-4 font-medium">Last seen</th>
+                <th className="py-2 font-medium">First seen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((row, i) => (
+                <tr
+                  key={`${row.origin}-${i}`}
+                  className="border-t"
+                  style={{ borderColor: "var(--c-border)" }}
+                >
+                  <td className="py-2 pr-4">
+                    <code className="font-mono text-xs break-all">{row.origin}</code>
+                  </td>
+                  <td className="py-2 pr-4">
+                    <span className="badge-warning">{row.hit_count}</span>
+                  </td>
+                  <td className="py-2 pr-4 t-body">
+                    {row.last_method ? (
+                      <span>
+                        <span className="font-mono text-xs">{row.last_method}</span>{" "}
+                        <span className="t-muted break-all">{row.last_path || ""}</span>
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className="py-2 pr-4 t-body whitespace-nowrap">
+                    {formatTimestamp(row.last_seen_at)}
+                  </td>
+                  <td className="py-2 t-body whitespace-nowrap">
+                    {formatTimestamp(row.first_seen_at)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -206,6 +333,9 @@ export default function SecurityPage() {
           )}
         </div>
       )}
+
+      {/* Blocked origins (CORS) panel */}
+      <CorsRejectionsPanel />
 
       {/* Confirm dialog */}
       {confirmOpen && (

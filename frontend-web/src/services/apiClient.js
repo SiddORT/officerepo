@@ -67,6 +67,12 @@ export const rotationStatusApi = {
   get: () => apiClient.get("/superadmin/rotation-status"),
 };
 
+// ── Superadmin — CORS Rejections (blocked origins) ────────────────────────────
+export const corsRejectionsApi = {
+  list: (limit = 100) =>
+    apiClient.get("/superadmin/cors-rejections", { params: { limit } }),
+};
+
 // ── Public Enquiries (no auth) ────────────────────────────────────────────────
 export const enquiriesApi = {
   submit: (data) => apiClient.post("/public/enquiries", data),

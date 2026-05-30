@@ -107,6 +107,9 @@ POST /api/v1/auth/logout
 POST /api/v1/superadmin/rotate-secrets
 GET  /api/v1/superadmin/rotation-status
 
+# Superadmin — security panel
+GET  /api/v1/superadmin/cors-rejections  (recently blocked CORS origins: origin, hit_count, last method/path, first/last seen)
+
 POST /api/v1/public/enquiries        (public; GDPR-aware lead capture)
 
 # Enquiry Inbox (superadmin)

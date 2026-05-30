@@ -28,3 +28,13 @@ monitor can't drift from the real CORSMiddleware policy.
 - `mask_origin` truncates the attacker-controlled Origin before logging.
 - `cors_monitor` dual-imports cors helpers (try `backend.app...` then `app...`)
   because the workspace root has a shadowing `app/` package.
+
+**Persistence + admin panel:** rejections are also recorded (aggregated one row
+per masked origin: hit_count, last method/path, first/last seen) in the
+`cors_rejections` table via `backend/app/modules/cors_report/` and surfaced in
+the superadmin SecurityPage (`GET /api/v1/superadmin/cors-rejections`).
+- The masked (truncated) origin is what gets stored — never persist the raw
+  attacker-controlled Origin verbatim.
+- DB writes happen from the async middleware via `asyncio.to_thread` and are
+  fully guarded (`record_rejection_event` never raises) so persistence can never
+  break request handling.

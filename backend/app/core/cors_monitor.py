@@ -31,6 +31,7 @@ Webhook payload shape (all fields always present):
   }
 """
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 
@@ -111,6 +112,19 @@ def _build_payload(origin: str, method: str, path: str, settings) -> dict:
     }
 
 
+async def _persist_rejection(origin: str, method: str, path: str) -> None:
+    """Record the rejection in the queryable store (in a worker thread), never
+    letting a persistence/import error break request handling."""
+    try:
+        try:  # pragma: no cover - exercised via both import roots
+            from backend.app.modules.cors_report.service import record_rejection_event
+        except ImportError:  # pragma: no cover
+            from app.modules.cors_report.service import record_rejection_event
+        await asyncio.to_thread(record_rejection_event, origin, method, path)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning("cors_monitor: could not persist rejection: %s", exc)
+
+
 async def handle_cors_rejection(origin: str, method: str, path: str, settings) -> None:
     """Log a CORS rejection and, if configured, fire a (throttled) webhook."""
     logger.warning(
@@ -121,6 +135,11 @@ async def handle_cors_rejection(origin: str, method: str, path: str, settings) -
         method,
         path,
     )
+
+    # Persist the rejection (aggregated per origin) so it is surfaced in the
+    # superadmin panel. Runs in a worker thread (sync DB I/O) and is fully
+    # guarded inside record_rejection_event so it can never break a request.
+    await _persist_rejection(origin, method, path)
 
     alert_url = settings.CORS_REJECTION_ALERT_URL.strip()
     if not alert_url:
