@@ -38,6 +38,7 @@ from backend.app.database.platform import Base  # noqa: E402
 from backend.app.modules.currency_management import constants as c  # noqa: E402
 from backend.app.modules.currency_management import repository as repo  # noqa: E402
 from backend.app.modules.currency_management import service  # noqa: E402
+from backend.app.modules.currency_management import validators as v  # noqa: E402
 from backend.app.modules.currency_management.models import (  # noqa: E402
     Currency, CurrencyRate, CurrencyRateHistory, CurrencySyncLog,
 )
@@ -485,6 +486,122 @@ class CurrencyPermissionGatingTests(unittest.TestCase):
     def test_missing_token_is_rejected(self):
         resp = self.client.post(_PREFIX, json=self._BODY)
         self.assertIn(resp.status_code, (401, 403))
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# Input validators (sanitisation layer)
+# ════════════════════════════════════════════════════════════════════════════
+class CurrencyValidatorTests(unittest.TestCase):
+    """Direct unit tests for the currency input-sanitisation helpers."""
+
+    # ── currency code (ISO 4217 normalisation) ───────────────────────────────
+    def test_lowercase_code_is_uppercased(self):
+        self.assertEqual(v.validate_currency_code("usd"), "USD")
+
+    def test_code_whitespace_is_trimmed_and_uppercased(self):
+        self.assertEqual(v.validate_currency_code("  eur  "), "EUR")
+
+    def test_non_three_letter_code_rejected(self):
+        for bad in ("US", "USDD", "US1", "12", "$$$"):
+            with self.assertRaises(ValueError):
+                v.validate_currency_code(bad)
+
+    def test_required_code_missing_rejected(self):
+        with self.assertRaises(ValueError):
+            v.validate_currency_code("", required=True)
+
+    def test_optional_code_missing_returns_none(self):
+        self.assertIsNone(v.validate_currency_code("", required=False))
+
+    # ── exchange rate bounds ─────────────────────────────────────────────────
+    def test_rate_zero_or_negative_rejected(self):
+        for bad in (0, 0.0, -1, -0.0001):
+            with self.assertRaises(ValueError):
+                v.validate_rate(bad)
+
+    def test_rate_over_max_rejected(self):
+        with self.assertRaises(ValueError):
+            v.validate_rate(c.RATE_MAX + 1)
+
+    def test_rate_non_numeric_rejected(self):
+        with self.assertRaises(ValueError):
+            v.validate_rate("abc")
+
+    def test_valid_rate_accepted(self):
+        self.assertEqual(v.validate_rate(1.25), 1.25)
+
+    def test_optional_rate_missing_returns_none(self):
+        self.assertIsNone(v.validate_rate(None, required=False))
+
+    # ── decimal places range ─────────────────────────────────────────────────
+    def test_decimal_places_below_min_rejected(self):
+        with self.assertRaises(ValueError):
+            v.validate_decimal_places(c.DECIMAL_PLACES_MIN - 1)
+
+    def test_decimal_places_above_max_rejected(self):
+        with self.assertRaises(ValueError):
+            v.validate_decimal_places(c.DECIMAL_PLACES_MAX + 1)
+
+    def test_decimal_places_non_integer_rejected(self):
+        with self.assertRaises(ValueError):
+            v.validate_decimal_places("two")
+
+    def test_valid_decimal_places_accepted(self):
+        self.assertEqual(v.validate_decimal_places(c.DECIMAL_PLACES_MAX), c.DECIMAL_PLACES_MAX)
+        self.assertEqual(v.validate_decimal_places(c.DECIMAL_PLACES_MIN), c.DECIMAL_PLACES_MIN)
+
+    # ── controlled vocabularies ──────────────────────────────────────────────
+    def test_invalid_status_rejected(self):
+        with self.assertRaises(ValueError):
+            v.validate_status("Pending")
+
+    def test_valid_status_accepted(self):
+        self.assertEqual(v.validate_status(c.STATUS_ACTIVE), c.STATUS_ACTIVE)
+
+    def test_invalid_rate_source_rejected(self):
+        with self.assertRaises(ValueError):
+            v.validate_rate_source("Guess")
+
+    def test_valid_rate_source_accepted(self):
+        self.assertEqual(v.validate_rate_source(c.SOURCE_MANUAL), c.SOURCE_MANUAL)
+
+    # ── length bounds ────────────────────────────────────────────────────────
+    def test_name_too_short_rejected(self):
+        with self.assertRaises(ValueError):
+            v.validate_name("A")
+
+    def test_name_too_long_rejected(self):
+        with self.assertRaises(ValueError):
+            v.validate_name("A" * (c.CURRENCY_NAME_MAX_LEN + 1))
+
+    def test_symbol_too_long_rejected(self):
+        with self.assertRaises(ValueError):
+            v.validate_symbol("$" * (c.CURRENCY_SYMBOL_MAX_LEN + 1))
+
+    def test_country_too_short_rejected(self):
+        with self.assertRaises(ValueError):
+            v.validate_country("X")
+
+    def test_country_too_long_rejected(self):
+        with self.assertRaises(ValueError):
+            v.validate_country("X" * (c.COUNTRY_MAX_LEN + 1))
+
+    # ── XSS / HTML stripping ─────────────────────────────────────────────────
+    def test_script_tag_stripped_from_name(self):
+        cleaned = v.validate_name("US <script>alert(1)</script>Dollar")
+        self.assertNotIn("<script>", cleaned)
+        self.assertNotIn("</script>", cleaned)
+        self.assertNotIn("<", cleaned)
+
+    def test_html_tags_stripped_from_country(self):
+        cleaned = v.validate_country("United <b>Kingdom</b>")
+        self.assertEqual(cleaned, "United Kingdom")
+
+    def test_clean_text_collapses_internal_whitespace(self):
+        self.assertEqual(v.clean_text("United    States"), "United States")
+
+    def test_clean_text_returns_none_for_tag_only_input(self):
+        self.assertIsNone(v.clean_text("<br/>"))
 
 
 if __name__ == "__main__":
