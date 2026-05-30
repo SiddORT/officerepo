@@ -51,12 +51,12 @@ export default function AdminLoginPage() {
     }
   };
 
-  const ACCENT = "#ff7a1a";
+  const ACCENT = "#00aeec";
 
   const inputStyle = (name, hasLeftIcon = true, hasRightIcon = false) => ({
     width: "100%",
     boxSizing: "border-box",
-    background: focusedField === name ? "rgba(255,122,26,0.05)" : "#ffffff",
+    background: focusedField === name ? "rgba(0,174,236,0.05)" : "#ffffff",
     border:
       focusedField === name
         ? `1px solid ${ACCENT}`
@@ -67,7 +67,7 @@ export default function AdminLoginPage() {
     color: "#0f172a",
     outline: "none",
     transition: "all 0.25s",
-    boxShadow: focusedField === name ? "0 0 0 3px rgba(255,122,26,0.12)" : "none",
+    boxShadow: focusedField === name ? "0 0 0 3px rgba(0,174,236,0.12)" : "none",
   });
 
   return (
@@ -120,12 +120,12 @@ export default function AdminLoginPage() {
                   style={{
                     width: 36,
                     height: 36,
-                    background: "linear-gradient(135deg, #ff7a1a, #ff9d4d)",
+                    background: "linear-gradient(135deg, #00aeec, #0090c8)",
                     borderRadius: 10,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    boxShadow: "0 6px 18px rgba(255,122,26,0.35)",
+                    boxShadow: "0 6px 18px rgba(0,174,236,0.35)",
                   }}
                 >
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,7 +287,7 @@ export default function AdminLoginPage() {
                   whileTap={!loading ? { scale: 0.99 } : {}}
                   style={{
                     width: "100%",
-                    background: loading ? "#fbbf85" : "linear-gradient(135deg, #ff7a1a, #f4640a)",
+                    background: loading ? "#7fd4f4" : "linear-gradient(135deg, #00aeec, #0090c8)",
                     color: "#fff",
                     border: "none",
                     borderRadius: 12,
@@ -296,7 +296,7 @@ export default function AdminLoginPage() {
                     fontWeight: 700,
                     cursor: loading ? "not-allowed" : "pointer",
                     letterSpacing: "-0.01em",
-                    boxShadow: "0 8px 20px rgba(255,122,26,0.3)",
+                    boxShadow: "0 8px 20px rgba(0,174,236,0.3)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -370,17 +370,17 @@ export default function AdminLoginPage() {
       >
         {/* Photo */}
         <img
-          src="/office-login.png"
-          alt="Modern Office Repo workspace"
+          src="/login-tablet.png"
+          alt="Secure Office Repo login"
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
         />
-        {/* Orange overlay */}
+        {/* Blue overlay */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(135deg, rgba(255,122,26,0.82) 0%, rgba(244,100,10,0.7) 45%, rgba(180,60,0,0.78) 100%)",
+              "linear-gradient(135deg, rgba(0,174,236,0.78) 0%, rgba(0,110,180,0.68) 45%, rgba(8,40,80,0.82) 100%)",
             mixBlendMode: "multiply",
           }}
         />
