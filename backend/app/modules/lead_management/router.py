@@ -6,9 +6,7 @@ the standard ApiResponse. No business logic lives here.
 """
 from __future__ import annotations
 
-import os
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, File, Form, HTTPException
@@ -31,7 +29,7 @@ from backend.app.modules.lead_management.schemas import (
 )
 from backend.shared.response import ApiResponse
 from backend.shared.storage.file_handler import (
-    UPLOAD_ROOT, _tenant_folder, _unique_filename,
+    Visibility, delete_file, physical_path, save_document,
 )
 
 router = APIRouter()
@@ -53,27 +51,6 @@ def _current_admin(
         raise
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token.")
-
-
-def _save_document(file: UploadFile, module: str) -> tuple[str, str]:
-    """Persist an uploaded file under uploads/platform/<module>/ with validation.
-
-    Returns (relative_path, original_filename). Accepts document types (not just
-    images) so it does not reuse the image-only storage helper.
-    """
-    ext = os.path.splitext(file.filename or "")[1].lower()
-    if ext not in c.ALLOWED_DOCUMENT_EXTENSIONS:
-        raise HTTPException(status_code=400, detail=f"Unsupported file type '{ext or 'unknown'}'.")
-    contents = file.file.read()
-    if len(contents) > c.MAX_DOCUMENT_SIZE_BYTES:
-        raise HTTPException(status_code=400, detail=f"File too large. Max {c.MAX_DOCUMENT_SIZE_MB} MB.")
-    # Private root (not the public /uploads mount) — confidential CRM artifacts.
-    folder = Path(c.LEAD_PRIVATE_STORAGE_ROOT) / c.LEAD_STORAGE_BUCKET / module
-    folder.mkdir(parents=True, exist_ok=True)
-    dest = folder / _unique_filename(file.filename or "upload.bin")
-    with open(dest, "wb") as fh:
-        fh.write(contents)
-    return str(dest), (file.filename or os.path.basename(str(dest)))
 
 
 # ── Metadata / options ───────────────────────────────────────────────────────
@@ -353,28 +330,27 @@ def upload_document(
 ):
     if document_type not in c.DOCUMENT_TYPES:
         raise HTTPException(status_code=422, detail="Invalid document_type.")
-    path, original = _save_document(file, c.LEAD_DOCUMENTS_MODULE)
+    key, original = save_document(file, c.LEAD_STORAGE_SCOPE, c.LEAD_DOCUMENTS_MODULE)
     data = service.add_document(db, lead_id, document_type=document_type, file_name=original,
-                                file_path=path, actor_id=admin["user_id"])
+                                file_path=key, actor_id=admin["user_id"])
     return ApiResponse.ok(data, "Document uploaded.").model_dump()
 
 
 @router.get("/{lead_id}/documents/{document_id}/download")
 def download_document(lead_id: str, document_id: str, db: Session = Depends(get_platform_db),
                      _admin: dict = Depends(_current_admin)):
-    file_path, name = service.get_document_file(db, lead_id, document_id)
-    if not os.path.isfile(file_path):
+    key, name = service.get_document_file(db, lead_id, document_id)
+    path = physical_path(key, Visibility.PRIVATE)
+    if not path.is_file():
         raise HTTPException(status_code=404, detail="File no longer available.")
-    return FileResponse(file_path, filename=name)
+    return FileResponse(str(path), filename=name)
 
 
 @router.delete("/{lead_id}/documents/{document_id}")
 def delete_document(lead_id: str, document_id: str, db: Session = Depends(get_platform_db),
                     _admin: dict = Depends(_current_admin)):
-    from backend.shared.storage.file_handler import delete_file
-    path = service.delete_document(db, lead_id, document_id)
-    if path:
-        delete_file(path)
+    key = service.delete_document(db, lead_id, document_id)
+    delete_file(key, Visibility.PRIVATE)
     return ApiResponse.ok(None, "Document deleted.").model_dump()
 
 
@@ -401,7 +377,7 @@ def add_proposal(
     )
     file_path = file_name = None
     if file is not None and (file.filename or ""):
-        file_path, file_name = _save_document(file, c.LEAD_PROPOSALS_MODULE)
+        file_path, file_name = save_document(file, c.LEAD_STORAGE_SCOPE, c.LEAD_PROPOSALS_MODULE)
     data = service.add_proposal(db, lead_id, payload, file_name=file_name, file_path=file_path,
                                 actor_id=admin["user_id"], actor=admin["email"])
     return ApiResponse.ok(data, "Proposal created.").model_dump()
@@ -410,10 +386,11 @@ def add_proposal(
 @router.get("/{lead_id}/proposals/{proposal_id}/download")
 def download_proposal(lead_id: str, proposal_id: str, db: Session = Depends(get_platform_db),
                      _admin: dict = Depends(_current_admin)):
-    file_path, name = service.get_proposal_file(db, lead_id, proposal_id)
-    if not os.path.isfile(file_path):
+    key, name = service.get_proposal_file(db, lead_id, proposal_id)
+    path = physical_path(key, Visibility.PRIVATE)
+    if not path.is_file():
         raise HTTPException(status_code=404, detail="File no longer available.")
-    return FileResponse(file_path, filename=name)
+    return FileResponse(str(path), filename=name)
 
 
 @router.patch("/{lead_id}/proposals/{proposal_id}")

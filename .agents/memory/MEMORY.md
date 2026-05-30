@@ -9,3 +9,4 @@
 - [Private file downloads](private-file-downloads.md) — sensitive uploads go to a private root (not /uploads), served via authed FileResponse; frontend must blob-fetch with JWT, not `<a href>`.
 - [Naive UTC datetimes](naive-utc-datetimes.md) — DB datetime cols are naive UTC; normalize tz-aware ISO input to UTC-naive before range queries, never `.split("+")[0]`.
 - [Lead spokesperson primary mirror](lead-spokesperson-mirror.md) — lead legacy contact_* cols mirror exactly one primary LeadSpokesperson row; sync both ways; nested payload objects dump to dicts (use payload.spokespersons).
+- [S3-ready storage keys](storage-keys-s3-ready.md) — DB stores rootless `{scope}/{module}/{filename}` keys only (no root/URL); one helper + driver seam; legacy full paths stripped on read.

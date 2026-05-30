@@ -186,16 +186,23 @@ POST   /api/v1/superadmin/leads/convert-enquiry/{enquiry_id}  (idempotent)
 - **Conversion metrics** computed: lead age, sales cycle, time-to-demo, time-to-proposal,
   time-to-conversion (surfaced in the Conversions tab).
 - **Convert Enquiry→Lead**: idempotent (reuses existing lead via `source_enquiry_id`,
+<<<<<<< HEAD
   ignoring soft-delete). **Convert Lead→Client**: only when stage = Won; marks the lead
   converted and records a `lead_conversions` row (client_name + sales-cycle metrics) +
   audit entry. No tenant/subscription is created (multi-tenant removed; conversion is a
   record-only step to be rebuilt later).
-- **Document/proposal files are PRIVATE**: stored under `LEAD_PRIVATE_STORAGE_ROOT`
-  (`private_storage/`, NOT the public `/uploads` mount) with randomized filenames.
-  Downloads go through **authenticated** endpoints returning `FileResponse` (superadmin
-  guard). API list responses expose `has_file` + a download `url`; the frontend fetches
-  the blob with the JWT and triggers a browser download (a plain `<a href>` would not
-  carry auth). `uploads/` and `private_storage/` are gitignored.
+- **Document/proposal files are PRIVATE**: stored via the shared storage helper
+  under the PRIVATE root (`private_storage/`, NOT the public `/uploads` mount) with
+  randomized filenames. The DB stores only the **rootless storage key**
+  (`{scope}/{module}/{filename}`, e.g. `platform/lead_documents/abc123.pdf`) — never
+  a root prefix or full URL — so a future S3 move is "swap driver + base" only.
+  Downloads go through **authenticated** endpoints that resolve the key via the
+  storage layer (`physical_path(key, Visibility.PRIVATE)`) and return `FileResponse`
+  (superadmin guard). Legacy rows that stored the old root-prefixed path still
+  resolve (the root prefix is stripped on read). API list responses expose `has_file`
+  + a download `url`; the frontend fetches the blob with the JWT and triggers a
+  browser download (a plain `<a href>` would not carry auth). `uploads/` and
+  `private_storage/` are gitignored.
 - Mutations write **masked-PII audit entries** via `backend/shared/audit/`.
 
 ## JWT Payload

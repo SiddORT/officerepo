@@ -154,20 +154,16 @@ AUDIT_LEAD_LOST = "LEAD_LOST"
 AUDIT_LEAD_CONVERTED = "LEAD_CONVERTED"
 AUDIT_ENQUIRY_CONVERTED = "ENQUIRY_CONVERTED_TO_LEAD"
 
-# ── Document upload constraints ──────────────────────────────────────────────
-ALLOWED_DOCUMENT_EXTENSIONS = {
-    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
-    ".png", ".jpg", ".jpeg", ".webp", ".txt", ".csv",
-}
-MAX_DOCUMENT_SIZE_MB = 15
-MAX_DOCUMENT_SIZE_BYTES = MAX_DOCUMENT_SIZE_MB * 1024 * 1024
+# ── Lead file storage ────────────────────────────────────────────────────────
+# Document validation rules (allowed extensions, max size) and the private root
+# now live in the shared storage helper (backend/shared/storage/file_handler.py)
+# so public images and private documents go through one code path.
+#
+# Leads are platform-level (not tenant-scoped), so their files use the "platform"
+# storage scope. These names are the {module} segment of the storage key
+# ({scope}/{module}/{filename}); lead artifacts are confidential and stored under
+# the PRIVATE root, served only via authenticated download endpoints.
+from backend.shared.storage.file_handler import PLATFORM_SCOPE as LEAD_STORAGE_SCOPE
 
-# Storage "tenant" bucket for platform-level lead files (leads are not tenant-scoped).
-LEAD_STORAGE_BUCKET = "platform"
 LEAD_DOCUMENTS_MODULE = "lead_documents"
 LEAD_PROPOSALS_MODULE = "lead_proposals"
-
-# Lead artifacts (proposals/contracts/NDAs) are confidential CRM data and must NOT
-# be world-readable via the public /uploads static mount. They live under a private
-# root served only through authenticated download endpoints.
-LEAD_PRIVATE_STORAGE_ROOT = "private_storage"
