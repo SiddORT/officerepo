@@ -25,7 +25,7 @@ export default function Timeline({ events = [] }) {
       {events.map((e, i) => {
         const color = TYPE_COLORS[e.type] || "#64748b";
         return (
-          <li key={i} className="relative">
+          <li key={e.id ?? `${e.type}-${e.date}-${i}`} className="relative">
             <span
               className="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full border-2"
               style={{ background: color, borderColor: "var(--c-surface)" }}

@@ -5,6 +5,19 @@ import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
 import { leadsApi } from "../services/apiClient";
 
+// ── Status & brand colours ────────────────────────────────────────────────────
+// Single source of truth for recurring accent values — update once, applies
+// everywhere in this file. No grep-across-files required for a rebrand.
+const CLR_DANGER      = "#ef4444";
+const CLR_WARNING     = "#f59e0b";
+const CLR_SUCCESS     = "#10b981";
+const CLR_BRAND       = "#00aeec";
+const CLR_BRAND_2     = "#ff7a1a";
+const CLR_MUTED_LABEL = "#475569";
+const CLR_DANGER_BG   = "rgba(239,68,68,0.12)";
+const CLR_WARNING_BG  = "rgba(245,158,11,0.12)";
+const BRAND_GRADIENT  = `linear-gradient(135deg, ${CLR_BRAND}, ${CLR_BRAND_2})`;
+
 const NAV_ITEMS = [
   {
     label: "Dashboard",
@@ -172,7 +185,7 @@ function NotificationBell() {
         <BellIcon />
         {count > 0 && (
           <span className="absolute top-0.5 right-0.5 min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-bold text-white flex items-center justify-center"
-            style={{ background: "#ef4444" }}>
+            style={{ background: CLR_DANGER }}>
             {count > 9 ? "9+" : count}
           </span>
         )}
@@ -196,7 +209,7 @@ function NotificationBell() {
                     onClick={() => go(n.lead_id)}
                     className="w-full flex items-start gap-2.5 px-3 py-2 rounded-lg layout-nav-idle transition-all text-left"
                   >
-                    <span className="mt-1 w-2 h-2 rounded-full flex-shrink-0" style={{ background: overdue ? "#ef4444" : "#f59e0b" }} />
+                    <span className="mt-1 w-2 h-2 rounded-full flex-shrink-0" style={{ background: overdue ? CLR_DANGER : CLR_WARNING }} />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm layout-title truncate">{n.title}</p>
                       <p className="text-xs layout-label-muted truncate">
@@ -205,8 +218,8 @@ function NotificationBell() {
                     </div>
                     <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded flex-shrink-0"
                       style={{
-                        background: overdue ? "rgba(239,68,68,0.12)" : "rgba(245,158,11,0.12)",
-                        color: overdue ? "#ef4444" : "#f59e0b",
+                        background: overdue ? CLR_DANGER_BG : CLR_WARNING_BG,
+                        color: overdue ? CLR_DANGER : CLR_WARNING,
                       }}>
                       {overdue ? "Overdue" : "Due"}
                     </span>
@@ -273,7 +286,7 @@ export default function Layout({ children }) {
               onClick={() => setCollapsed(false)}
               title="Expand sidebar"
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all layout-nav-idle"
-              style={{ background: "linear-gradient(135deg,#00aeec,#ff7a1a)" }}
+              style={{ background: BRAND_GRADIENT }}
             >
               <svg className="w-4 h-4 text-white" fill="none" stroke="white" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
@@ -332,7 +345,7 @@ export default function Layout({ children }) {
                 className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all layout-nav-idle"
                 style={{ border: "1px solid var(--c-border)" }}
               >
-                <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0" fill="currentColor" style={{ color: "#10b981" }}>
+                <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0" fill="currentColor" style={{ color: CLR_SUCCESS }}>
                   <path d="M3.18 23.76c.33.18.7.24 1.07.17l11.67-11.67L12.5 9l-9.32 14.76zM20.83 10.5l-3.01-1.69-3.56 3.56 3.56 3.56 3.03-1.7c.86-.48.86-1.74-.02-2.73zM2.01 1.05C1.7 1.39 1.5 1.88 1.5 2.5v19c0 .62.2 1.11.51 1.45L14.17 10.5 2.01 1.05zM15.25 3.19l-11.67 7.31 3.56 3.56L15.25 3.19z" />
                 </svg>
                 <div className="min-w-0">
@@ -347,7 +360,7 @@ export default function Layout({ children }) {
                 className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all layout-nav-idle"
                 style={{ border: "1px solid var(--c-border)" }}
               >
-                <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0" fill="currentColor" style={{ color: "#00aeec" }}>
+                <svg viewBox="0 0 24 24" className="w-4 h-4 flex-shrink-0" fill="currentColor" style={{ color: CLR_BRAND }}>
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                 </svg>
                 <div className="min-w-0">
@@ -362,12 +375,12 @@ export default function Layout({ children }) {
           {collapsed && (
             <div className="flex flex-col items-center gap-1.5 px-2">
               <a href="#" title="Get it on Google Play" className="w-8 h-8 rounded-lg flex items-center justify-center layout-nav-idle transition-all" style={{ border: "1px solid var(--c-border)" }}>
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor" style={{ color: "#10b981" }}>
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor" style={{ color: CLR_SUCCESS }}>
                   <path d="M3.18 23.76c.33.18.7.24 1.07.17l11.67-11.67L12.5 9l-9.32 14.76zM20.83 10.5l-3.01-1.69-3.56 3.56 3.56 3.56 3.03-1.7c.86-.48.86-1.74-.02-2.73zM2.01 1.05C1.7 1.39 1.5 1.88 1.5 2.5v19c0 .62.2 1.11.51 1.45L14.17 10.5 2.01 1.05zM15.25 3.19l-11.67 7.31 3.56 3.56L15.25 3.19z" />
                 </svg>
               </a>
               <a href="#" title="Download on the App Store" className="w-8 h-8 rounded-lg flex items-center justify-center layout-nav-idle transition-all" style={{ border: "1px solid var(--c-border)" }}>
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor" style={{ color: "#00aeec" }}>
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor" style={{ color: CLR_BRAND }}>
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                 </svg>
               </a>
@@ -382,7 +395,7 @@ export default function Layout({ children }) {
               transition={{ delay: 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 6, paddingRight: 10, paddingTop: 2 }}
             >
-              <span style={{ fontSize: 10, color: "#475569", letterSpacing: "0.05em" }}>by</span>
+              <span style={{ fontSize: 10, color: CLR_MUTED_LABEL, letterSpacing: "0.05em" }}>by</span>
               <motion.div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
                 <motion.div
                   animate={{ opacity: [0.25, 0.55, 0.25] }}
@@ -398,7 +411,7 @@ export default function Layout({ children }) {
                   transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   style={{
                     fontSize: 13, fontWeight: 700, fontFamily: "monospace", letterSpacing: "0.04em",
-                    background: "linear-gradient(135deg, #00aeec, #ff7a1a)",
+                    background: BRAND_GRADIENT,
                     WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
                     backgroundClip: "text", position: "relative", cursor: "default",
                   }}
@@ -441,7 +454,7 @@ export default function Layout({ children }) {
             ) : (
               <button className="topbar-btn relative" title="Notifications">
                 <BellIcon />
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#00aeec]" />
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full" style={{ background: CLR_BRAND }} />
               </button>
             )}
 
@@ -455,7 +468,7 @@ export default function Layout({ children }) {
                 className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg layout-nav-idle transition-all"
               >
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                  style={{ background: "linear-gradient(135deg, #00aeec, #ff7a1a)" }}>
+                  style={{ background: BRAND_GRADIENT }}>
                   {initials}
                 </div>
                 {!collapsed && (
@@ -474,7 +487,7 @@ export default function Layout({ children }) {
                   <div className="px-4 py-3 border-b layout-border">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                        style={{ background: "linear-gradient(135deg, #00aeec, #ff7a1a)" }}>
+                        style={{ background: BRAND_GRADIENT }}>
                         {initials}
                       </div>
                       <div className="min-w-0">

@@ -471,9 +471,9 @@ def _source_enquiry_info(db: Session, lead: Lead) -> Optional[dict]:
     """Resolve the enquiry a lead originated from, for the traceability panel."""
     if not lead.source_enquiry_id:
         return None
-    from backend.app.modules.enquiry.models import Enquiry
+    from backend.app.modules.enquiry import repository as enquiry_repo
 
-    enquiry = db.query(Enquiry).filter(Enquiry.id == lead.source_enquiry_id).first()
+    enquiry = enquiry_repo.get_by_id(db, lead.source_enquiry_id)
     if not enquiry:
         return None
     return {
@@ -1051,9 +1051,9 @@ def get_timeline(db: Session, lead_id: str) -> list[dict]:
 def convert_enquiry_to_lead(db: Session, enquiry_id: int, payload: ConvertEnquiryRequest, *,
                             actor_id, actor) -> dict:
     """Create a Lead from an existing enquiry. Idempotent — duplicates blocked."""
-    from backend.app.modules.enquiry.models import Enquiry
+    from backend.app.modules.enquiry import repository as enquiry_repo
 
-    enquiry = db.query(Enquiry).filter(Enquiry.id == enquiry_id, Enquiry.is_deleted.is_(False)).first()
+    enquiry = enquiry_repo.get_by_id(db, enquiry_id)
     if not enquiry:
         raise HTTPException(status_code=404, detail="Enquiry not found.")
 

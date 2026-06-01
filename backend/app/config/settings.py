@@ -298,9 +298,16 @@ class Settings(BaseSettings):
                     self._previous_secret_origin = datetime.now(tz=timezone.utc)
                     self._previous_secret_origin_is_fallback = True
             else:
-                # env var not set — defer the warning until after the DB lookup
-                # (main.py will call apply_db_rotation_timestamp or emit the warning
-                # if the DB also has no value).
+                # env var not set — warn immediately: the grace-period clock will
+                # reset to application startup time on every restart, making the
+                # rotation expiry unstable until PREVIOUS_SECRET_ISSUED_AT is set.
+                logger.warning(
+                    "PREVIOUS_JWT_SECRET / PREVIOUS_REFRESH_SECRET are set but "
+                    "PREVIOUS_SECRET_ISSUED_AT is not configured. The grace-period "
+                    "clock will reset to application startup time on every restart, "
+                    "making the rotation expiry unstable. Set PREVIOUS_SECRET_ISSUED_AT "
+                    "to the ISO-8601 UTC timestamp of when the rotation was performed.",
+                )
                 self._previous_secret_origin = datetime.now(tz=timezone.utc)
                 self._previous_secret_origin_is_fallback = True
 

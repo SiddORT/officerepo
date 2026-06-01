@@ -220,7 +220,7 @@ export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit 
         ) : (
           <div className="space-y-4">
             {spokespersons.map((sp, idx) => (
-              <div key={idx} className="rounded-lg p-4" style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)" }}>
+              <div key={sp.id ?? idx} className="rounded-lg p-4" style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)" }}>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-medium t-muted">Spokesperson {idx + 1}</span>
                   <button type="button" onClick={() => removeSpokesperson(idx)} className="text-xs text-red-400 hover:text-red-300">Remove</button>

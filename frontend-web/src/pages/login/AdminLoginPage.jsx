@@ -29,7 +29,7 @@ function AnimatedBackground({ reduced }) {
     <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
       {ORBS.map((o, i) => (
         <motion.div
-          key={i}
+          key={`orb-${i}`}
           aria-hidden="true"
           animate={reduced ? {} : { x: o.move, y: o.moveY, scale: [1, 1.12, 0.95, 1] }}
           transition={reduced ? {} : { duration: o.dur, repeat: Infinity, ease: "easeInOut" }}

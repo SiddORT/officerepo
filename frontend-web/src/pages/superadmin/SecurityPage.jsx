@@ -323,7 +323,7 @@ export default function SecurityPage() {
               </p>
               <ol className="space-y-1.5">
                 {result.instructions.map((step, i) => (
-                  <li key={i} className="text-sm t-body flex gap-2">
+                  <li key={step} className="text-sm t-body flex gap-2">
                     <span className="t-muted">{i + 1}.</span>
                     <span>{step.replace(/^\d+\.\s*/, "")}</span>
                   </li>
