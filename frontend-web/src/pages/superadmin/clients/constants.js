@@ -37,17 +37,7 @@ export function toOptions(values = []) {
   return values.map((v) => ({ value: v, label: v }));
 }
 
-export function formatDate(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString();
-}
-
-export function formatDateTime(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString();
-}
+export { formatDate, formatDateTime } from "../../../utils/dateUtils";
 
 export function toInputDate(value) {
   if (!value) return "";

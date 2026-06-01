@@ -26,11 +26,7 @@ export function toOptions(values = []) {
   return values.map((v) => ({ value: v, label: v }));
 }
 
-export function formatDateTime(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString();
-}
+export { formatDateTime } from "../../../../utils/dateUtils";
 
 export function formatRate(value, decimals = 6) {
   if (value === null || value === undefined || value === "") return "—";

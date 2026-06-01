@@ -213,7 +213,7 @@ function NotificationBell() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm layout-title truncate">{n.title}</p>
                       <p className="text-xs layout-label-muted truncate">
-                        {n.lead_name}{n.date ? ` · ${new Date(n.date).toLocaleDateString()}` : ""}
+                        {n.lead_name}{n.date ? ` · ${new Date(n.date).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" })}` : ""}
                       </p>
                     </div>
                     <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded flex-shrink-0"
