@@ -5,6 +5,7 @@
 - [Cloudflare Turnstile integration](turnstile-integration.md) — explicit-render widget + CSP allowances + frontend token gating are all required for it to be genuinely "ready".
 - [Enquiry PII encryption & dedup](enquiry-pii-encryption.md) — encrypted columns aren't queryable; store an HMAC blind-index (email|company) for duplicate detection, never decrypt-and-scan.
 - [RBAC user lifecycle & catalog](rbac-invitations.md) — status derives from invitation.accepted_at not is_active; distinguish inactive(reactivate) vs pending(resend/remove); catalog perms are display-only, not route-enforced.
+- [RBAC invite system design](rbac-invite-system.md) — assign-roles is PUT .../admins/{id}/roles (full-replace, preserves system roles); raw invite token shown once, hash stored; link built from APP_BASE_URL or REPLIT_DOMAINS.
 - [Client = tenant model](client-as-tenant.md) — multi-tenancy reinstated as Client Management (client IS the tenant); overrides the old "multi-tenant removed" preference; db-per-client deferred.
 - [setuptools flat-layout build](setuptools-flat-layout.md) — deploy build does `pip install -e .`; pyproject must pin packages.find to `backend*` or auto-discovery aborts on the data dirs.
 - [CSP blocks external images](csp-and-flags.md) — `img-src 'self' data:` silently blocks flag CDNs; use emoji flags (flagEmoji from ISO-2) for country pickers.

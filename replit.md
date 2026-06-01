@@ -143,7 +143,7 @@ POST   /api/v1/superadmin/rbac/users            ({email, name?, role_ids[]} → 
 POST   /api/v1/superadmin/rbac/users/{id}/resend-invite  (re-issues token; returns same invite payload)
 PATCH  /api/v1/superadmin/rbac/users/{id}/status         ({is_active} bool)
 DELETE /api/v1/superadmin/rbac/users/{id}                (removes a pending/invited user)
-POST   /api/v1/superadmin/rbac/admins/{id}/assign-roles  ({role_ids[]})
+PUT    /api/v1/superadmin/rbac/admins/{admin_id}/roles  ({role_ids[]} — full-replace set)
 
 # Superadmin — secret rotation
 POST /api/v1/superadmin/rotate-secrets
