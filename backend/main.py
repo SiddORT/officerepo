@@ -37,8 +37,10 @@ from backend.app.modules.currency_management.models import (
     Currency, CurrencyRate, CurrencyRateHistory, CurrencySyncLog,
 )
 from backend.app.database.migrations.model import SchemaMigration  # noqa: F401 (registers with metadata)
-from backend.app.database.migrations.service import MigrationService
-from backend.app.database.migrations.registry import MIGRATIONS
+
+# Alembic — programmatic migration runner
+from alembic.config import Config as AlembicConfig
+from alembic import command as alembic_command
 
 # Routers
 from backend.app.modules.auth.router import router as auth_router
@@ -72,20 +74,19 @@ _ROTATION_TS_KEY = "previous_secret_issued_at"
 # ---------------------------------------------------------------------------
 
 def _run_migrations() -> None:
-    """Delegate all schema migrations to the MigrationService.
+    """Run all pending Alembic migrations up to HEAD.
 
-    All schema changes are registered in:
-      backend/app/database/migrations/registry.py
+    Migration files live in alembic/versions/. To create a new migration
+    after changing a SQLAlchemy model run:
 
-    Do NOT add raw ALTER TABLE statements here. Add a new Migration entry
-    to the registry instead — the service handles execution, retries, and
-    full audit logging to the schema_migrations table.
+        alembic revision --autogenerate -m "short description"
+
+    Then commit the generated file. Alembic applies it automatically on the
+    next application startup (or deploy).
     """
-    MigrationService(
-        engine=engine,
-        migrations=MIGRATIONS,
-        app_version=settings.APP_VERSION,
-    ).run_migrations()
+    cfg = AlembicConfig("alembic.ini")
+    alembic_command.upgrade(cfg, "head")
+    print("Alembic migrations: up to date at HEAD.")
 
 
 def _upsert_platform_config(db, key: str, value: str) -> None:
@@ -193,13 +194,13 @@ def seed_default_data():
 def init_database() -> None:
     """Run every database side-effect needed to bring the app online.
 
-    Creates tables (new ones only), applies idempotent schema migrations,
-    synchronises the secret-rotation timestamp, and seeds the default
-    superadmin. Safe to call repeatedly. This is intentionally NOT executed at
-    module import — it runs from the application lifespan startup (see
-    ``create_app``) or can be called explicitly against a test database.
+    Applies all pending Alembic migrations (which creates tables + applies
+    schema changes), synchronises the secret-rotation timestamp, and seeds
+    the default superadmin. Safe to call repeatedly — Alembic is idempotent.
+    This is intentionally NOT executed at module import — it runs from the
+    application lifespan startup (see ``create_app``) or can be called
+    explicitly against a test database.
     """
-    Base.metadata.create_all(bind=engine)
     _run_migrations()
     sync_rotation_timestamp_with_db()
     seed_default_data()

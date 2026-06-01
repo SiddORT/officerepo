@@ -1,5 +1,6 @@
 # Project Memory — Office Repo
 
+- [Alembic migration setup](alembic-setup.md) — alembic.ini at workspace root; env.py must import all model modules; add imports to env.py + main.py for new models; `alembic revision --autogenerate` for new changes.
 - [Backend test import paths](backend-test-imports.md) — sibling `app/` shadows `backend/app` (use `backend.app.*`, run unittest from root); also covers the settings secrets-guard test-ordering artifact.
 - [Client IP behind Replit proxy](client-ip-proxy.md) — left-most X-Forwarded-For is spoofable; take the entry N hops from the RIGHT (TRUSTED_PROXY_HOPS, default 1).
 - [Cloudflare Turnstile integration](turnstile-integration.md) — explicit-render widget + CSP allowances + frontend token gating are all required for it to be genuinely "ready".

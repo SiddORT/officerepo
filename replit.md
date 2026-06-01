@@ -11,7 +11,7 @@ A production-grade app with FastAPI backend, React + Tailwind frontend, and Post
 ### Repository Structure
 ```
 backend/
-  main.py                      FastAPI entry point, creates tables, seeds superadmin, lifespan
+  main.py                      FastAPI entry point, runs Alembic migrations, seeds superadmin, lifespan
   app/
     config/settings.py         Environment config (DATABASE_URL, JWT_SECRET, etc.)
     core/
@@ -20,6 +20,7 @@ backend/
       secret_rotation_monitor.py  Async background monitor for stale PREVIOUS_* secrets
     database/
       platform.py              DB engine + session (get_platform_db)
+      migrations/model.py      schema_migrations audit table (historical record)
     platform/
       superadmin/              SuperAdmin model + secret rotation routers
       config/                  PlatformConfig model
@@ -77,6 +78,19 @@ frontend-web/
 | Backend  | 8000 | /docs for API  |
 
 The frontend proxies `/api` to the backend via Vite.
+
+### Database Migrations (Alembic)
+Schema changes are managed with Alembic. Migration files live in `alembic/versions/`.
+On every startup the backend automatically runs `alembic upgrade head`.
+
+**Workflow for any model change:**
+```
+# 1. Edit the SQLAlchemy model
+# 2. Generate a migration
+alembic revision --autogenerate -m "short description"
+# 3. Review the generated file in alembic/versions/
+# 4. Commit — next startup applies it automatically
+```
 
 ### Self-hosting (outside Replit)
 - `.env.example` (root) + `frontend-web/.env.example` document every config key; copy each to `.env` (git-ignored) and fill in real values.
