@@ -270,6 +270,14 @@ export const clientsApi = {
   deleteDocument: (id, docId) => apiClient.delete(`${CLIENTS}/${id}/documents/${docId}`),
 };
 
+// ── Organization Settings (superadmin — singleton platform identity) ─────────
+const ORG = "/superadmin/organization";
+
+export const orgApi = {
+  get: () => apiClient.get(ORG),
+  update: (data) => apiClient.patch(ORG, data),
+};
+
 // ── Currency Management (superadmin — global platform settings) ───────────────
 const CURRENCIES = "/superadmin/currencies";
 

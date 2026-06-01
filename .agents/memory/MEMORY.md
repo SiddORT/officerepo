@@ -22,3 +22,4 @@
 - [Enquiry→Lead conversion paths](enquiry-lead-conversion-paths.md) — two conversion endpoints exist; both must stamp enquiry.converted_lead_id (forward) + lead.source_enquiry_id (reverse) or traceability silently breaks.
 - [CORS silent rejection logging](cors-rejection-logging.md) — Starlette CORSMiddleware blocks bad origins with no server log; a parallel http middleware logs + throttled-webhooks them via is_origin_allowed/mask_origin.
 - [RBAC permission resolution](rbac-permission-resolution.md) — permissions resolved per-request from DB (not JWT-embedded) so revocation is immediate; system roles => wildcard "*"; gate routes with require_permission, frontend hasPermission is UX-only.
+- [Org settings singleton + empty migration fix](org-settings-singleton.md) — organization_settings uses id="default" upsert; migration autogenerate yields empty body when table already exists; fix with inspector.get_table_names() guard.

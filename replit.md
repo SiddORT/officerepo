@@ -37,6 +37,12 @@ backend/
                                activity_logs, domains, admin_users); db provisioning deferred
       enquiry/                 Public GDPR-aware enquiry capture
       csp_report/              CSP violation reporting
+      rbac/                    Roles, permissions, user invitations (constants/models/schemas/
+                               repository/service/router); admin_invitations table (single-use
+                               tokens, SHA-256 hash stored, raw token shown once)
+      organization/            Organization settings singleton (id="default" upsert):
+                               org_name, legal_entity_name, org_code, website, gst_number,
+                               company_registration_number, support/sales/billing email+phone
   shared/storage/             Storage helper (public uploads/ + private_storage/ roots)
   shared/notifications/       Multi-channel notification helpers (email/SMS/WhatsApp/push):
                               base + config + dispatcher + one provider module per channel
@@ -68,6 +74,12 @@ frontend-web/
                                components/ (StatusBadge, ClientForm); constants.js
     components/Layout.jsx      Sidebar nav (incl. Calendar for superadmin), logout → /;
                                NotificationBell dropdown (superadmin) → due/overdue items
+      superadmin/settings/     SettingsLayout (collapsible inner nav, 4 groups: Account /
+                               Organization / Administration / System); ProfileSettings.jsx;
+                               OrganizationSettings.jsx (view/edit singleton, IST timestamps);
+                               RolesPermissionsPage.jsx (3 tabs); currency/ (CurrencyList etc.)
+      login/AcceptInvitePage.jsx  Public invite-acceptance page (login-styled glassmorphic card;
+                               validates token → set password → activate → redirect /login)
 ```
 
 ## Running
@@ -110,13 +122,18 @@ alembic revision --autogenerate -m "short description"
 - `/dashboard` → protected
 - `/superadmin/leads/calendar` → protected (superadmin Calendar; route declared before `/leads/:id`)
 - `/superadmin/security` → protected (secret rotation status)
-- `/superadmin/settings` → protected (redirects to `/settings/profile`); SettingsLayout wraps a left section
-  nav card + content. `/superadmin/settings/profile` (Profile Information + Change Password; universal,
-  reached from the topbar profile dropdown "My Profile"); `/superadmin/settings/roles` (Roles &
-  Permissions; nav item gated by `rbac.role.view`; 3 tabs — **Users** (invite users by email +
-  copyable invite link, assign roles, resend invite, activate/deactivate, remove pending),
-  **Roles** (create/edit/delete roles + permission toggles), **Permissions** (read-only catalog of
-  ALL system permissions grouped by module with view/create/edit/delete/download action badges))
+- `/superadmin/settings` → protected (redirects to `/settings/profile`); SettingsLayout wraps a left
+  collapsible section nav (220 px expanded / 56 px collapsed), 4 groups — **Account** (Profile),
+  **Organization** (Organization Settings), **Administration** (Roles & Permissions, Currency),
+  **System** (Security, API Docs).
+  `/superadmin/settings/profile` (Profile Information + Change Password; universal, reached from the
+  topbar profile dropdown "My Profile"); `/superadmin/settings/organization` (view/edit singleton org
+  row, gated by `org.view`; 10 fields in Identity + Contact sections, IST timestamps in footer);
+  `/superadmin/settings/roles` (Roles & Permissions; nav item gated by `rbac.role.view`; 3 tabs —
+  **Users** (invite users by email + copyable invite link, assign roles, resend invite,
+  activate/deactivate, remove pending), **Roles** (create/edit/delete roles + permission toggles),
+  **Permissions** (read-only catalog of ALL system permissions grouped by module with
+  view/create/edit/delete/download action badges))
 - `/accept-invite?token=…` → AcceptInvitePage (public, login-styled; set password to activate an
   invited account, then redirect to `/login`)
 - `/superadmin/clients` → protected (Client list); `/new`, `/:id`, `/:id/edit` (Client = tenant)
@@ -158,6 +175,10 @@ POST   /api/v1/superadmin/rbac/users/{id}/resend-invite  (re-issues token; retur
 PATCH  /api/v1/superadmin/rbac/users/{id}/status         ({is_active} bool)
 DELETE /api/v1/superadmin/rbac/users/{id}                (removes a pending/invited user)
 PUT    /api/v1/superadmin/rbac/admins/{admin_id}/roles  ({role_ids[]} — full-replace set)
+
+# Superadmin — organization settings (singleton)
+GET    /api/v1/superadmin/organization   (returns org settings; empty fields null when never saved)
+PATCH  /api/v1/superadmin/organization   (upsert; gated by org.view/org.update; writes audit log)
 
 # Superadmin — secret rotation
 POST /api/v1/superadmin/rotate-secrets

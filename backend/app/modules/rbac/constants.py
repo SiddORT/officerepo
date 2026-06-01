@@ -28,6 +28,7 @@ MODULE_ENQUIRY = "enquiry"
 MODULE_LEAD = "lead"
 MODULE_CLIENT = "client"
 MODULE_CURRENCY = "currency"
+MODULE_ORG = "org"
 
 MODULE_LABELS = {
     MODULE_USER: "User Management",
@@ -36,6 +37,7 @@ MODULE_LABELS = {
     MODULE_LEAD: "Lead Management",
     MODULE_CLIENT: "Client Management",
     MODULE_CURRENCY: "Currency Management",
+    MODULE_ORG: "Organization Settings",
 }
 
 # ── Standard action vocabulary ───────────────────────────────────────────────
@@ -97,6 +99,10 @@ PERM_CURRENCY_ACTIVATE = "currency.activate"
 PERM_CURRENCY_OVERRIDE_RATE = "currency.override_rate"
 PERM_CURRENCY_VIEW_HISTORY = "currency.view_history"
 
+# Organization Settings
+PERM_ORG_VIEW = "org.view"
+PERM_ORG_UPDATE = "org.update"
+
 # Canonical catalog seeded on startup: (name, module, description).
 PERMISSION_CATALOG = [
     (PERM_USER_VIEW, MODULE_USER, "View users and pending invitations"),
@@ -134,6 +140,9 @@ PERMISSION_CATALOG = [
     (PERM_CURRENCY_ACTIVATE, MODULE_CURRENCY, "Activate or deactivate currencies"),
     (PERM_CURRENCY_OVERRIDE_RATE, MODULE_CURRENCY, "Update or manually override exchange rates"),
     (PERM_CURRENCY_VIEW_HISTORY, MODULE_CURRENCY, "View rate change history and sync logs"),
+
+    (PERM_ORG_VIEW, MODULE_ORG, "View organization settings"),
+    (PERM_ORG_UPDATE, MODULE_ORG, "Edit organization settings"),
 ]
 
 # ── List defaults (pagination / sorting) ─────────────────────────────────────
