@@ -31,6 +31,7 @@ import SyncLogs from "./pages/superadmin/settings/currency/SyncLogs";
 import Layout from "./components/Layout";
 import SettingsVariantA from "./pages/mockups/SettingsVariantA";
 import SettingsVariantB from "./pages/mockups/SettingsVariantB";
+import SettingsVariantC from "./pages/mockups/SettingsVariantC";
 
 function ProtectedRoute({ children, requireRole }) {
   const { user, loading } = useAuth();
@@ -241,6 +242,7 @@ function AppRoutes() {
       {/* Fallback */}
       <Route path="/mockup/settings-a" element={<SettingsVariantA />} />
       <Route path="/mockup/settings-b" element={<SettingsVariantB />} />
+      <Route path="/mockup/settings-c" element={<SettingsVariantC />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
