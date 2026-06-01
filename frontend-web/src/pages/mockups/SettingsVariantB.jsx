@@ -3,28 +3,48 @@ import React, { useState } from "react";
 const SECTIONS = [
   {
     key: "profile", label: "Profile", icon: (
-      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" strokeWidth={1.8}/><path strokeWidth={1.8} strokeLinecap="round" d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" strokeWidth={1.8}/><path strokeWidth={1.8} strokeLinecap="round" d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
     ), desc: "Name, email & password", color: "#3b82f6",
   },
   {
     key: "roles", label: "Roles & Permissions", icon: (
-      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth={1.8} strokeLinecap="round" d="M12 3l8 4v5c0 4.4-3.4 8.5-8 9.5C7.4 20.5 4 16.4 4 12V7l8-4z"/></svg>
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth={1.8} strokeLinecap="round" d="M12 3l8 4v5c0 4.4-3.4 8.5-8 9.5C7.4 20.5 4 16.4 4 12V7l8-4z"/></svg>
     ), desc: "Users, roles & access control", color: "#8b5cf6",
   },
   {
     key: "currency", label: "Currency", icon: (
-      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" strokeWidth={1.8}/><path strokeWidth={1.8} strokeLinecap="round" d="M12 7v10M9.5 9.5c0-1.4 1.1-2.5 2.5-2.5s2.5 1.1 2.5 2.5S13.4 12 12 12s-2.5 1.1-2.5 2.5S10.6 17 12 17s2.5-1.1 2.5-2.5"/></svg>
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" strokeWidth={1.8}/><path strokeWidth={1.8} strokeLinecap="round" d="M12 7v10M9.5 9.5c0-1.4 1.1-2.5 2.5-2.5s2.5 1.1 2.5 2.5S13.4 12 12 12s-2.5 1.1-2.5 2.5S10.6 17 12 17s2.5-1.1 2.5-2.5"/></svg>
     ), desc: "Exchange rates & forex sync", color: "#10b981",
   },
   {
     key: "security", label: "Security", icon: (
-      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" strokeWidth={1.8}/><path strokeWidth={1.8} strokeLinecap="round" d="M8 11V7a4 4 0 018 0v4"/></svg>
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" strokeWidth={1.8}/><path strokeWidth={1.8} strokeLinecap="round" d="M8 11V7a4 4 0 018 0v4"/></svg>
     ), desc: "Secrets, CORS & audit logs", color: "#f59e0b",
   },
   {
+    key: "notifications", label: "Notifications", icon: (
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth={1.8} strokeLinecap="round" d="M15 17H9m6 0a3 3 0 01-6 0m6 0H4.5a1 1 0 01-.8-1.6L5 14V11a7 7 0 1114 0v3l1.3 1.4a1 1 0 01-.8 1.6H15z"/></svg>
+    ), desc: "Email, SMS & push alerts", color: "#ec4899",
+  },
+  {
+    key: "integrations", label: "Integrations", icon: (
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth={1.8} strokeLinecap="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+    ), desc: "Third-party connections", color: "#06b6d4",
+  },
+  {
+    key: "billing", label: "Billing", icon: (
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" strokeWidth={1.8}/><path strokeWidth={1.8} strokeLinecap="round" d="M2 10h20"/></svg>
+    ), desc: "Plans, invoices & usage", color: "#f97316",
+  },
+  {
+    key: "audit", label: "Audit Logs", icon: (
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth={1.8} strokeLinecap="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    ), desc: "Activity & change history", color: "#64748b",
+  },
+  {
     key: "api", label: "API Docs", icon: (
-      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth={1.8} strokeLinecap="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
-    ), desc: "Explore & test API endpoints", color: "#06b6d4",
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth={1.8} strokeLinecap="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+    ), desc: "Explore & test endpoints", color: "#94a3b8",
   },
 ];
 
@@ -68,8 +88,8 @@ export default function SettingsVariantB() {
           <p style={{ color: "#64748b", fontSize: 13, margin: "4px 0 0" }}>Manage your account and system preferences</p>
         </div>
 
-        {/* Icon card grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 20 }}>
+        {/* Icon card grid — 3 columns, wraps cleanly as more sections are added */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
           {SECTIONS.map(s => {
             const isActive = s.key === active;
             return (

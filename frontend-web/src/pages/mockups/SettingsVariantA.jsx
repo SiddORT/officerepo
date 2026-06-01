@@ -5,6 +5,10 @@ const TABS = [
   { key: "roles", label: "Roles & Permissions", icon: "🛡️" },
   { key: "currency", label: "Currency", icon: "💱" },
   { key: "security", label: "Security", icon: "🔒" },
+  { key: "notifications", label: "Notifications", icon: "🔔" },
+  { key: "integrations", label: "Integrations", icon: "🔗" },
+  { key: "billing", label: "Billing", icon: "💳" },
+  { key: "audit", label: "Audit Logs", icon: "📋" },
   { key: "api", label: "API Docs", icon: "📡" },
 ];
 
