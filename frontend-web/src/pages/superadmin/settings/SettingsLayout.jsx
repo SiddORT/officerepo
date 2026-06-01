@@ -1,101 +1,223 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
 
 const apiDocsUrl = `${window.location.origin.replace(":5000", ":8000")}/docs`;
 
-const ICONS = {
-  profile: (
-    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-  ),
-  roles: (
-    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-    </svg>
-  ),
-  security: (
-    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-    </svg>
-  ),
-  api: (
-    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-    </svg>
-  ),
-  currency: (
-    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  ),
-};
+const GROUPS = [
+  {
+    label: "Account",
+    items: [
+      {
+        key: "profile",
+        label: "Profile",
+        path: "/superadmin/settings/profile",
+        icon: (
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="4" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      {
+        key: "roles",
+        label: "Roles & Permissions",
+        path: "/superadmin/settings/roles",
+        permission: "rbac.role.view",
+        icon: (
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 3l8 4v5c0 4.4-3.4 8.5-8 9.5C7.4 20.5 4 16.4 4 12V7l8-4z" />
+          </svg>
+        ),
+      },
+      {
+        key: "currency",
+        label: "Currency",
+        path: "/superadmin/settings/currencies",
+        permission: "currency.view",
+        icon: (
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" strokeWidth={1.8} />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 7v10M9.5 9.5c0-1.4 1.1-2.5 2.5-2.5s2.5 1.1 2.5 2.5S13.4 12 12 12s-2.5 1.1-2.5 2.5S10.6 17 12 17s2.5-1.1 2.5-2.5" />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      {
+        key: "security",
+        label: "Security",
+        path: "/superadmin/security",
+        icon: (
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <rect x="5" y="11" width="14" height="10" rx="2" strokeWidth={1.8} />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 11V7a4 4 0 018 0v4" />
+          </svg>
+        ),
+      },
+      {
+        key: "api",
+        label: "API Docs",
+        href: apiDocsUrl,
+        icon: (
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+        ),
+      },
+    ],
+  },
+];
+
+function CollapseToggle({ collapsed, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      className="flex items-center justify-center w-7 h-7 rounded-md transition-all"
+      style={{
+        color: "var(--c-muted)",
+        background: "transparent",
+        border: "1px solid var(--c-border)",
+      }}
+      onMouseEnter={e => { e.currentTarget.style.background = "var(--c-surface2)"; e.currentTarget.style.color = "var(--c-text)"; }}
+      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--c-muted)"; }}
+    >
+      <svg
+        width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        style={{ transition: "transform 0.2s", transform: collapsed ? "rotate(180deg)" : "rotate(0deg)" }}
+      >
+        <path strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+  );
+}
 
 export default function SettingsLayout({ children }) {
   const location = useLocation();
   const { hasPermission } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
 
-  const items = [
-    { key: "profile", label: "Profile", path: "/superadmin/settings/profile", icon: ICONS.profile },
-    hasPermission("rbac.role.view") && {
-      key: "roles", label: "Roles & Permissions", path: "/superadmin/settings/roles", icon: ICONS.roles,
-    },
-    hasPermission("currency.view") && {
-      key: "currency", label: "Currency Management", path: "/superadmin/settings/currencies", icon: ICONS.currency,
-    },
-    { key: "security", label: "Security", path: "/superadmin/security", icon: ICONS.security },
-    { key: "api", label: "API Documentation", href: apiDocsUrl, icon: ICONS.api },
-  ].filter(Boolean);
+  const isActive = (path) => path && location.pathname.startsWith(path);
 
-  const isActive = (path) => path && location.pathname === path;
-
-  const itemClass = (active) =>
-    [
-      "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 w-full text-left",
-      active ? "nav-active text-white" : "layout-nav-idle",
-    ].join(" ");
+  const visibleGroups = GROUPS.map(g => ({
+    ...g,
+    items: g.items.filter(it => !it.permission || hasPermission(it.permission)),
+  })).filter(g => g.items.length > 0);
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h2 className="text-xl font-bold t-heading">Settings</h2>
-        <p className="text-sm t-muted mt-1">
-          Manage your profile, security, and system preferences
-        </p>
-      </div>
+    <div className="flex" style={{ minHeight: "calc(100vh - 56px)" }}>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        <aside className="lg:w-64 flex-shrink-0">
-          <nav className="card p-2 space-y-0.5">
-            {items.map((it) =>
-              it.href ? (
-                <a
-                  key={it.key}
-                  href={it.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={itemClass(false)}
+      {/* ── Inner nav sidebar ── */}
+      <aside
+        className="flex-shrink-0 flex flex-col"
+        style={{
+          width: collapsed ? 56 : 220,
+          minWidth: collapsed ? 56 : 220,
+          background: "var(--c-surface)",
+          borderRight: "1px solid var(--c-border)",
+          transition: "width 0.2s ease, min-width 0.2s ease",
+          position: "sticky",
+          top: 0,
+          height: "calc(100vh - 56px)",
+          overflow: "hidden",
+        }}
+      >
+        {/* Sidebar header — title + collapse button */}
+        <div
+          className="flex items-center flex-shrink-0"
+          style={{
+            height: 52,
+            padding: collapsed ? "0 12px" : "0 16px",
+            borderBottom: "1px solid var(--c-border)",
+            justifyContent: collapsed ? "center" : "space-between",
+          }}
+        >
+          {!collapsed && (
+            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "var(--c-muted)", letterSpacing: "0.08em" }}>
+              Settings
+            </span>
+          )}
+          <CollapseToggle collapsed={collapsed} onClick={() => setCollapsed(c => !c)} />
+        </div>
+
+        {/* Nav groups */}
+        <nav className="flex-1 overflow-y-auto py-2">
+          {visibleGroups.map((group, gi) => (
+            <div key={group.label} style={{ marginBottom: 4 }}>
+              {/* Group label — only when expanded */}
+              {!collapsed && (
+                <p
+                  className="text-[10px] font-semibold uppercase tracking-widest px-4 pt-3 pb-1"
+                  style={{ color: "var(--c-muted)" }}
                 >
-                  {it.icon}
-                  <span className="truncate">{it.label}</span>
-                </a>
-              ) : (
-                <Link key={it.key} to={it.path} className={itemClass(isActive(it.path))}>
-                  {it.icon}
-                  <span className="truncate">{it.label}</span>
-                </Link>
-              )
-            )}
-          </nav>
-        </aside>
+                  {group.label}
+                </p>
+              )}
+              {collapsed && gi > 0 && (
+                <div style={{ height: 1, background: "var(--c-border)", margin: "6px 10px" }} />
+              )}
+              {group.items.map(it => {
+                const active = isActive(it.path);
+                const baseStyle = {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: collapsed ? "9px 0" : "8px 14px",
+                  justifyContent: collapsed ? "center" : "flex-start",
+                  width: "100%",
+                  background: active ? "var(--c-accent-dim)" : "transparent",
+                  borderLeft: active ? "3px solid var(--c-accent)" : "3px solid transparent",
+                  color: active ? "var(--c-accent)" : "var(--c-text2)",
+                  fontWeight: active ? 600 : 400,
+                  fontSize: 13,
+                  cursor: "pointer",
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  transition: "background 0.15s, color 0.15s",
+                };
 
-        <div className="flex-1 min-w-0">{children}</div>
+                const content = (
+                  <>
+                    <span style={{ color: active ? "var(--c-accent)" : "var(--c-muted)", flexShrink: 0, display: "flex" }}>
+                      {it.icon}
+                    </span>
+                    {!collapsed && <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{it.label}</span>}
+                  </>
+                );
+
+                if (it.href) {
+                  return (
+                    <a key={it.key} href={it.href} target="_blank" rel="noreferrer" style={baseStyle} title={collapsed ? it.label : undefined}>
+                      {content}
+                    </a>
+                  );
+                }
+                return (
+                  <Link key={it.key} to={it.path} style={baseStyle} title={collapsed ? it.label : undefined}>
+                    {content}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+      </aside>
+
+      {/* ── Content area ── */}
+      <div className="flex-1 min-w-0 overflow-y-auto" style={{ background: "var(--c-bg)" }}>
+        <div className="p-6 max-w-4xl">
+          {children}
+        </div>
       </div>
     </div>
   );
