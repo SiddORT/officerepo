@@ -12,7 +12,7 @@ const DEV_CSP = [
   "connect-src 'self' ws: wss:",
   "font-src 'self'",
   "object-src 'none'",
-  "frame-ancestors 'none'",
+  "frame-ancestors *",
 ].join("; ");
 
 export default defineConfig({
