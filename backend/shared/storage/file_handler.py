@@ -21,12 +21,15 @@ now, a CDN later); private files are auth-gated and only ever streamed through
 authenticated download endpoints. Migrating to S3 means swapping the driver and
 the base — the keys, folder structure and DB rows stay identical.
 """
+import logging
 import uuid
 from enum import Enum
 from pathlib import Path
 from typing import Iterable, Optional
 
 from fastapi import UploadFile, HTTPException
+
+logger = logging.getLogger(__name__)
 
 # ── Roots / served base ──────────────────────────────────────────────────────
 # Local-disk roots per visibility. On S3 these become bucket prefixes; the
@@ -127,8 +130,8 @@ class LocalStorage:
             p = self.physical_path(key, visibility)
             if p.exists():
                 p.unlink()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Failed to delete stored file (key=%r, visibility=%s): %s", key, visibility, exc)
 
     def exists(self, key: str, visibility: Visibility) -> bool:
         return self.physical_path(key, visibility).is_file()

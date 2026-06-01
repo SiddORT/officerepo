@@ -162,6 +162,41 @@ def get_subscription(db: Session, client_id: str) -> Optional[ClientSubscription
     )
 
 
+def get_subscriptions_bulk(
+    db: Session, client_ids: list[str]
+) -> dict[str, ClientSubscription]:
+    """Fetch the latest subscription for each client in one query.
+
+    Returns a mapping ``{client_id: ClientSubscription}`` so the caller can
+    avoid N+1 queries when building list-view summaries.  Uses a DISTINCT ON
+    (PostgreSQL) approach: order by client_id + created_at DESC so the first
+    row per client_id is the most recent subscription.
+    """
+    if not client_ids:
+        return {}
+    from sqlalchemy import distinct, desc
+    # Subquery: rank subscriptions per client, pick the latest
+    from sqlalchemy import func
+    sub = (
+        db.query(
+            ClientSubscription,
+            func.row_number().over(
+                partition_by=ClientSubscription.client_id,
+                order_by=ClientSubscription.created_at.desc(),
+            ).label("rn"),
+        )
+        .filter(ClientSubscription.client_id.in_(client_ids))
+        .subquery()
+    )
+    rows = (
+        db.query(ClientSubscription)
+        .join(sub, ClientSubscription.id == sub.c.id)
+        .filter(sub.c.rn == 1)
+        .all()
+    )
+    return {s.client_id: s for s in rows}
+
+
 # ── Modules ──────────────────────────────────────────────────────────────────
 def list_modules(db: Session, client_id: str) -> List[ClientModule]:
     return (

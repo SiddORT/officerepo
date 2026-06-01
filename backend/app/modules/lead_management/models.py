@@ -61,6 +61,9 @@ class Lead(Base):
     # Conversion to client
     converted_to_client = Column(Boolean, nullable=False, default=False, index=True)
     converted_client_id = Column(Integer, nullable=True)  # legacy (unused; UUID below)
+    # Deliberate loose reference — no FK constraint because clients live in a
+    # separate module; enforcing a DB FK would create a hard cross-module
+    # dependency and complicate independent soft-deletes.
     converted_client_uuid = Column(String(36), nullable=True, index=True)
 
     # Lead scoring

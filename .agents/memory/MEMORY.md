@@ -1,7 +1,9 @@
 # Project Memory — Office Repo
 
 - [Alembic migration setup](alembic-setup.md) — alembic.ini at workspace root; env.py must import all model modules; add imports to env.py + main.py for new models; `alembic revision --autogenerate` for new changes.
-- [Backend test import paths](backend-test-imports.md) — sibling `app/` shadows `backend/app` (use `backend.app.*`, run unittest from root); also covers the settings secrets-guard test-ordering artifact.
+- [Backend test import paths](backend-test-imports.md) — sibling `app/` at workspace root (now deleted — was boilerplate); use `backend.app.*` imports; run unittest from workspace root.
+- [Billing email is PII-encrypted](billing-email-encrypted.md) — ClientBillingProfile.billing_email_encrypted (Text/Fernet); upsert_billing pops billing_email from payload and encrypts; billing_to_dict decrypts via _dec().
+- [Alembic fresh-DB bootstrap](alembic-fresh-db.md) — _run_migrations() in main.py detects missing alembic_version; on fresh DB runs create_all then stamp head; on existing DB runs upgrade head normally.
 - [Client IP behind Replit proxy](client-ip-proxy.md) — left-most X-Forwarded-For is spoofable; take the entry N hops from the RIGHT (TRUSTED_PROXY_HOPS, default 1).
 - [Cloudflare Turnstile integration](turnstile-integration.md) — explicit-render widget + CSP allowances + frontend token gating are all required for it to be genuinely "ready".
 - [Enquiry PII encryption & dedup](enquiry-pii-encryption.md) — encrypted columns aren't queryable; store an HMAC blind-index (email|company) for duplicate detection, never decrypt-and-scan.

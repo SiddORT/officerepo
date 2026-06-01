@@ -1,3 +1,3 @@
-from backend.app.database.migrations.service import Migration, MigrationService
-
-__all__ = ["Migration", "MigrationService"]
+# Migration history model — SchemaMigration audit table.
+# The custom MigrationService has been retired; schema management is now
+# handled by Alembic (alembic/versions/).

@@ -53,6 +53,9 @@ class Enquiry(Base):
     spam_marked_at = Column(DateTime, nullable=True)
 
     # Convert-to-Lead traceability (Website Enquiry → Lead → Client).
+    # Deliberate loose reference — no FK constraint because leads live in a
+    # separate module; enforcing a DB FK would create a hard cross-module
+    # dependency and complicate independent soft-deletes.
     converted_lead_id = Column(String(36), nullable=True, index=True)
     converted_at = Column(DateTime, nullable=True)
 

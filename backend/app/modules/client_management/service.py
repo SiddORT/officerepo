@@ -115,7 +115,7 @@ def billing_to_dict(b: Optional[ClientBillingProfile]) -> Optional[dict]:
         "gst_number": b.gst_number,
         "pan_number": b.pan_number,
         "tax_registration_number": b.tax_registration_number,
-        "billing_email": b.billing_email,
+        "billing_email": _dec(b.billing_email_encrypted),
         "payment_terms": b.payment_terms,
         "currency_code": b.currency_code,
         "billing_address_1": b.billing_address_1,
@@ -260,9 +260,9 @@ def client_to_detail(db: Session, client: Client) -> dict:
 # ════════════════════════════════════════════════════════════════════════════
 def list_clients(db: Session, **kwargs) -> Tuple[list, int]:
     items, total = repo.list_clients(db, **kwargs)
-    summaries = []
-    for client in items:
-        summaries.append(client_to_summary(client, subscription=repo.get_subscription(db, client.id)))
+    # Bulk-fetch subscriptions in one query to avoid N+1 (one query per client).
+    subs = repo.get_subscriptions_bulk(db, [c.id for c in items])
+    summaries = [client_to_summary(client, subscription=subs.get(client.id)) for client in items]
     return summaries, total
 
 
@@ -464,6 +464,10 @@ def upsert_billing(db: Session, client_id: str, payload: BillingProfileRequest, 
         profile = ClientBillingProfile(client_id=client_id)
         repo.add(db, profile)
     data = payload.model_dump(exclude_unset=True)
+    # billing_email is PII — encrypt before persisting; all other fields are plain.
+    if "billing_email" in data:
+        email_val = data.pop("billing_email")
+        profile.billing_email_encrypted = encrypt_value(email_val) if email_val else None
     for field, value in data.items():
         setattr(profile, field, value)
     profile.updated_at = datetime.utcnow()
@@ -769,7 +773,10 @@ def create_client_from_lead(db: Session, lead, *, client_name: Optional[str], ac
     ))
 
     # 1:1 placeholders
-    repo.add(db, ClientBillingProfile(client_id=client.id, billing_email=lead_email))
+    repo.add(db, ClientBillingProfile(
+        client_id=client.id,
+        billing_email_encrypted=encrypt_value(lead_email) if lead_email else None,
+    ))
     repo.add(db, ClientSubscription(client_id=client.id, status=c.SUBSCRIPTION_STATUS_INACTIVE))
     repo.add(db, ClientDbConnection(client_id=client.id, database_status=c.DB_STATUS_NOT_PROVISIONED))
     repo.add(db, ClientAdminUser(

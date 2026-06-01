@@ -77,7 +77,7 @@ class ClientContact(Base):
     phone_encrypted = Column(Text, nullable=True)
     country_code = Column(String(8), nullable=True)
 
-    is_primary = Column(Boolean, nullable=False, default=False)
+    is_primary = Column(Boolean, nullable=False, default=False, index=True)
 
     created_by = Column(Integer, nullable=True)
     is_deleted = Column(Boolean, nullable=False, default=False)
@@ -101,7 +101,8 @@ class ClientBillingProfile(Base):
     gst_number = Column(String(30), nullable=True)
     pan_number = Column(String(20), nullable=True)
     tax_registration_number = Column(String(60), nullable=True)
-    billing_email = Column(String(255), nullable=True)
+    # PII — encrypted at rest (Fernet token), decrypted only in service responses.
+    billing_email_encrypted = Column(Text, nullable=True)
     payment_terms = Column(String(60), nullable=True)
     currency_code = Column(String(8), nullable=True)
 
@@ -219,7 +220,7 @@ class ClientDomain(Base):
 
     subdomain = Column(String(120), nullable=True)
     custom_domain = Column(String(255), nullable=True)
-    is_primary = Column(Boolean, nullable=False, default=False)
+    is_primary = Column(Boolean, nullable=False, default=False, index=True)
 
     is_deleted = Column(Boolean, nullable=False, default=False)
     deleted_at = Column(DateTime, nullable=True)

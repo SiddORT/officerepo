@@ -83,10 +83,29 @@ def _run_migrations() -> None:
 
     Then commit the generated file. Alembic applies it automatically on the
     next application startup (or deploy).
+
+    Fresh-database bootstrap
+    ------------------------
+    On a brand-new deployment the alembic_version table does not exist, so
+    ``alembic upgrade head`` would fail because the migration chain begins with
+    ALTER TABLE / CREATE INDEX statements that assume the base tables already
+    exist. Instead we detect this case, create all tables via SQLAlchemy
+    (idempotent on existing DBs) and stamp the HEAD revision so that subsequent
+    startups run the normal upgrade path.
     """
+    from sqlalchemy import inspect as _inspect
     cfg = AlembicConfig("alembic.ini")
-    alembic_command.upgrade(cfg, "head")
-    print("Alembic migrations: up to date at HEAD.")
+
+    insp = _inspect(engine)
+    if not insp.has_table("alembic_version"):
+        # Fresh database — bootstrap schema then stamp so future upgrades work.
+        _startup_log.info("Alembic: fresh database detected. Creating schema via SQLAlchemy then stamping HEAD.")
+        Base.metadata.create_all(bind=engine)
+        alembic_command.stamp(cfg, "head")
+        _startup_log.info("Alembic: fresh database bootstrapped and stamped at HEAD.")
+    else:
+        alembic_command.upgrade(cfg, "head")
+        _startup_log.info("Alembic migrations: up to date at HEAD.")
 
 
 def _upsert_platform_config(db, key: str, value: str) -> None:
