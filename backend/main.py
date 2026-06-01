@@ -74,7 +74,7 @@ _ROTATION_TS_KEY = "previous_secret_issued_at"
 # ---------------------------------------------------------------------------
 
 def _run_migrations() -> None:
-    """Run all pending Alembic migrations up to HEAD.
+    """Run all pending Alembic migrations up to HEAD, logging each to schema_migrations.
 
     Migration files live in alembic/versions/. To create a new migration
     after changing a SQLAlchemy model run:
@@ -84,6 +84,12 @@ def _run_migrations() -> None:
     Then commit the generated file. Alembic applies it automatically on the
     next application startup (or deploy).
 
+    Audit logging
+    -------------
+    Each pending migration is executed individually so we can record a
+    schema_migrations row per revision (SUCCESS / FAILED).  Alembic's own
+    alembic_version table remains the authoritative schema-version pointer.
+
     Fresh-database bootstrap
     ------------------------
     On a brand-new deployment the alembic_version table does not exist, so
@@ -91,21 +97,96 @@ def _run_migrations() -> None:
     ALTER TABLE / CREATE INDEX statements that assume the base tables already
     exist. Instead we detect this case, create all tables via SQLAlchemy
     (idempotent on existing DBs) and stamp the HEAD revision so that subsequent
-    startups run the normal upgrade path.
+    startups run the normal upgrade path. No audit rows are written for the
+    bootstrap — all migrations are considered already applied.
     """
+    import time
+    from datetime import timezone as _tz_utc
     from sqlalchemy import inspect as _inspect
-    cfg = AlembicConfig("alembic.ini")
+    from alembic.script import ScriptDirectory
+    from alembic.runtime.migration import MigrationContext
+    from backend.app.database.migrations.audit import record as _audit_record
 
+    cfg = AlembicConfig("alembic.ini")
     insp = _inspect(engine)
+
     if not insp.has_table("alembic_version"):
-        # Fresh database — bootstrap schema then stamp so future upgrades work.
         _startup_log.info("Alembic: fresh database detected. Creating schema via SQLAlchemy then stamping HEAD.")
         Base.metadata.create_all(bind=engine)
         alembic_command.stamp(cfg, "head")
         _startup_log.info("Alembic: fresh database bootstrapped and stamped at HEAD.")
+        return
+
+    # ── Determine pending migrations ─────────────────────────────────────────
+    script = ScriptDirectory.from_config(cfg)
+
+    with engine.connect() as _conn:
+        _ctx = MigrationContext.configure(_conn)
+        current_rev = _ctx.get_current_revision()
+
+    # walk_revisions() with no args returns all revisions newest→oldest; reverse for upgrade order
+    all_revs = list(script.walk_revisions())
+    all_revs.reverse()
+
+    if current_rev is None:
+        pending = all_revs
     else:
-        alembic_command.upgrade(cfg, "head")
+        _idx = next((i for i, r in enumerate(all_revs) if r.revision == current_rev), None)
+        pending = all_revs[_idx + 1:] if _idx is not None else all_revs
+
+    if not pending:
         _startup_log.info("Alembic migrations: up to date at HEAD.")
+        return
+
+    # ── Metadata for audit rows ───────────────────────────────────────────────
+    _db_name = engine.url.database or "unknown"
+    _app_version = os.environ.get("APP_VERSION") or None
+
+    # ── Apply each pending migration and log the outcome ─────────────────────
+    for rev in pending:
+        _started = datetime.now(tz=_tz_utc.utc)
+        _t0 = time.perf_counter()
+        try:
+            alembic_command.upgrade(cfg, rev.revision)
+            _elapsed_ms = round((time.perf_counter() - _t0) * 1000, 2)
+            _completed = datetime.now(tz=_tz_utc.utc)
+            _startup_log.info(
+                "Alembic: applied %s (%s) in %.0f ms",
+                rev.revision, rev.doc or "", _elapsed_ms,
+            )
+            _audit_record(
+                engine,
+                migration_version=rev.revision,
+                migration_name=rev.doc or "",
+                database_name=_db_name,
+                status="SUCCESS",
+                started_at=_started,
+                completed_at=_completed,
+                execution_time_ms=_elapsed_ms,
+                application_version=_app_version,
+            )
+        except Exception as _exc:
+            _elapsed_ms = round((time.perf_counter() - _t0) * 1000, 2)
+            _completed = datetime.now(tz=_tz_utc.utc)
+            _startup_log.error(
+                "Alembic: migration %s (%s) FAILED: %s",
+                rev.revision, rev.doc or "", _exc,
+            )
+            _audit_record(
+                engine,
+                migration_version=rev.revision,
+                migration_name=rev.doc or "",
+                database_name=_db_name,
+                status="FAILED",
+                started_at=_started,
+                completed_at=_completed,
+                execution_time_ms=_elapsed_ms,
+                error_message=str(_exc),
+                application_version=_app_version,
+            )
+            raise
+
+    _startup_log.info("Alembic migrations: all %d pending migration(s) applied.", len(pending))
 
 
 def _upsert_platform_config(db, key: str, value: str) -> None:
