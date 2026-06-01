@@ -29,6 +29,8 @@ import CurrencyDetails from "./pages/superadmin/settings/currency/CurrencyDetail
 import CurrencyHistory from "./pages/superadmin/settings/currency/CurrencyHistory";
 import SyncLogs from "./pages/superadmin/settings/currency/SyncLogs";
 import Layout from "./components/Layout";
+import SettingsVariantA from "./pages/mockups/SettingsVariantA";
+import SettingsVariantB from "./pages/mockups/SettingsVariantB";
 
 function ProtectedRoute({ children, requireRole }) {
   const { user, loading } = useAuth();
@@ -237,6 +239,8 @@ function AppRoutes() {
       />
 
       {/* Fallback */}
+      <Route path="/mockup/settings-a" element={<SettingsVariantA />} />
+      <Route path="/mockup/settings-b" element={<SettingsVariantB />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
