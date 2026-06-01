@@ -8,8 +8,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import text
-
 from backend.app.config.settings import settings
 from backend.app.core.cors import build_cors_kwargs
 from backend.app.core.cors_monitor import make_cors_rejection_logger
@@ -38,6 +36,9 @@ from backend.app.modules.rbac.models import (
 from backend.app.modules.currency_management.models import (
     Currency, CurrencyRate, CurrencyRateHistory, CurrencySyncLog,
 )
+from backend.app.database.migrations.model import SchemaMigration  # noqa: F401 (registers with metadata)
+from backend.app.database.migrations.service import MigrationService
+from backend.app.database.migrations.registry import MIGRATIONS
 
 # Routers
 from backend.app.modules.auth.router import router as auth_router
@@ -70,73 +71,21 @@ _ROTATION_TS_KEY = "previous_secret_issued_at"
 # imported and exercised in tests without any DB side-effects.
 # ---------------------------------------------------------------------------
 
-def run_schema_migrations():
+def _run_migrations() -> None:
+    """Delegate all schema migrations to the MigrationService.
+
+    All schema changes are registered in:
+      backend/app/database/migrations/registry.py
+
+    Do NOT add raw ALTER TABLE statements here. Add a new Migration entry
+    to the registry instead — the service handles execution, retries, and
+    full audit logging to the schema_migrations table.
     """
-    Idempotent ALTER TABLE migrations — safely adds new columns to existing tables.
-    Uses IF NOT EXISTS so it is safe to run on every startup.
-    """
-    migrations = [
-        # enquiries — GDPR/privacy-aware lead capture (encryption, consent, compliance)
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS enquiry_number VARCHAR(40)",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS email_encrypted TEXT",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS phone_encrypted TEXT",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS message_encrypted TEXT",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS dedupe_hash VARCHAR(64)",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS consent_given BOOLEAN DEFAULT FALSE",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS consent_timestamp TIMESTAMP",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS privacy_policy_version VARCHAR(20)",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS marketing_consent BOOLEAN DEFAULT FALSE",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS marketing_consent_timestamp TIMESTAMP",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS referrer_url VARCHAR(1024)",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS retention_until TIMESTAMP",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS deletion_requested BOOLEAN DEFAULT FALSE",
-        # enquiries — superadmin inbox workflow (assignment, spam, convert traceability)
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS assigned_to INTEGER",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS assigned_at TIMESTAMP",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS is_spam BOOLEAN DEFAULT FALSE",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS spam_marked_at TIMESTAMP",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS converted_lead_id VARCHAR(36)",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS converted_at TIMESTAMP",
-        "ALTER TABLE enquiries ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP",
-        "CREATE INDEX IF NOT EXISTS ix_enquiries_assigned_to ON enquiries (assigned_to)",
-        "CREATE INDEX IF NOT EXISTS ix_enquiries_is_spam ON enquiries (is_spam)",
-        "CREATE INDEX IF NOT EXISTS ix_enquiries_converted_lead_id ON enquiries (converted_lead_id)",
-        "CREATE INDEX IF NOT EXISTS ix_enquiries_status_spam ON enquiries (status, is_spam)",
-        # Drop legacy plaintext PII columns (replaced by encrypted equivalents)
-        "ALTER TABLE enquiries DROP COLUMN IF EXISTS work_email",
-        "ALTER TABLE enquiries DROP COLUMN IF EXISTS phone_number",
-        "ALTER TABLE enquiries DROP COLUMN IF EXISTS message",
-        # Indexes for enquiry_number (unique) and dedupe lookups
-        "CREATE UNIQUE INDEX IF NOT EXISTS ix_enquiries_enquiry_number ON enquiries (enquiry_number)",
-        "CREATE INDEX IF NOT EXISTS ix_enquiries_dedupe_hash ON enquiries (dedupe_hash)",
-        "CREATE INDEX IF NOT EXISTS ix_enquiries_dedupe_created ON enquiries (dedupe_hash, created_at)",
-
-        # leads — phone country code + manual score override
-        "ALTER TABLE leads ADD COLUMN IF NOT EXISTS country_code VARCHAR(8)",
-        "ALTER TABLE leads ADD COLUMN IF NOT EXISTS score_label_override VARCHAR(10)",
-        # lead_activities — richer free-text next action
-        "ALTER TABLE lead_activities ADD COLUMN IF NOT EXISTS next_action TEXT",
-
-        # leads / lead_conversions — Lead→Client reverse link (UUID client id;
-        # legacy converted_client_id is INTEGER and cannot hold a UUID).
-        "ALTER TABLE leads ADD COLUMN IF NOT EXISTS converted_client_uuid VARCHAR(36)",
-        "ALTER TABLE lead_conversions ADD COLUMN IF NOT EXISTS client_uuid VARCHAR(36)",
-
-        # superadmins — profile fields editable from Settings → Profile
-        "ALTER TABLE superadmins ADD COLUMN IF NOT EXISTS phone VARCHAR(20)",
-        "ALTER TABLE superadmins ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP",
-    ]
-    try:
-        with engine.connect() as conn:
-            for sql in migrations:
-                try:
-                    conn.execute(text(sql))
-                except Exception as e:
-                    print(f"  Migration skipped ({e}): {sql[:60]}...")
-            conn.commit()
-        print("Schema migrations applied.")
-    except Exception as e:
-        print(f"Migration error: {e}")
+    MigrationService(
+        engine=engine,
+        migrations=MIGRATIONS,
+        app_version=settings.APP_VERSION,
+    ).run_migrations()
 
 
 def _upsert_platform_config(db, key: str, value: str) -> None:
@@ -251,7 +200,7 @@ def init_database() -> None:
     ``create_app``) or can be called explicitly against a test database.
     """
     Base.metadata.create_all(bind=engine)
-    run_schema_migrations()
+    _run_migrations()
     sync_rotation_timestamp_with_db()
     seed_default_data()
     _seed_rbac_data()

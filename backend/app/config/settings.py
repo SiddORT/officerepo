@@ -133,6 +133,7 @@ class Settings(BaseSettings):
 
     # App
     APP_NAME: str = "Office Repo"
+    APP_VERSION: str = "1.0.0"
     API_V1_PREFIX: str = "/api/v1"
     TENANT_RESOLVER_STRATEGY: str = "header"  # header | subdomain | jwt
     ENVIRONMENT: str = "development"
