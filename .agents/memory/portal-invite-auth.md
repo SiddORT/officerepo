@@ -22,9 +22,17 @@ Portal validate/accept/login endpoints must NOT carry a superadmin token — the
 **Why:** If `apiClient` is used, the superadmin JWT interceptor fires and the backend may see
 an unexpected token on a public route. Bare axios avoids any token injection.
 
-## Subdomain lookup
-`_get_client_by_subdomain` queries `client_domains` where `subdomain = ? AND is_active = True`.
-Does NOT filter by `domain_type` — any active domain row with a subdomain value works.
+## Workspace ID (subdomain OR client_id)
+Invite links use `workspace_id = subdomain or client_id`. When a client has no domain
+configured, `client_id` is used directly in the URL path and as the API path param.
+
+`_get_client_by_workspace_id` (service.py): tries subdomain lookup via `ClientDomain` first;
+falls back to direct `repo.get_client(db, workspace_id)` so client_id always works.
+`_get_client_by_subdomain` is aliased to the same function for backward compatibility.
+
+**Why:** Clients with no domains configured previously produced a broken link
+(`/accept-invite?token=…` without a workspace segment) that hit the superadmin
+AcceptInvitePage instead of the portal page. Now the link is always `/portal/{id}/accept-invite`.
 
 ## Password column
 `client_admin_users.password_hash` (Text, nullable) — set on `accept_portal_invite`, verified on `portal_login`.

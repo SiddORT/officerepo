@@ -913,21 +913,31 @@ def create_client_from_lead(db: Session, lead, *, client_name: Optional[str], ac
 # Portal Auth — invite-based onboarding for client admin users
 # ════════════════════════════════════════════════════════════════════════════
 
-def _get_client_by_subdomain(db: Session, subdomain: str) -> Optional["Client"]:
-    """Return the Client whose active subdomain domain matches *subdomain*."""
+def _get_client_by_workspace_id(db: Session, workspace_id: str) -> Optional["Client"]:
+    """Resolve a workspace_id to a Client.
+
+    Tries subdomain lookup first (active ClientDomain row whose subdomain matches).
+    Falls back to a direct client_id lookup so that invite links work even when
+    the client has no domain configured.
+    """
     from backend.app.modules.client_management.models import ClientDomain
     domain = (
         db.query(ClientDomain)
         .filter(
-            ClientDomain.subdomain == subdomain,
+            ClientDomain.subdomain == workspace_id,
             ClientDomain.is_active.is_(True),
             ClientDomain.is_deleted.is_(False),
         )
         .first()
     )
-    if not domain:
-        return None
-    return repo.get_client(db, domain.client_id)
+    if domain:
+        return repo.get_client(db, domain.client_id)
+    # Fall back: treat workspace_id as a direct client_id
+    return repo.get_client(db, workspace_id)
+
+
+# Keep old name as an alias so any existing callers still work
+_get_client_by_subdomain = _get_client_by_workspace_id
 
 
 def _get_active_subdomain(db: Session, client_id: str) -> Optional[str]:
@@ -945,15 +955,19 @@ def _get_active_subdomain(db: Session, client_id: str) -> Optional[str]:
     return domain.subdomain if (domain and domain.subdomain) else None
 
 
-def _build_portal_invite_link(subdomain: Optional[str], token: str) -> str:
-    """Build the full invite URL. Falls back to a relative path if no base URL."""
+def _build_portal_invite_link(workspace_id: str, token: str) -> str:
+    """Build the full invite URL using workspace_id (subdomain or client_id).
+
+    workspace_id is always present so the link always points to the correct
+    /portal/{workspace_id}/accept-invite route regardless of domain setup.
+    """
     base = os.environ.get("APP_BASE_URL", "").rstrip("/")
     if not base:
         domains = os.environ.get("REPLIT_DOMAINS", "")
         first = domains.split(",")[0].strip() if domains else ""
         if first:
             base = f"https://{first}"
-    path = f"/portal/{subdomain}/accept-invite?token={token}" if subdomain else f"/accept-invite?token={token}"
+    path = f"/portal/{workspace_id}/accept-invite?token={token}"
     return f"{base}{path}" if base else path
 
 
@@ -983,7 +997,8 @@ def send_admin_invite(db: Session, client_id: str, admin_id: str, *, actor: str)
     user.updated_at = datetime.utcnow()
 
     subdomain = _get_active_subdomain(db, client_id)
-    invite_link = _build_portal_invite_link(subdomain, raw_token)
+    workspace_id = subdomain or client_id  # always non-None → link always valid
+    invite_link = _build_portal_invite_link(workspace_id, raw_token)
 
     name = " ".join(filter(None, [user.first_name, user.last_name]))
     workspace = _require_client(db, client_id).company_name
