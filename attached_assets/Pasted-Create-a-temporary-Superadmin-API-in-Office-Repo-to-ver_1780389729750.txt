@@ -1,0 +1,286 @@
+Create a temporary Superadmin API in Office Repo to verify whether PostgreSQL can create and drop databases programmatically.
+
+Context:
+
+Office Repo uses:
+
+* FastAPI
+* SQLAlchemy 2.0
+* PostgreSQL
+* Clean Architecture
+* Repository Pattern
+* Service Layer Pattern
+
+This is a testing feature only and should not be exposed to clients.
+
+---
+
+# Objective
+
+Verify whether the PostgreSQL user configured in Office Repo has permission to:
+
+* Create Database
+* Drop Database
+* List Databases
+
+This will determine whether Office Repo can support the planned architecture:
+
+Client
+↓
+Setup Client Panel
+↓
+Create Client Database
+↓
+Run Client Migrations
+↓
+Create Client Admin
+↓
+Activate Client
+
+---
+
+# Requirements
+
+Create a temporary API module:
+
+```text
+app/modules/testing/database_provisioning
+```
+
+Follow existing project architecture:
+
+```text
+api/
+service/
+repository/
+schemas/
+```
+
+---
+
+# Endpoint 1
+
+Create Database
+
+POST
+
+```http
+/api/v1/testing/databases
+```
+
+Request:
+
+```json
+{
+  "database_name": "officerepo_test"
+}
+```
+
+Validation:
+
+* Required
+* Lowercase only
+* Letters, numbers and underscore only
+* Minimum length: 3
+* Maximum length: 63
+
+---
+
+Response Success:
+
+```json
+{
+  "success": true,
+  "database_name": "officerepo_test",
+  "message": "Database created successfully"
+}
+```
+
+---
+
+# Endpoint 2
+
+Drop Database
+
+DELETE
+
+```http
+/api/v1/testing/databases/{database_name}
+```
+
+Example:
+
+```http
+DELETE /api/v1/testing/databases/officerepo_test
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "database_name": "officerepo_test",
+  "message": "Database dropped successfully"
+}
+```
+
+---
+
+# Endpoint 3
+
+List Databases
+
+GET
+
+```http
+/api/v1/testing/databases
+```
+
+Use:
+
+```sql
+SELECT datname
+FROM pg_database
+ORDER BY datname;
+```
+
+Response:
+
+```json
+{
+  "databases": [
+    "officerepo",
+    "officerepo_test",
+    "postgres"
+  ]
+}
+```
+
+---
+
+# Service Layer
+
+Create:
+
+```python
+DatabaseProvisioningService
+```
+
+Methods:
+
+```python
+create_database(database_name)
+
+drop_database(database_name)
+
+list_databases()
+```
+
+---
+
+# SQLAlchemy Requirements
+
+Use:
+
+```python
+create_engine(
+    MASTER_DATABASE_URL,
+    isolation_level="AUTOCOMMIT"
+)
+```
+
+Important:
+
+CREATE DATABASE and DROP DATABASE must execute outside transactions.
+
+---
+
+# Error Handling
+
+Handle:
+
+### Database Already Exists
+
+Return:
+
+```json
+{
+  "success": false,
+  "message": "Database already exists"
+}
+```
+
+---
+
+### Database Does Not Exist
+
+Return:
+
+```json
+{
+  "success": false,
+  "message": "Database not found"
+}
+```
+
+---
+
+### Permission Denied
+
+Capture PostgreSQL error and return:
+
+```json
+{
+  "success": false,
+  "message": "Permission denied to create database"
+}
+```
+
+---
+
+### Generic Errors
+
+Return structured API responses.
+
+---
+
+# Security
+
+Temporary testing endpoints:
+
+* Superadmin only
+* JWT protected
+* Log all requests
+
+---
+
+# Logging
+
+Log:
+
+* Database Created
+* Database Dropped
+* Errors
+
+Include:
+
+* User
+* Timestamp
+* Database Name
+* Status
+
+---
+
+# Deliverables
+
+Generate complete code for:
+
+* FastAPI Router
+* Pydantic Schemas
+* Repository Layer
+* Service Layer
+* Dependency Injection
+* Validation
+* Error Handling
+
+Use Office Repo coding standards and SQLAlchemy 2.0 conventions.
