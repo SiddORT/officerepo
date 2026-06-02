@@ -271,7 +271,7 @@ function AppRoutes() {
       />
 
       {/* Client Portal (public — path-based in dev, subdomain-based in prod) */}
-      <Route path="/portal/:subdomain" element={<ClientPortalPage />} />
+      <Route path="/portal/:subdomain/*" element={<ClientPortalPage />} />
 
       {/* Fallback */}
       <Route path="/mockup/settings-a" element={<SettingsVariantA />} />
