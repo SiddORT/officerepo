@@ -53,7 +53,9 @@ frontend-web/
     ort-logo-light.jpg         ORT logo — dark text on white (light theme)
   src/
     App.jsx                    Router setup, protected routes
-    contexts/AuthContext.jsx   Auth state, login/logout
+    contexts/AuthContext.jsx   Auth state, login/logout  [// @refresh reset pragma]
+    contexts/ThemeContext.jsx  Theme state (light/dark/system); setTheme + toggle + isDark
+                               [// @refresh reset pragma — prevents HMR cascade failures]
     services/apiClient.js      Axios client with JWT interceptor + auto-refresh
     pages/
       landing/LandingPage.jsx  Futuristic public landing page (route: /)
@@ -76,8 +78,12 @@ frontend-web/
                                NotificationBell dropdown (superadmin) → due/overdue items
       superadmin/settings/     SettingsLayout (collapsible inner nav, 4 groups: Account /
                                Organization / Administration / System); ProfileSettings.jsx;
-                               OrganizationSettings.jsx (view/edit singleton, IST timestamps);
-                               RolesPermissionsPage.jsx (3 tabs); currency/ (CurrencyList etc.)
+                               GeneralSettings.jsx (Display/DateTime/Navigation prefs: theme
+                               light/dark/system with instant preview, searchable timezone
+                               picker, date/time format, week start, default landing page,
+                               table page size; Save/Discard); OrganizationSettings.jsx
+                               (view/edit singleton, IST timestamps); RolesPermissionsPage.jsx
+                               (3 tabs); currency/ (CurrencyList etc.)
       login/AcceptInvitePage.jsx  Public invite-acceptance page (login-styled glassmorphic card;
                                validates token → set password → activate → redirect /login)
 ```

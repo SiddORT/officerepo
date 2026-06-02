@@ -23,3 +23,4 @@
 - [CORS silent rejection logging](cors-rejection-logging.md) — Starlette CORSMiddleware blocks bad origins with no server log; a parallel http middleware logs + throttled-webhooks them via is_origin_allowed/mask_origin.
 - [RBAC permission resolution](rbac-permission-resolution.md) — permissions resolved per-request from DB (not JWT-embedded) so revocation is immediate; system roles => wildcard "*"; gate routes with require_permission, frontend hasPermission is UX-only.
 - [Org settings singleton + empty migration fix](org-settings-singleton.md) — organization_settings uses id="default" upsert; migration autogenerate yields empty body when table already exists; fix with inspector.get_table_names() guard.
+- [Vite HMR @refresh reset for context files](vite-hmr-refresh-reset.md) — context files mixing Provider + use* hook exports cause HMR cascade; add `// @refresh reset` as line 0 to prevent App.jsx reload failures.
