@@ -310,6 +310,26 @@ export const notificationsApi = {
   usage: () => apiClient.get(`${NOTIF}/usage`),
 };
 
+// ── Security Settings (superadmin) ────────────────────────────────────────────
+const SEC = "/superadmin/security-settings";
+
+export const securitySettingsApi = {
+  getPasswordPolicy:   () => apiClient.get(`${SEC}/password-policy`),
+  updatePasswordPolicy: (data) => apiClient.put(`${SEC}/password-policy`, data),
+
+  getLoginPolicy:   () => apiClient.get(`${SEC}/login-policy`),
+  updateLoginPolicy: (data) => apiClient.put(`${SEC}/login-policy`, data),
+
+  getSessionPolicy:   () => apiClient.get(`${SEC}/session-policy`),
+  updateSessionPolicy: (data) => apiClient.put(`${SEC}/session-policy`, data),
+
+  get2FAPolicy:   () => apiClient.get(`${SEC}/2fa-policy`),
+  update2FAPolicy: (data) => apiClient.put(`${SEC}/2fa-policy`, data),
+
+  getNotificationPolicy:   () => apiClient.get(`${SEC}/notification-policy`),
+  updateNotificationPolicy: (data) => apiClient.put(`${SEC}/notification-policy`, data),
+};
+
 // ── Organization Settings (superadmin — singleton platform identity) ─────────
 const ORG = "/superadmin/organization";
 

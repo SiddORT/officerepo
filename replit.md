@@ -689,3 +689,40 @@ GET    /usage                             — usage stats (counts by channel/sta
 **Encryption**: Fernet key derived from `SESSION_SECRET` via SHA-256 (32 bytes → urlsafe-b64).
 Sensitive fields per channel are merged into an encrypted JSON blob; non-sensitive fields
 remain in `config_plain` so they are readable without decryption for display purposes.
+
+## Security Settings (Settings → Administration)
+
+**Scope**: platform-scoped, superadmin JWT guard, platform DB. Singleton-per-policy design
+(all rows keyed `id = "default"`, upserted on first GET). Layered architecture
+(`constants`/`models`/`schemas`/`repository`/`service`/`router`).
+
+**Tables** (5 singletons):
+- `security_password_policy` — min/max length, character class requirements, expiry, history, force-change-on-first-login.
+- `security_login_policy` — max failed attempts, lock duration, CAPTCHA threshold, concurrent logins, remember-me, force-logout-on-password-change.
+- `security_session_policy` — access/refresh token expiry, session/idle timeout, max sessions per user.
+- `security_2fa_policy` — master enable, enforcement mode (optional/mandatory_all/mandatory_admin/mandatory_selected), allowed methods (email_otp phase 1; totp/sms_otp/backup_codes coming), grace period, recovery options.
+- `security_notification_policy` — per-event toggles (login success/failure, account locked, password changed/reset, 2FA enabled/disabled, new device/location), notification channel.
+
+**API routes** (`/api/v1/superadmin/security-settings`):
+```
+GET/PUT  /password-policy
+GET/PUT  /login-policy
+GET/PUT  /session-policy
+GET/PUT  /2fa-policy
+GET/PUT  /notification-policy
+```
+All routes: superadmin JWT guard; PUT is partial (only provided fields are updated); every
+save writes an audit entry with old/new diff via `record_audit`.
+
+**Frontend**: `pages/superadmin/settings/security/SecuritySettingsPage.jsx` — 5-tab page
+(Password Policy, Login Policy, Session Policy, Two-Factor Auth, Security Notifications).
+`securitySettingsApi` in `apiClient.js`. Route: `/superadmin/settings/security`.
+Nav item "Security Settings" under **Administration** group in SettingsLayout (with shield
+icon). Each tab has a sticky `SaveBar` that only appears when there are unsaved changes.
+
+**Validation rules** (Pydantic):
+- Password: min ≥ 8, max ≤ 128, min ≤ max.
+- Login: failed attempts 1–20, lock 1–1440 min, CAPTCHA 1–20.
+- Session: access token 5–1440 min, refresh 1–365 days, idle 1–480 min, max sessions 1–50.
+- 2FA: enforcement_mode must be one of 4 allowed values; grace_period must be in {0,3,7,15,30}.
+- Notifications: channel must be email/sms/whatsapp/push.

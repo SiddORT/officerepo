@@ -31,6 +31,7 @@ import CurrencyDetails from "./pages/superadmin/settings/currency/CurrencyDetail
 import CurrencyHistory from "./pages/superadmin/settings/currency/CurrencyHistory";
 import SyncLogs from "./pages/superadmin/settings/currency/SyncLogs";
 import NotificationsPage from "./pages/superadmin/settings/notifications/NotificationsPage";
+import SecuritySettingsPage from "./pages/superadmin/settings/security/SecuritySettingsPage";
 import Layout from "./components/Layout";
 import SettingsVariantA from "./pages/mockups/SettingsVariantA";
 import SettingsVariantB from "./pages/mockups/SettingsVariantB";
@@ -260,6 +261,14 @@ function AppRoutes() {
 
       {/* Protected — Settings → Notifications */}
       <Route
+        path="/superadmin/settings/security"
+            element={
+              <ProtectedRoute>
+                <Layout><SettingsLayout><SecuritySettingsPage /></SettingsLayout></Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
         path="/superadmin/settings/notifications"
         element={
           <ProtectedRoute requireRole="superadmin">
