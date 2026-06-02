@@ -229,6 +229,13 @@ def add_domain(client_id: str, payload: DomainCreateRequest, db: Session = Depen
                           "Domain added.").model_dump()
 
 
+@router.patch("/{client_id}/domains/{domain_id}/activate")
+def activate_domain(client_id: str, domain_id: str, db: Session = Depends(get_platform_db),
+                    admin: dict = Depends(_current_admin)):
+    data = service.activate_domain(db, client_id, domain_id, actor=admin["email"])
+    return ApiResponse.ok(data, "Domain activated.").model_dump()
+
+
 @router.delete("/{client_id}/domains/{domain_id}")
 def delete_domain(client_id: str, domain_id: str, db: Session = Depends(get_platform_db),
                   admin: dict = Depends(_current_admin)):

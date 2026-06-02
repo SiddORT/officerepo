@@ -647,29 +647,49 @@ function DatabaseTab({ clientId, db, options, onChange }) {
 }
 
 // ── Domains ───────────────────────────────────────────────────────────────────
+const DOMAIN_TYPE_META = {
+  subdomain: { label: "Platform Subdomain", color: "#8b5cf6", bg: "rgba(139,92,246,0.10)", hint: "Hosted under officerepo.com, e.g. acme.officerepo.com" },
+  domain:    { label: "Domain",             color: "#f59e0b", bg: "rgba(245,158,11,0.10)",  hint: "Your own root domain, e.g. acme.com" },
+  custom:    { label: "Custom Domain",      color: "#10b981", bg: "rgba(16,185,129,0.10)",  hint: "Any custom hostname, e.g. app.acme.com" },
+};
+
+const EMPTY_DOMAIN_FORM = { domain_type: "subdomain", subdomain: "", custom_domain: "" };
+
 function DomainsTab({ clientId, domains = [], onChange }) {
   const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({ subdomain: "", custom_domain: "", is_primary: false });
+  const [form, setForm] = useState(EMPTY_DOMAIN_FORM);
   const [saving, setSaving] = useState(false);
+  const [activating, setActivating] = useState(null);
   const [err, setErr] = useState("");
 
+  const openModal = () => { setErr(""); setForm(EMPTY_DOMAIN_FORM); setModal(true); };
+
   const save = async () => {
-    if (!form.subdomain?.trim() && !form.custom_domain?.trim()) {
-      setErr("Enter a subdomain or a custom domain.");
+    const value = form.domain_type === "subdomain"
+      ? form.subdomain?.trim()
+      : form.custom_domain?.trim();
+    if (!value) {
+      setErr(form.domain_type === "subdomain" ? "Enter a subdomain." : "Enter a domain.");
       return;
     }
     setSaving(true); setErr("");
     try {
       await clientsApi.addDomain(clientId, {
-        subdomain: form.subdomain?.trim() || undefined,
-        custom_domain: form.custom_domain?.trim() || undefined,
-        is_primary: !!form.is_primary,
+        domain_type: form.domain_type,
+        subdomain: form.domain_type === "subdomain" ? form.subdomain?.trim() || undefined : undefined,
+        custom_domain: form.domain_type !== "subdomain" ? form.custom_domain?.trim() || undefined : undefined,
       });
       setModal(false);
-      setForm({ subdomain: "", custom_domain: "", is_primary: false });
       onChange();
     } catch (e) { setErr(e.response?.data?.detail || "Failed to add domain."); }
     finally { setSaving(false); }
+  };
+
+  const activate = async (d) => {
+    setActivating(d.id);
+    try { await clientsApi.activateDomain(clientId, d.id); onChange(); }
+    catch (e) { alert(e.response?.data?.detail || "Failed to activate."); }
+    finally { setActivating(null); }
   };
 
   const remove = async (d) => {
@@ -678,32 +698,157 @@ function DomainsTab({ clientId, domains = [], onChange }) {
     catch (e) { alert(e.response?.data?.detail || "Failed."); }
   };
 
+  const meta = DOMAIN_TYPE_META[form.domain_type] || DOMAIN_TYPE_META.custom;
+
   return (
-    <Card title="Domains" action={<button onClick={() => { setErr(""); setModal(true); }} className="btn-secondary text-xs px-3 py-1.5">+ Add Domain</button>}>
-      {domains.length === 0 ? <Empty>No domains yet.</Empty> : (
+    <Card
+      title="Domains"
+      action={<button onClick={openModal} className="btn-secondary text-xs px-3 py-1.5">+ Add Domain</button>}
+    >
+      {domains.length === 0 ? (
+        <Empty>No domains yet.</Empty>
+      ) : (
         <div className="space-y-2">
-          {domains.map((d) => (
-            <div key={d.id} className="flex items-center justify-between rounded-lg p-3" style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)" }}>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium t-heading">{d.custom_domain || d.subdomain || "—"}</span>
-                  {d.is_primary && <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(0,174,236,0.12)", color: "#00aeec" }}>Primary</span>}
+          {domains.map((d) => {
+            const typeMeta = DOMAIN_TYPE_META[d.domain_type] || DOMAIN_TYPE_META.custom;
+            const displayValue = d.domain_type === "subdomain"
+              ? (d.subdomain ? `${d.subdomain}.officerepo.com` : "—")
+              : (d.custom_domain || "—");
+            const isActive = d.is_active ?? d.is_primary;
+            return (
+              <div
+                key={d.id}
+                className="flex items-center justify-between rounded-lg p-3 gap-3"
+                style={{
+                  background: "var(--c-bg)",
+                  border: isActive ? `1px solid ${typeMeta.color}40` : "1px solid var(--c-border)",
+                }}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className="text-[10px] px-1.5 py-0.5 rounded font-medium flex-shrink-0"
+                      style={{ background: typeMeta.bg, color: typeMeta.color }}
+                    >
+                      {typeMeta.label}
+                    </span>
+                    {isActive && (
+                      <span
+                        className="text-[10px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0"
+                        style={{ background: "rgba(0,174,236,0.12)", color: "#00aeec" }}
+                      >
+                        ● Active
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm font-medium t-heading mt-1 truncate">{displayValue}</p>
+                  {d.domain_type === "subdomain" && d.subdomain && (
+                    <p className="text-xs t-muted">slug: {d.subdomain}</p>
+                  )}
                 </div>
-                {d.subdomain && d.custom_domain && <p className="text-xs t-muted">{d.subdomain}</p>}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {!isActive && (
+                    <button
+                      onClick={() => activate(d)}
+                      disabled={activating === d.id}
+                      className="text-xs px-2.5 py-1 rounded font-medium"
+                      style={{
+                        background: "var(--c-surface2, var(--c-surface))",
+                        border: "1px solid var(--c-border)",
+                        color: "var(--c-text2)",
+                        cursor: activating === d.id ? "not-allowed" : "pointer",
+                        opacity: activating === d.id ? 0.6 : 1,
+                      }}
+                    >
+                      {activating === d.id ? "Activating…" : "Set Active"}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => remove(d)}
+                    className="text-xs text-red-400 hover:text-red-300"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-              <button onClick={() => remove(d)} className="text-xs text-red-400 hover:text-red-300 flex-shrink-0">Delete</button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      <Modal open={modal} onClose={() => setModal(false)} title="Add Domain"
-        footer={<><button onClick={() => setModal(false)} className="btn-secondary">Cancel</button><button onClick={save} disabled={saving} className="btn-primary">{saving ? "Saving..." : "Save"}</button></>}>
-        {err && <div className="rounded-lg px-3 py-2 text-sm text-red-400 mb-3" style={{ background: "rgba(239,68,68,0.08)" }}>{err}</div>}
+      <Modal
+        open={modal}
+        onClose={() => setModal(false)}
+        title="Add Domain"
+        footer={
+          <>
+            <button onClick={() => setModal(false)} className="btn-secondary">Cancel</button>
+            <button onClick={save} disabled={saving} className="btn-primary">
+              {saving ? "Saving..." : "Add"}
+            </button>
+          </>
+        }
+      >
+        {err && (
+          <div className="rounded-lg px-3 py-2 text-sm text-red-400 mb-3" style={{ background: "rgba(239,68,68,0.08)" }}>
+            {err}
+          </div>
+        )}
         <div className="space-y-4">
-          <Input label="Subdomain" value={form.subdomain} onChange={(e) => setForm({ ...form, subdomain: e.target.value })} placeholder="acme" maxLength={120} />
-          <Input label="Custom Domain" value={form.custom_domain} onChange={(e) => setForm({ ...form, custom_domain: e.target.value })} placeholder="app.acme.com" maxLength={255} />
-          <Toggle checked={!!form.is_primary} onChange={(v) => setForm({ ...form, is_primary: v })} label="Primary domain" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide t-muted mb-2">Domain Type</p>
+            <div className="flex flex-col gap-2">
+              {Object.entries(DOMAIN_TYPE_META).map(([key, m]) => (
+                <label
+                  key={key}
+                  className="flex items-start gap-3 rounded-lg p-3 cursor-pointer"
+                  style={{
+                    border: form.domain_type === key ? `1px solid ${m.color}60` : "1px solid var(--c-border)",
+                    background: form.domain_type === key ? m.bg : "var(--c-bg)",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="domain_type"
+                    value={key}
+                    checked={form.domain_type === key}
+                    onChange={() => setForm({ ...EMPTY_DOMAIN_FORM, domain_type: key })}
+                    className="mt-0.5"
+                    style={{ accentColor: m.color }}
+                  />
+                  <div>
+                    <p className="text-sm font-medium t-heading">{m.label}</p>
+                    <p className="text-xs t-muted">{m.hint}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {form.domain_type === "subdomain" ? (
+            <div>
+              <Input
+                label="Subdomain Slug"
+                value={form.subdomain}
+                onChange={(e) => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "") })}
+                placeholder="acme"
+                maxLength={120}
+              />
+              {form.subdomain && (
+                <p className="text-xs mt-1" style={{ color: DOMAIN_TYPE_META.subdomain.color }}>
+                  → {form.subdomain}.officerepo.com
+                </p>
+              )}
+            </div>
+          ) : (
+            <Input
+              label={form.domain_type === "domain" ? "Root Domain" : "Custom Hostname"}
+              value={form.custom_domain}
+              onChange={(e) => setForm({ ...form, custom_domain: e.target.value })}
+              placeholder={form.domain_type === "domain" ? "acme.com" : "app.acme.com"}
+              maxLength={255}
+            />
+          )}
         </div>
       </Modal>
     </Card>

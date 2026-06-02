@@ -260,6 +260,7 @@ export const clientsApi = {
 
   domains: (id) => apiClient.get(`${CLIENTS}/${id}/domains`),
   addDomain: (id, data) => apiClient.post(`${CLIENTS}/${id}/domains`, data),
+  activateDomain: (id, did) => apiClient.patch(`${CLIENTS}/${id}/domains/${did}/activate`),
   deleteDomain: (id, did) => apiClient.delete(`${CLIENTS}/${id}/domains/${did}`),
 
   adminUsers: (id) => apiClient.get(`${CLIENTS}/${id}/admin-users`),

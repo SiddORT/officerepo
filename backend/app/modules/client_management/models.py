@@ -218,8 +218,10 @@ class ClientDomain(Base):
     id = Column(String(36), primary_key=True, default=_uuid)
     client_id = Column(String(36), ForeignKey("clients.id"), nullable=False, index=True)
 
+    domain_type = Column(String(30), nullable=False, default="custom")
     subdomain = Column(String(120), nullable=True)
     custom_domain = Column(String(255), nullable=True)
+    is_active = Column(Boolean, nullable=False, default=False, index=True)
     is_primary = Column(Boolean, nullable=False, default=False, index=True)
 
     is_deleted = Column(Boolean, nullable=False, default=False)

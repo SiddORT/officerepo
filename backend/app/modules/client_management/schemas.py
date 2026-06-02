@@ -304,6 +304,7 @@ class DbConnectionRequest(BaseModel):
 
 # ── Domains ──────────────────────────────────────────────────────────────────
 class DomainCreateRequest(BaseModel):
+    domain_type: str = Field("custom", pattern="^(subdomain|domain|custom)$")
     subdomain: Optional[str] = Field(None, max_length=120)
     custom_domain: Optional[str] = Field(None, max_length=255)
     is_primary: Optional[bool] = False

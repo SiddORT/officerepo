@@ -204,8 +204,10 @@ def activity_log_to_dict(a: ClientActivityLog) -> dict:
 def domain_to_dict(d: ClientDomain) -> dict:
     return {
         "id": d.id,
+        "domain_type": d.domain_type or "custom",
         "subdomain": d.subdomain,
         "custom_domain": d.custom_domain,
+        "is_active": d.is_active if d.is_active is not None else d.is_primary,
         "is_primary": d.is_primary,
         "created_at": d.created_at,
     }
@@ -639,25 +641,52 @@ def list_domains(db: Session, client_id: str) -> list:
 
 def add_domain(db: Session, client_id: str, payload: DomainCreateRequest, *, actor) -> dict:
     _require_client(db, client_id)
-    if not payload.subdomain and not payload.custom_domain:
-        raise HTTPException(status_code=422, detail="Provide a subdomain or a custom domain.")
-    is_primary = bool(payload.is_primary)
-    if is_primary:
-        for existing in repo.list_domains(db, client_id):
-            existing.is_primary = False
-    elif not repo.list_domains(db, client_id):
-        is_primary = True
+    domain_type = payload.domain_type or "custom"
+    if domain_type == "subdomain":
+        if not payload.subdomain:
+            raise HTTPException(status_code=422, detail="Provide a subdomain value.")
+    else:
+        if not payload.custom_domain:
+            raise HTTPException(status_code=422, detail="Provide a domain value.")
+    existing_domains = repo.list_domains(db, client_id)
+    set_active = bool(payload.is_primary) or not existing_domains
+    if set_active:
+        for ex in existing_domains:
+            ex.is_active = False
+            ex.is_primary = False
     domain = ClientDomain(
-        client_id=client_id, subdomain=payload.subdomain,
-        custom_domain=payload.custom_domain, is_primary=is_primary,
+        client_id=client_id,
+        domain_type=domain_type,
+        subdomain=payload.subdomain,
+        custom_domain=payload.custom_domain,
+        is_active=set_active,
+        is_primary=set_active,
     )
     repo.add(db, domain)
-    _journal(db, client_id, c.ACT_DOMAIN_ADDED, remarks=payload.subdomain or payload.custom_domain)
+    display = payload.subdomain or payload.custom_domain
+    _journal(db, client_id, c.ACT_DOMAIN_ADDED, remarks=display)
     record_audit(db, c.AUDIT_DOMAIN_ADDED, c.AUDIT_ENTITY, client_id, actor=actor,
-                 metadata={"subdomain": payload.subdomain, "custom_domain": payload.custom_domain})
+                 metadata={"domain_type": domain_type, "value": display})
     db.commit()
     db.refresh(domain)
     return domain_to_dict(domain)
+
+
+def activate_domain(db: Session, client_id: str, domain_id: str, *, actor) -> dict:
+    _require_client(db, client_id)
+    target = repo.get_domain(db, client_id, domain_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="Domain not found.")
+    for ex in repo.list_domains(db, client_id):
+        ex.is_active = ex.id == domain_id
+        ex.is_primary = ex.id == domain_id
+    display = target.subdomain or target.custom_domain
+    _journal(db, client_id, c.ACT_DOMAIN_ACTIVATED, remarks=display)
+    record_audit(db, c.AUDIT_DOMAIN_ACTIVATED, c.AUDIT_ENTITY, client_id, actor=actor,
+                 metadata={"domain_id": domain_id, "value": display})
+    db.commit()
+    db.refresh(target)
+    return domain_to_dict(target)
 
 
 def delete_domain(db: Session, client_id: str, domain_id: str, *, actor) -> None:
