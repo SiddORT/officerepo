@@ -8,6 +8,12 @@ const REQUIRED = ["org_name", "legal_entity_name", "org_code", "support_email"];
 const FIELDS = [
   {
     section: "Identity",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+          d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+      </svg>
+    ),
     rows: [
       { key: "org_name", label: "Organization Name", required: true, type: "text", col: 2 },
       { key: "legal_entity_name", label: "Legal Entity Name", required: true, type: "text", col: 2 },
@@ -19,6 +25,12 @@ const FIELDS = [
   },
   {
     section: "Contact",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      </svg>
+    ),
     rows: [
       { key: "support_email", label: "Support Email", required: true, type: "email", col: 1 },
       { key: "sales_email", label: "Sales Email", type: "email", col: 1 },
@@ -38,31 +50,43 @@ function Banner({ kind, msg }) {
   if (!msg) return null;
   const ok = kind === "success";
   return (
-    <div className="text-sm rounded-lg px-3 py-2 mb-4" style={{
-      background: ok ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
+    <div className="flex items-center gap-2 text-sm rounded-lg px-4 py-2.5 mb-5" style={{
+      background: ok ? "rgba(16,185,129,0.10)" : "rgba(239,68,68,0.10)",
       color: ok ? "#10b981" : "#ef4444",
+      border: `1px solid ${ok ? "rgba(16,185,129,0.2)" : "rgba(239,68,68,0.2)"}`,
     }}>
+      {ok ? (
+        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      ) : (
+        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )}
       {msg}
     </div>
   );
 }
 
-function FieldInput({ field, value, onChange, error, readOnly }) {
-  const base = [
-    "w-full rounded-lg px-3 py-2 text-sm transition-colors outline-none",
-    "border",
-    readOnly
-      ? "cursor-default"
-      : "focus:ring-1",
-  ].join(" ");
+function ReadField({ field, value }) {
+  const display = value?.trim() || null;
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--c-muted)", letterSpacing: "0.06em" }}>
+        {field.label}
+        {field.required && <span style={{ color: "#ef4444" }}> *</span>}
+      </p>
+      {display ? (
+        <p className="text-sm font-medium" style={{ color: "var(--c-text)" }}>{display}</p>
+      ) : (
+        <p className="text-sm" style={{ color: "var(--c-muted)", fontStyle: "italic" }}>Not set</p>
+      )}
+    </div>
+  );
+}
 
-  const style = {
-    background: readOnly ? "var(--c-surface2)" : "var(--c-surface)",
-    borderColor: error ? "#ef4444" : "var(--c-border)",
-    color: readOnly ? "var(--c-text2)" : "var(--c-text)",
-    "--tw-ring-color": "var(--c-accent)",
-  };
-
+function EditField({ field, value, onChange, error }) {
   return (
     <div>
       <label className="block text-xs font-semibold uppercase tracking-wider mb-1.5" style={{ color: "var(--c-muted)", letterSpacing: "0.06em" }}>
@@ -73,25 +97,22 @@ function FieldInput({ field, value, onChange, error, readOnly }) {
         type={field.type === "email" ? "email" : field.type === "url" ? "url" : field.type === "tel" ? "tel" : "text"}
         value={value ?? ""}
         onChange={e => onChange(field.key, e.target.value)}
-        readOnly={readOnly}
-        placeholder={readOnly ? "—" : field.hint ?? ""}
-        className={base}
-        style={style}
+        placeholder={field.hint ?? ""}
+        className="w-full rounded-lg px-3 py-2 text-sm outline-none transition-all"
+        style={{
+          background: "var(--c-surface2)",
+          border: `1px solid ${error ? "#ef4444" : "var(--c-border)"}`,
+          color: "var(--c-text)",
+          boxShadow: error ? "0 0 0 3px rgba(239,68,68,0.12)" : undefined,
+        }}
+        onFocus={e => { e.target.style.borderColor = error ? "#ef4444" : "var(--c-accent)"; e.target.style.boxShadow = error ? "0 0 0 3px rgba(239,68,68,0.12)" : "0 0 0 3px var(--c-accent-dim)"; }}
+        onBlur={e => { e.target.style.borderColor = error ? "#ef4444" : "var(--c-border)"; e.target.style.boxShadow = error ? "0 0 0 3px rgba(239,68,68,0.12)" : "none"; }}
       />
       {error && <p className="text-xs mt-1" style={{ color: "#ef4444" }}>{error}</p>}
-      {!error && field.hint && !readOnly && (
+      {!error && field.hint && (
         <p className="text-xs mt-1" style={{ color: "var(--c-muted)" }}>{field.hint}</p>
       )}
     </div>
-  );
-}
-
-function MetaRow({ label, value }) {
-  return (
-    <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--c-muted)" }}>
-      <span>{label}:</span>
-      <span style={{ color: "var(--c-text2)" }}>{value || "—"}</span>
-    </span>
   );
 }
 
@@ -154,7 +175,6 @@ export default function OrganizationSettings() {
       FIELDS.flatMap(s => s.rows).forEach(f => {
         payload[f.key] = form[f.key]?.trim() || null;
       });
-      // Required fields must not be null
       REQUIRED.forEach(k => { if (!payload[k]) payload[k] = ""; });
 
       const res = await orgApi.update(payload);
@@ -174,8 +194,8 @@ export default function OrganizationSettings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="w-6 h-6 border-2 rounded-full animate-spin" style={{ borderColor: "var(--c-border)", borderTopColor: "var(--c-accent)" }} />
+      <div className="flex items-center justify-center py-20">
+        <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: "var(--c-border)", borderTopColor: "var(--c-accent)" }} />
       </div>
     );
   }
@@ -194,7 +214,8 @@ export default function OrganizationSettings() {
           {!editing ? (
             <button onClick={startEdit} className="btn-primary flex items-center gap-1.5 text-sm px-3 py-1.5">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
               Edit
             </button>
@@ -211,7 +232,7 @@ export default function OrganizationSettings() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 )}
-                {saving ? "Saving…" : "Save"}
+                {saving ? "Saving…" : "Save Changes"}
               </button>
             </>
           )}
@@ -220,36 +241,73 @@ export default function OrganizationSettings() {
 
       <Banner kind={banner?.kind} msg={banner?.msg} />
 
-      {/* Form sections */}
-      {FIELDS.map(section => (
-        <div key={section.section} className="rounded-xl mb-4 overflow-hidden" style={{ border: "1px solid var(--c-border)", background: "var(--c-surface)" }}>
-          <div className="px-5 py-3 border-b" style={{ borderColor: "var(--c-border)", background: "var(--c-surface2)" }}>
-            <h3 className="text-sm font-semibold" style={{ color: "var(--c-text)" }}>{section.section}</h3>
-          </div>
-          <div className="p-5">
-            <div className="grid grid-cols-2 gap-4">
-              {section.rows.map(f => (
-                <div key={f.key} className={f.col === 2 ? "col-span-2" : "col-span-1"}>
-                  <FieldInput
-                    field={f}
-                    value={form[f.key]}
-                    onChange={handleChange}
-                    error={errors[f.key]}
-                    readOnly={!editing}
-                  />
-                </div>
-              ))}
+      {/* Sections */}
+      <div className="space-y-4">
+        {FIELDS.map(section => (
+          <div
+            key={section.section}
+            className="rounded-xl overflow-hidden"
+            style={{
+              background: "var(--c-surface)",
+              border: "1px solid var(--c-border)",
+              boxShadow: "var(--c-shadow)",
+            }}
+          >
+            {/* Section header — icon + label + thin accent top strip */}
+            <div style={{ borderTop: "2px solid var(--c-accent)", borderRadius: "12px 12px 0 0" }} />
+            <div
+              className="flex items-center gap-2.5 px-5 py-4"
+              style={{ borderBottom: "1px solid var(--c-border)" }}
+            >
+              <span style={{ color: "var(--c-accent)" }}>{section.icon}</span>
+              <h3 className="text-sm font-semibold" style={{ color: "var(--c-text)" }}>
+                {section.section}
+              </h3>
+            </div>
+
+            {/* Fields */}
+            <div className="p-5">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+                {section.rows.map(f => (
+                  <div key={f.key} className={f.col === 2 ? "col-span-2" : "col-span-1"}>
+                    {editing ? (
+                      <EditField
+                        field={f}
+                        value={form[f.key]}
+                        onChange={handleChange}
+                        error={errors[f.key]}
+                      />
+                    ) : (
+                      <ReadField field={f} value={form[f.key]} />
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
       {/* Meta footer */}
       {(data.updated_at || data.updated_by) && (
-        <div className="flex items-center gap-4 pt-2 pb-1">
-          {data.updated_by && <MetaRow label="Last updated by" value={data.updated_by} />}
+        <div className="flex items-center gap-5 mt-5 pt-4" style={{ borderTop: "1px solid var(--c-border)" }}>
+          {data.updated_by && (
+            <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--c-muted)" }}>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Last updated by: <span style={{ color: "var(--c-text2)" }}>{data.updated_by}</span>
+            </span>
+          )}
           {data.updated_at && (
-            <MetaRow label="Updated at" value={new Date(data.updated_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} />
+            <span className="flex items-center gap-1.5 text-xs" style={{ color: "var(--c-muted)" }}>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Updated at: <span style={{ color: "var(--c-text2)" }}>
+                {new Date(data.updated_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}
+              </span>
+            </span>
           )}
         </div>
       )}
