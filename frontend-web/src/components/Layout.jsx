@@ -270,7 +270,13 @@ export default function Layout({ children }) {
       ? location.pathname.startsWith("/superadmin/leads") && !location.pathname.startsWith("/superadmin/leads/calendar")
       : location.pathname === path;
 
-  const initials = user?.email?.slice(0, 2).toUpperCase() || "AD";
+  const displayName = user?.display_name || user?.name || user?.email?.split("@")[0] || "Admin";
+  const initials = (() => {
+    const parts = (user?.name || "").trim().split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (user?.email || "AD").slice(0, 2).toUpperCase();
+  })();
   const pageTitle = getPageTitle(location.pathname);
 
   return (
@@ -467,13 +473,15 @@ export default function Layout({ children }) {
                 onClick={() => setProfileOpen((o) => !o)}
                 className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg layout-nav-idle transition-all"
               >
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                  style={{ background: BRAND_GRADIENT }}>
-                  {initials}
+                <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                  style={{ background: user?.has_avatar ? "transparent" : BRAND_GRADIENT }}>
+                  {user?.has_avatar && user?.avatar_url
+                    ? <img src={user.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                    : initials}
                 </div>
                 {!collapsed && (
                   <span className="text-xs font-medium layout-title max-w-[100px] truncate hidden sm:block">
-                    {user?.email?.split("@")[0]}
+                    {displayName}
                   </span>
                 )}
                 <span className="layout-label-muted">
@@ -486,13 +494,15 @@ export default function Layout({ children }) {
                   {/* User info */}
                   <div className="px-4 py-3 border-b layout-border">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                        style={{ background: BRAND_GRADIENT }}>
-                        {initials}
+                      <div className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                        style={{ background: user?.has_avatar ? "transparent" : BRAND_GRADIENT }}>
+                        {user?.has_avatar && user?.avatar_url
+                          ? <img src={user.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                          : initials}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold layout-title truncate">{user?.email}</p>
-                        <p className="text-xs layout-label-muted capitalize">{user?.role}</p>
+                        <p className="text-sm font-semibold layout-title truncate">{displayName}</p>
+                        <p className="text-xs layout-label-muted truncate">{user?.email}</p>
                       </div>
                     </div>
                   </div>

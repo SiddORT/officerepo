@@ -110,6 +110,9 @@ def get_identity(db: Session, token_payload: dict) -> dict:
     return {
         "user_id": admin_id,
         "email": admin.email if admin else token_payload.get("email"),
+        "first_name": admin.first_name if admin else None,
+        "last_name": admin.last_name if admin else None,
+        "display_name": admin.display_name if admin else None,
         "name": _full_name(admin) if admin else None,
         "phone": admin.phone if admin else None,
         "role": token_payload.get("role"),
