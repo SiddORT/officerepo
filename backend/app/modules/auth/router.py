@@ -17,6 +17,8 @@ from backend.app.modules.auth.schemas import (
     RefreshRequest, LogoutRequest, SuperAdminLoginRequest,
     ProfileUpdateRequest, ChangePasswordRequest,
 )
+from backend.app.modules.auth.preferences_schemas import PreferencesUpdateRequest
+from backend.app.modules.auth import preferences_service
 
 from backend.app.modules.rbac import service as rbac_service
 from backend.app.modules.rbac.schemas import AcceptInvitationRequest
@@ -103,6 +105,38 @@ def change_password(
         db, token_payload["user_id"],
         payload.current_password, payload.new_password,
     )
+
+
+@router.get("/preferences")
+def get_preferences(
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+    db: Session = Depends(get_platform_db),
+):
+    """Return the current admin's general preferences (created with defaults if absent)."""
+    token_payload = _authenticate(credentials)
+    return preferences_service.get_preferences(db, token_payload["user_id"])
+
+
+@router.patch("/preferences")
+def update_preferences(
+    payload: PreferencesUpdateRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+    db: Session = Depends(get_platform_db),
+):
+    """Partial-update general preferences. Only provided fields are written."""
+    token_payload = _authenticate(credentials)
+    return preferences_service.update_preferences(
+        db,
+        token_payload["user_id"],
+        payload,
+        actor_email=token_payload.get("email", ""),
+    )
+
+
+@router.get("/preferences/options")
+def preferences_options():
+    """Return all allowed values + labels for the preferences form dropdowns."""
+    return preferences_service.options()
 
 
 @router.post("/refresh")

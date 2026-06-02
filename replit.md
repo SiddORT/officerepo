@@ -159,6 +159,16 @@ GET   /api/v1/auth/profile          (own name/email/phone/role)
 PATCH /api/v1/auth/profile          ({name?, phone?} — email is read-only)
 POST  /api/v1/auth/change-password  ({current_password, new_password min 8})
 
+# Superadmin — general preferences (self-service)
+GET   /api/v1/auth/preferences          (returns theme/language/timezone/date_format/time_format/
+                                         week_start_day/default_landing_page/table_page_size;
+                                         row created with defaults on first call)
+PATCH /api/v1/auth/preferences          (partial-update; IANA timezone validated via zoneinfo;
+                                         audit-logged with old+new diff; all 8 fields optional)
+GET   /api/v1/auth/preferences/options  (no auth required; returns allowed values + labels for
+                                         themes/languages/date_formats/time_formats/week_start_days/
+                                         landing_pages/table_page_sizes)
+
 # Public — user invitation acceptance (no auth)
 GET   /api/v1/auth/invitations/{token}          (returns {email, name, expires_at}; 404 if invalid/expired)
 POST  /api/v1/auth/invitations/{token}/accept   ({password min 8} → activates account + sets password)

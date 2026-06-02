@@ -23,6 +23,7 @@ import ClientDetails from "./pages/superadmin/clients/ClientDetails";
 import RolesPermissionsPage from "./pages/superadmin/settings/RolesPermissionsPage";
 import SettingsLayout from "./pages/superadmin/settings/SettingsLayout";
 import ProfileSettings from "./pages/superadmin/settings/ProfileSettings";
+import GeneralSettings from "./pages/superadmin/settings/GeneralSettings";
 import OrganizationSettings from "./pages/superadmin/settings/OrganizationSettings";
 import CurrencyList from "./pages/superadmin/settings/currency/CurrencyList";
 import CurrencyForm from "./pages/superadmin/settings/currency/CurrencyForm";
@@ -178,6 +179,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireRole="superadmin">
             <Layout><SettingsLayout><ProfileSettings /></SettingsLayout></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/settings/general"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><SettingsLayout><GeneralSettings /></SettingsLayout></Layout>
           </ProtectedRoute>
         }
       />

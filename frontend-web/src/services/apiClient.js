@@ -67,6 +67,9 @@ export const authApi = {
   },
   removeAvatar: () => apiClient.delete("/auth/avatar"),
   changePassword: (data) => apiClient.post("/auth/change-password", data),
+  getPreferences: () => apiClient.get("/auth/preferences"),
+  updatePreferences: (data) => apiClient.patch("/auth/preferences", data),
+  getPreferencesOptions: () => apiClient.get("/auth/preferences/options"),
 };
 
 // ── RBAC — Roles & Permissions (superadmin) ───────────────────────────────────

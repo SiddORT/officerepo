@@ -34,6 +34,7 @@ from backend.app.modules.rbac.models import (
     Permission, Role, RolePermission, AdminRole, AdminInvitation,
 )
 from backend.app.modules.organization.models import OrganizationSettings  # noqa: F401
+from backend.app.modules.auth.preferences_model import SuperAdminPreferences  # noqa: F401
 from backend.app.modules.currency_management.models import (
     Currency, CurrencyRate, CurrencyRateHistory, CurrencySyncLog,
 )
