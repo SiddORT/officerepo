@@ -345,6 +345,25 @@ export const portalAuthApi = {
     axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/auth/login`, { email, password }),
 };
 
+// ── Portal Navigation (portal JWT — returns enabled modules) ─────────────────
+export const portalNavigationApi = {
+  getNavigation: (subdomain, token) =>
+    axios.get(`${API_BASE_URL}/api/v1/portal/${subdomain}/navigation`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+};
+
+// ── Module Registry (superadmin — platform module catalog) ───────────────────
+const MODULES = "/superadmin/modules";
+
+export const moduleRegistryApi = {
+  list: (params) => apiClient.get(MODULES, { params }),
+  get: (code) => apiClient.get(`${MODULES}/${code}`),
+  create: (data) => apiClient.post(MODULES, data),
+  update: (code, data) => apiClient.patch(`${MODULES}/${code}`, data),
+  deactivate: (code) => apiClient.delete(`${MODULES}/${code}`),
+};
+
 // ── Organization Settings (superadmin — singleton platform identity) ─────────
 const ORG = "/superadmin/organization";
 

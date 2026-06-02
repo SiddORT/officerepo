@@ -30,8 +30,10 @@ export function PortalAuthProvider({ subdomain, children }) {
     setUser(null);
   }, [subdomain]);
 
+  const token = user?.token ?? null;
+
   return (
-    <PortalAuthContext.Provider value={{ user, login, logout, subdomain }}>
+    <PortalAuthContext.Provider value={{ user, login, logout, subdomain, token }}>
       {children}
     </PortalAuthContext.Provider>
   );

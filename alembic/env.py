@@ -29,6 +29,7 @@ import backend.app.modules.organization.models  # noqa: F401
 import backend.app.modules.auth.preferences_model  # noqa: F401
 import backend.app.modules.notification_management.models  # noqa: F401
 import backend.app.modules.security_settings.models  # noqa: F401
+import backend.app.modules.module_registry.models  # noqa: F401
 import backend.app.database.migrations.model  # noqa: F401  (schema_migrations audit table)
 import backend.shared.audit.models  # noqa: F401
 # ────────────────────────────────────────────────────────────────────────────

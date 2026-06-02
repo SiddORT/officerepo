@@ -31,6 +31,7 @@ import CurrencyHistory from "./pages/superadmin/settings/currency/CurrencyHistor
 import SyncLogs from "./pages/superadmin/settings/currency/SyncLogs";
 import NotificationsPage from "./pages/superadmin/settings/notifications/NotificationsPage";
 import SecuritySettingsPage from "./pages/superadmin/settings/security/SecuritySettingsPage";
+import ModuleRegistryPage from "./pages/superadmin/settings/modules/ModuleRegistryPage";
 import Layout from "./components/Layout";
 import SettingsVariantA from "./pages/mockups/SettingsVariantA";
 import SettingsVariantB from "./pages/mockups/SettingsVariantB";
@@ -261,6 +262,14 @@ function AppRoutes() {
               </ProtectedRoute>
             }
           />
+      <Route
+        path="/superadmin/settings/modules"
+        element={
+          <ProtectedRoute>
+            <Layout><SettingsLayout><ModuleRegistryPage /></SettingsLayout></Layout>
+          </ProtectedRoute>
+        }
+      />
           <Route
         path="/superadmin/settings/notifications"
         element={
