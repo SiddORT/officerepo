@@ -1,0 +1,231 @@
+Let's design and implement Settings → Profile Settings → Security for Office Repo.
+
+Context:
+
+Office Repo uses:
+
+* React
+* TailwindCSS
+* FastAPI
+* SQLAlchemy 2.0
+* Alembic
+* PostgreSQL
+* JWT Authentication
+* RBAC Authorization
+* Clean Architecture
+* Repository Pattern
+* Service Layer Pattern
+* Multi-Tenant SaaS (Database Per Client)
+
+Security section should include:
+
+### Change Password
+
+* Current Password
+* New Password
+* Confirm Password
+
+### Active Sessions
+
+* Current Session
+* Other Active Sessions
+* Device Information
+* Browser Information
+* IP Address
+* Login Time
+* Last Activity Time
+* Logout Session
+* Logout All Other Sessions
+
+### Two-Factor Authentication (2FA)
+
+Phase 1:
+
+* Enable/Disable 2FA
+* Email OTP
+
+Future Ready:
+
+* Authenticator App
+* Backup Codes
+* Recovery Codes
+
+### Delete Account
+
+* Request Account Deactivation
+* Password Confirmation
+* Reason for Deactivation
+
+Design this module as a production-ready feature.
+
+Provide:
+
+### Functional Design
+
+* Purpose
+* Features
+* Business Rules
+* User Permissions
+
+### UI Design
+
+* Page Layout
+* Component Structure
+* Form Design
+* Responsive Design
+* Dark Mode Design
+
+### Database Design
+
+Provide tables for:
+
+* User Security Settings
+* User Sessions
+* 2FA Configuration
+* Security Events
+
+Include:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+
+### SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+
+### Alembic Design
+
+Provide:
+
+* Migration Structure
+* Naming Convention
+
+### API Design
+
+Design APIs for:
+
+#### Password Management
+
+* Change Password
+
+#### Session Management
+
+* Get Active Sessions
+* Logout Session
+* Logout All Other Sessions
+
+#### 2FA
+
+* Get 2FA Status
+* Enable 2FA
+* Verify OTP
+* Disable 2FA
+
+#### Account Deactivation
+
+* Request Deactivation
+
+Provide:
+
+* Endpoints
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+### Repository Layer
+
+Provide:
+
+* Interfaces
+* Methods
+
+### Service Layer
+
+Provide:
+
+* Password Validation
+* Session Management Logic
+* 2FA Logic
+* Security Validation
+
+### Validation Rules
+
+Password:
+
+* Minimum Length
+* Uppercase
+* Lowercase
+* Number
+* Special Character
+
+Session:
+
+* Only Owner Can Terminate Session
+
+2FA:
+
+* OTP Expiry
+* Retry Limits
+
+### JWT & Session Architecture
+
+Design:
+
+* Access Token Strategy
+* Refresh Token Strategy
+* Session Tracking
+* Token Revocation
+
+### Security Requirements
+
+* Password Hashing
+* Rate Limiting
+* Brute Force Protection
+* Input Sanitization
+* XSS Protection
+
+### Audit Logging
+
+Track:
+
+* Password Changed
+* Login
+* Logout
+* Session Revoked
+* 2FA Enabled
+* 2FA Disabled
+* Account Deactivation Requested
+
+Store:
+
+* User
+* Timestamp
+* IP Address
+* Device
+* Old Value
+* New Value
+
+### Error Handling
+
+Provide:
+
+* Invalid Password
+* Expired Session
+* Invalid OTP
+* Too Many Attempts
+* Concurrent Session Updates
+
+### Future Enhancements
+
+* Authenticator Apps
+* WebAuthn / Passkeys
+* Biometric Authentication
+* Trusted Devices
+* Security Alerts
+
+Generate implementation-ready specifications suitable for direct development in Office Repo.
