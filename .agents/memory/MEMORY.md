@@ -1,6 +1,7 @@
 # Project Memory — Office Repo
 
-- [Alembic migration setup](alembic-setup.md) — alembic.ini at workspace root; env.py must import all model modules; add imports to env.py + main.py for new models; `alembic revision --autogenerate` for new changes.
+- [Alembic migration setup](alembic-setup.md) — alembic.ini at workspace root; env.py must import ALL model modules or autogenerate silently emits DROP TABLE for unknown tables; add imports to env.py + main.py for new models.
+- [Notification config encryption](notification-config-encryption.md) — sensitive channel config fields encrypted via Fernet; key derived from SESSION_SECRET (SHA-256 → urlsafe-b64); stored as config_enc; non-sensitive fields in plain config_plain JSON.
 - [Backend test import paths](backend-test-imports.md) — sibling `app/` at workspace root (now deleted — was boilerplate); use `backend.app.*` imports; run unittest from workspace root.
 - [Billing email is PII-encrypted](billing-email-encrypted.md) — ClientBillingProfile.billing_email_encrypted (Text/Fernet); upsert_billing pops billing_email from payload and encrypts; billing_to_dict decrypts via _dec().
 - [Alembic fresh-DB bootstrap](alembic-fresh-db.md) — _run_migrations() in main.py detects missing alembic_version; on fresh DB runs create_all then stamp head; on existing DB runs upgrade head normally.

@@ -128,6 +128,7 @@ function getPageTitle(pathname) {
   if (pathname.endsWith("/history") && pathname.startsWith("/superadmin/settings/currencies/")) return "Rate History";
   if (pathname.startsWith("/superadmin/settings/currencies/")) return "Currency Details";
   if (pathname.startsWith("/superadmin/settings/currencies")) return "Currency Management";
+  if (pathname.startsWith("/superadmin/settings/notifications")) return "Notifications";
   if (pathname.startsWith("/superadmin/settings")) return "Settings";
   if (pathname === "/dashboard") return "Dashboard";
   return "Office Repo";

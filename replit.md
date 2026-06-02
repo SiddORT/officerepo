@@ -642,3 +642,50 @@ superadmin JWT guard, platform DB (`get_platform_db`).
 
 Do **not** re-introduce the old tenant-scoping middleware, `X-Tenant-ID` headers, or
 tenant-resolver machinery — tenancy now lives in the Client Management data model.
+
+## Notification Management (Settings → Administration)
+
+**Scope**: platform-scoped, superadmin JWT guard, platform DB. Layered architecture
+(`constants`/`models`/`schemas`/`repository`/`service`/`router`).
+
+**Tables** (4):
+- `notification_channel_configs` — one row per channel (email/sms/whatsapp/push); `config_enc`
+  (Fernet-encrypted JSON blob of sensitive fields derived from `SESSION_SECRET`), `is_enabled`.
+- `notification_templates` — named templates per channel; `slug`, `subject`, `body`, `variables`
+  (JSON), `is_active`, `is_system` (system templates cannot be deleted).
+- `notification_event_rules` — per (event_name, channel) pair; `is_enabled`, `template_id` FK,
+  `delay_minutes`, `conditions` (JSON).
+- `notification_logs` — delivery log per send attempt; `channel`, `event_name`, `recipient`,
+  `template_id`, `status` (queued/processing/sent/delivered/failed), `error_message`, `metadata`.
+
+**Channels**: email, sms, whatsapp, push. Sensitive config fields per channel are defined in
+`constants.SENSITIVE_FIELDS` and are encrypted at rest; non-sensitive fields are stored in
+plain-text `config_plain` (JSON). `test_channel` validates connectivity (provider ping).
+
+**API routes** (`/api/v1/superadmin/notifications`):
+```
+GET    /channels                          — list all channels with masked config
+GET    /channels/{channel}                — single channel detail
+PUT    /channels/{channel}                — update config + enable/disable
+POST   /channels/{channel}/test           — test channel connectivity
+
+GET    /templates                         — list (?channel= ?active_only=)
+POST   /templates                         — create template
+GET    /templates/{id}                    — get template
+PUT    /templates/{id}                    — update template
+DELETE /templates/{id}                    — delete (system templates protected)
+
+GET    /events                            — list all event rules (grouped)
+PUT    /events/{event_name}/{channel}     — update rule (enable/disable, template, delay)
+
+GET    /logs                              — list delivery logs (?channel ?status ?event_name ?page)
+GET    /usage                             — usage stats (counts by channel/status)
+```
+
+**Frontend**: `pages/superadmin/settings/notifications/NotificationsPage.jsx` — 4-tab page
+(Channels, Templates, Events, Logs). `notificationsApi` in `apiClient.js`. Route:
+`/superadmin/settings/notifications`. Nav item under **Administration** group in SettingsLayout.
+
+**Encryption**: Fernet key derived from `SESSION_SECRET` via SHA-256 (32 bytes → urlsafe-b64).
+Sensitive fields per channel are merged into an encrypted JSON blob; non-sensitive fields
+remain in `config_plain` so they are readable without decryption for display purposes.

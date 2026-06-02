@@ -38,6 +38,10 @@ from backend.app.modules.auth.preferences_model import SuperAdminPreferences  # 
 from backend.app.modules.currency_management.models import (
     Currency, CurrencyRate, CurrencyRateHistory, CurrencySyncLog,
 )
+from backend.app.modules.notification_management.models import (  # noqa: F401
+    NotificationChannelConfig, NotificationTemplate,
+    NotificationEventRule, NotificationLog,
+)
 from backend.app.database.migrations.model import SchemaMigration  # noqa: F401 (registers with metadata)
 
 # Alembic — programmatic migration runner
@@ -59,6 +63,7 @@ from backend.app.modules.lead_management.router import router as lead_router
 from backend.app.modules.client_management.router import router as client_router
 from backend.app.modules.currency_management.router import router as currency_router
 from backend.app.modules.organization.router import router as org_router
+from backend.app.modules.notification_management.router import router as notif_router
 from backend.app.platform.superadmin.rotation_router import router as rotation_router
 from backend.app.platform.superadmin.rotation_status_router import router as rotation_status_router
 
@@ -413,6 +418,9 @@ def create_app(app_settings=settings) -> FastAPI:
     # Currency Management Module (superadmin — global platform settings)
     app.include_router(currency_router, prefix=f"{prefix}/superadmin/currencies", tags=["currency management"])
     app.include_router(org_router, prefix=f"{prefix}/superadmin/organization", tags=["organization settings"])
+
+    # Notification Management (superadmin — channel configs, templates, event rules, logs)
+    app.include_router(notif_router, prefix=f"{prefix}/superadmin/notifications", tags=["notifications"])
 
     # Enquiry Inbox (superadmin CRM)
     app.include_router(enquiry_admin_router, prefix=f"{prefix}/superadmin/enquiries", tags=["enquiry inbox"])

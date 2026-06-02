@@ -281,6 +281,35 @@ export const clientsApi = {
   deleteDocument: (id, docId) => apiClient.delete(`${CLIENTS}/${id}/documents/${docId}`),
 };
 
+// ── Notification Management (superadmin) ──────────────────────────────────────
+const NOTIF = "/superadmin/notifications";
+
+export const notificationsApi = {
+  // Channels
+  listChannels: () => apiClient.get(`${NOTIF}/channels`),
+  getChannel: (ch) => apiClient.get(`${NOTIF}/channels/${ch}`),
+  updateChannel: (ch, data) => apiClient.put(`${NOTIF}/channels/${ch}`, data),
+  testChannel: (ch) => apiClient.post(`${NOTIF}/channels/${ch}/test`),
+
+  // Templates
+  listTemplates: (params) => apiClient.get(`${NOTIF}/templates`, { params }),
+  getTemplate: (id) => apiClient.get(`${NOTIF}/templates/${id}`),
+  createTemplate: (data) => apiClient.post(`${NOTIF}/templates`, data),
+  updateTemplate: (id, data) => apiClient.put(`${NOTIF}/templates/${id}`, data),
+  deleteTemplate: (id) => apiClient.delete(`${NOTIF}/templates/${id}`),
+
+  // Event rules
+  listEvents: () => apiClient.get(`${NOTIF}/events`),
+  updateEventRule: (event, channel, data) =>
+    apiClient.put(`${NOTIF}/events/${event}/${channel}`, data),
+
+  // Logs
+  listLogs: (params) => apiClient.get(`${NOTIF}/logs`, { params }),
+
+  // Usage
+  usage: () => apiClient.get(`${NOTIF}/usage`),
+};
+
 // ── Organization Settings (superadmin — singleton platform identity) ─────────
 const ORG = "/superadmin/organization";
 

@@ -25,6 +25,9 @@ import backend.app.modules.lead_management.models  # noqa: F401
 import backend.app.modules.client_management.models  # noqa: F401
 import backend.app.modules.cors_report.models  # noqa: F401
 import backend.app.modules.currency_management.models  # noqa: F401
+import backend.app.modules.organization.models  # noqa: F401
+import backend.app.modules.auth.preferences_model  # noqa: F401
+import backend.app.modules.notification_management.models  # noqa: F401
 import backend.app.database.migrations.model  # noqa: F401  (schema_migrations audit table)
 import backend.shared.audit.models  # noqa: F401
 # ────────────────────────────────────────────────────────────────────────────
