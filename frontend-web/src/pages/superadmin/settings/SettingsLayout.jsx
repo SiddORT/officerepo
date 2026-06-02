@@ -252,7 +252,7 @@ export default function SettingsLayout({ children }) {
 
       {/* ── Content area ── */}
       <div className="flex-1 min-w-0 overflow-y-auto" style={{ background: "var(--c-bg)" }}>
-        <div className="p-6 max-w-4xl">
+        <div className="p-6">
           {children}
         </div>
       </div>

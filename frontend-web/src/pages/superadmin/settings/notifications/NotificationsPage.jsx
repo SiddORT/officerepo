@@ -1,5 +1,62 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 import { notificationsApi } from "../../../../services/apiClient";
+
+const QUILL_MODULES_EMAIL = {
+  toolbar: [
+    [{ header: [1, 2, 3, false] }],
+    ["bold", "italic", "underline", "strike"],
+    [{ color: [] }, { background: [] }],
+    [{ list: "ordered" }, { list: "bullet" }],
+    [{ indent: "-1" }, { indent: "+1" }],
+    ["link"],
+    ["blockquote", "code-block"],
+    ["clean"],
+  ],
+};
+
+const QUILL_MODULES_PLAIN = {
+  toolbar: [["bold", "italic"], ["link"], ["clean"]],
+};
+
+const QUILL_THEME_CSS = `
+  .ql-toolbar.ql-snow {
+    background: var(--c-surface2, var(--c-surface));
+    border-color: var(--c-border) !important;
+    border-radius: 6px 6px 0 0;
+    padding: 6px 8px;
+  }
+  .ql-container.ql-snow {
+    background: var(--c-bg);
+    border-color: var(--c-border) !important;
+    border-radius: 0 0 6px 6px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .ql-editor {
+    color: var(--c-text);
+    min-height: 160px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .ql-editor.ql-blank::before {
+    color: var(--c-muted);
+    font-style: normal;
+  }
+  .ql-toolbar .ql-stroke { stroke: var(--c-text2) !important; }
+  .ql-toolbar .ql-fill { fill: var(--c-text2) !important; }
+  .ql-toolbar button:hover .ql-stroke,
+  .ql-toolbar button.ql-active .ql-stroke { stroke: var(--c-accent) !important; }
+  .ql-toolbar button:hover .ql-fill,
+  .ql-toolbar button.ql-active .ql-fill { fill: var(--c-accent) !important; }
+  .ql-toolbar .ql-picker-label { color: var(--c-text2) !important; }
+  .ql-toolbar .ql-picker-options {
+    background: var(--c-surface) !important;
+    border-color: var(--c-border) !important;
+    color: var(--c-text) !important;
+  }
+`;
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 const TABS = [
@@ -462,7 +519,7 @@ function TemplateModal({ open, onClose, initial, onSave }) {
   const handleSave = async () => {
     if (!form.name.trim()) { setError("Name is required"); return; }
     if (!form.slug.trim()) { setError("Slug is required"); return; }
-    if (!form.body.trim()) { setError("Body is required"); return; }
+    if (isBodyEmpty(form.body)) { setError("Body is required"); return; }
     setSaving(true);
     setError("");
     try {
@@ -478,8 +535,11 @@ function TemplateModal({ open, onClose, initial, onSave }) {
     }
   };
 
+  const isBodyEmpty = (val) => !val || val.trim() === "" || val === "<p><br></p>";
+
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? "Edit Template" : "New Template"} width={600}>
+    <Modal open={open} onClose={onClose} title={isEdit ? "Edit Template" : "New Template"} width={740}>
+      <style>{QUILL_THEME_CSS}</style>
       <Field label="Channel" required>
         <select value={form.channel} onChange={e => set("channel", e.target.value)} style={inputStyle} disabled={isEdit}>
           {Object.entries(CHANNEL_META).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
@@ -498,12 +558,22 @@ function TemplateModal({ open, onClose, initial, onSave }) {
           <input value={form.subject || ""} onChange={e => set("subject", e.target.value)} style={inputStyle} placeholder="Welcome to {{org_name}}" />
         </Field>
       )}
-      <Field label="Body" required hint="Use {{variable_name}} for template variables">
-        <textarea
+      <Field
+        label="Body"
+        required
+        hint={form.channel === "email"
+          ? "Rich HTML body — use {{variable_name}} for template variables"
+          : "Plain text body — use {{variable_name}} for template variables"}
+      >
+        <ReactQuill
+          key={form.channel}
           value={form.body}
-          onChange={e => set("body", e.target.value)}
-          style={{ ...textareaStyle, minHeight: 120 }}
-          placeholder={"Hi {{first_name}},\n\nWelcome to Office Repo!"}
+          onChange={v => set("body", v)}
+          modules={form.channel === "email" ? QUILL_MODULES_EMAIL : QUILL_MODULES_PLAIN}
+          theme="snow"
+          placeholder={form.channel === "email"
+            ? "Hi {{first_name}}, welcome to Office Repo!"
+            : "Hi {{first_name}}, your notification here."}
         />
       </Field>
       <Field label="Variables" hint="Comma-separated: first_name, company, email">
