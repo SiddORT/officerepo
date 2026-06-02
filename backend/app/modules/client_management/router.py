@@ -216,6 +216,20 @@ def upsert_db_config(client_id: str, payload: DbConnectionRequest, db: Session =
                           "Database configuration updated.").model_dump()
 
 
+@router.post("/{client_id}/database/provision")
+def provision_database(client_id: str, db: Session = Depends(get_platform_db),
+                       admin: dict = Depends(_current_admin)):
+    data = service.provision_database(db, client_id, actor=admin["email"])
+    return ApiResponse.ok(data, "Database provisioned successfully.").model_dump()
+
+
+@router.delete("/{client_id}/database/provision")
+def deprovision_database(client_id: str, db: Session = Depends(get_platform_db),
+                         admin: dict = Depends(_current_admin)):
+    data = service.deprovision_database(db, client_id, actor=admin["email"])
+    return ApiResponse.ok(data, "Database deprovisioned.").model_dump()
+
+
 # ── Domains ──────────────────────────────────────────────────────────────────
 @router.get("/{client_id}/domains")
 def list_domains(client_id: str, db: Session = Depends(get_platform_db), _admin: dict = Depends(_current_admin)):

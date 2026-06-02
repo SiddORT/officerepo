@@ -257,6 +257,8 @@ export const clientsApi = {
 
   database: (id) => apiClient.get(`${CLIENTS}/${id}/database`),
   saveDatabase: (id, data) => apiClient.put(`${CLIENTS}/${id}/database`, data),
+  provisionDatabase: (id) => apiClient.post(`${CLIENTS}/${id}/database/provision`),
+  deprovisionDatabase: (id) => apiClient.delete(`${CLIENTS}/${id}/database/provision`),
 
   domains: (id) => apiClient.get(`${CLIENTS}/${id}/domains`),
   addDomain: (id, data) => apiClient.post(`${CLIENTS}/${id}/domains`, data),

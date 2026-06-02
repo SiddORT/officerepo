@@ -10,8 +10,10 @@ atomic).
 """
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Optional, Tuple
+from urllib.parse import urlparse
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -32,6 +34,8 @@ from backend.app.modules.client_management.schemas import (
 )
 from backend.shared.audit.audit_logger import record_audit, mask_email, mask_value
 from backend.shared.security.encryption import encrypt_value, decrypt_value
+from backend.app.config.settings import settings
+from backend.app.modules.testing.database_provisioning import repository as pg_repo
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -506,6 +510,80 @@ def upsert_db_config(db: Session, client_id: str, payload: DbConnectionRequest, 
     _journal(db, client_id, c.ACT_DB_UPDATED, remarks=conn.database_status)
     record_audit(db, c.AUDIT_DB_UPDATED, c.AUDIT_ENTITY, client_id, actor=actor,
                  metadata={"database_status": conn.database_status})
+    db.commit()
+    db.refresh(conn)
+    return db_connection_to_dict(conn)
+
+
+def _parse_platform_db_conn() -> dict:
+    url = settings.PLATFORM_DB_URL.replace("+psycopg2", "").replace("+asyncpg", "")
+    p = urlparse(url)
+    return {
+        "host": p.hostname or "localhost",
+        "port": p.port or 5432,
+        "username": p.username or "postgres",
+    }
+
+
+def _safe_db_name(client_code: str) -> str:
+    slug = re.sub(r"[^a-z0-9]", "_", client_code.lower())[:50].strip("_")
+    return f"officerepo_{slug}"
+
+
+def provision_database(db: Session, client_id: str, *, actor: str) -> dict:
+    client = _require_client(db, client_id)
+    conn = repo.get_db_connection(db, client_id)
+    if conn and conn.database_status == c.DB_STATUS_ACTIVE:
+        raise HTTPException(status_code=409, detail="Database is already provisioned.")
+
+    db_name = _safe_db_name(client.client_code)
+    result = pg_repo.create_database(db_name) if not pg_repo.db_exists(db_name) else None
+
+    pg = _parse_platform_db_conn()
+    if not conn:
+        conn = ClientDbConnection(
+            client_id=client_id, database_status=c.DB_STATUS_NOT_PROVISIONED
+        )
+        repo.add(db, conn)
+
+    conn.database_name = db_name
+    conn.database_host = pg["host"]
+    conn.database_port = pg["port"]
+    conn.database_username = pg["username"]
+    conn.database_status = c.DB_STATUS_ACTIVE
+    conn.provisioned_at = datetime.utcnow()
+    conn.updated_at = datetime.utcnow()
+
+    _journal(db, client_id, c.ACT_DB_PROVISIONED, remarks=db_name)
+    record_audit(db, c.AUDIT_DB_PROVISIONED, c.AUDIT_ENTITY, client_id, actor=actor,
+                 metadata={"database_name": db_name})
+    db.commit()
+    db.refresh(conn)
+    return db_connection_to_dict(conn)
+
+
+def deprovision_database(db: Session, client_id: str, *, actor: str) -> dict:
+    _require_client(db, client_id)
+    conn = repo.get_db_connection(db, client_id)
+    if not conn or not conn.database_name:
+        raise HTTPException(status_code=404, detail="No database configured for this client.")
+
+    db_name = conn.database_name
+    if pg_repo.db_exists(db_name):
+        pg_repo.drop_database(db_name)
+
+    conn.database_name = None
+    conn.database_host = None
+    conn.database_port = None
+    conn.database_username = None
+    conn.database_password_encrypted = None
+    conn.database_status = c.DB_STATUS_NOT_PROVISIONED
+    conn.provisioned_at = None
+    conn.updated_at = datetime.utcnow()
+
+    _journal(db, client_id, c.ACT_DB_DEPROVISIONED, remarks=db_name)
+    record_audit(db, c.AUDIT_DB_DEPROVISIONED, c.AUDIT_ENTITY, client_id, actor=actor,
+                 metadata={"database_name": db_name})
     db.commit()
     db.refresh(conn)
     return db_connection_to_dict(conn)

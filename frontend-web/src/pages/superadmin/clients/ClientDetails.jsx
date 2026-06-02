@@ -125,7 +125,7 @@ export default function ClientDetails() {
         {tab === "Subscription" && <SubscriptionTab clientId={id} subscription={client.subscription} options={options} onChange={load} />}
         {tab === "Documents" && <DocumentsTab clientId={id} documents={client.documents} options={options} onChange={load} />}
         {tab === "Activities" && <ActivitiesTab clientId={id} />}
-        {tab === "Database" && <DatabaseTab clientId={id} db={client.db_connection} options={options} onChange={load} />}
+        {tab === "Database" && <DatabaseTab clientId={id} db={client.db_connection} clientCode={client.client_code} options={options} onChange={load} />}
         {tab === "Domains" && <DomainsTab clientId={id} domains={client.domains} onChange={load} />}
         {tab === "Admin Users" && <AdminUsersTab clientId={id} admins={client.admin_users} options={options} onChange={load} />}
       </div>
@@ -571,11 +571,38 @@ function ActivitiesTab({ clientId }) {
 }
 
 // ── Database ──────────────────────────────────────────────────────────────────
-function DatabaseTab({ clientId, db, options, onChange }) {
+function DatabaseTab({ clientId, clientCode, db, options, onChange }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
+  const [deprovisioning, setDeprovisioning] = useState(false);
+  const [confirmDeprovision, setConfirmDeprovision] = useState(false);
   const [err, setErr] = useState("");
+
+  const expectedDbName = clientCode
+    ? "officerepo_" + clientCode.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/^_+|_+$/g, "")
+    : null;
+  const isProvisioned = db?.database_status === "Active";
+  const isNotProvisioned = !db || db.database_status === "Not Provisioned";
+
+  const provision = async () => {
+    setProvisioning(true); setErr("");
+    try {
+      await clientsApi.provisionDatabase(clientId);
+      onChange();
+    } catch (e) { setErr(e.response?.data?.detail || "Provisioning failed."); }
+    finally { setProvisioning(false); }
+  };
+
+  const deprovision = async () => {
+    setDeprovisioning(true); setConfirmDeprovision(false); setErr("");
+    try {
+      await clientsApi.deprovisionDatabase(clientId);
+      onChange();
+    } catch (e) { setErr(e.response?.data?.detail || "Deprovisioning failed."); }
+    finally { setDeprovisioning(false); }
+  };
 
   const start = () => {
     setForm({
@@ -608,12 +635,57 @@ function DatabaseTab({ clientId, db, options, onChange }) {
 
   if (!editing) {
     return (
-      <Card title="Tenant Database" action={<button onClick={start} className="btn-secondary text-xs px-3 py-1.5">{db ? "Edit" : "Configure"}</button>}>
-        <div className="rounded-lg p-3 mb-4 flex items-center gap-3" style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)" }}>
-          <DbStatusBadge status={db?.database_status || "Not Provisioned"} />
-          <span className="text-xs t-muted">Database-per-client provisioning is deferred. This records the intended connection only.</span>
+      <Card title="Tenant Database">
+        {err && <div className="rounded-lg px-3 py-2 text-sm text-red-400 mb-4" style={{ background: "rgba(239,68,68,0.08)" }}>{err}</div>}
+
+        {/* Status bar */}
+        <div className="rounded-lg p-3 mb-4 flex items-center justify-between gap-3" style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)" }}>
+          <div className="flex items-center gap-3">
+            <DbStatusBadge status={db?.database_status || "Not Provisioned"} />
+            {isNotProvisioned && expectedDbName && (
+              <span className="text-xs t-muted">Will create: <code className="font-mono">{expectedDbName}</code></span>
+            )}
+            {isProvisioned && db?.provisioned_at && (
+              <span className="text-xs t-muted">Provisioned {formatDateTime(db.provisioned_at)}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {isNotProvisioned && (
+              <button
+                onClick={provision}
+                disabled={provisioning}
+                className="btn-primary text-xs px-3 py-1.5"
+              >
+                {provisioning ? "Provisioning…" : "Provision Database"}
+              </button>
+            )}
+            {isProvisioned && !confirmDeprovision && (
+              <button
+                onClick={() => setConfirmDeprovision(true)}
+                className="text-xs px-3 py-1.5 rounded-lg font-medium"
+                style={{ background: "rgba(239,68,68,0.12)", color: "var(--c-error, #f87171)", border: "1px solid rgba(239,68,68,0.25)" }}
+              >
+                Deprovision
+              </button>
+            )}
+            {isProvisioned && confirmDeprovision && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-red-400">Drop the database?</span>
+                <button onClick={deprovision} disabled={deprovisioning}
+                  className="text-xs px-2 py-1 rounded font-medium"
+                  style={{ background: "rgba(239,68,68,0.2)", color: "#f87171" }}>
+                  {deprovisioning ? "Dropping…" : "Yes, drop it"}
+                </button>
+                <button onClick={() => setConfirmDeprovision(false)} className="text-xs px-2 py-1 rounded btn-secondary">Cancel</button>
+              </div>
+            )}
+            <button onClick={start} className="btn-secondary text-xs px-3 py-1.5">
+              {db ? "Edit" : "Configure"}
+            </button>
+          </div>
         </div>
-        {!db ? <Empty>No database configured.</Empty> : (
+
+        {!db ? <Empty>No database configured. Click "Provision Database" to create one automatically.</Empty> : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <Field label="Database Name" value={db.database_name} />
             <Field label="Host" value={db.database_host} />
@@ -640,7 +712,7 @@ function DatabaseTab({ clientId, db, options, onChange }) {
       </div>
       <div className="flex justify-end gap-3 mt-4">
         <button onClick={() => setEditing(false)} className="btn-secondary">Cancel</button>
-        <button onClick={save} disabled={saving} className="btn-primary">{saving ? "Saving..." : "Save"}</button>
+        <button onClick={save} disabled={saving} className="btn-primary">{saving ? "Saving…" : "Save"}</button>
       </div>
     </Card>
   );
