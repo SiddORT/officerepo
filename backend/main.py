@@ -65,6 +65,7 @@ from backend.app.modules.currency_management.router import router as currency_ro
 from backend.app.modules.organization.router import router as org_router
 from backend.app.modules.notification_management.router import router as notif_router
 from backend.app.modules.security_settings.router import router as security_settings_router
+from backend.app.modules.portal_auth.router import router as portal_auth_router
 from backend.app.modules.testing.database_provisioning.router import router as db_provisioning_router
 from backend.app.platform.superadmin.rotation_router import router as rotation_router
 from backend.app.platform.superadmin.rotation_status_router import router as rotation_status_router
@@ -430,6 +431,9 @@ def create_app(app_settings=settings) -> FastAPI:
 
     # Public marketing site — enquiry / contact form (no auth)
     app.include_router(enquiry_router, prefix=f"{prefix}/public/enquiries", tags=["public - enquiries"])
+
+    # Client Portal Auth (public — invite validation, accept, login)
+    app.include_router(portal_auth_router, prefix=f"{prefix}/portal", tags=["portal auth"])
 
     # [TESTING ONLY] Database provisioning capability check — superadmin JWT required
     app.include_router(db_provisioning_router, prefix=f"{prefix}", tags=["[TESTING] database provisioning"])

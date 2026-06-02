@@ -1,5 +1,7 @@
 # Project Memory — Office Repo
 
+- [Portal invite auth design](portal-invite-auth.md) — SHA-256 hash stored (never raw token); `create_portal_token` uses JWT_SECRET + `token_type:"portal_access"`; public routes use bare axios, not apiClient.
+
 - [Alembic migration setup](alembic-setup.md) — alembic.ini at workspace root; env.py must import ALL model modules or autogenerate silently emits DROP TABLE for unknown tables; add imports to env.py + main.py for new models.
 - [Notification config encryption](notification-config-encryption.md) — sensitive channel config fields encrypted via Fernet; key derived from SESSION_SECRET (SHA-256 → urlsafe-b64); stored as config_enc; non-sensitive fields in plain config_plain JSON.
 - [Security settings singleton pattern](security-settings-singleton.md) — all 5 security policy tables use id="default" upsert-on-get; ApiResponse from backend.shared.response (not backend.app.shared); require_superadmin from backend.app.core.deps.

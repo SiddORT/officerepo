@@ -76,6 +76,31 @@ def decode_access_token(token: str) -> Dict[str, Any]:
         raise
 
 
+def create_portal_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+    """Short-lived JWT for a client portal admin user (type='portal_access').
+
+    Uses the same JWT_SECRET as superadmin tokens but carries a distinct
+    ``token_type`` claim so the portal guard can reject superadmin tokens
+    and vice-versa.
+    """
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires_delta or timedelta(hours=8))
+    to_encode.update({"exp": expire, "token_type": "portal_access"})
+    kid = _derive_kid(settings.JWT_SECRET)
+    return jwt.encode(to_encode, settings.JWT_SECRET, algorithm="HS256", headers={"kid": kid})
+
+
+def decode_portal_token(token: str) -> Dict[str, Any]:
+    """Verify a portal access token and return its payload."""
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+        if payload.get("token_type") != "portal_access":
+            raise JWTError("not a portal token")
+        return payload
+    except JWTError:
+        raise
+
+
 def decode_refresh_token(token: str) -> Dict[str, Any]:
     from backend.app.core.fallback_counter import record_fallback_use
     current_kid = _derive_kid(settings.REFRESH_SECRET)

@@ -277,6 +277,13 @@ def update_admin_user(client_id: str, admin_id: str, payload: AdminUserUpdateReq
                           "Admin user updated.").model_dump()
 
 
+@router.post("/{client_id}/admin-users/{admin_id}/send-invite")
+def send_admin_user_invite(client_id: str, admin_id: str, db: Session = Depends(get_platform_db),
+                           admin: dict = Depends(_current_admin)):
+    data = service.send_admin_invite(db, client_id, admin_id, actor=admin["email"])
+    return ApiResponse.ok(data, "Invite sent.").model_dump()
+
+
 # ── Activity logs ────────────────────────────────────────────────────────────
 @router.get("/{client_id}/activities")
 def list_activities(client_id: str, db: Session = Depends(get_platform_db), _admin: dict = Depends(_current_admin)):

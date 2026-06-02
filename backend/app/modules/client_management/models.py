@@ -244,6 +244,11 @@ class ClientAdminUser(Base):
     country_code = Column(String(8), nullable=True)
     status = Column(String(30), nullable=False, default="Placeholder")
 
+    password_hash = Column(Text, nullable=True)
+    invite_token_hash = Column(Text, nullable=True)
+    invite_expires_at = Column(DateTime, nullable=True)
+    invite_accepted_at = Column(DateTime, nullable=True)
+
     is_deleted = Column(Boolean, nullable=False, default=False)
     deleted_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

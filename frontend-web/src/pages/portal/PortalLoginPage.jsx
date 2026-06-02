@@ -86,10 +86,17 @@ export default function PortalLoginPage() {
     e.preventDefault();
     if (!email || !password) { setError("Please fill in all fields."); return; }
     setError(""); setLoading(true);
-    await new Promise((r) => setTimeout(r, 700));
-    login(email, workspaceName + " User");
-    navigate(`/portal/${subdomain}/dashboard`);
-    setLoading(false);
+    try {
+      const { default: { portalAuthApi } } = await import("../../services/apiClient");
+      const res = await portalAuthApi.login(subdomain, email, password);
+      const data = res.data.data;
+      login({ email: data.email, name: data.name, client_id: data.client_id, admin_user_id: data.admin_user_id, workspace_name: data.workspace_name }, data.access_token);
+      navigate(`/portal/${subdomain}/dashboard`);
+    } catch (err) {
+      setError(err.response?.data?.detail || "Invalid credentials.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputStyle = (name, hasLeftIcon = true, hasRightIcon = false) => ({

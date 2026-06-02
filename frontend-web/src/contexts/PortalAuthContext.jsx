@@ -19,8 +19,8 @@ function readSession(subdomain) {
 export function PortalAuthProvider({ subdomain, children }) {
   const [user, setUser] = useState(() => readSession(subdomain));
 
-  const login = useCallback((email, name) => {
-    const session = { email, name: name || email.split("@")[0], loggedAt: Date.now() };
+  const login = useCallback((userData, token) => {
+    const session = { ...userData, token, loggedAt: Date.now() };
     sessionStorage.setItem(storageKey(subdomain), JSON.stringify(session));
     setUser(session);
   }, [subdomain]);

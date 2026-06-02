@@ -268,6 +268,7 @@ export const clientsApi = {
   adminUsers: (id) => apiClient.get(`${CLIENTS}/${id}/admin-users`),
   addAdminUser: (id, data) => apiClient.post(`${CLIENTS}/${id}/admin-users`, data),
   updateAdminUser: (id, aid, data) => apiClient.patch(`${CLIENTS}/${id}/admin-users/${aid}`, data),
+  sendAdminUserInvite: (id, aid) => apiClient.post(`${CLIENTS}/${id}/admin-users/${aid}/send-invite`),
 
   activities: (id) => apiClient.get(`${CLIENTS}/${id}/activities`),
 
@@ -332,6 +333,16 @@ export const securitySettingsApi = {
 
   getNotificationPolicy:   () => apiClient.get(`${SEC}/notification-policy`),
   updateNotificationPolicy: (data) => apiClient.put(`${SEC}/notification-policy`, data),
+};
+
+// ── Portal Auth (public — client admin user invite + login) ─────────────────
+export const portalAuthApi = {
+  validateInvite: (subdomain, token) =>
+    axios.get(`${API_BASE_URL}/api/v1/portal/${subdomain}/invite/${token}`),
+  acceptInvite: (subdomain, token, password) =>
+    axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/invite/${token}/accept`, { password }),
+  login: (subdomain, email, password) =>
+    axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/auth/login`, { email, password }),
 };
 
 // ── Organization Settings (superadmin — singleton platform identity) ─────────

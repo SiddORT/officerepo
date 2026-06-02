@@ -959,12 +959,38 @@ function DomainsTab({ clientId, domains = [], onChange }) {
 // ── Admin Users ───────────────────────────────────────────────────────────────
 const EMPTY_ADMIN = { first_name: "", last_name: "", email: "", country_code: "", phone: "", status: "Invited" };
 
+function CopyText({ value }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="flex items-center gap-2 rounded-lg p-2 text-xs" style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)" }}>
+      <code className="flex-1 break-all font-mono" style={{ color: "var(--c-text)", fontSize: 11 }}>{value}</code>
+      <button type="button" onClick={() => { navigator.clipboard.writeText(value).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }); }}
+        className="flex-shrink-0 text-xs font-medium" style={{ color: copied ? "#22c55e" : "var(--c-accent)", background: "none", border: "none", cursor: "pointer" }}>
+        {copied ? "Copied!" : "Copy"}
+      </button>
+    </div>
+  );
+}
+
 function AdminUsersTab({ clientId, admins = [], options, onChange }) {
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_ADMIN);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+
+  const [inviting, setInviting] = useState(null);
+  const [inviteResult, setInviteResult] = useState(null);
+  const [inviteErr, setInviteErr] = useState("");
+
+  const sendInvite = async (a) => {
+    setInviting(a.id); setInviteResult(null); setInviteErr("");
+    try {
+      const res = await clientsApi.sendAdminUserInvite(clientId, a.id);
+      setInviteResult({ admin: a, ...res.data.data });
+    } catch (e) { setInviteErr(e.response?.data?.detail || "Failed to send invite."); }
+    finally { setInviting(null); }
+  };
 
   const open = (a) => {
     setEditing(a || null);
@@ -1004,11 +1030,40 @@ function AdminUsersTab({ clientId, admins = [], options, onChange }) {
                 </div>
                 <p className="text-xs t-muted truncate">{[a.email, [a.country_code, a.phone].filter(Boolean).join(" ")].filter(Boolean).join(" · ") || "—"}</p>
               </div>
-              <button onClick={() => open(a)} className="text-xs t-muted hover:text-[var(--c-accent)] flex-shrink-0">Edit</button>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button onClick={() => sendInvite(a)} disabled={!!inviting}
+                  className="text-xs t-muted hover:text-[var(--c-accent)]"
+                  style={{ opacity: inviting === a.id ? 0.5 : 1 }}>
+                  {inviting === a.id ? "Sending…" : "Send Invite"}
+                </button>
+                <span style={{ color: "var(--c-border)" }}>·</span>
+                <button onClick={() => open(a)} className="text-xs t-muted hover:text-[var(--c-accent)]">Edit</button>
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      {inviteErr && (
+        <div className="rounded-lg px-3 py-2 text-sm text-red-400 mt-3" style={{ background: "rgba(239,68,68,0.08)" }}>{inviteErr}</div>
+      )}
+
+      <Modal open={!!inviteResult} onClose={() => setInviteResult(null)} title="Invite Sent">
+        {inviteResult && (
+          <div className="space-y-3">
+            <p className="text-sm" style={{ color: "var(--c-text2)" }}>
+              {inviteResult.email_sent
+                ? <>An invite email was sent to <strong>{inviteResult.admin?.email || "the user"}</strong>.</>
+                : <>Email delivery is not configured — share this link directly.</>}
+            </p>
+            <div>
+              <p className="text-xs font-medium mb-1.5" style={{ color: "var(--c-muted)" }}>Invite link (expires in {inviteResult.expires_days} days)</p>
+              <CopyText value={inviteResult.invite_link} />
+            </div>
+          </div>
+        )}
+        <div slot="footer" />
+      </Modal>
 
       <Modal open={modal} onClose={() => setModal(false)} title={editing ? "Edit Admin User" : "Add Admin User"}
         footer={<><button onClick={() => setModal(false)} className="btn-secondary">Cancel</button><button onClick={save} disabled={saving} className="btn-primary">{saving ? "Saving..." : "Save"}</button></>}>

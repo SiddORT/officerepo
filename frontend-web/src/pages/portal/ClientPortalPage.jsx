@@ -4,6 +4,7 @@ import { PortalAuthProvider, usePortalAuth } from "../../contexts/PortalAuthCont
 import PortalLoginPage from "./PortalLoginPage";
 import PortalLayout from "./PortalLayout";
 import PortalDashboard from "./PortalDashboard";
+import PortalAcceptInvitePage from "./PortalAcceptInvitePage";
 
 function PortalProtectedRoute({ children }) {
   const { user, subdomain } = usePortalAuth();
@@ -68,6 +69,7 @@ function PortalRoutes() {
           </PortalProtectedRoute>
         }
       />
+      <Route path="/accept-invite" element={<PortalAcceptInvitePage />} />
       <Route path="*" element={<Navigate to={user ? `/portal/${subdomain}/dashboard` : `/portal/${subdomain}`} replace />} />
     </Routes>
   );

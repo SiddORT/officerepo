@@ -36,6 +36,10 @@ from backend.shared.audit.audit_logger import record_audit, mask_email, mask_val
 from backend.shared.security.encryption import encrypt_value, decrypt_value
 from backend.app.config.settings import settings
 from backend.app.modules.testing.database_provisioning import repository as pg_repo
+import hashlib
+import os
+import secrets
+from datetime import timedelta
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -903,3 +907,220 @@ def create_client_from_lead(db: Session, lead, *, client_name: Optional[str], ac
                  metadata={"lead_number": getattr(lead, "lead_number", None),
                            "email": mask_email(lead_email)})
     return client
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# Portal Auth — invite-based onboarding for client admin users
+# ════════════════════════════════════════════════════════════════════════════
+
+def _get_client_by_subdomain(db: Session, subdomain: str) -> Optional["Client"]:
+    """Return the Client whose active subdomain domain matches *subdomain*."""
+    from backend.app.modules.client_management.models import ClientDomain
+    domain = (
+        db.query(ClientDomain)
+        .filter(
+            ClientDomain.subdomain == subdomain,
+            ClientDomain.is_active.is_(True),
+            ClientDomain.is_deleted.is_(False),
+        )
+        .first()
+    )
+    if not domain:
+        return None
+    return repo.get_client(db, domain.client_id)
+
+
+def _get_active_subdomain(db: Session, client_id: str) -> Optional[str]:
+    """Return the first active subdomain for a client, or None."""
+    from backend.app.modules.client_management.models import ClientDomain
+    domain = (
+        db.query(ClientDomain)
+        .filter(
+            ClientDomain.client_id == client_id,
+            ClientDomain.is_active.is_(True),
+            ClientDomain.is_deleted.is_(False),
+        )
+        .first()
+    )
+    return domain.subdomain if (domain and domain.subdomain) else None
+
+
+def _build_portal_invite_link(subdomain: Optional[str], token: str) -> str:
+    """Build the full invite URL. Falls back to a relative path if no base URL."""
+    base = os.environ.get("APP_BASE_URL", "").rstrip("/")
+    if not base:
+        domains = os.environ.get("REPLIT_DOMAINS", "")
+        first = domains.split(",")[0].strip() if domains else ""
+        if first:
+            base = f"https://{first}"
+    path = f"/portal/{subdomain}/accept-invite?token={token}" if subdomain else f"/accept-invite?token={token}"
+    return f"{base}{path}" if base else path
+
+
+def send_admin_invite(db: Session, client_id: str, admin_id: str, *, actor: str) -> dict:
+    """Generate a single-use invite link for a client admin user.
+
+    - Stores a SHA-256 hash of the token (never the raw token).
+    - Sends an email if the notification channel is configured.
+    - Returns the raw invite_link + whether the email was sent (for the UI to display/copy).
+    """
+    from backend.shared.notifications import notifier
+    _require_client(db, client_id)
+    user = repo.get_admin_user(db, client_id, admin_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Admin user not found.")
+    if not user.email_encrypted:
+        raise HTTPException(status_code=422, detail="Admin user has no email address. Add one before sending an invite.")
+
+    email = _dec(user.email_encrypted)
+    raw_token = secrets.token_urlsafe(c.PORTAL_INVITE_TOKEN_BYTES)
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+
+    user.invite_token_hash = token_hash
+    user.invite_expires_at = datetime.utcnow() + timedelta(days=c.PORTAL_INVITE_EXPIRY_DAYS)
+    user.invite_accepted_at = None
+    user.status = c.ADMIN_STATUS_INVITED
+    user.updated_at = datetime.utcnow()
+
+    subdomain = _get_active_subdomain(db, client_id)
+    invite_link = _build_portal_invite_link(subdomain, raw_token)
+
+    name = " ".join(filter(None, [user.first_name, user.last_name]))
+    workspace = _require_client(db, client_id).company_name
+
+    email_sent = False
+    try:
+        result = notifier.send_email(
+            to=email,
+            subject=f"You're invited to {workspace} — set your password",
+            body=(
+                f"Hello{(' ' + name) if name else ''},\n\n"
+                f"You've been invited to access the {workspace} portal on Office Repo.\n\n"
+                "Click the link below to set your password and sign in:\n\n"
+                f"{invite_link}\n\n"
+                f"This link expires in {c.PORTAL_INVITE_EXPIRY_DAYS} days.\n\n"
+                "If you did not expect this invitation, you can ignore this email."
+            ),
+        )
+        email_sent = bool(getattr(result, "success", False))
+    except Exception:
+        pass
+
+    _journal(db, client_id, c.ACT_ADMIN_USER_INVITED, remarks=name or email)
+    record_audit(db, c.AUDIT_ADMIN_USER_INVITED, c.AUDIT_ENTITY, client_id, actor=actor,
+                 metadata={"email": mask_email(email)})
+    db.commit()
+    return {"invite_link": invite_link, "email_sent": email_sent, "expires_days": c.PORTAL_INVITE_EXPIRY_DAYS}
+
+
+def validate_portal_invite(db: Session, subdomain: str, token: str) -> dict:
+    """Public: validate an invite token, return workspace + user info."""
+    client = _get_client_by_subdomain(db, subdomain)
+    if not client:
+        raise HTTPException(status_code=404, detail="Workspace not found.")
+
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    user = (
+        db.query(ClientAdminUser)
+        .filter(
+            ClientAdminUser.client_id == client.id,
+            ClientAdminUser.invite_token_hash == token_hash,
+            ClientAdminUser.is_deleted.is_(False),
+        )
+        .first()
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="This invitation link is invalid or has expired.")
+    if user.invite_accepted_at:
+        raise HTTPException(status_code=400, detail="This invitation has already been used. Please sign in.")
+    if user.invite_expires_at and user.invite_expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="This invitation has expired. Ask your admin to resend it.")
+
+    email = _dec(user.email_encrypted) if user.email_encrypted else ""
+    name = " ".join(filter(None, [user.first_name, user.last_name]))
+    return {
+        "email": email,
+        "name": name,
+        "workspace_name": client.company_name,
+        "expires_at": user.invite_expires_at.isoformat() if user.invite_expires_at else None,
+    }
+
+
+def accept_portal_invite(db: Session, subdomain: str, token: str, password: str) -> None:
+    """Public: set password for the invited user and activate their account."""
+    from backend.app.core.security import hash_password as _hash_pw
+
+    client = _get_client_by_subdomain(db, subdomain)
+    if not client:
+        raise HTTPException(status_code=404, detail="Workspace not found.")
+
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    user = (
+        db.query(ClientAdminUser)
+        .filter(
+            ClientAdminUser.client_id == client.id,
+            ClientAdminUser.invite_token_hash == token_hash,
+            ClientAdminUser.is_deleted.is_(False),
+        )
+        .first()
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="This invitation link is invalid or has expired.")
+    if user.invite_accepted_at:
+        raise HTTPException(status_code=400, detail="This invitation has already been used.")
+    if user.invite_expires_at and user.invite_expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="This invitation has expired.")
+
+    user.password_hash = _hash_pw(password)
+    user.invite_accepted_at = datetime.utcnow()
+    user.invite_token_hash = None
+    user.status = c.ADMIN_STATUS_ACTIVE
+    user.updated_at = datetime.utcnow()
+    db.commit()
+
+
+def portal_login(db: Session, subdomain: str, email: str, password: str) -> dict:
+    """Public: authenticate a client admin user and return a portal JWT."""
+    from backend.app.core.security import verify_password, create_portal_token
+
+    client = _get_client_by_subdomain(db, subdomain)
+    if not client:
+        raise HTTPException(status_code=401, detail="Invalid credentials.")
+
+    users = (
+        db.query(ClientAdminUser)
+        .filter(
+            ClientAdminUser.client_id == client.id,
+            ClientAdminUser.is_deleted.is_(False),
+            ClientAdminUser.status == c.ADMIN_STATUS_ACTIVE,
+        )
+        .all()
+    )
+
+    matched = None
+    for u in users:
+        if u.email_encrypted and _dec(u.email_encrypted) == email:
+            matched = u
+            break
+
+    if not matched or not matched.password_hash:
+        raise HTTPException(status_code=401, detail="Invalid credentials.")
+    if not verify_password(password, matched.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials.")
+
+    name = " ".join(filter(None, [matched.first_name, matched.last_name]))
+    token = create_portal_token({
+        "admin_user_id": matched.id,
+        "client_id": client.id,
+        "subdomain": subdomain,
+        "email": email,
+        "name": name,
+    })
+    return {
+        "access_token": token,
+        "admin_user_id": matched.id,
+        "client_id": client.id,
+        "name": name,
+        "email": email,
+        "workspace_name": client.company_name,
+    }
