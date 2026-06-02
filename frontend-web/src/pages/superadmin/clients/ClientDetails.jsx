@@ -987,7 +987,11 @@ function AdminUsersTab({ clientId, admins = [], options, onChange }) {
     setInviting(a.id); setInviteResult(null); setInviteErr("");
     try {
       const res = await clientsApi.sendAdminUserInvite(clientId, a.id);
-      setInviteResult({ admin: a, ...res.data.data });
+      const d = res.data.data;
+      // Build the invite link from the browser's own origin so the URL is always
+      // reachable (avoids server-side REPLIT_DOMAINS missing the :5000 port).
+      const clientLink = `${window.location.origin}/portal/${d.workspace_id}/accept-invite?token=${d.raw_token}`;
+      setInviteResult({ admin: a, ...d, invite_link: clientLink });
     } catch (e) { setInviteErr(e.response?.data?.detail || "Failed to send invite."); }
     finally { setInviting(null); }
   };

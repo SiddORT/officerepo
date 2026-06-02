@@ -1025,7 +1025,13 @@ def send_admin_invite(db: Session, client_id: str, admin_id: str, *, actor: str)
     record_audit(db, c.AUDIT_ADMIN_USER_INVITED, c.AUDIT_ENTITY, client_id, actor=actor,
                  metadata={"email": mask_email(email)})
     db.commit()
-    return {"invite_link": invite_link, "email_sent": email_sent, "expires_days": c.PORTAL_INVITE_EXPIRY_DAYS}
+    return {
+        "invite_link": invite_link,          # used in the email body (server-side best-effort)
+        "raw_token": raw_token,              # returned so the frontend can build its own link
+        "workspace_id": workspace_id,        # subdomain or client_id — the portal path segment
+        "email_sent": email_sent,
+        "expires_days": c.PORTAL_INVITE_EXPIRY_DAYS,
+    }
 
 
 def validate_portal_invite(db: Session, subdomain: str, token: str) -> dict:
