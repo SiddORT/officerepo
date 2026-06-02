@@ -1,7 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { authApi } from "../services/apiClient";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext({
+  user: null,
+  loading: true,
+  login: () => {},
+  logout: () => {},
+  hasPermission: () => false,
+  refreshPermissions: async () => {},
+});
 
 const FULL_ACCESS = "*";
 
