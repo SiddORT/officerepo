@@ -244,6 +244,10 @@ class ClientAdminUser(Base):
     country_code = Column(String(8), nullable=True)
     status = Column(String(30), nullable=False, default="Placeholder")
 
+    display_name = Column(String(150), nullable=True)
+    profile_picture_url = Column(Text, nullable=True)
+    last_login = Column(DateTime, nullable=True)
+
     password_hash = Column(Text, nullable=True)
     invite_token_hash = Column(Text, nullable=True)
     invite_expires_at = Column(DateTime, nullable=True)

@@ -6,6 +6,16 @@ import PortalLayout from "./PortalLayout";
 import PortalDashboard from "./PortalDashboard";
 import PortalAcceptInvitePage from "./PortalAcceptInvitePage";
 
+// User Management pages
+import UserList from "./user-management/UserList";
+import UserForm from "./user-management/UserForm";
+import UserDetails from "./user-management/UserDetails";
+import RoleList from "./user-management/RoleList";
+import RoleForm from "./user-management/RoleForm";
+import LoginLogs from "./user-management/LoginLogs";
+import Sessions from "./user-management/Sessions";
+import ActivityLogs from "./user-management/ActivityLogs";
+
 function PortalProtectedRoute({ children }) {
   const { user, subdomain } = usePortalAuth();
   if (!user) return <Navigate to={`/portal/${subdomain}`} replace />;
@@ -42,34 +52,42 @@ function PortalProfilePage() {
   );
 }
 
+function Protected({ children }) {
+  return <PortalProtectedRoute>{children}</PortalProtectedRoute>;
+}
+
 function PortalRoutes() {
   const { user, subdomain } = usePortalAuth();
 
   return (
     <Routes>
-      <Route
-        path="/"
-        element={user ? <Navigate to={`/portal/${subdomain}/dashboard`} replace /> : <PortalLoginPage />}
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <PortalProtectedRoute>
-            <PortalLayout title="Dashboard">
-              <PortalDashboard />
-            </PortalLayout>
-          </PortalProtectedRoute>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <PortalProtectedRoute>
-            <PortalProfilePage />
-          </PortalProtectedRoute>
-        }
-      />
+      {/* Auth */}
+      <Route path="/" element={user ? <Navigate to={`/portal/${subdomain}/dashboard`} replace /> : <PortalLoginPage />} />
       <Route path="/accept-invite" element={<PortalAcceptInvitePage />} />
+
+      {/* Dashboard + profile */}
+      <Route path="/dashboard" element={<Protected><PortalLayout title="Dashboard"><PortalDashboard /></PortalLayout></Protected>} />
+      <Route path="/profile"   element={<Protected><PortalProfilePage /></Protected>} />
+
+      {/* ── User Management ─────────────────────────────────────────── */}
+      <Route path="/user-management/users"            element={<Protected><UserList /></Protected>} />
+      <Route path="/user-management/users/new"        element={<Protected><UserForm editMode={false} /></Protected>} />
+      <Route path="/user-management/users/:userId"     element={<Protected><UserDetails /></Protected>} />
+      <Route path="/user-management/users/:userId/edit" element={<Protected><UserForm editMode={true} /></Protected>} />
+
+      <Route path="/user-management/roles"            element={<Protected><RoleList /></Protected>} />
+      <Route path="/user-management/roles/new"        element={<Protected><RoleForm editMode={false} /></Protected>} />
+      <Route path="/user-management/roles/:roleId/edit" element={<Protected><RoleForm editMode={true} /></Protected>} />
+
+      <Route path="/user-management/login-logs"  element={<Protected><LoginLogs /></Protected>} />
+      <Route path="/user-management/sessions"    element={<Protected><Sessions /></Protected>} />
+      <Route path="/user-management/activity"    element={<Protected><ActivityLogs /></Protected>} />
+
+      {/* Redirect /user-management root → users list */}
+      <Route path="/user-management" element={<Navigate to={`/portal/${subdomain}/user-management/users`} replace />} />
+      <Route path="/user-management/*" element={<Navigate to={`/portal/${subdomain}/user-management/users`} replace />} />
+
+      {/* Fallback */}
       <Route path="*" element={<Navigate to={user ? `/portal/${subdomain}/dashboard` : `/portal/${subdomain}`} replace />} />
     </Routes>
   );

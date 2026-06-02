@@ -1,21 +1,30 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../contexts/PortalAuthContext";
 
 const MODULES = [
-  { name: "HR & People", icon: "👥", desc: "Employees, attendance, leave management", soon: true },
-  { name: "Finance", icon: "💰", desc: "Invoices, expenses, payroll", soon: true },
-  { name: "Projects", icon: "📋", desc: "Tasks, milestones, timelines", soon: true },
-  { name: "Documents", icon: "📄", desc: "File storage, shared folders", soon: true },
-  { name: "Helpdesk", icon: "🎧", desc: "Tickets, support queues", soon: true },
-  { name: "Inventory", icon: "📦", desc: "Stock, assets, procurement", soon: true },
+  {
+    key: "user_management",
+    name: "User Management",
+    icon: "👤",
+    desc: "Users, roles, sessions & audit logs",
+    soon: false,
+    path: "user-management/users",
+    accent: "#00aeec",
+  },
+  { name: "HR & People",  icon: "👥", desc: "Employees, attendance, leave management", soon: true },
+  { name: "Finance",      icon: "💰", desc: "Invoices, expenses, payroll", soon: true },
+  { name: "Projects",     icon: "📋", desc: "Tasks, milestones, timelines", soon: true },
+  { name: "Documents",    icon: "📄", desc: "File storage, shared folders", soon: true },
+  { name: "Helpdesk",     icon: "🎧", desc: "Tickets, support queues", soon: true },
+  { name: "Inventory",    icon: "📦", desc: "Stock, assets, procurement", soon: true },
 ];
 
 const STATS = [
   { label: "Team Members", value: "—", icon: "👤" },
-  { label: "Open Tasks", value: "—", icon: "✅" },
-  { label: "Documents", value: "—", icon: "📁" },
-  { label: "This Month", value: "—", icon: "📅" },
+  { label: "Open Tasks",   value: "—", icon: "✅" },
+  { label: "Documents",    value: "—", icon: "📁" },
+  { label: "This Month",   value: "—", icon: "📅" },
 ];
 
 export default function PortalDashboard() {
@@ -62,22 +71,50 @@ export default function PortalDashboard() {
       <div>
         <h2 className="text-sm font-semibold mb-3" style={{ color: "var(--c-heading)" }}>Workspace Modules</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {MODULES.map((mod) => (
-            <div key={mod.name} className="rounded-xl p-4 flex items-start gap-3 cursor-not-allowed"
-              style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", opacity: 0.7 }}>
-              <span className="text-2xl">{mod.icon}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-sm font-semibold" style={{ color: "var(--c-heading)" }}>{mod.name}</span>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium"
-                    style={{ background: "rgba(100,116,139,0.15)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }}>
-                    Coming soon
-                  </span>
+          {MODULES.map((mod) =>
+            mod.soon ? (
+              <div key={mod.name}
+                className="rounded-xl p-4 flex items-start gap-3 cursor-not-allowed"
+                style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", opacity: 0.65 }}>
+                <span className="text-2xl">{mod.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-sm font-semibold" style={{ color: "var(--c-heading)" }}>{mod.name}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium"
+                      style={{ background: "rgba(100,116,139,0.15)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }}>
+                      Coming soon
+                    </span>
+                  </div>
+                  <p className="text-xs" style={{ color: "var(--c-muted)" }}>{mod.desc}</p>
                 </div>
-                <p className="text-xs" style={{ color: "var(--c-muted)" }}>{mod.desc}</p>
               </div>
-            </div>
-          ))}
+            ) : (
+              <Link key={mod.key} to={`/portal/${subdomain}/${mod.path}`}
+                className="rounded-xl p-4 flex items-start gap-3 transition-all group"
+                style={{
+                  background: "var(--c-surface)",
+                  border: `1px solid rgba(0,174,236,0.25)`,
+                  textDecoration: "none",
+                  boxShadow: "0 1px 4px rgba(0,174,236,0.06)",
+                }}>
+                <span className="text-2xl group-hover:scale-110 transition-transform">{mod.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-sm font-semibold" style={{ color: "var(--c-accent)" }}>{mod.name}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium"
+                      style={{ background: "rgba(0,174,236,0.1)", color: "var(--c-accent)", border: "1px solid rgba(0,174,236,0.2)" }}>
+                      Active
+                    </span>
+                  </div>
+                  <p className="text-xs" style={{ color: "var(--c-muted)" }}>{mod.desc}</p>
+                </div>
+                <svg className="w-4 h-4 flex-shrink-0 opacity-40 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"
+                  style={{ color: "var(--c-accent)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            )
+          )}
         </div>
       </div>
 

@@ -59,9 +59,29 @@ def accept_invite(subdomain: str, token: str, payload: AcceptInviteRequest,
 
 
 @router.post("/{subdomain}/auth/login")
-def portal_login(subdomain: str, payload: PortalLoginRequest,
+def portal_login(subdomain: str, payload: PortalLoginRequest, request: Request,
                  db: Session = Depends(get_platform_db)):
     data = cm_service.portal_login(db, subdomain, payload.email, payload.password)
+
+    # Record session + login log (best-effort — don't fail login if this errors)
+    try:
+        from backend.app.core.security import decode_access_token as _decode
+        from backend.app.modules.portal_user_management import service as uum_svc
+        from datetime import datetime, timedelta
+        token_payload = _decode(data["access_token"])
+        jti = token_payload.get("jti")
+        exp = token_payload.get("exp")
+        expires_at = datetime.utcfromtimestamp(exp) if exp else None
+        xff = request.headers.get("X-Forwarded-For")
+        ip = xff.split(",")[-1].strip() if xff else (request.client.host if request.client else None)
+        ua = request.headers.get("User-Agent")
+        uum_svc.record_login_session(
+            db, data["client_id"], data["admin_user_id"], jti, data["email"],
+            ip=ip, user_agent=ua, expires_at=expires_at,
+        )
+    except Exception:
+        pass  # never block login
+
     return ApiResponse.ok(data, "Login successful.").model_dump()
 
 

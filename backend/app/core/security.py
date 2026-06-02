@@ -76,16 +76,18 @@ def decode_access_token(token: str) -> Dict[str, Any]:
         raise
 
 
-def create_portal_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+def create_portal_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None,
+                        jti: Optional[str] = None) -> str:
     """Short-lived JWT for a client portal admin user (type='portal_access').
 
-    Uses the same JWT_SECRET as superadmin tokens but carries a distinct
-    ``token_type`` claim so the portal guard can reject superadmin tokens
-    and vice-versa.
+    Always embeds a ``jti`` (JWT ID) for session tracking.  Pass one in if you
+    generated it externally; otherwise a random UUID4 is used.
     """
+    import uuid as _uuid_mod
     to_encode = data.copy()
     expire = datetime.utcnow() + (expires_delta or timedelta(hours=8))
-    to_encode.update({"exp": expire, "token_type": "portal_access"})
+    token_jti = jti or str(_uuid_mod.uuid4())
+    to_encode.update({"exp": expire, "token_type": "portal_access", "jti": token_jti})
     kid = _derive_kid(settings.JWT_SECRET)
     return jwt.encode(to_encode, settings.JWT_SECRET, algorithm="HS256", headers={"kid": kid})
 
