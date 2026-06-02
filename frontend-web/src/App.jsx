@@ -8,7 +8,6 @@ import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
 import AdminLoginPage from "./pages/login/AdminLoginPage";
 import AcceptInvitePage from "./pages/login/AcceptInvitePage";
 import DashboardPage from "./pages/dashboard/DashboardPage";
-import SecurityPage from "./pages/superadmin/SecurityPage";
 import EnquiryList from "./pages/superadmin/enquiries/EnquiryList";
 import EnquiryDetails from "./pages/superadmin/enquiries/EnquiryDetails";
 import LeadList from "./pages/superadmin/leads/LeadList";
@@ -67,15 +66,8 @@ function AppRoutes() {
         }
       />
 
-      {/* Protected — Security / Secret Rotation */}
-      <Route
-        path="/superadmin/security"
-        element={
-          <ProtectedRoute requireRole="superadmin">
-            <Layout><SecurityPage /></Layout>
-          </ProtectedRoute>
-        }
-      />
+      {/* Legacy — redirect old security route to unified security settings */}
+      <Route path="/superadmin/security" element={<Navigate to="/superadmin/settings/security" replace />} />
 
       {/* Protected — Enquiry Inbox */}
       <Route

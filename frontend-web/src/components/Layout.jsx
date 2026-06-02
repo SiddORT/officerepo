@@ -119,7 +119,6 @@ function getPageTitle(pathname) {
   if (pathname.startsWith("/superadmin/leads/new")) return "New Lead";
   if (pathname.startsWith("/superadmin/leads/")) return "Lead Details";
   if (pathname.startsWith("/superadmin/leads")) return "Lead Management";
-  if (pathname === "/superadmin/security") return "Security";
   if (pathname.startsWith("/superadmin/settings/general")) return "General Preferences";
   if (pathname.startsWith("/superadmin/settings/roles")) return "Roles & Permissions";
   if (pathname.startsWith("/superadmin/settings/currencies/sync-logs")) return "Currency Sync Logs";

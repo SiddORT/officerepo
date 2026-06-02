@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { securitySettingsApi } from "../../../../services/apiClient";
+import { securitySettingsApi, secretsApi, corsRejectionsApi } from "../../../../services/apiClient";
 
 const TABS = [
   { key: "password",  label: "Password Policy" },
@@ -7,6 +7,8 @@ const TABS = [
   { key: "session",   label: "Session Policy" },
   { key: "twofa",     label: "Two-Factor Auth" },
   { key: "notif",     label: "Security Notifications" },
+  { key: "rotation",  label: "Secret Rotation" },
+  { key: "cors",      label: "Blocked Origins" },
 ];
 
 const ENFORCEMENT_MODES = [
@@ -516,6 +518,251 @@ function SecurityNotificationsTab() {
   );
 }
 
+// ── SECRET ROTATION TAB ───────────────────────────────────────────────────────
+
+function formatRemaining(ms) {
+  if (ms <= 0) return "expired";
+  const totalMinutes = Math.floor(ms / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+  const parts = [];
+  if (days) parts.push(`${days}d`);
+  if (hours) parts.push(`${hours}h`);
+  parts.push(`${minutes}m`);
+  return parts.join(" ");
+}
+
+function formatTimestamp(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: true,
+  });
+}
+
+function CopyButton({ value }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button type="button"
+      onClick={async () => { try { await navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { setCopied(false); } }}
+      style={{ fontSize: 12, color: "var(--c-accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer" }}
+    >
+      {copied ? "Copied!" : "Copy"}
+    </button>
+  );
+}
+
+function SecretRow({ label, value }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <code style={{ flex: 1, padding: "8px 10px", background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 6, fontSize: 12, fontFamily: "monospace", wordBreak: "break-all", color: "var(--c-text)" }}>{value}</code>
+        <CopyButton value={value} />
+      </div>
+    </div>
+  );
+}
+
+function SecretRotationTab() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [result, setResult] = useState(null);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const handleRotate = async () => {
+    setConfirmOpen(false);
+    setLoading(true);
+    setError("");
+    setResult(null);
+    try {
+      const res = await secretsApi.rotate();
+      setResult(res.data);
+    } catch (e) {
+      setError(e.response?.data?.detail || "Failed to rotate secrets.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const expiresAt = result?.grace_period_expires_at ? new Date(result.grace_period_expires_at) : null;
+  const remainingMs = expiresAt ? expiresAt.getTime() - now : null;
+  const isProduction = result && result.rotated === false;
+
+  return (
+    <>
+      <SectionCard title="Rotate Secrets" description="Promotes the current secrets to PREVIOUS_*, generates new ones, and starts the grace-period clock.">
+        <div style={{ paddingTop: 8, display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={() => setConfirmOpen(true)} disabled={loading}
+            style={{ padding: "8px 20px", borderRadius: 6, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", border: "none", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1 }}
+          >
+            {loading ? "Rotating…" : "Rotate Secrets"}
+          </button>
+        </div>
+      </SectionCard>
+
+      {error && (
+        <div style={{ padding: "12px 16px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#f87171" }}>{error}</div>
+      )}
+
+      {result && (
+        <SectionCard title={result.rotated ? "Rotation Complete" : "Manual Rotation Required"}>
+          <p style={{ fontSize: 13, color: "var(--c-text2)", marginBottom: 16 }}>{result.message}</p>
+          {expiresAt && (
+            <div style={{ padding: 14, background: "var(--c-surface2, var(--c-bg))", border: "1px solid var(--c-border)", borderRadius: 8, marginBottom: 16 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Grace period expires</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)" }}>{expiresAt.toLocaleString()}</div>
+              <div style={{ fontSize: 12, color: "var(--c-accent)", marginTop: 2 }}>
+                {remainingMs > 0 ? `${formatRemaining(remainingMs)} remaining` : "Grace period has expired"}
+              </div>
+              {result.grace_period_hours != null && <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 2 }}>Grace window: {result.grace_period_hours} hours</div>}
+            </div>
+          )}
+          {result.rotated && result.new_jwt_secret && (
+            <div>
+              <div style={{ padding: "10px 14px", background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.30)", borderRadius: 6, fontSize: 12, color: "#f59e0b", marginBottom: 14 }}>
+                These values are shown only once. Copy them into your secrets manager now.
+              </div>
+              <SecretRow label="New JWT Secret" value={result.new_jwt_secret} />
+              <SecretRow label="New Refresh Secret" value={result.new_refresh_secret} />
+              {result.previous_jwt_secret_kid && (
+                <p style={{ fontSize: 11, color: "var(--c-muted)" }}>
+                  Previous JWT key id: <code style={{ fontFamily: "monospace" }}>{result.previous_jwt_secret_kid}</code>
+                  {result.previous_refresh_secret_kid && <> · Previous refresh key id: <code style={{ fontFamily: "monospace" }}>{result.previous_refresh_secret_kid}</code></>}
+                </p>
+              )}
+            </div>
+          )}
+          {result.instructions?.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>
+                {isProduction ? "Manual rotation steps" : "Next steps"}
+              </div>
+              <ol style={{ margin: 0, paddingLeft: 18 }}>
+                {result.instructions.map((step, i) => (
+                  <li key={step} style={{ fontSize: 13, color: "var(--c-text2)", marginBottom: 4 }}>{step.replace(/^\d+\.\s*/, "")}</li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </SectionCard>
+      )}
+
+      {confirmOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 16 }}>
+          <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 24, width: "100%", maxWidth: 400 }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)", marginBottom: 8 }}>Rotate secrets?</div>
+            <p style={{ fontSize: 13, color: "var(--c-muted)", marginBottom: 20 }}>
+              This generates new signing secrets immediately. Existing sessions keep working during the grace period.
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={handleRotate} style={{ flex: 1, padding: "9px 0", borderRadius: 6, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", border: "none", cursor: "pointer" }}>Yes, rotate</button>
+              <button onClick={() => setConfirmOpen(false)} style={{ flex: 1, padding: "9px 0", borderRadius: 6, fontWeight: 500, fontSize: 13, background: "transparent", color: "var(--c-text2)", border: "1px solid var(--c-border)", cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ── BLOCKED ORIGINS TAB ───────────────────────────────────────────────────────
+
+function BlockedOriginsTab() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [data, setData] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await corsRejectionsApi.list();
+      setData(res.data);
+    } catch (e) {
+      setError(e.response?.data?.detail || "Failed to load blocked origins.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const items = data?.items || [];
+
+  return (
+    <SectionCard title="Blocked Origins (CORS)" description="Browser requests rejected by the CORS policy. A recurring entry usually means a typo'd subdomain or a missing ALLOWED_ORIGINS entry.">
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+        <button onClick={load} disabled={loading}
+          style={{ padding: "7px 16px", borderRadius: 6, fontSize: 13, fontWeight: 500, background: "transparent", border: "1px solid var(--c-border)", color: "var(--c-text2)", cursor: "pointer" }}
+        >
+          {loading ? "Refreshing…" : "Refresh"}
+        </button>
+      </div>
+
+      {data && (
+        <div style={{ display: "flex", gap: 32, marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 11, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Distinct origins</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "var(--c-text)" }}>{data.distinct_origins}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Total blocks</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "var(--c-text)" }}>{data.total_hits}</div>
+          </div>
+        </div>
+      )}
+
+      {error && <p style={{ fontSize: 13, color: "#f87171" }}>{error}</p>}
+
+      {!error && !loading && items.length === 0 && (
+        <div style={{ padding: 14, background: "var(--c-bg)", borderRadius: 8, fontSize: 13, color: "var(--c-muted)" }}>
+          No blocked origins recorded. Cross-origin requests are being accepted as configured.
+        </div>
+      )}
+
+      {items.length > 0 && (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ textAlign: "left", fontSize: 11, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <th style={{ padding: "8px 12px 8px 0", fontWeight: 600 }}>Origin</th>
+                <th style={{ padding: "8px 12px 8px 0", fontWeight: 600 }}>Blocks</th>
+                <th style={{ padding: "8px 12px 8px 0", fontWeight: 600 }}>Last request</th>
+                <th style={{ padding: "8px 12px 8px 0", fontWeight: 600 }}>Last seen</th>
+                <th style={{ padding: "8px 0", fontWeight: 600 }}>First seen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((row, i) => (
+                <tr key={`${row.origin}-${i}`} style={{ borderTop: "1px solid var(--c-border)" }}>
+                  <td style={{ padding: "9px 12px 9px 0" }}><code style={{ fontFamily: "monospace", fontSize: 12, wordBreak: "break-all" }}>{row.origin}</code></td>
+                  <td style={{ padding: "9px 12px 9px 0" }}><span className="badge-warning">{row.hit_count}</span></td>
+                  <td style={{ padding: "9px 12px 9px 0", color: "var(--c-text2)" }}>
+                    {row.last_method ? <><span style={{ fontFamily: "monospace", fontSize: 12 }}>{row.last_method}</span> <span style={{ color: "var(--c-muted)", wordBreak: "break-all" }}>{row.last_path || ""}</span></> : "—"}
+                  </td>
+                  <td style={{ padding: "9px 12px 9px 0", color: "var(--c-text2)", whiteSpace: "nowrap" }}>{formatTimestamp(row.last_seen_at)}</td>
+                  <td style={{ padding: "9px 0", color: "var(--c-text2)", whiteSpace: "nowrap" }}>{formatTimestamp(row.first_seen_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
 // ── ROOT PAGE ─────────────────────────────────────────────────────────────────
 
 export default function SecuritySettingsPage() {
@@ -556,11 +803,13 @@ export default function SecuritySettingsPage() {
         ))}
       </div>
 
-      {activeTab === "password" && <PasswordPolicyTab />}
-      {activeTab === "login"    && <LoginPolicyTab />}
-      {activeTab === "session"  && <SessionPolicyTab />}
-      {activeTab === "twofa"    && <TwoFATab />}
-      {activeTab === "notif"    && <SecurityNotificationsTab />}
+      {activeTab === "password"  && <PasswordPolicyTab />}
+      {activeTab === "login"     && <LoginPolicyTab />}
+      {activeTab === "session"   && <SessionPolicyTab />}
+      {activeTab === "twofa"     && <TwoFATab />}
+      {activeTab === "notif"     && <SecurityNotificationsTab />}
+      {activeTab === "rotation"  && <SecretRotationTab />}
+      {activeTab === "cors"      && <BlockedOriginsTab />}
     </div>
   );
 }
