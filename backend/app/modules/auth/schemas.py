@@ -16,11 +16,17 @@ class SuperAdminLoginRequest(BaseModel):
 
 
 class ProfileUpdateRequest(BaseModel):
-    name: Optional[constr(strip_whitespace=True, min_length=1, max_length=255)] = None
+    first_name: Optional[constr(strip_whitespace=True, min_length=1, max_length=150)] = None
+    last_name: Optional[constr(strip_whitespace=True, min_length=1, max_length=150)] = None
+    display_name: Optional[constr(strip_whitespace=True, max_length=255)] = None
     phone: Optional[constr(strip_whitespace=True, max_length=20)] = None
 
     @validator("phone")
     def _blank_phone_to_none(cls, v):
+        return v or None
+
+    @validator("display_name")
+    def _blank_display_to_none(cls, v):
         return v or None
 
 

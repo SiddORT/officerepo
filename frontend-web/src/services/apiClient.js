@@ -58,6 +58,14 @@ export const authApi = {
   me: () => apiClient.get("/auth/me"),
   getProfile: () => apiClient.get("/auth/profile"),
   updateProfile: (data) => apiClient.patch("/auth/profile", data),
+  uploadAvatar: (file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return apiClient.post("/auth/avatar", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  removeAvatar: () => apiClient.delete("/auth/avatar"),
   changePassword: (data) => apiClient.post("/auth/change-password", data),
 };
 

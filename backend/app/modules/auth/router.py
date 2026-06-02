@@ -6,7 +6,7 @@ management, password change) lives in the service layer. This module
 only handles HTTP plumbing: extracting credentials from headers,
 delegating to the service, and returning the response.
 """
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
@@ -17,6 +17,7 @@ from backend.app.modules.auth.schemas import (
     RefreshRequest, LogoutRequest, SuperAdminLoginRequest,
     ProfileUpdateRequest, ChangePasswordRequest,
 )
+
 from backend.app.modules.rbac import service as rbac_service
 from backend.app.modules.rbac.schemas import AcceptInvitationRequest
 
@@ -70,6 +71,25 @@ def update_profile(
 ):
     token_payload = _authenticate(credentials)
     return auth_service.update_profile(db, token_payload["user_id"], payload)
+
+
+@router.post("/avatar")
+def upload_avatar(
+    file: UploadFile = File(...),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+    db: Session = Depends(get_platform_db),
+):
+    token_payload = _authenticate(credentials)
+    return auth_service.upload_avatar(db, token_payload["user_id"], file)
+
+
+@router.delete("/avatar")
+def remove_avatar(
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+    db: Session = Depends(get_platform_db),
+):
+    token_payload = _authenticate(credentials)
+    return auth_service.remove_avatar(db, token_payload["user_id"])
 
 
 @router.post("/change-password")
