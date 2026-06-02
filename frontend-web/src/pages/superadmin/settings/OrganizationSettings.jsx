@@ -254,7 +254,7 @@ export default function OrganizationSettings() {
             }}
           >
             {/* Section header — icon + label + thin accent top strip */}
-            <div style={{ borderTop: "2px solid var(--c-accent)", borderRadius: "12px 12px 0 0" }} />
+            <div style={{ height: "2px", background: "linear-gradient(90deg, #00aeec, #ff7a1a)", borderRadius: "12px 12px 0 0" }} />
             <div
               className="flex items-center gap-2.5 px-5 py-4"
               style={{ borderBottom: "1px solid var(--c-border)" }}
