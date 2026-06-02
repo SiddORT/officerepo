@@ -14,6 +14,16 @@ import {
 } from "./components/StatusBadge";
 import { toOptions, formatDate, formatDateTime, toInputDate, contactName } from "./constants";
 
+function getPortalUrl(domains = []) {
+  const active = domains.find((d) => d.is_active);
+  if (!active) return null;
+  if (active.domain_type === "subdomain" && active.subdomain)
+    return `https://${active.subdomain}.officerepo.com`;
+  if (active.custom_domain)
+    return `https://${active.custom_domain}`;
+  return null;
+}
+
 const TABS = [
   "Overview",
   "Contacts",
@@ -92,7 +102,24 @@ export default function ClientDetails() {
             {client.country && <span>· {client.country}</span>}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {(() => {
+            const portalUrl = getPortalUrl(client.domains || []);
+            return portalUrl ? (
+              <a
+                href={portalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-secondary flex items-center gap-1.5 text-sm"
+                title={portalUrl}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Open Client Portal
+              </a>
+            ) : null;
+          })()}
           <button onClick={() => { setStatusValue(client.status); setStatusModal(true); }} className="btn-secondary">Change Status</button>
           {client.converted_from_lead && client.lead_id && (
             <button onClick={() => navigate(`/superadmin/leads/${client.lead_id}`)} className="btn-secondary">View Source Lead</button>
