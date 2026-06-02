@@ -61,7 +61,9 @@ export const authApi = {
   uploadAvatar: (file) => {
     const fd = new FormData();
     fd.append("file", file);
-    return apiClient.post("/auth/avatar", fd);
+    return apiClient.post("/auth/avatar", fd, {
+      headers: { "Content-Type": undefined },
+    });
   },
   removeAvatar: () => apiClient.delete("/auth/avatar"),
   changePassword: (data) => apiClient.post("/auth/change-password", data),

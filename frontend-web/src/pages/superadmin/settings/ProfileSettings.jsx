@@ -4,6 +4,14 @@ import { useAuth } from "../../../contexts/AuthContext";
 
 const unwrap = (res) => res?.data?.data ?? res?.data;
 
+function extractError(err, fallback) {
+  const detail = err?.response?.data?.detail;
+  if (!detail) return fallback;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) return detail.map((d) => d.msg || JSON.stringify(d)).join("; ");
+  return fallback;
+}
+
 function Banner({ kind, children }) {
   if (!children) return null;
   const ok = kind === "success";
@@ -160,7 +168,7 @@ function AvatarSection({ profile, onUpdated }) {
       setPreview(null);
       onUpdated(unwrap(res));
     } catch (err) {
-      setError(err?.response?.data?.detail || "Upload failed. Please try again.");
+      setError(extractError(err, "Upload failed. Please try again."));
     } finally {
       setUploading(false);
     }
@@ -180,7 +188,7 @@ function AvatarSection({ profile, onUpdated }) {
       const res = await authApi.removeAvatar();
       onUpdated(unwrap(res));
     } catch (err) {
-      setError(err?.response?.data?.detail || "Failed to remove avatar.");
+      setError(extractError(err, "Failed to remove avatar."));
     } finally {
       setRemoving(false);
     }
@@ -314,7 +322,7 @@ function ProfileInformation({ profile, onUpdated }) {
       onUpdated(unwrap(res));
       setMsg({ kind: "success", text: "Profile updated successfully." });
     } catch (err) {
-      setMsg({ kind: "error", text: err?.response?.data?.detail || "Failed to save. Please try again." });
+      setMsg({ kind: "error", text: extractError(err, "Failed to save. Please try again.") });
     } finally {
       setSaving(false);
     }
