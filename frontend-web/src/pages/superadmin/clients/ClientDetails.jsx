@@ -17,10 +17,12 @@ import { toOptions, formatDate, formatDateTime, toInputDate, contactName } from 
 function getPortalUrl(domains = []) {
   const active = domains.find((d) => d.is_active);
   if (!active) return null;
-  if (active.domain_type === "subdomain" && active.subdomain)
-    return `https://${active.subdomain}.officerepo.com`;
-  if (active.custom_domain)
-    return `https://${active.custom_domain}`;
+  if (active.domain_type === "subdomain" && active.subdomain) {
+    const baseDomain = import.meta.env.VITE_BASE_DOMAIN;
+    if (baseDomain) return `https://${active.subdomain}.${baseDomain}`;
+    return `${window.location.origin}/portal/${active.subdomain}`;
+  }
+  if (active.custom_domain) return `https://${active.custom_domain}`;
   return null;
 }
 

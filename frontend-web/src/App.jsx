@@ -35,6 +35,7 @@ import Layout from "./components/Layout";
 import SettingsVariantA from "./pages/mockups/SettingsVariantA";
 import SettingsVariantB from "./pages/mockups/SettingsVariantB";
 import SettingsVariantC from "./pages/mockups/SettingsVariantC";
+import ClientPortalPage from "./pages/portal/ClientPortalPage";
 
 function ProtectedRoute({ children, requireRole }) {
   const { user, loading } = useAuth();
@@ -268,6 +269,9 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      {/* Client Portal (public — path-based in dev, subdomain-based in prod) */}
+      <Route path="/portal/:subdomain" element={<ClientPortalPage />} />
 
       {/* Fallback */}
       <Route path="/mockup/settings-a" element={<SettingsVariantA />} />
