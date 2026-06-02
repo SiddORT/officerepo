@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { enquiryInboxApi } from "../../../services/apiClient";
+import { enquiryInboxApi, rbacApi } from "../../../services/apiClient";
 import { useAuth } from "../../../contexts/AuthContext";
 import Modal from "../../../components/ui/Modal";
 import Select from "../../../components/ui/Select";
@@ -34,6 +34,7 @@ export default function EnquiryDetails() {
   const [banner, setBanner] = useState("");
   const [confirmConvert, setConfirmConvert] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [users, setUsers] = useState([]);
 
   const load = useCallback(async () => {
     try {
@@ -49,6 +50,12 @@ export default function EnquiryDetails() {
   useEffect(() => {
     load();
     enquiryInboxApi.options().then((res) => setOptions((res.data?.data ?? res.data) || {})).catch(() => {});
+    rbacApi.listUsers()
+      .then((res) => {
+        const list = res.data?.data ?? res.data ?? [];
+        setUsers(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {});
   }, [load]);
 
   const flash = (msg) => { setBanner(msg); setTimeout(() => setBanner(""), 3000); };
@@ -165,20 +172,31 @@ export default function EnquiryDetails() {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs t-muted">Assigned</span>
-          {enquiry.assigned_to ? (
-            <>
+          {isTerminal ? (
+            enquiry.assigned_to ? (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                 style={{ background: "rgba(0,174,236,0.1)", color: "var(--c-accent)", border: "1px solid rgba(0,174,236,0.25)" }}>
-                User #{enquiry.assigned_to}{user?.user_id === enquiry.assigned_to ? " (you)" : ""}
+                {users.find(u => u.id === enquiry.assigned_to)?.name
+                  || users.find(u => u.id === enquiry.assigned_to)?.email
+                  || `User #${enquiry.assigned_to}`}
+                {enquiry.assigned_to === user?.user_id ? " (you)" : ""}
               </span>
-              {!isTerminal && (
-                <button onClick={() => handleAssign(null)} className="text-xs t-muted hover:t-accent">Unassign</button>
-              )}
-            </>
-          ) : (
-            !isTerminal && user?.user_id && (
-              <button onClick={() => handleAssign(user.user_id)} className="text-xs t-accent hover:underline">Assign to me</button>
+            ) : (
+              <span className="text-xs t-muted">Unassigned</span>
             )
+          ) : (
+            <select
+              value={enquiry.assigned_to || ""}
+              onChange={(e) => handleAssign(e.target.value ? Number(e.target.value) : null)}
+              style={{ fontSize: 12, padding: "3px 8px", borderRadius: 6, background: "var(--c-bg)", border: "1px solid var(--c-border)", color: "var(--c-text)", cursor: "pointer" }}
+            >
+              <option value="">Unassigned</option>
+              {users.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.name || u.email}{u.id === user?.user_id ? " (you)" : ""}
+                </option>
+              ))}
+            </select>
           )}
         </div>
         {isConverted && enquiry.lead && (

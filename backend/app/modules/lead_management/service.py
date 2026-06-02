@@ -37,6 +37,7 @@ from backend.app.modules.lead_management.schemas import (
 )
 from backend.shared.security.encryption import encrypt_value, decrypt_value, blind_index
 from backend.shared.audit.audit_logger import record_audit, mask_email, mask_value
+from backend.app.platform.superadmin.models import SuperAdmin
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -160,7 +161,7 @@ def compute_metrics(lead: Lead) -> dict:
 # ════════════════════════════════════════════════════════════════════════════
 # DTO builders
 # ════════════════════════════════════════════════════════════════════════════
-def lead_to_summary(lead: Lead) -> dict:
+def lead_to_summary(lead: Lead, owner_name: Optional[str] = None) -> dict:
     return {
         "id": lead.id,
         "lead_number": lead.lead_number,
@@ -173,14 +174,17 @@ def lead_to_summary(lead: Lead) -> dict:
         "expected_revenue": lead.expected_revenue,
         "lead_score": lead.lead_score,
         "lead_score_label": lead.lead_score_label,
+        "lead_owner_id": lead.lead_owner_id,
+        "lead_owner_name": owner_name,
         "converted_to_client": lead.converted_to_client,
         "created_at": lead.created_at,
         "updated_at": lead.updated_at,
     }
 
 
-def lead_to_detail(lead: Lead) -> dict:
-    data = lead_to_summary(lead)
+def lead_to_detail(lead: Lead, db: Optional[Session] = None) -> dict:
+    owner_name = _owner_name(db, lead.lead_owner_id) if db is not None else None
+    data = lead_to_summary(lead, owner_name)
     data.update(
         {
             "email": _safe_decrypt(lead.email_encrypted),
@@ -192,7 +196,6 @@ def lead_to_detail(lead: Lead) -> dict:
             "country": lead.country,
             "company_size": lead.company_size,
             "expected_user_count": lead.expected_user_count,
-            "lead_owner_id": lead.lead_owner_id,
             "expected_go_live_date": lead.expected_go_live_date,
             "interested_modules": lead.interested_modules,
             "converted_client_id": lead.converted_client_id,
@@ -401,6 +404,13 @@ def _replace_additional_spokespersons(db: Session, lead: Lead, items, actor_id: 
 # ════════════════════════════════════════════════════════════════════════════
 # Lead CRUD
 # ════════════════════════════════════════════════════════════════════════════
+def _owner_name(db: Session, owner_id: Optional[int]) -> Optional[str]:
+    if not owner_id:
+        return None
+    row = db.query(SuperAdmin.name, SuperAdmin.email).filter(SuperAdmin.id == owner_id).first()
+    return (row.name or row.email) if row else None
+
+
 def _require_lead(db: Session, lead_id: str) -> Lead:
     lead = repo.get_lead(db, lead_id)
     if not lead:
@@ -457,7 +467,7 @@ def create_lead(db: Session, payload: LeadCreateRequest, *, actor_id: Optional[i
 
 def get_lead_detail(db: Session, lead_id: str) -> dict:
     lead = _require_lead(db, lead_id)
-    detail = lead_to_detail(lead)
+    detail = lead_to_detail(lead, db)
     # Additional (non-primary) spokespersons for inline editing on the lead form.
     detail["spokespersons"] = [
         spokesperson_to_dict(s) for s in repo.list_spokespersons(db, lead_id) if not s.is_primary
@@ -487,7 +497,26 @@ def _source_enquiry_info(db: Session, lead: Lead) -> Optional[dict]:
 
 def list_leads(db: Session, **kwargs) -> tuple[list[dict], int]:
     items, total = repo.list_leads(db, **kwargs)
-    return [lead_to_summary(x) for x in items], total
+    owner_ids = {x.lead_owner_id for x in items if x.lead_owner_id}
+    owner_map: dict[int, str] = {}
+    if owner_ids:
+        rows = db.query(SuperAdmin.id, SuperAdmin.name, SuperAdmin.email).filter(SuperAdmin.id.in_(owner_ids)).all()
+        owner_map = {r.id: (r.name or r.email) for r in rows}
+    return [lead_to_summary(x, owner_map.get(x.lead_owner_id)) for x in items], total
+
+
+def assign_lead(db: Session, lead_id: str, owner_id: Optional[int], *,
+                actor: str, actor_id: Optional[int] = None) -> dict:
+    lead = _require_lead(db, lead_id)
+    old_owner = lead.lead_owner_id
+    lead.lead_owner_id = owner_id
+    db.commit()
+    db.refresh(lead)
+    record_audit(
+        db, c.AUDIT_LEAD_UPDATED, c.AUDIT_ENTITY, lead.lead_number, actor=actor,
+        metadata={"action": "assign", "old_owner_id": old_owner, "new_owner_id": owner_id},
+    )
+    return lead_to_detail(lead, db)
 
 
 def update_lead(db: Session, lead_id: str, payload: LeadUpdateRequest, *,

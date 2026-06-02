@@ -157,6 +157,7 @@ export default function LeadList() {
     { key: "status", label: "Status", render: (v) => <StatusBadge status={v} /> },
     { key: "lead_score", label: "Score", sortable: true, render: (v, row) => <ScoreBadge score={v} label={row.lead_score_label} /> },
     { key: "expected_revenue", label: "Revenue", sortable: true, render: (v) => <span className="t-body text-sm tabular-nums">{formatCurrency(v)}</span> },
+    { key: "lead_owner_name", label: "Owner", render: (v) => v ? <span className="t-body text-sm">{v}</span> : <span className="t-muted text-xs">—</span> },
     { key: "created_at", label: "Created", sortable: true, render: (v) => <span className="t-muted text-xs">{formatDate(v)}</span> },
     {
       key: "actions",

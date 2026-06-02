@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, File, Form, HTTPException
+from pydantic import BaseModel as _BaseModel
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -156,6 +157,19 @@ def update_lead(lead_id: str, payload: LeadUpdateRequest, db: Session = Depends(
     return ApiResponse.ok(
         service.update_lead(db, lead_id, payload, actor=admin["email"], actor_id=admin["user_id"]),
         "Lead updated.",
+    ).model_dump()
+
+
+class _LeadAssignRequest(_BaseModel):
+    owner_id: Optional[int] = None
+
+
+@router.patch("/{lead_id}/assign", summary="Assign a lead to a user (null = unassign)")
+def assign_lead(lead_id: str, payload: _LeadAssignRequest, db: Session = Depends(get_platform_db),
+                admin: dict = Depends(_current_admin)):
+    return ApiResponse.ok(
+        service.assign_lead(db, lead_id, payload.owner_id, actor=admin["email"], actor_id=admin["user_id"]),
+        "Lead assigned.",
     ).model_dump()
 
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { leadsApi } from "../../../services/apiClient";
+import { leadsApi, rbacApi } from "../../../services/apiClient";
 import Modal from "../../../components/ui/Modal";
 import Input from "../../../components/ui/Input";
 import Select from "../../../components/ui/Select";
@@ -39,6 +39,7 @@ export default function LeadDetails() {
   const [tab, setTab] = useState("Overview");
   const [options, setOptions] = useState({});
   const [banner, setBanner] = useState("");
+  const [users, setUsers] = useState([]);
 
   const loadLead = useCallback(async () => {
     try {
@@ -54,6 +55,12 @@ export default function LeadDetails() {
   useEffect(() => {
     loadLead();
     leadsApi.options().then((res) => setOptions((res.data?.data ?? res.data) || {})).catch(() => {});
+    rbacApi.listUsers()
+      .then((res) => {
+        const list = res.data?.data ?? res.data ?? [];
+        setUsers(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {});
   }, [loadLead]);
 
   const flash = (msg) => { setBanner(msg); setTimeout(() => setBanner(""), 3000); };
@@ -85,6 +92,10 @@ export default function LeadDetails() {
           <p className="text-sm t-muted mt-1">
             {lead.contact_name}{lead.designation ? ` · ${lead.designation}` : ""} · <code className="font-mono text-xs">{lead.lead_number}</code>
           </p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-xs t-muted">Owner</span>
+            <AssignControl lead={lead} users={users} onAssigned={() => { loadLead(); flash("Lead assigned."); }} />
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button onClick={() => navigate(`/superadmin/leads/${id}/edit`)} className="btn-secondary">Edit</button>
@@ -268,6 +279,7 @@ function Overview({ lead }) {
     ? `${lead.country_code ? `${lead.country_code} ` : ""}${lead.phone}`
     : "";
   const rows = [
+    ["Assigned To", lead.lead_owner_name || (lead.lead_owner_id ? `User #${lead.lead_owner_id}` : null)],
     ["Email", lead.email], ["Phone", phoneDisplay], ["Website", lead.website],
     ["Industry", lead.industry], ["Country", lead.country], ["Company Size", lead.company_size],
     ["Expected Users", lead.expected_user_count], ["Expected Revenue", formatCurrency(lead.expected_revenue)],
@@ -339,6 +351,71 @@ function SourceEnquiry({ enquiry }) {
         <span className="t-muted text-xs">· {formatDate(enquiry.created_at)}</span>
       </button>
     </div>
+  );
+}
+
+/* ── Inline assign control ───────────────────────────────────────────────── */
+function AssignControl({ lead, users, onAssigned }) {
+  const [editing, setEditing] = useState(false);
+  const [sel, setSel] = useState(lead.lead_owner_id ? String(lead.lead_owner_id) : "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setSel(lead.lead_owner_id ? String(lead.lead_owner_id) : "");
+  }, [lead.lead_owner_id]);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await leadsApi.assign(lead.id, sel ? Number(sel) : null);
+      setEditing(false);
+      onAssigned();
+    } catch (e) {
+      alert(e.response?.data?.detail || "Failed to assign lead.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const displayName = lead.lead_owner_name
+    || (lead.lead_owner_id ? `User #${lead.lead_owner_id}` : "Unassigned");
+
+  if (!editing) {
+    return (
+      <span className="inline-flex items-center gap-2">
+        <span className="text-xs px-2.5 py-0.5 rounded-full"
+          style={{
+            background: lead.lead_owner_id ? "rgba(0,174,236,0.1)" : "var(--c-surface2)",
+            color: lead.lead_owner_id ? "var(--c-accent)" : "var(--c-muted)",
+            border: `1px solid ${lead.lead_owner_id ? "rgba(0,174,236,0.25)" : "var(--c-border)"}`,
+          }}>
+          {displayName}
+        </span>
+        <button onClick={() => setEditing(true)} className="text-xs t-muted hover:t-accent transition-colors">
+          Reassign
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-2">
+      <select value={sel} onChange={(e) => setSel(e.target.value)}
+        style={{ fontSize: 12, padding: "3px 8px", borderRadius: 6, background: "var(--c-bg)", border: "1px solid var(--c-border)", color: "var(--c-text)", cursor: "pointer" }}>
+        <option value="">Unassigned</option>
+        {users.map(u => (
+          <option key={u.id} value={String(u.id)}>{u.name || u.email}</option>
+        ))}
+      </select>
+      <button onClick={save} disabled={saving} className="btn-primary" style={{ fontSize: 12, padding: "3px 10px" }}>
+        {saving ? "Saving…" : "Save"}
+      </button>
+      <button
+        onClick={() => { setEditing(false); setSel(lead.lead_owner_id ? String(lead.lead_owner_id) : ""); }}
+        className="text-xs t-muted hover:t-accent">
+        Cancel
+      </button>
+    </span>
   );
 }
 

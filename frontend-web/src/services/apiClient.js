@@ -158,6 +158,7 @@ export const leadsApi = {
   create: (data) => apiClient.post(LEADS, data),
   update: (id, data) => apiClient.patch(`${LEADS}/${id}`, data),
   remove: (id) => apiClient.delete(`${LEADS}/${id}`),
+  assign: (id, ownerId) => apiClient.patch(`${LEADS}/${id}/assign`, { owner_id: ownerId }),
   setStage: (id, stage) => apiClient.post(`${LEADS}/${id}/stage`, { stage }),
   markLost: (id, data) => apiClient.post(`${LEADS}/${id}/lost`, data),
   setScoreLabel: (id, label) => apiClient.post(`${LEADS}/${id}/score-label`, { label }),

@@ -4,7 +4,7 @@ import Input from "../../../../components/ui/Input";
 import Select from "../../../../components/ui/Select";
 import Textarea from "../../../../components/ui/Textarea";
 import CountryCodeSelect from "../../../../components/ui/CountryCodeSelect";
-import { leadsApi } from "../../../../services/apiClient";
+import { leadsApi, rbacApi } from "../../../../services/apiClient";
 import { toOptions, toInputDate } from "../constants";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -28,6 +28,7 @@ const EMPTY = {
   expected_revenue: "",
   expected_go_live_date: "",
   interested_modules: "",
+  lead_owner_id: "",
 };
 
 const EMPTY_SPOKESPERSON = { id: null, name: "", designation: "", email: "", country_code: "", phone: "" };
@@ -39,12 +40,19 @@ export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit 
   const [spErrors, setSpErrors] = useState({});
   const [errors, setErrors] = useState({});
   const [options, setOptions] = useState({ sources: [], stages: [] });
+  const [users, setUsers] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
 
   useEffect(() => {
     leadsApi.options()
       .then((res) => setOptions((res.data?.data ?? res.data) || {}))
+      .catch(() => {});
+    rbacApi.listUsers()
+      .then((res) => {
+        const list = res.data?.data ?? res.data ?? [];
+        setUsers(Array.isArray(list) ? list.filter(u => u.is_active || u.status === "Active") : []);
+      })
       .catch(() => {});
   }, []);
 
@@ -145,6 +153,7 @@ export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit 
     if (form.expected_revenue !== "") payload.expected_revenue = Number(form.expected_revenue);
     if (form.expected_user_count !== "") payload.expected_user_count = Number(form.expected_user_count);
     if (form.expected_go_live_date) payload.expected_go_live_date = form.expected_go_live_date;
+    payload.lead_owner_id = form.lead_owner_id ? Number(form.lead_owner_id) : null;
 
     payload.spokespersons = spokespersons.map((sp) => {
       const row = { name: trim(sp.name), is_primary: false };
@@ -245,6 +254,13 @@ export default function LeadForm({ initial, submitLabel = "Save Lead", onSubmit 
       <Section title="Pipeline">
         <Select label="Lead Source" required value={form.lead_source} onChange={(e) => setField("lead_source", e.target.value)} options={toOptions(options.sources)} placeholder="Select source" error={errors.lead_source} />
         <Select label="Stage" value={form.current_stage} onChange={(e) => setField("current_stage", e.target.value)} options={toOptions(options.stages)} placeholder="New (default)" />
+        <Select
+          label="Assigned To"
+          value={String(form.lead_owner_id || "")}
+          onChange={(e) => setField("lead_owner_id", e.target.value)}
+          options={[{ value: "", label: "Unassigned" }, ...users.map(u => ({ value: String(u.id), label: u.name || u.email }))]}
+          placeholder="Unassigned"
+        />
         <Input label="Expected Revenue (USD)" type="number" min="0" step="0.01" value={form.expected_revenue} onChange={(e) => setField("expected_revenue", e.target.value)} error={errors.expected_revenue} placeholder="120000" />
         <Input label="Expected Go-Live Date" type="date" value={form.expected_go_live_date} onChange={(e) => setField("expected_go_live_date", e.target.value)} />
         <Textarea label="Interested Modules" value={form.interested_modules} onChange={(e) => setField("interested_modules", e.target.value)} rows={2} placeholder="HR, Payroll, Attendance..." className="sm:col-span-2" />
