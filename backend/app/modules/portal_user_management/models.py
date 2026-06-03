@@ -1,30 +1,37 @@
 """SQLAlchemy models for Client Portal User Management.
 
-All tables are scoped to client_id (platform DB, multi-tenant by column).
+These tables live in each CLIENT'S OWN DATABASE — not the platform DB.
+They are registered with ClientBase (not the platform Base), so Alembic
+will NOT manage them via the normal platform migrations.
+
+Schema is provisioned via  backend.app.database.client_db.provision_portal_schema()
+when a client database is created.
+
+Cross-database foreign keys are NOT possible in PostgreSQL, so all references
+to platform-DB tables (clients, client_admin_users) are plain String columns.
 """
 from __future__ import annotations
 
 import uuid
 from datetime import datetime
 
-from sqlalchemy import (
-    Boolean, Column, DateTime, ForeignKey, Integer, String, Text, Index,
-)
-from backend.app.database.platform import Base
+from sqlalchemy import Boolean, Column, DateTime, Index, Integer, String, Text
+
+from backend.app.database.client_db import ClientBase
 
 
 def _uuid() -> str:
     return str(uuid.uuid4())
 
 
-# ── Client Roles ──────────────────────────────────────────────────────────────
+# ── Client Roles ───────────────────────────────────────────────────────────────
 
-class ClientRole(Base):
+class ClientRole(ClientBase):
     """Workspace-scoped roles (Super Admin, Admin, Manager, Employee, custom)."""
     __tablename__ = "client_roles"
 
     id          = Column(String(36), primary_key=True, default=_uuid)
-    client_id   = Column(String(36), ForeignKey("clients.id"), nullable=False, index=True)
+    client_id   = Column(String(36), nullable=False, index=True)   # platform DB ref (no FK)
     name        = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
     is_system_role = Column(Boolean, nullable=False, default=False)
@@ -37,44 +44,44 @@ class ClientRole(Base):
     )
 
 
-# ── User ↔ Role join table ────────────────────────────────────────────────────
+# ── User ↔ Role join table ─────────────────────────────────────────────────────
 
-class ClientUserRole(Base):
-    """Many-to-many: client admin users ↔ client roles."""
+class ClientUserRole(ClientBase):
+    """Many-to-many: portal admin users ↔ workspace roles."""
     __tablename__ = "client_user_roles"
 
-    user_id     = Column(String(36), ForeignKey("client_admin_users.id"), primary_key=True)
-    role_id     = Column(String(36), ForeignKey("client_roles.id"), primary_key=True)
+    user_id     = Column(String(36), primary_key=True)   # platform DB ref (no FK)
+    role_id     = Column(String(36), primary_key=True)   # same client DB
     assigned_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
-# ── Login Logs ────────────────────────────────────────────────────────────────
+# ── Login Logs ─────────────────────────────────────────────────────────────────
 
-class ClientLoginLog(Base):
-    """Immutable audit log of login/logout/reset events per client workspace."""
+class ClientLoginLog(ClientBase):
+    """Immutable audit log of login / logout / reset events."""
     __tablename__ = "client_login_logs"
 
-    id          = Column(Integer, primary_key=True, autoincrement=True)
-    client_id   = Column(String(36), ForeignKey("clients.id"), nullable=False, index=True)
-    user_id     = Column(String(36), ForeignKey("client_admin_users.id"), nullable=True, index=True)
-    event_type  = Column(String(30), nullable=False)
-    email       = Column(String(320), nullable=True)
-    ip_address  = Column(String(45), nullable=True)
-    device_info = Column(String(255), nullable=True)
+    id           = Column(Integer, primary_key=True, autoincrement=True)
+    client_id    = Column(String(36), nullable=False, index=True)
+    user_id      = Column(String(36), nullable=True, index=True)   # platform DB ref
+    event_type   = Column(String(30), nullable=False)
+    email        = Column(String(320), nullable=True)
+    ip_address   = Column(String(45), nullable=True)
+    device_info  = Column(String(255), nullable=True)
     browser_info = Column(String(255), nullable=True)
-    user_agent  = Column(Text, nullable=True)
-    created_at  = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    user_agent   = Column(Text, nullable=True)
+    created_at   = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 
-# ── User Sessions ─────────────────────────────────────────────────────────────
+# ── User Sessions ──────────────────────────────────────────────────────────────
 
-class ClientUserSession(Base):
-    """Tracks active and past portal sessions (one row per login)."""
+class ClientUserSession(ClientBase):
+    """One row per portal login; tracks active and past sessions."""
     __tablename__ = "client_user_sessions"
 
     id               = Column(String(36), primary_key=True, default=_uuid)
-    client_id        = Column(String(36), ForeignKey("clients.id"), nullable=False, index=True)
-    user_id          = Column(String(36), ForeignKey("client_admin_users.id"), nullable=False, index=True)
+    client_id        = Column(String(36), nullable=False, index=True)
+    user_id          = Column(String(36), nullable=False, index=True)   # platform DB ref
     jti              = Column(String(64), nullable=False, unique=True, index=True)
     ip_address       = Column(String(45), nullable=True)
     device_info      = Column(String(255), nullable=True)
@@ -87,16 +94,16 @@ class ClientUserSession(Base):
     logged_out_at    = Column(DateTime, nullable=True)
 
 
-# ── Portal Activity Logs ──────────────────────────────────────────────────────
+# ── Portal Activity Logs ───────────────────────────────────────────────────────
 
-class ClientPortalActivityLog(Base):
+class ClientPortalActivityLog(ClientBase):
     """Audit log for user-management actions within a client workspace."""
     __tablename__ = "client_portal_activity_logs"
 
     id             = Column(Integer, primary_key=True, autoincrement=True)
-    client_id      = Column(String(36), ForeignKey("clients.id"), nullable=False, index=True)
-    actor_id       = Column(String(36), ForeignKey("client_admin_users.id"), nullable=True, index=True)
-    target_user_id = Column(String(36), ForeignKey("client_admin_users.id"), nullable=True)
+    client_id      = Column(String(36), nullable=False, index=True)
+    actor_id       = Column(String(36), nullable=True, index=True)      # platform DB ref
+    target_user_id = Column(String(36), nullable=True)                  # platform DB ref
     action         = Column(String(80), nullable=False)
     ip_address     = Column(String(45), nullable=True)
     extra          = Column(Text, nullable=True)

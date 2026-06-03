@@ -63,11 +63,15 @@ def portal_login(subdomain: str, payload: PortalLoginRequest, request: Request,
                  db: Session = Depends(get_platform_db)):
     data = cm_service.portal_login(db, subdomain, payload.email, payload.password)
 
-    # Record session + login log (best-effort — don't fail login if this errors)
+    # Record session + login log in the CLIENT DB (best-effort — never blocks login)
     try:
         from backend.app.core.security import decode_access_token as _decode
         from backend.app.modules.portal_user_management import service as uum_svc
-        from datetime import datetime, timedelta
+        from backend.app.database.client_db import build_client_db_url, make_client_session
+        from backend.app.modules.client_management import repository as client_repo
+        from backend.app.modules.client_management.constants import DB_STATUS_ACTIVE
+        from datetime import datetime
+
         token_payload = _decode(data["access_token"])
         jti = token_payload.get("jti")
         exp = token_payload.get("exp")
@@ -75,10 +79,25 @@ def portal_login(subdomain: str, payload: PortalLoginRequest, request: Request,
         xff = request.headers.get("X-Forwarded-For")
         ip = xff.split(",")[-1].strip() if xff else (request.client.host if request.client else None)
         ua = request.headers.get("User-Agent")
-        uum_svc.record_login_session(
-            db, data["client_id"], data["admin_user_id"], jti, data["email"],
-            ip=ip, user_agent=ua, expires_at=expires_at,
-        )
+
+        # Only record if the client DB is provisioned
+        conn = client_repo.get_db_connection(db, data["client_id"])
+        if conn and conn.database_status == DB_STATUS_ACTIVE:
+            client_session = make_client_session(build_client_db_url(conn))
+            try:
+                uum_svc.record_login_session(
+                    client_db=client_session,
+                    platform_db=db,
+                    client_id=data["client_id"],
+                    user_id=data["admin_user_id"],
+                    jti=jti,
+                    email=data["email"],
+                    ip=ip,
+                    user_agent=ua,
+                    expires_at=expires_at,
+                )
+            finally:
+                client_session.close()
     except Exception:
         pass  # never block login
 

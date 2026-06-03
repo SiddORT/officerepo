@@ -563,6 +563,17 @@ def provision_database(db: Session, client_id: str, *, actor: str) -> dict:
                  metadata={"database_name": db_name})
     db.commit()
     db.refresh(conn)
+
+    # Provision the portal schema (roles, sessions, logs, etc.) on the new client DB
+    try:
+        from backend.app.database.client_db import build_client_db_url, provision_portal_schema
+        provision_portal_schema(build_client_db_url(conn))
+    except Exception as exc:  # pragma: no cover
+        import logging
+        logging.getLogger(__name__).error(
+            "DB_PROVISION | portal schema failed | %s | %s", db_name, exc
+        )
+
     return db_connection_to_dict(conn)
 
 
