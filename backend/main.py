@@ -69,6 +69,7 @@ from backend.app.modules.security_settings.router import router as security_sett
 from backend.app.modules.module_registry.router import router as module_registry_router
 from backend.app.modules.portal_auth.router import router as portal_auth_router
 from backend.app.modules.portal_user_management.router import router as portal_user_mgmt_router
+from backend.app.modules.organization_management.router import router as portal_org_router
 from backend.app.modules.testing.database_provisioning.router import router as db_provisioning_router
 from backend.app.platform.superadmin.rotation_router import router as rotation_router
 from backend.app.platform.superadmin.rotation_status_router import router as rotation_status_router
@@ -455,6 +456,9 @@ def create_app(app_settings=settings) -> FastAPI:
 
     # Client Portal — User Management (portal JWT required)
     app.include_router(portal_user_mgmt_router, prefix=f"{prefix}/portal", tags=["portal user management"])
+
+    # Client Portal — Organization Management (portal JWT + module gate)
+    app.include_router(portal_org_router, prefix=f"{prefix}/portal", tags=["portal organization management"])
 
     # [TESTING ONLY] Database provisioning capability check — superadmin JWT required
     app.include_router(db_provisioning_router, prefix=f"{prefix}", tags=["[TESTING] database provisioning"])

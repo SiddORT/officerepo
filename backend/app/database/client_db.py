@@ -75,7 +75,8 @@ def make_client_session(url: str) -> Session:
 
 def provision_portal_schema(url: str) -> None:
     """Create all ClientBase tables on the client DB (idempotent — uses CREATE IF NOT EXISTS)."""
-    # Import ensures models register themselves with ClientBase before create_all
+    # Imports ensure models register themselves with ClientBase before create_all
     import backend.app.modules.portal_user_management.models  # noqa: F401
+    import backend.app.modules.organization_management.models  # noqa: F401
     engine = _get_engine(url)
     ClientBase.metadata.create_all(engine)

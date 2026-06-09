@@ -1,0 +1,492 @@
+Let's design and implement Client Module → Organization Management for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Architecture:
+
+Client
+↓
+Companies
+↓
+Departments
+↓
+Designations
+↓
+Employees
+↓
+Assets
+
+Each Client has:
+
+* Dedicated Database
+* Dedicated Users
+* Dedicated Modules
+
+A Client can own multiple Companies.
+
+Example:
+
+ABC Group
+├── ABC Technologies
+├── ABC Consulting
+└── ABC Logistics
+
+Every Company can have:
+
+* Departments
+* Designations
+* Employees
+* Assets
+* Future HRMS Data
+
+This module will be the foundation for all future HR, Recruitment, Employee, Asset, and Workflow modules.
+
+---
+
+# Module Registration
+
+Module Name:
+
+Organization Management
+
+Module Code:
+
+ORGANIZATION
+
+Module Category:
+
+Business Module
+
+Navigation:
+
+Organization Management
+├── Companies
+├── Departments
+├── Designations
+└── Organization Hierarchy
+
+---
+
+# Client Module Activation
+
+This module must support:
+
+Client Modules
+
+* Enabled
+* Disabled
+
+If enabled:
+
+* Module visible in sidebar
+* Routes accessible
+* APIs accessible
+
+If disabled:
+
+* Hidden from sidebar
+* Routes blocked
+* APIs blocked
+
+Use existing:
+
+client_modules
+
+table.
+
+Provide:
+
+* Activation Flow
+* Deactivation Flow
+* Validation Rules
+
+---
+
+# Business Hierarchy
+
+Client
+↓
+Company
+↓
+Department
+↓
+Designation
+↓
+Employee
+
+Design database relationships accordingly.
+
+---
+
+# Companies
+
+Manage companies belonging to a client.
+
+Fields:
+
+General Information
+
+* Company Code
+* Company Name
+* Legal Name
+* Display Name
+
+Registration Information
+
+* Registration Number
+* Tax Number
+* GST Number (Future)
+
+Contact Information
+
+* Email
+* Phone
+* Website
+
+Address Information
+
+* Address Line 1
+* Address Line 2
+* City
+* State
+* Country
+* Postal Code
+
+Branding
+
+* Logo
+* Company Color (Future)
+
+Status
+
+* Active
+* Inactive
+
+Actions:
+
+* Create Company
+* Update Company
+* View Company
+* Activate Company
+* Deactivate Company
+
+Rules:
+
+* Company Code unique within Client
+* Company Name required
+* Soft Delete only
+
+---
+
+# Departments
+
+Every Department belongs to a Company.
+
+Examples:
+
+HR
+Finance
+IT
+Operations
+Sales
+
+Fields:
+
+* Department Code
+* Department Name
+* Company
+* Parent Department
+* Department Head
+* Description
+* Status
+
+Actions:
+
+* Create Department
+* Update Department
+* View Department
+* Activate Department
+* Deactivate Department
+
+Support hierarchy:
+
+Operations
+├── Warehouse
+├── Logistics
+└── Procurement
+
+---
+
+# Designations
+
+Every Designation belongs to a Company.
+
+Examples:
+
+CEO
+CTO
+HR Manager
+Software Engineer
+Accountant
+
+Fields:
+
+* Designation Code
+* Designation Name
+* Company
+* Department
+* Level
+* Description
+* Status
+
+Actions:
+
+* Create Designation
+* Update Designation
+* Activate Designation
+* Deactivate Designation
+
+---
+
+# Organization Hierarchy
+
+Provide hierarchy visualization:
+
+Company
+↓
+Department
+↓
+Designation
+
+Future:
+
+Company
+↓
+Department
+↓
+Designation
+↓
+Employee
+
+Provide UI recommendations.
+
+---
+
+# Functional Design
+
+Provide:
+
+* Purpose
+* Features
+* Business Rules
+* Client Isolation Rules
+
+---
+
+# UI Design
+
+Design:
+
+## Companies
+
+* List Page
+* Create Page
+* Edit Page
+* View Page
+
+## Departments
+
+* List Page
+* Create Page
+* Edit Page
+* Tree View
+
+## Designations
+
+* List Page
+* Create Page
+* Edit Page
+
+## Organization Hierarchy
+
+* Hierarchy View
+* Tree View
+
+Provide:
+
+* Responsive Design
+* Dark Mode Design
+* Reusable Components
+
+---
+
+# Database Design
+
+Design tables:
+
+companies
+
+departments
+
+designations
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+
+Relationships:
+
+Company
+1:N Departments
+
+Company
+1:N Designations
+
+Department
+1:N Child Departments
+
+Department
+1:N Designations
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_001_companies
+2026_002_departments
+2026_003_designations
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Companies
+
+* Create Company
+* Update Company
+* Get Company
+* List Companies
+* Activate Company
+* Deactivate Company
+
+Departments
+
+* Create Department
+* Update Department
+* Get Department
+* List Departments
+* Hierarchy View
+
+Designations
+
+* Create Designation
+* Update Designation
+* Get Designation
+* List Designations
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Company Repository
+* Department Repository
+* Designation Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Company Service
+* Department Service
+* Designation Service
+
+Include:
+
+* Validation Logic
+* Hierarchy Validation
+* Business Rules
+
+---
+
+# Activity Logging
+
+Track:
+
+* Company Created
+* Company Updated
+* Department Created
+* Department Updated
+* Designation Created
+* Designation Updated
+* Status Changes
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Validation Rules
+
+Company
+
+* Company Code Unique
+* Company Name Required
+
+Department
+
+* Department Code Unique Per Company
+* Parent Department Cannot Reference Itself
+
+Designation
+
+* Designation Code Unique Per Company
+
+---
+
+# Future Enhancements
+
+* Branch Management
+* Cost Centers
+* Business Units
+* Reporting Structures
+* Organization Charts
+* Multi-Country Companies
+* Legal Entities
+
+Generate production-ready specifications suitable for direct development in Office Repo Client Panel.
+
+This module must be built as a reusable business module that can be enabled or disabled for any Client through Module Management.

@@ -391,6 +391,37 @@ export const portalUserMgmtApi = {
   logoutAllSessions: (subdomain, token) => axios.delete(`${API_BASE_URL}/api/v1/portal/${subdomain}/sessions`, { headers: { Authorization: `Bearer ${token}` } }),
 };
 
+// ── Portal Org Management (portal JWT — companies, departments, designations) ──
+export const portalOrgApi = {
+  // Companies
+  listCompanies:    (sd, tk, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
+  getCompany:       (sd, tk, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
+  createCompany:    (sd, tk, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  updateCompany:    (sd, tk, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  activateCompany:  (sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${id}/activate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+  deactivateCompany:(sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+
+  // Departments
+  listDepts:   (sd, tk, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
+  getDept:     (sd, tk, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
+  createDept:  (sd, tk, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  updateDept:  (sd, tk, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  activateDept:(sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/activate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+  deactivateDept:(sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+  deptHierarchy:(sd, tk, companyId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/hierarchy/${companyId}`, { headers: { Authorization: `Bearer ${tk}` } }),
+
+  // Designations
+  listDesigs:    (sd, tk, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
+  getDesig:      (sd, tk, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
+  createDesig:   (sd, tk, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  updateDesig:   (sd, tk, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  activateDesig: (sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}/activate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+  deactivateDesig:(sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+
+  // Full hierarchy (company + dept tree + designations)
+  hierarchy: (sd, tk, companyId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/hierarchy/${companyId}`, { headers: { Authorization: `Bearer ${tk}` } }),
+};
+
 // ── Organization Settings (superadmin — singleton platform identity) ─────────
 const ORG = "/superadmin/organization";
 

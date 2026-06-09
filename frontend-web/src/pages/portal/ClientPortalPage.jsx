@@ -16,6 +16,15 @@ import LoginLogs from "./user-management/LoginLogs";
 import Sessions from "./user-management/Sessions";
 import ActivityLogs from "./user-management/ActivityLogs";
 
+// Organization Management pages
+import CompanyList from "./org-management/CompanyList";
+import CompanyForm from "./org-management/CompanyForm";
+import DepartmentList from "./org-management/DepartmentList";
+import DepartmentForm from "./org-management/DepartmentForm";
+import DesignationList from "./org-management/DesignationList";
+import DesignationForm from "./org-management/DesignationForm";
+import OrgHierarchy from "./org-management/OrgHierarchy";
+
 function PortalProtectedRoute({ children }) {
   const { user, subdomain } = usePortalAuth();
   if (!user) return <Navigate to={`/portal/${subdomain}`} replace />;
@@ -86,6 +95,26 @@ function PortalRoutes() {
       {/* Redirect /user-management root → users list */}
       <Route path="/user-management" element={<Navigate to={`/portal/${subdomain}/user-management/users`} replace />} />
       <Route path="/user-management/*" element={<Navigate to={`/portal/${subdomain}/user-management/users`} replace />} />
+
+      {/* ── Organization Management ──────────────────────────────────── */}
+      <Route path="/org/companies"          element={<Protected><CompanyList /></Protected>} />
+      <Route path="/org/companies/new"      element={<Protected><CompanyForm editMode={false} /></Protected>} />
+      <Route path="/org/companies/:companyId/edit" element={<Protected><CompanyForm editMode={true} /></Protected>} />
+
+      <Route path="/org/departments"        element={<Protected><DepartmentList /></Protected>} />
+      <Route path="/org/departments/new"    element={<Protected><DepartmentForm editMode={false} /></Protected>} />
+      <Route path="/org/departments/hierarchy/:companyId" element={<Protected><OrgHierarchy /></Protected>} />
+      <Route path="/org/departments/:deptId/edit" element={<Protected><DepartmentForm editMode={true} /></Protected>} />
+
+      <Route path="/org/designations"       element={<Protected><DesignationList /></Protected>} />
+      <Route path="/org/designations/new"   element={<Protected><DesignationForm editMode={false} /></Protected>} />
+      <Route path="/org/designations/:desigId/edit" element={<Protected><DesignationForm editMode={true} /></Protected>} />
+
+      <Route path="/org/hierarchy/:companyId" element={<Protected><OrgHierarchy /></Protected>} />
+
+      {/* Redirect /org root → companies */}
+      <Route path="/org" element={<Navigate to={`/portal/${subdomain}/org/companies`} replace />} />
+      <Route path="/org/*" element={<Navigate to={`/portal/${subdomain}/org/companies`} replace />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to={user ? `/portal/${subdomain}/dashboard` : `/portal/${subdomain}`} replace />} />
