@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../contexts/PortalAuthContext";
 import { portalNavigationApi } from "../../services/apiClient";
 
+// ── Static nav (always shown) ──────────────────────────────────────────────
 const STATIC_NAV = [
   {
     label: "Dashboard", path: "dashboard",
@@ -10,6 +11,48 @@ const STATIC_NAV = [
   },
 ];
 
+// ── Sub-nav definitions (keyed by mod.route from the catalog) ─────────────
+// Add sub-items here for each module that needs a section nav in the sidebar
+const MODULE_SUB_NAV = {
+  "org": [
+    {
+      label: "Companies", path: "org/companies",
+      icon: <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>,
+    },
+    {
+      label: "Departments", path: "org/departments",
+      icon: <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+    },
+    {
+      label: "Designations", path: "org/designations",
+      icon: <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>,
+    },
+  ],
+  "user-management": [
+    {
+      label: "Users", path: "user-management/users",
+      icon: <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
+    },
+    {
+      label: "Roles", path: "user-management/roles",
+      icon: <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
+    },
+    {
+      label: "Login Logs", path: "user-management/login-logs",
+      icon: <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>,
+    },
+    {
+      label: "Sessions", path: "user-management/sessions",
+      icon: <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
+    },
+    {
+      label: "Activity", path: "user-management/activity",
+      icon: <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
+    },
+  ],
+};
+
+// ── Icon map for dynamic module icons from the catalog ─────────────────────
 function ModuleIcon({ icon }) {
   const ICONS = {
     "id-card":    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />,
@@ -70,19 +113,41 @@ export default function PortalLayout({ children, title }) {
 
   const initials = (user?.name || "U").split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 
+  const navLinkStyle = (isActive) => ({
+    display: "flex", alignItems: "center", gap: 10,
+    padding: collapsed ? "8px" : "7px 8px",
+    borderRadius: 8, fontSize: 13, textDecoration: "none", transition: "all 0.12s",
+    color: isActive ? "var(--c-accent)" : "var(--c-muted)",
+    background: isActive ? "rgba(0,174,236,0.08)" : "transparent",
+    fontWeight: isActive ? 600 : 400,
+    justifyContent: collapsed ? "center" : "flex-start",
+  });
+
+  const subNavLinkStyle = (isActive) => ({
+    display: "flex", alignItems: "center", gap: 8,
+    padding: "5px 8px 5px 28px",
+    borderRadius: 6, fontSize: 12, textDecoration: "none", transition: "all 0.12s",
+    color: isActive ? "var(--c-accent)" : "var(--c-muted)",
+    background: isActive ? "rgba(0,174,236,0.06)" : "transparent",
+    fontWeight: isActive ? 600 : 400,
+  });
+
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: "var(--c-bg)", color: "var(--c-text)" }}>
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--c-bg)", color: "var(--c-text)" }}>
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-      <aside
-        className="flex flex-col flex-shrink-0 transition-all duration-200"
-        style={{
-          width: collapsed ? 56 : 220,
-          borderRight: "1px solid var(--c-border)",
-          background: "var(--c-surface)",
-        }}
-      >
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 px-3 py-4" style={{ borderBottom: "1px solid var(--c-border)", minHeight: 56 }}>
+      <aside style={{
+        width: collapsed ? 56 : 220, flexShrink: 0,
+        display: "flex", flexDirection: "column",
+        transition: "width 0.2s",
+        borderRight: "1px solid var(--c-border)",
+        background: "var(--c-surface)",
+      }}>
+        {/* Logo / workspace name */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "0 10px", minHeight: 56,
+          borderBottom: "1px solid var(--c-border)",
+        }}>
           <div style={{
             width: 30, height: 30, borderRadius: 8, flexShrink: 0,
             background: "linear-gradient(135deg, #00aeec, #ff7a1a)",
@@ -93,17 +158,14 @@ export default function PortalLayout({ children, title }) {
             </svg>
           </div>
           {!collapsed && (
-            <div className="overflow-hidden">
-              <div className="text-sm font-bold truncate" style={{ color: "var(--c-heading)" }}>{workspaceName}</div>
-              <div className="text-[10px] truncate" style={{ color: "var(--c-muted)" }}>Workspace</div>
+            <div style={{ overflow: "hidden", flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-heading)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{workspaceName}</div>
+              <div style={{ fontSize: 10, color: "var(--c-muted)" }}>Workspace</div>
             </div>
           )}
-          <button
-            onClick={() => setCollapsed((c) => !c)}
-            className="ml-auto flex-shrink-0 p-1 rounded"
-            style={{ color: "var(--c-muted)" }}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button onClick={() => setCollapsed(c => !c)}
+            style={{ marginLeft: "auto", padding: 4, background: "none", border: "none", cursor: "pointer", color: "var(--c-muted)", flexShrink: 0 }}>
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {collapsed
                 ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                 : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />}
@@ -112,73 +174,90 @@ export default function PortalLayout({ children, title }) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
-          {/* Static items (Dashboard always first) */}
+        <nav style={{ flex: 1, overflowY: "auto", padding: "8px 6px", display: "flex", flexDirection: "column", gap: 1 }}>
+          {/* Static: Dashboard */}
           {STATIC_NAV.map((item) => {
             const href = `/portal/${subdomain}/${item.path}`;
             const isActive = location.pathname === href;
             return (
-              <Link
-                key={item.path}
-                to={href}
-                className="flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm transition-all"
-                style={{
-                  color: isActive ? "var(--c-accent)" : "var(--c-muted)",
-                  background: isActive ? "rgba(0,174,236,0.08)" : "transparent",
-                  fontWeight: isActive ? 600 : 400,
-                }}
-              >
+              <Link key={item.path} to={href} style={navLinkStyle(isActive)} title={collapsed ? item.label : undefined}>
                 {item.icon}
-                {!collapsed && <span>{item.label}</span>}
-                {isActive && !collapsed && <span className="ml-auto w-1 h-4 rounded-full" style={{ background: "var(--c-accent)" }} />}
+                {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
+                {isActive && !collapsed && <span style={{ width: 3, height: 16, borderRadius: 2, background: "var(--c-accent)", marginLeft: "auto" }} />}
               </Link>
             );
           })}
 
-          {/* Dynamic module nav items */}
+          {/* Dynamic modules */}
           {navModules.length > 0 && (
             <>
               {!collapsed && (
-                <div style={{ fontSize: 10, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", padding: "10px 8px 4px" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", padding: "10px 8px 4px" }}>
                   Modules
                 </div>
               )}
               {navModules.map((mod) => {
-                const href = `/portal/${subdomain}/${mod.route || mod.code}`;
-                const isActive = location.pathname.startsWith(href);
+                const modRoute = mod.route || mod.code;
+                const href = `/portal/${subdomain}/${modRoute}`;
+                const isModActive = location.pathname.startsWith(href);
+                const subItems = MODULE_SUB_NAV[modRoute] || [];
+
                 return (
-                  <Link
-                    key={mod.code}
-                    to={href}
-                    className="flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm transition-all"
-                    style={{
-                      color: isActive ? "var(--c-accent)" : "var(--c-muted)",
-                      background: isActive ? "rgba(0,174,236,0.08)" : "transparent",
-                      fontWeight: isActive ? 600 : 400,
-                    }}
-                    title={collapsed ? mod.name : undefined}
-                  >
-                    <ModuleIcon icon={mod.icon} />
-                    {!collapsed && <span className="flex-1 truncate">{mod.name}</span>}
-                    {isActive && !collapsed && <span className="ml-auto w-1 h-4 rounded-full" style={{ background: "var(--c-accent)" }} />}
-                  </Link>
+                  <div key={mod.code}>
+                    {/* Module parent link */}
+                    <Link to={href} style={navLinkStyle(isModActive && subItems.length === 0)}
+                      title={collapsed ? mod.name : undefined}>
+                      <ModuleIcon icon={mod.icon} />
+                      {!collapsed && (
+                        <>
+                          <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{mod.name}</span>
+                          {subItems.length > 0 && (
+                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                              style={{ color: "var(--c-muted)", transform: isModActive ? "rotate(90deg)" : "none", transition: "transform 0.15s", flexShrink: 0 }}>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                            </svg>
+                          )}
+                          {!subItems.length && isModActive && <span style={{ width: 3, height: 16, borderRadius: 2, background: "var(--c-accent)" }} />}
+                        </>
+                      )}
+                    </Link>
+
+                    {/* Sub-nav items (only when not collapsed and module is active) */}
+                    {!collapsed && isModActive && subItems.length > 0 && (
+                      <div style={{ marginTop: 1, marginBottom: 2 }}>
+                        {subItems.map((sub) => {
+                          const subHref = `/portal/${subdomain}/${sub.path}`;
+                          const isSubActive = location.pathname.startsWith(subHref);
+                          return (
+                            <Link key={sub.path} to={subHref} style={subNavLinkStyle(isSubActive)}>
+                              <span style={{ opacity: 0.7 }}>{sub.icon}</span>
+                              <span>{sub.label}</span>
+                              {isSubActive && <span style={{ width: 3, height: 12, borderRadius: 2, background: "var(--c-accent)", marginLeft: "auto" }} />}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </>
           )}
         </nav>
 
-        {/* Sidebar profile */}
+        {/* Sidebar profile strip */}
         {!collapsed && (
-          <div className="p-3" style={{ borderTop: "1px solid var(--c-border)" }}>
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                style={{ background: "linear-gradient(135deg, #00aeec, #ff7a1a)" }}>
-                {initials}
-              </div>
-              <div className="overflow-hidden flex-1">
-                <div className="text-xs font-medium truncate" style={{ color: "var(--c-heading)" }}>{user?.name}</div>
-                <div className="text-[10px] truncate" style={{ color: "var(--c-muted)" }}>{user?.email}</div>
+          <div style={{ padding: "10px 12px", borderTop: "1px solid var(--c-border)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                background: "linear-gradient(135deg, #00aeec, #ff7a1a)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 10, fontWeight: 700, color: "#fff",
+              }}>{initials}</div>
+              <div style={{ overflow: "hidden", flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--c-heading)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.name}</div>
+                <div style={{ fontSize: 10, color: "var(--c-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{user?.email}</div>
               </div>
             </div>
           </div>
@@ -186,68 +265,62 @@ export default function PortalLayout({ children, title }) {
       </aside>
 
       {/* ── Main ────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
         {/* Topbar */}
-        <header className="flex items-center justify-between px-5 flex-shrink-0" style={{ height: 56, borderBottom: "1px solid var(--c-border)", background: "var(--c-surface)" }}>
-          <div className="text-sm font-semibold" style={{ color: "var(--c-heading)" }}>{title || "Dashboard"}</div>
+        <header style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "0 20px", height: 56, flexShrink: 0,
+          borderBottom: "1px solid var(--c-border)", background: "var(--c-surface)",
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-heading)" }}>{title || "Dashboard"}</div>
 
-          <div className="flex items-center gap-3">
-            {/* Profile dropdown */}
-            <div ref={profileRef} className="relative">
-              <button
-                onClick={() => setProfileOpen((o) => !o)}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all text-sm"
-                style={{ border: "1px solid var(--c-border)", background: profileOpen ? "var(--c-surface2)" : "transparent" }}
-              >
-                <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
-                  style={{ background: "linear-gradient(135deg, #00aeec, #ff7a1a)" }}>
-                  {initials}
-                </div>
-                <span className="hidden sm:block text-xs font-medium" style={{ color: "var(--c-text)" }}>{user?.name}</span>
-                <svg className="w-3.5 h-3.5" style={{ color: "var(--c-muted)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
+          <div ref={profileRef} style={{ position: "relative" }}>
+            <button onClick={() => setProfileOpen(o => !o)}
+              style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "5px 10px", borderRadius: 8, cursor: "pointer",
+                border: "1px solid var(--c-border)", background: profileOpen ? "var(--c-surface2)" : "transparent",
+              }}>
+              <div style={{
+                width: 24, height: 24, borderRadius: "50%",
+                background: "linear-gradient(135deg, #00aeec, #ff7a1a)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 10, fontWeight: 700, color: "#fff",
+              }}>{initials}</div>
+              <span style={{ fontSize: 12, fontWeight: 500, color: "var(--c-text)" }}>{user?.name}</span>
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: "var(--c-muted)" }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
 
-              {profileOpen && (
-                <div className="absolute right-0 top-full mt-2 w-52 rounded-xl py-1.5 z-50"
-                  style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", boxShadow: "0 16px 40px rgba(0,0,0,0.25)" }}>
-                  <div className="px-3 py-2" style={{ borderBottom: "1px solid var(--c-border)" }}>
-                    <div className="text-xs font-semibold truncate" style={{ color: "var(--c-heading)" }}>{user?.name}</div>
-                    <div className="text-[11px] truncate" style={{ color: "var(--c-muted)" }}>{user?.email}</div>
-                  </div>
-                  <button
-                    onClick={() => { setProfileOpen(false); navigate(`/portal/${subdomain}/profile`); }}
-                    className="flex items-center gap-2.5 w-full px-3 py-2 text-xs transition-all"
-                    style={{ color: "var(--c-text)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--c-surface2)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    My Profile
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2.5 w-full px-3 py-2 text-xs transition-all"
-                    style={{ color: "#ef4444" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(239,68,68,0.08)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Sign Out
-                  </button>
+            {profileOpen && (
+              <div style={{
+                position: "absolute", right: 0, top: "calc(100% + 8px)", width: 200,
+                background: "var(--c-surface)", border: "1px solid var(--c-border)",
+                borderRadius: 12, boxShadow: "0 16px 40px rgba(0,0,0,0.25)", zIndex: 50, overflow: "hidden",
+              }}>
+                <div style={{ padding: "10px 14px", borderBottom: "1px solid var(--c-border)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: "var(--c-heading)" }}>{user?.name}</div>
+                  <div style={{ fontSize: 11, color: "var(--c-muted)" }}>{user?.email}</div>
                 </div>
-              )}
-            </div>
+                {[
+                  { label: "My Profile", action: () => { setProfileOpen(false); navigate(`/portal/${subdomain}/profile`); }, color: "var(--c-text)" },
+                  { label: "Sign Out", action: handleLogout, color: "#ef4444" },
+                ].map(item => (
+                  <button key={item.label} onClick={item.action}
+                    style={{ display: "block", width: "100%", textAlign: "left", padding: "9px 14px", fontSize: 12, color: item.color, background: "none", border: "none", cursor: "pointer" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "var(--c-surface2)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main style={{ flex: 1, overflowY: "auto", padding: 24 }}>
           {children}
         </main>
       </div>

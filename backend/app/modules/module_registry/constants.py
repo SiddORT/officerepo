@@ -7,6 +7,15 @@ so the two tables join cleanly without a foreign-key migration.
 
 MODULE_CATALOG = [
     {
+        "code": "USER_MANAGEMENT",
+        "name": "User Management",
+        "description": "Workspace users, roles, login logs, and session management",
+        "route": "user-management",
+        "icon": "user-plus",
+        "display_order": 1,
+        "is_system_module": True,
+    },
+    {
         "code": "ORGANIZATION",
         "name": "Organization Management",
         "description": "Companies, departments, and designations — foundation for all HR modules",

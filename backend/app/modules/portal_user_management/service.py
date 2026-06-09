@@ -18,14 +18,18 @@ from backend.app.modules.portal_user_management import repository as repo
 from backend.app.modules.client_management.models import ClientAdminUser
 
 
-# ── Encryption helpers (re-use from client_management) ────────────────────────
+# ── Encryption helpers ─────────────────────────────────────────────────────────
 
-def _enc(text: str) -> str:
-    from backend.app.modules.client_management.service import _enc as cm_enc
-    return cm_enc(text)
+def _enc(text: str) -> Optional[str]:
+    if not text:
+        return None
+    from backend.shared.security.encryption import encrypt_value
+    return encrypt_value(text)
 
 
-def _dec(cipher: str) -> str:
+def _dec(cipher: Optional[str]) -> Optional[str]:
+    if not cipher:
+        return None
     from backend.app.modules.client_management.service import _dec as cm_dec
     return cm_dec(cipher)
 

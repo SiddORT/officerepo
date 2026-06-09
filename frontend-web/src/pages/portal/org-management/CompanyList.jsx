@@ -4,19 +4,21 @@ import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
 
+const STATUS = {
+  Active:   { bg: "rgba(34,197,94,0.1)",   color: "#4ade80" },
+  Inactive: { bg: "rgba(100,116,139,0.15)", color: "var(--c-muted)" },
+};
+
 function StatusBadge({ active }) {
+  const s = active ? STATUS.Active : STATUS.Inactive;
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 4,
-      padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 600,
-      background: active ? "rgba(22,163,74,0.12)" : "rgba(107,114,128,0.12)",
-      color: active ? "#16a34a" : "#6b7280",
-    }}>
-      <span style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
+    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: s.bg, color: s.color }}>
       {active ? "Active" : "Inactive"}
     </span>
   );
 }
+
+const PAGE_SIZE = 20;
 
 export default function CompanyList() {
   const { subdomain } = useParams();
@@ -25,26 +27,25 @@ export default function CompanyList() {
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [acting, setActing] = useState(null);
+  const [toast, setToast] = useState(null);
 
-  const pageSize = 20;
+  const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const r = await portalOrgApi.listCompanies(subdomain, token, { page, page_size: pageSize, search: search || undefined, status: status || undefined });
+      const r = await portalOrgApi.listCompanies(subdomain, token, {
+        page, page_size: PAGE_SIZE, ...(statusFilter ? { status: statusFilter } : {}),
+      });
       setRows(r.data.data?.data || []);
       setTotal(r.data.data?.total || 0);
-    } catch (e) {
-      setError(e?.response?.data?.detail || "Failed to load companies.");
-    } finally {
-      setLoading(false);
-    }
-  }, [subdomain, token, page, search, status]);
+    } catch { setError("Failed to load companies."); }
+    finally { setLoading(false); }
+  }, [subdomain, token, page, statusFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -53,126 +54,121 @@ export default function CompanyList() {
     try {
       if (co.is_active) await portalOrgApi.deactivateCompany(subdomain, token, co.id);
       else await portalOrgApi.activateCompany(subdomain, token, co.id);
+      showToast(co.is_active ? "Company deactivated." : "Company activated.");
       load();
-    } catch (e) {
-      alert(e?.response?.data?.detail || "Action failed.");
-    } finally { setActing(null); }
+    } catch (e) { showToast(e?.response?.data?.detail || "Action failed.", false); }
+    finally { setActing(null); }
   };
 
-  const totalPages = Math.ceil(total / pageSize);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <OrgLayout title="Companies">
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-bold" style={{ color: "var(--c-heading)" }}>Companies</h2>
-            <p className="text-xs mt-0.5" style={{ color: "var(--c-muted)" }}>Legal entities within your organization</p>
+      {toast && (
+        <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: toast.ok ? "#166534" : "#dc2626", color: "#fff", padding: "10px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--c-text)" }}>Companies</h2>
+          <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--c-muted)" }}>Legal entities within your organization — {total} total</p>
+        </div>
+        <Link to={`/portal/${subdomain}/org/companies/new`}
+          style={{ padding: "8px 16px", borderRadius: 7, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
+          + Add Company
+        </Link>
+      </div>
+
+      {/* Filters */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {["", "Active", "Inactive"].map(s => (
+          <button key={s} onClick={() => { setStatusFilter(s); setPage(1); }}
+            style={{
+              padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
+              background: statusFilter === s ? "var(--c-accent)" : "var(--c-surface)",
+              color: statusFilter === s ? "#fff" : "var(--c-muted)",
+              border: `1px solid ${statusFilter === s ? "var(--c-accent)" : "var(--c-border)"}`,
+            }}>
+            {s || "All"}
+          </button>
+        ))}
+      </div>
+
+      {error && (
+        <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, marginBottom: 14, fontSize: 13, color: "#f87171" }}>
+          {error}
+        </div>
+      )}
+
+      {/* Table */}
+      <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, overflow: "hidden" }}>
+        {loading ? (
+          <div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</div>
+        ) : rows.length === 0 ? (
+          <div style={{ padding: 60, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>
+            No companies yet.{" "}
+            <Link to={`/portal/${subdomain}/org/companies/new`} style={{ color: "var(--c-accent)", fontWeight: 500 }}>Add your first one.</Link>
           </div>
-          <Link to={`/portal/${subdomain}/org/companies/new`}
-            className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg"
-            style={{ background: "var(--c-primary)", color: "#fff" }}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-            Add Company
-          </Link>
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2">
-          <input
-            value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Search by name or code…"
-            className="text-sm rounded-lg px-3 py-2"
-            style={{ background: "var(--c-input-bg)", border: "1px solid var(--c-border)", color: "var(--c-text)", minWidth: 220 }}
-          />
-          <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}
-            className="text-sm rounded-lg px-3 py-2"
-            style={{ background: "var(--c-input-bg)", border: "1px solid var(--c-border)", color: "var(--c-text)" }}>
-            <option value="">All statuses</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-          </select>
-        </div>
-
-        {/* Table */}
-        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--c-border)" }}>
-          {loading ? (
-            <div className="py-16 text-center text-sm" style={{ color: "var(--c-muted)" }}>Loading…</div>
-          ) : error ? (
-            <div className="py-16 text-center text-sm" style={{ color: "#ef4444" }}>{error}</div>
-          ) : rows.length === 0 ? (
-            <div className="py-16 text-center">
-              <svg className="w-10 h-10 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-              <p className="text-sm" style={{ color: "var(--c-muted)" }}>No companies yet. Add your first one.</p>
-            </div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ background: "var(--c-surface-alt)", borderBottom: "1px solid var(--c-border)" }}>
-                  {["Code", "Company Name", "City / Country", "Status", ""].map(h => (
-                    <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide"
-                      style={{ color: "var(--c-muted)" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((co, i) => (
-                  <tr key={co.id}
-                    style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--c-border)" : "none", background: "var(--c-surface)" }}>
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-xs px-2 py-0.5 rounded" style={{ background: "var(--c-surface-alt)", color: "var(--c-muted)" }}>
-                        {co.company_code}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Link to={`/portal/${subdomain}/org/companies/${co.id}/edit`}
-                        className="font-medium hover:underline" style={{ color: "var(--c-primary)" }}>
-                        {co.company_name}
-                      </Link>
-                      {co.legal_name && <div className="text-xs mt-0.5" style={{ color: "var(--c-muted)" }}>{co.legal_name}</div>}
-                    </td>
-                    <td className="px-4 py-3" style={{ color: "var(--c-muted)" }}>
-                      {[co.city, co.country].filter(Boolean).join(", ") || "—"}
-                    </td>
-                    <td className="px-4 py-3"><StatusBadge active={co.is_active} /></td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 justify-end">
-                        <Link to={`/portal/${subdomain}/org/companies/${co.id}/edit`}
-                          className="text-xs px-2.5 py-1 rounded-lg font-medium"
-                          style={{ background: "var(--c-surface-alt)", color: "var(--c-text)", border: "1px solid var(--c-border)" }}>
-                          Edit
-                        </Link>
-                        <button onClick={() => toggleStatus(co)} disabled={acting === co.id}
-                          className="text-xs px-2.5 py-1 rounded-lg font-medium"
-                          style={{ background: co.is_active ? "rgba(239,68,68,0.08)" : "rgba(22,163,74,0.08)",
-                            color: co.is_active ? "#ef4444" : "#16a34a",
-                            border: `1px solid ${co.is_active ? "rgba(239,68,68,0.2)" : "rgba(22,163,74,0.2)"}` }}>
-                          {acting === co.id ? "…" : co.is_active ? "Deactivate" : "Activate"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
+                {["Code", "Company Name", "Location", "Contact", "Status", ""].map(h => (
+                  <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
                 ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between text-sm" style={{ color: "var(--c-muted)" }}>
-            <span>{total} compan{total === 1 ? "y" : "ies"}</span>
-            <div className="flex gap-1">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                className="px-3 py-1 rounded-lg text-xs" style={{ background: "var(--c-surface-alt)", border: "1px solid var(--c-border)" }}>← Prev</button>
-              <span className="px-3 py-1">{page} / {totalPages}</span>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                className="px-3 py-1 rounded-lg text-xs" style={{ background: "var(--c-surface-alt)", border: "1px solid var(--c-border)" }}>Next →</button>
-            </div>
-          </div>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((co, i) => (
+                <tr key={co.id} style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--c-border)" : "none" }}>
+                  <td style={{ padding: "12px 14px" }}>
+                    <span style={{ fontFamily: "monospace", fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }}>
+                      {co.company_code}
+                    </span>
+                  </td>
+                  <td style={{ padding: "12px 14px" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>{co.company_name}</div>
+                    {co.legal_name && <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 1 }}>{co.legal_name}</div>}
+                  </td>
+                  <td style={{ padding: "12px 14px", fontSize: 12, color: "var(--c-muted)" }}>
+                    {[co.city, co.country].filter(Boolean).join(", ") || "—"}
+                  </td>
+                  <td style={{ padding: "12px 14px", fontSize: 12, color: "var(--c-muted)" }}>
+                    {co.email || co.phone || "—"}
+                  </td>
+                  <td style={{ padding: "12px 14px" }}><StatusBadge active={co.is_active} /></td>
+                  <td style={{ padding: "12px 14px" }}>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <Link to={`/portal/${subdomain}/org/companies/${co.id}/edit`}
+                        style={{ fontSize: 12, color: "var(--c-accent)", fontWeight: 500, textDecoration: "none" }}>Edit</Link>
+                      <button onClick={() => toggleStatus(co)} disabled={acting === co.id}
+                        style={{ fontSize: 12, color: co.is_active ? "#f87171" : "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
+                        {acting === co.id ? "…" : co.is_active ? "Deactivate" : "Activate"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, fontSize: 13, color: "var(--c-muted)" }}>
+          <span>Page {page} of {totalPages} — {total} companies</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.5 : 1 }}>←</button>
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.5 : 1 }}>→</button>
+          </div>
+        </div>
+      )}
     </OrgLayout>
   );
 }

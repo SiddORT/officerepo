@@ -5,14 +5,11 @@ import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
 
 function StatusBadge({ active }) {
+  const s = active
+    ? { bg: "rgba(34,197,94,0.1)", color: "#4ade80" }
+    : { bg: "rgba(100,116,139,0.15)", color: "var(--c-muted)" };
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 4,
-      padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 600,
-      background: active ? "rgba(22,163,74,0.12)" : "rgba(107,114,128,0.12)",
-      color: active ? "#16a34a" : "#6b7280",
-    }}>
-      <span style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor", display: "inline-block" }} />
+    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: s.bg, color: s.color }}>
       {active ? "Active" : "Inactive"}
     </span>
   );
@@ -24,12 +21,14 @@ export default function DepartmentList() {
 
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
   useEffect(() => {
     portalOrgApi.listCompanies(subdomain, token, { page_size: 200 })
@@ -46,13 +45,12 @@ export default function DepartmentList() {
     try {
       const r = await portalOrgApi.listDepts(subdomain, token, {
         company_id: selectedCompany, page_size: 200,
-        search: search || undefined, status: status || undefined,
+        ...(statusFilter ? { status: statusFilter } : {}),
       });
       setRows(r.data.data?.data || []);
       setTotal(r.data.data?.total || 0);
-    } catch {
-    } finally { setLoading(false); }
-  }, [subdomain, token, selectedCompany, search, status]);
+    } catch {} finally { setLoading(false); }
+  }, [subdomain, token, selectedCompany, statusFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -61,112 +59,121 @@ export default function DepartmentList() {
     try {
       if (d.is_active) await portalOrgApi.deactivateDept(subdomain, token, d.id);
       else await portalOrgApi.activateDept(subdomain, token, d.id);
+      showToast(d.is_active ? "Department deactivated." : "Department activated.");
       load();
-    } catch (e) { alert(e?.response?.data?.detail || "Action failed."); }
+    } catch (e) { showToast(e?.response?.data?.detail || "Action failed.", false); }
     finally { setActing(null); }
   };
 
-  const companyName = companies.find(c => c.id === selectedCompany)?.company_name || "—";
+  const companyName = companies.find(c => c.id === selectedCompany)?.company_name || "";
 
   return (
     <OrgLayout title="Departments">
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-bold" style={{ color: "var(--c-heading)" }}>Departments</h2>
-            <p className="text-xs mt-0.5" style={{ color: "var(--c-muted)" }}>Functional units within a company</p>
-          </div>
-          {selectedCompany && (
-            <Link to={`/portal/${subdomain}/org/departments/new?company_id=${selectedCompany}`}
-              className="flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg"
-              style={{ background: "var(--c-primary)", color: "#fff" }}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-              Add Department
-            </Link>
-          )}
+      {toast && (
+        <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: toast.ok ? "#166534" : "#dc2626", color: "#fff", padding: "10px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>
+          {toast.msg}
         </div>
+      )}
 
-        <div className="flex flex-wrap gap-2">
-          <select value={selectedCompany} onChange={e => setSelectedCompany(e.target.value)}
-            className="text-sm rounded-lg px-3 py-2 font-medium"
-            style={{ background: "var(--c-input-bg)", border: "1px solid var(--c-border)", color: "var(--c-text)" }}>
-            {companies.length === 0 && <option value="">No companies</option>}
-            {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
-          </select>
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search departments…"
-            className="text-sm rounded-lg px-3 py-2"
-            style={{ background: "var(--c-input-bg)", border: "1px solid var(--c-border)", color: "var(--c-text)", minWidth: 200 }} />
-          <select value={status} onChange={e => setStatus(e.target.value)}
-            className="text-sm rounded-lg px-3 py-2"
-            style={{ background: "var(--c-input-bg)", border: "1px solid var(--c-border)", color: "var(--c-text)" }}>
-            <option value="">All statuses</option>
-            <option value="Active">Active</option>
-            <option value="Inactive">Inactive</option>
-          </select>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--c-text)" }}>Departments</h2>
+          <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--c-muted)" }}>Functional units within a company — {total} total</p>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
           {selectedCompany && (
             <Link to={`/portal/${subdomain}/org/departments/hierarchy/${selectedCompany}`}
-              className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg font-medium"
-              style={{ background: "var(--c-surface-alt)", border: "1px solid var(--c-border)", color: "var(--c-text)" }}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+              style={{ padding: "8px 14px", borderRadius: 7, fontWeight: 500, fontSize: 13, background: "var(--c-surface)", color: "var(--c-text)", textDecoration: "none", border: "1px solid var(--c-border)", whiteSpace: "nowrap" }}>
               View Tree
             </Link>
           )}
-        </div>
-
-        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--c-border)" }}>
-          {companies.length === 0 ? (
-            <div className="py-16 text-center text-sm" style={{ color: "var(--c-muted)" }}>
-              No companies found. <Link to={`/portal/${subdomain}/org/companies/new`} style={{ color: "var(--c-primary)" }}>Add a company first.</Link>
-            </div>
-          ) : loading ? (
-            <div className="py-16 text-center text-sm" style={{ color: "var(--c-muted)" }}>Loading…</div>
-          ) : rows.length === 0 ? (
-            <div className="py-16 text-center text-sm" style={{ color: "var(--c-muted)" }}>No departments in {companyName}.</div>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ background: "var(--c-surface-alt)", borderBottom: "1px solid var(--c-border)" }}>
-                  {["Code", "Department Name", "Parent", "Status", ""].map(h => (
-                    <th key={h} className="text-left px-4 py-3 font-semibold text-xs uppercase tracking-wide" style={{ color: "var(--c-muted)" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((d, i) => {
-                  const parent = rows.find(r => r.id === d.parent_id);
-                  return (
-                    <tr key={d.id} style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--c-border)" : "none", background: "var(--c-surface)" }}>
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-xs px-2 py-0.5 rounded" style={{ background: "var(--c-surface-alt)", color: "var(--c-muted)" }}>
-                          {d.department_code}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-medium" style={{ color: "var(--c-text)" }}>{d.department_name}</td>
-                      <td className="px-4 py-3 text-xs" style={{ color: "var(--c-muted)" }}>{parent?.department_name || "—"}</td>
-                      <td className="px-4 py-3"><StatusBadge active={d.is_active} /></td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2 justify-end">
-                          <Link to={`/portal/${subdomain}/org/departments/${d.id}/edit`}
-                            className="text-xs px-2.5 py-1 rounded-lg font-medium"
-                            style={{ background: "var(--c-surface-alt)", color: "var(--c-text)", border: "1px solid var(--c-border)" }}>Edit</Link>
-                          <button onClick={() => toggleStatus(d)} disabled={acting === d.id}
-                            className="text-xs px-2.5 py-1 rounded-lg font-medium"
-                            style={{ background: d.is_active ? "rgba(239,68,68,0.08)" : "rgba(22,163,74,0.08)",
-                              color: d.is_active ? "#ef4444" : "#16a34a",
-                              border: `1px solid ${d.is_active ? "rgba(239,68,68,0.2)" : "rgba(22,163,74,0.2)"}` }}>
-                            {acting === d.id ? "…" : d.is_active ? "Deactivate" : "Activate"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          {selectedCompany && (
+            <Link to={`/portal/${subdomain}/org/departments/new?company_id=${selectedCompany}`}
+              style={{ padding: "8px 16px", borderRadius: 7, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
+              + Add Department
+            </Link>
           )}
         </div>
-        {total > 0 && <p className="text-xs" style={{ color: "var(--c-muted)" }}>{total} department{total !== 1 ? "s" : ""} in {companyName}</p>}
+      </div>
+
+      {/* Filters row */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+        {/* Company selector */}
+        <select value={selectedCompany} onChange={e => setSelectedCompany(e.target.value)}
+          style={{ padding: "5px 10px", borderRadius: 6, fontSize: 13, fontWeight: 500, background: "var(--c-surface)", border: "1px solid var(--c-border)", color: "var(--c-text)", cursor: "pointer" }}>
+          {companies.length === 0 && <option value="">No companies</option>}
+          {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+        </select>
+
+        {/* Status filter pills */}
+        {["", "Active", "Inactive"].map(s => (
+          <button key={s} onClick={() => setStatusFilter(s)}
+            style={{
+              padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
+              background: statusFilter === s ? "var(--c-accent)" : "var(--c-surface)",
+              color: statusFilter === s ? "#fff" : "var(--c-muted)",
+              border: `1px solid ${statusFilter === s ? "var(--c-accent)" : "var(--c-border)"}`,
+            }}>
+            {s || "All"}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, overflow: "hidden" }}>
+        {companies.length === 0 ? (
+          <div style={{ padding: 60, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>
+            No companies found.{" "}
+            <Link to={`/portal/${subdomain}/org/companies/new`} style={{ color: "var(--c-accent)", fontWeight: 500 }}>Add a company first.</Link>
+          </div>
+        ) : loading ? (
+          <div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</div>
+        ) : rows.length === 0 ? (
+          <div style={{ padding: 60, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>No departments in {companyName}.</div>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
+                {["Code", "Department", "Parent", "Status", ""].map(h => (
+                  <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((d, i) => {
+                const parent = rows.find(r => r.id === d.parent_id);
+                return (
+                  <tr key={d.id} style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--c-border)" : "none" }}>
+                    <td style={{ padding: "12px 14px" }}>
+                      <span style={{ fontFamily: "monospace", fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }}>
+                        {d.department_code}
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px 14px" }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>{d.department_name}</div>
+                      {d.description && <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 1 }}>{d.description}</div>}
+                    </td>
+                    <td style={{ padding: "12px 14px", fontSize: 12, color: "var(--c-muted)" }}>
+                      {parent ? parent.department_name : <span style={{ color: "var(--c-muted)", opacity: 0.5 }}>—</span>}
+                    </td>
+                    <td style={{ padding: "12px 14px" }}><StatusBadge active={d.is_active} /></td>
+                    <td style={{ padding: "12px 14px" }}>
+                      <div style={{ display: "flex", gap: 10 }}>
+                        <Link to={`/portal/${subdomain}/org/departments/${d.id}/edit`}
+                          style={{ fontSize: 12, color: "var(--c-accent)", fontWeight: 500, textDecoration: "none" }}>Edit</Link>
+                        <button onClick={() => toggleStatus(d)} disabled={acting === d.id}
+                          style={{ fontSize: 12, color: d.is_active ? "#f87171" : "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
+                          {acting === d.id ? "…" : d.is_active ? "Deactivate" : "Activate"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </OrgLayout>
   );
