@@ -12,7 +12,6 @@ function CategoryModal({ initial, onClose, onSave }) {
     category_name: initial?.category_name || "",
     description: initial?.description || "",
     icon: initial?.icon || "",
-    display_order: initial?.display_order ?? 0,
   });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
@@ -102,16 +101,6 @@ function CategoryModal({ initial, onClose, onSave }) {
               placeholder="Optional description"
               rows={2}
               style={{ width: "100%", padding: "8px 10px", borderRadius: 7, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13, boxSizing: "border-box", resize: "vertical" }}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", marginBottom: 5 }}>
-              Display Order
-            </label>
-            <input
-              type="number" value={form.display_order} onChange={e => set("display_order", parseInt(e.target.value) || 0)}
-              style={{ width: 100, padding: "8px 10px", borderRadius: 7, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}
             />
           </div>
 
@@ -280,16 +269,16 @@ export default function AssetCategories() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ borderBottom: "1px solid var(--c-border)", background: "var(--c-surface2)" }}>
-              {["#", "Icon", "Name", "Code", "Description", "Order", "Status", "Actions"].map(h => (
+              {["#", "Icon", "Name", "Code", "Description", "Status", "Actions"].map(h => (
                 <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</td></tr>
+              <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</td></tr>
             ) : items.length === 0 ? (
-              <tr><td colSpan={8} style={{ padding: 50, textAlign: "center" }}>
+              <tr><td colSpan={7} style={{ padding: 50, textAlign: "center" }}>
                 <div style={{ fontSize: 28, marginBottom: 8 }}>📂</div>
                 <div style={{ fontSize: 13, color: "var(--c-muted)" }}>No categories found.</div>
                 <button onClick={() => setModal({ mode: "add" })} style={{
@@ -318,7 +307,6 @@ export default function AssetCategories() {
                 <td style={{ padding: "10px 14px", fontSize: 12, color: "var(--c-muted)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {item.description || <span style={{ opacity: 0.4 }}>—</span>}
                 </td>
-                <td style={{ padding: "10px 14px", fontSize: 12, color: "var(--c-muted)", textAlign: "center" }}>{item.display_order}</td>
                 <td style={{ padding: "10px 14px" }}>
                   <span style={{
                     fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 5,
