@@ -16,6 +16,11 @@ import LoginLogs from "./user-management/LoginLogs";
 import Sessions from "./user-management/Sessions";
 import ActivityLogs from "./user-management/ActivityLogs";
 
+// Employee Management pages
+import EmployeeList from "./employees/EmployeeList";
+import EmployeeForm from "./employees/EmployeeForm";
+import EmployeeDetails from "./employees/EmployeeDetails";
+
 // Organization Management pages
 import CompanyList from "./org-management/CompanyList";
 import CompanyForm from "./org-management/CompanyForm";
@@ -95,6 +100,15 @@ function PortalRoutes() {
       {/* Redirect /user-management root → users list */}
       <Route path="/user-management" element={<Navigate to={`/portal/${subdomain}/user-management/users`} replace />} />
       <Route path="/user-management/*" element={<Navigate to={`/portal/${subdomain}/user-management/users`} replace />} />
+
+      {/* ── Employee Management ──────────────────────────────────────── */}
+      <Route path="/employees"              element={<Protected><EmployeeList /></Protected>} />
+      <Route path="/employees/new"          element={<Protected><EmployeeForm editMode={false} /></Protected>} />
+      <Route path="/employees/:empId"       element={<Protected><EmployeeDetails /></Protected>} />
+      <Route path="/employees/:empId/edit"  element={<Protected><EmployeeForm editMode={true} /></Protected>} />
+
+      {/* Redirect /employees root */}
+      <Route path="/employees/*" element={<Navigate to={`/portal/${subdomain}/employees`} replace />} />
 
       {/* ── Organization Management ──────────────────────────────────── */}
       <Route path="/org/companies"          element={<Protected><CompanyList /></Protected>} />

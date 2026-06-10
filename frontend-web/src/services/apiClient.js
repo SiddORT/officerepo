@@ -430,6 +430,48 @@ export const portalOrgApi = {
   hierarchy: (sd, tk, companyId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/hierarchy/${companyId}`, { headers: { Authorization: `Bearer ${tk}` } }),
 };
 
+// ── Portal Employee Management ────────────────────────────────────────────────
+export const portalEmployeeApi = {
+  options:  (sd, tk) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/meta/options`, { headers: { Authorization: `Bearer ${tk}` } }),
+
+  list:     (sd, tk, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
+  get:      (sd, tk, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
+  profile:  (sd, tk, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${id}/profile`, { headers: { Authorization: `Bearer ${tk}` } }),
+  create:   (sd, tk, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employees`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  update:   (sd, tk, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  activate:   (sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${id}/activate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+  deactivate: (sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+
+  // Education
+  listEducation:   (sd, tk, eid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/education`, { headers: { Authorization: `Bearer ${tk}` } }),
+  addEducation:    (sd, tk, eid, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/education`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  updateEducation: (sd, tk, eid, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/education/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  deleteEducation: (sd, tk, eid, id) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/education/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
+
+  // Employment History
+  listHistory:   (sd, tk, eid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/employment-history`, { headers: { Authorization: `Bearer ${tk}` } }),
+  addHistory:    (sd, tk, eid, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/employment-history`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  updateHistory: (sd, tk, eid, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/employment-history/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  deleteHistory: (sd, tk, eid, id) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/employment-history/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
+
+  // Emergency Contacts
+  listContacts:   (sd, tk, eid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/emergency-contacts`, { headers: { Authorization: `Bearer ${tk}` } }),
+  addContact:     (sd, tk, eid, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/emergency-contacts`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  updateContact:  (sd, tk, eid, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/emergency-contacts/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  deleteContact:  (sd, tk, eid, id) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/emergency-contacts/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
+
+  // Bank Details
+  getBankDetails:    (sd, tk, eid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/bank-details`, { headers: { Authorization: `Bearer ${tk}` } }),
+  upsertBankDetails: (sd, tk, eid, data) => axios.put(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/bank-details`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+
+  // Government IDs
+  getGovIds:    (sd, tk, eid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/government-ids`, { headers: { Authorization: `Bearer ${tk}` } }),
+  upsertGovIds: (sd, tk, eid, data) => axios.put(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/government-ids`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+
+  // Activities
+  listActivities: (sd, tk, eid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/activities`, { headers: { Authorization: `Bearer ${tk}` } }),
+};
+
 // ── Organization Settings (superadmin — singleton platform identity) ─────────
 const ORG = "/superadmin/organization";
 

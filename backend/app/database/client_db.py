@@ -85,6 +85,7 @@ def provision_portal_schema(url: str) -> None:
     # Imports ensure models register themselves with ClientBase before create_all
     import backend.app.modules.portal_user_management.models  # noqa: F401
     import backend.app.modules.organization_management.models  # noqa: F401
+    import backend.app.modules.employee_management.models  # noqa: F401
     engine = _get_engine(url)
     ClientBase.metadata.create_all(engine)
     _provisioned.add(url)
