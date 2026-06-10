@@ -116,6 +116,13 @@ def get_navigation(
 
     from backend.app.modules.module_registry import repository as mod_repo
     from backend.app.modules.client_management import repository as client_repo
+    from backend.app.modules.client_management.service import _get_client_by_workspace_id
+
+    # Older tokens may not carry client_id — fall back to subdomain lookup so
+    # users with stale sessions still get a correct nav without needing to log out.
+    if not client_id:
+        client = _get_client_by_workspace_id(db, subdomain)
+        client_id = client.id if client else None
 
     enriched_map = mod_repo.get_enriched_map(db)
     enabled_modules = client_repo.list_modules(db, client_id)
