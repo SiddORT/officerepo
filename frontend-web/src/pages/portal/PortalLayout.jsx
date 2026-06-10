@@ -108,6 +108,16 @@ export default function PortalLayout({ children, title }) {
 
   useEffect(() => { loadNavigation(); }, [loadNavigation]);
 
+  // Re-fetch nav when the user switches back to this tab (e.g. after toggling
+  // a module in the superadmin panel) so the sidebar stays in sync.
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === "visible") loadNavigation();
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [loadNavigation]);
+
   useEffect(() => {
     function onClick(e) {
       if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
@@ -244,9 +254,17 @@ export default function PortalLayout({ children, title }) {
               )}
               {navModules.map((mod) => {
                 const modRoute = mod.route || mod.code;
-                const href = `/portal/${subdomain}/${modRoute}`;
-                const isModActive = location.pathname.startsWith(href);
                 const subItems = MODULE_SUB_NAV[modRoute] || [];
+                // When sub-items exist, navigate to the first one (bare module route has no page).
+                // When no sub-items, navigate directly to the module route.
+                const firstSub = subItems[0];
+                const href = firstSub
+                  ? `/portal/${subdomain}/${firstSub.path}`
+                  : `/portal/${subdomain}/${modRoute}`;
+                // Module is "active" if we're anywhere under its route OR on any of its sub-paths.
+                const modBase = `/portal/${subdomain}/${modRoute}`;
+                const isModActive = location.pathname.startsWith(modBase)
+                  || subItems.some(s => location.pathname.startsWith(`/portal/${subdomain}/${s.path}`));
 
                 return (
                   <div key={mod.code}>
