@@ -115,9 +115,13 @@ def _migrate_columns(engine: Engine) -> None:
                 conn.rollback()
 
 
-def provision_portal_schema(url: str) -> None:
-    """Create all ClientBase tables on the client DB (idempotent — uses CREATE IF NOT EXISTS)."""
-    if url in _provisioned:
+def provision_portal_schema(url: str, *, force: bool = False) -> None:
+    """Create all ClientBase tables on the client DB (idempotent — uses CREATE IF NOT EXISTS).
+
+    force=True bypasses the per-process cache so newly-enabled modules get their
+    tables created even when the DB was provisioned earlier in this process.
+    """
+    if not force and url in _provisioned:
         return
     # Imports ensure models register themselves with ClientBase before create_all
     import backend.app.modules.portal_user_management.models  # noqa: F401

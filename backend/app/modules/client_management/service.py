@@ -666,6 +666,19 @@ def toggle_module(db: Session, client_id: str, payload: ModuleToggleRequest, *, 
                      metadata={"module": payload.module_name})
     db.commit()
     db.refresh(module)
+
+    # When enabling a module, ensure its tables exist on the client DB (idempotent).
+    # We pass force=True so the cache never hides a missing table after a fresh enable.
+    # On disable we never touch the schema — data is always preserved.
+    if payload.is_enabled:
+        try:
+            from backend.app.database.client_db import build_client_db_url, provision_portal_schema
+            conn = repo.get_db_connection(db, client_id)
+            if conn and conn.database_status == c.DB_STATUS_ACTIVE:
+                provision_portal_schema(build_client_db_url(conn), force=True)
+        except Exception:
+            pass  # never block the enable action
+
     return module_to_dict(module)
 
 
