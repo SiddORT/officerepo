@@ -29,6 +29,17 @@ function StatusBadge({ status, isActive }) {
   );
 }
 
+function tenure(dateStr) {
+  const start = new Date(dateStr);
+  const now = new Date();
+  const months = (now.getFullYear() - start.getFullYear()) * 12 + now.getMonth() - start.getMonth();
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  const mo = new Date(dateStr).toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+  const dur = y > 0 ? `${y}y${m > 0 ? ` ${m}m` : ""}` : m > 0 ? `${m}m` : "<1m";
+  return `${mo} · ${dur}`;
+}
+
 function Avatar({ name, size = 32 }) {
   const initials = (name || "?").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
   return (
@@ -49,7 +60,7 @@ export default function EmployeeList() {
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const pageSize = 50;
+  const PAGE_SIZE = 20;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -80,7 +91,7 @@ export default function EmployeeList() {
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const params = { page, page_size: pageSize };
+      const params = { page, page_size: PAGE_SIZE };
       if (search) params.search = search;
       if (filterStatus) params.employment_status = filterStatus;
       if (filterCompany) params.company_id = filterCompany;
@@ -112,7 +123,7 @@ export default function EmployeeList() {
     } finally { setActionLoading(null); }
   };
 
-  const totalPages = Math.ceil(total / pageSize);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
   const statuses = options.employment_statuses || [];
   const types = options.employment_types || [];
 
@@ -185,7 +196,7 @@ export default function EmployeeList() {
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--c-border)", background: "var(--c-surface2)" }}>
-                  {["#", "Employee", "Code", "Department", "Type", "Joining Date", "Status", ""].map(h => (
+                  {["#", "Employee", "Code", "Department", "Designation", "Since", "Status", ""].map(h => (
                     <th key={h} style={{ padding: "10px 16px", textAlign: h === "#" ? "center" : "left", fontSize: 11, fontWeight: 600, color: "var(--c-text2)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", width: h === "#" ? 40 : undefined }}>{h}</th>
                   ))}
                 </tr>
@@ -195,7 +206,7 @@ export default function EmployeeList() {
                   <tr key={emp.id} style={{ borderBottom: "1px solid var(--c-border)", transition: "background 0.15s" }}
                     onMouseEnter={e => e.currentTarget.style.background = "var(--c-surface2)"}
                     onMouseLeave={e => e.currentTarget.style.background = ""}>
-                    <td style={{ padding: "12px 16px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * pageSize + i + 1}</td>
+                    <td style={{ padding: "12px 16px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
                     <td style={{ padding: "12px 16px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <Avatar name={emp.full_name} />
@@ -206,10 +217,10 @@ export default function EmployeeList() {
                       </div>
                     </td>
                     <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)", fontFamily: "monospace" }}>{emp.employee_code}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)" }}>{emp.employment_type || "—"}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)" }}>{emp.employee_category || "—"}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)" }}>
-                      {emp.joining_date ? new Date(emp.joining_date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
+                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)" }}>{emp.department_name || <span style={{ opacity: 0.4 }}>—</span>}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)" }}>{emp.designation_name || <span style={{ opacity: 0.4 }}>—</span>}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)", whiteSpace: "nowrap" }}>
+                      {emp.joining_date ? tenure(emp.joining_date) : <span style={{ opacity: 0.4 }}>—</span>}
                     </td>
                     <td style={{ padding: "12px 16px" }}>
                       <StatusBadge status={emp.employment_status} isActive={emp.is_active} />

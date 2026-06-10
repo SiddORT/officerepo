@@ -203,6 +203,8 @@ export default function DepartmentList() {
   const [statusFilter, setStatusFilter] = useState("");
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState(null);
   const [seeding, setSeeding] = useState(false);
@@ -225,14 +227,15 @@ export default function DepartmentList() {
     setLoading(true);
     try {
       const r = await portalOrgApi.listDepts(subdomain, token, {
-        company_id: selectedCompany, page_size: 200,
+        company_id: selectedCompany, page, page_size: PAGE_SIZE,
         ...(statusFilter ? { status: statusFilter } : {}),
       });
       setRows(r.data.data?.data || []);
       setTotal(r.data.data?.total || 0);
     } catch {} finally { setLoading(false); }
-  }, [subdomain, token, selectedCompany, statusFilter]);
+  }, [subdomain, token, selectedCompany, statusFilter, page]);
 
+  useEffect(() => { setPage(1); }, [selectedCompany, statusFilter]);
   useEffect(() => { load(); }, [load]);
 
   const toggleStatus = async (d) => {
@@ -372,7 +375,7 @@ export default function DepartmentList() {
                 const head = d.head_employee;
                 return (
                   <tr key={d.id} style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--c-border)" : "none" }}>
-                    <td style={{ padding: "12px 14px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{i + 1}</td>
+                    <td style={{ padding: "12px 14px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
                     <td style={{ padding: "12px 14px" }}>
                       <span style={{ fontFamily: "monospace", fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }}>
                         {d.department_code}
@@ -422,6 +425,18 @@ export default function DepartmentList() {
           </table>
         )}
       </div>
+
+      {Math.ceil(total / PAGE_SIZE) > 1 && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, fontSize: 13, color: "var(--c-text2)" }}>
+          <span>Page {page} of {Math.ceil(total / PAGE_SIZE)}</span>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+              style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 12 }}>← Prev</button>
+            <button onClick={() => setPage(p => Math.min(Math.ceil(total / PAGE_SIZE), p + 1))} disabled={page === Math.ceil(total / PAGE_SIZE)}
+              style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 12 }}>Next →</button>
+          </div>
+        </div>
+      )}
     </OrgLayout>
   );
 }

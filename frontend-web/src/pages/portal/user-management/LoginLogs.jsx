@@ -29,7 +29,7 @@ export default function LoginLogs() {
   const [page, setPage] = useState(1);
   const [eventFilter, setEventFilter] = useState("");
   const [loading, setLoading] = useState(true);
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 20;
 
   const load = useCallback(async () => {
     setLoading(true);

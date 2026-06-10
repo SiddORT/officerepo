@@ -40,7 +40,7 @@ export default function ActivityLogs() {
   const [page, setPage] = useState(1);
   const [viewMode, setViewMode] = useState("timeline");
   const [loading, setLoading] = useState(true);
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 20;
 
   const load = useCallback(async () => {
     setLoading(true);

@@ -13,7 +13,7 @@ export default function Sessions() {
   const [activeOnly, setActiveOnly] = useState(true);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
-  const PAGE_SIZE = 50;
+  const PAGE_SIZE = 20;
 
   const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 

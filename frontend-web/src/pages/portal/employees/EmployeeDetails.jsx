@@ -96,6 +96,18 @@ function StatusBadge({ status }) {
   return <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: 999, background: s.bg, color: s.color }}>{status}</span>;
 }
 
+function tenureDetail(dateStr) {
+  const start = new Date(dateStr);
+  const now = new Date();
+  const months = (now.getFullYear() - start.getFullYear()) * 12 + now.getMonth() - start.getMonth();
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  const parts = [];
+  if (y > 0) parts.push(`${y} yr${y > 1 ? "s" : ""}`);
+  if (m > 0) parts.push(`${m} mo`);
+  return parts.length ? parts.join(" ") : "< 1 mo";
+}
+
 function Avatar({ name, size = 56 }) {
   const initials = (name || "?").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
   return (
@@ -649,6 +661,23 @@ export default function EmployeeDetails() {
           <div style={{ fontSize: 13, color: "var(--c-muted)", marginTop: 4 }}>
             <span style={{ fontFamily: "monospace", color: "var(--c-accent)", marginRight: 12 }}>{emp.employee_code}</span>
             {emp.official_email}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+            {emp.designation_name && (
+              <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 999, background: "rgba(0,174,236,0.1)", color: "var(--c-accent)", border: "1px solid rgba(0,174,236,0.2)", fontWeight: 500 }}>
+                💼 {emp.designation_name}
+              </span>
+            )}
+            {emp.department_name && (
+              <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 999, background: "rgba(100,116,139,0.12)", color: "var(--c-text2)", border: "1px solid var(--c-border)", fontWeight: 500 }}>
+                🏢 {emp.department_name}
+              </span>
+            )}
+            {emp.joining_date && (
+              <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 999, background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)", fontWeight: 500 }}>
+                📅 Since {new Date(emp.joining_date).toLocaleDateString("en-IN", { month: "short", year: "numeric" })} · {tenureDetail(emp.joining_date)}
+              </span>
+            )}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
