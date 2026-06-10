@@ -280,16 +280,16 @@ export default function AssetCategories() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ borderBottom: "1px solid var(--c-border)", background: "var(--c-surface2)" }}>
-              {["Icon", "Name", "Code", "Description", "Order", "Status", "Actions"].map(h => (
+              {["#", "Icon", "Name", "Code", "Description", "Order", "Status", "Actions"].map(h => (
                 <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</td></tr>
+              <tr><td colSpan={8} style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</td></tr>
             ) : items.length === 0 ? (
-              <tr><td colSpan={7} style={{ padding: 50, textAlign: "center" }}>
+              <tr><td colSpan={8} style={{ padding: 50, textAlign: "center" }}>
                 <div style={{ fontSize: 28, marginBottom: 8 }}>📂</div>
                 <div style={{ fontSize: 13, color: "var(--c-muted)" }}>No categories found.</div>
                 <button onClick={() => setModal({ mode: "add" })} style={{
@@ -305,6 +305,9 @@ export default function AssetCategories() {
               }}
                 onMouseEnter={e => e.currentTarget.style.background = "var(--c-surface2)"}
                 onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <td style={{ padding: "10px 14px", fontSize: 12, color: "var(--c-muted)", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
+                  {(page - 1) * PAGE_SIZE + i + 1}
+                </td>
                 <td style={{ padding: "10px 14px", fontSize: 22, lineHeight: 1 }}>{item.icon || "📦"}</td>
                 <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>{item.category_name}</td>
                 <td style={{ padding: "10px 14px" }}>
