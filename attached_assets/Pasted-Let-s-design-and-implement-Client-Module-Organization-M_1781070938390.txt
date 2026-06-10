@@ -1,0 +1,498 @@
+Let's design and implement Client Module → Organization Management → Companies for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Architecture:
+
+Client
+↓
+Companies
+↓
+Departments
+↓
+Designations
+↓
+Employees
+↓
+Assets
+
+Each Client has:
+
+* Dedicated Database
+* Dedicated Users
+* Dedicated Modules
+
+A Client can own multiple Companies.
+
+Examples:
+
+ABC Group
+├── ABC Technologies Pvt Ltd
+├── ABC Consulting LLP
+└── ABC Logistics Pvt Ltd
+
+The Company entity is the foundation for all future modules including:
+
+* Departments
+* Designations
+* Employees
+* Recruitment
+* Onboarding
+* Assets
+* Payroll
+* Compliance
+* Billing
+
+This module must be developed as a reusable business module that can be enabled or disabled through Client Module Management.
+
+When enabled:
+
+* Visible in Sidebar
+* Routes Accessible
+* APIs Accessible
+
+When disabled:
+
+* Hidden from Sidebar
+* Routes Blocked
+* APIs Blocked
+
+Use existing:
+
+client_modules
+
+module activation framework.
+
+---
+
+# Module Information
+
+Module Name:
+
+Organization Management
+
+Module Code:
+
+ORGANIZATION
+
+Navigation:
+
+Organization Management
+└── Companies
+
+---
+
+# Companies
+
+A Client can manage multiple Companies.
+
+Examples:
+
+ABC Technologies Pvt Ltd
+
+ABC Consulting LLP
+
+ABC Logistics Pvt Ltd
+
+---
+
+# Company Form
+
+## General Information
+
+* Company Code *
+* Company Name *
+* Legal Name *
+* Display Name
+* Company Type *
+* Industry
+* Sub Industry
+* Date Of Incorporation
+* Website
+* Company Description
+
+Company Types:
+
+* Private Limited
+* Public Limited
+* LLP
+* Partnership
+* Proprietorship
+* NGO
+* Other
+
+---
+
+## Registration Information
+
+* Registration Number
+* CIN Number
+* PAN Number
+* TAN Number
+
+MSME
+
+* MSME Registered
+* MSME Number
+
+---
+
+## Tax Information
+
+* GST Registered
+* GST Number
+* GST Registration Date
+* Tax Identification Number
+* Tax Category
+
+---
+
+## Registered Address
+
+* Address Line 1
+* Address Line 2
+* City
+* State
+* Country
+* Postal Code
+
+---
+
+## Office Address
+
+* Same As Registered Address
+
+If unchecked:
+
+* Address Line 1
+* Address Line 2
+* City
+* State
+* Country
+* Postal Code
+
+---
+
+## Contact Information
+
+* Primary Contact Person
+* Primary Email
+* Primary Mobile
+* Landline
+* Support Email
+* HR Email
+* Accounts Email
+* Website
+
+---
+
+## Branding
+
+* Company Logo
+* Company Icon (Future)
+* Primary Brand Color (Future)
+* Secondary Brand Color (Future)
+
+Current Storage:
+
+* Local Storage
+
+Future:
+
+* AWS S3
+
+Design file storage abstraction accordingly.
+
+---
+
+## Company Documents
+
+Support multiple document uploads.
+
+Document Types:
+
+### Registration Documents
+
+* Certificate Of Incorporation
+* Registration Certificate
+* Partnership Deed
+
+### Tax Documents
+
+* GST Certificate
+* PAN Copy
+* TAN Certificate
+
+### MSME Documents
+
+* MSME Certificate
+
+### Other Documents
+
+* Trade License
+* Professional Tax Registration
+* Shop & Establishment License
+* Other Documents
+
+For every document store:
+
+* Document Type
+* Document Number
+* Issue Date
+* Expiry Date
+* Remarks
+* File
+
+---
+
+## Status
+
+* Draft
+* Active
+* Inactive
+* Suspended
+* Closed
+
+---
+
+# Functional Design
+
+Provide:
+
+* Purpose
+* Features
+* Business Rules
+* Multi-Company Support
+* Client Isolation Rules
+
+---
+
+# UI Design
+
+Design:
+
+## Company List
+
+* Search
+* Filters
+* Status Filter
+* Pagination
+
+Columns:
+
+* Company Code
+* Company Name
+* Company Type
+* GST Number
+* Status
+
+Actions:
+
+* View
+* Edit
+* Activate
+* Deactivate
+
+---
+
+## Create Company
+
+Provide:
+
+* Form Layout
+* Section Layout
+* Upload Components
+* Responsive Design
+* Dark Mode Design
+
+---
+
+## Company Details
+
+Tabs:
+
+* Overview
+* Addresses
+* Documents
+* Activities
+
+---
+
+# Database Design
+
+Design tables:
+
+companies
+
+company_addresses
+
+company_documents
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+
+Relationships:
+
+Company
+1:N Addresses
+
+Company
+1:N Documents
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_001_companies
+2026_002_company_addresses
+2026_003_company_documents
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Companies
+
+* Create Company
+* Update Company
+* Get Company
+* List Companies
+* Activate Company
+* Deactivate Company
+
+Documents
+
+* Upload Document
+* Download Document
+* Delete Document
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Company Repository
+* Company Document Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Company Service
+* Company Document Service
+
+Include:
+
+* Validation Logic
+* Business Rules
+* File Upload Handling
+
+---
+
+# Validation Rules
+
+Company
+
+* Company Code Unique
+* Company Name Required
+* Legal Name Required
+
+GST
+
+* GST Number Validation
+
+PAN
+
+* PAN Format Validation
+
+MSME
+
+* MSME Number Validation
+
+Logo
+
+* Image Only
+* Max File Size
+
+Documents
+
+* Allowed File Types
+* Max File Size
+
+---
+
+# Activity Logging
+
+Track:
+
+* Company Created
+* Company Updated
+* Company Activated
+* Company Deactivated
+* Document Uploaded
+* Document Deleted
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Error Handling
+
+Provide:
+
+* Duplicate Company Code
+* Duplicate GST Number
+* Invalid PAN
+* Invalid GST Number
+* Invalid Document Upload
+* Missing Mandatory Fields
+
+---
+
+# Future Enhancements
+
+* Branch Management
+* Cost Centers
+* Business Units
+* Organization Charts
+* Multi-Country Operations
+* Compliance Tracking
+* Expiring Document Alerts
+* Custom Branding
+
+Generate production-ready specifications suitable for direct development in Office Repo Client Panel.
