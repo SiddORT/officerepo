@@ -76,6 +76,7 @@ from backend.app.modules.organization_management.router import router as portal_
 from backend.app.modules.employee_management.router import router as portal_emp_router
 from backend.app.modules.testing.database_provisioning.router import router as db_provisioning_router
 from backend.app.modules.asset_management.router import router as asset_router
+from backend.app.modules.asset_management.portal_router import router as portal_asset_router
 from backend.app.platform.superadmin.rotation_router import router as rotation_router
 from backend.app.platform.superadmin.rotation_status_router import router as rotation_status_router
 
@@ -481,6 +482,7 @@ def create_app(app_settings=settings) -> FastAPI:
 
     # Client Portal — Employee Management (portal JWT + module gate)
     app.include_router(portal_emp_router, prefix=f"{prefix}/portal", tags=["portal employee management"])
+    app.include_router(portal_asset_router, prefix=f"{prefix}/portal", tags=["portal asset management"])
 
     # Asset Management Setup (superadmin — global platform definitions)
     app.include_router(asset_router, prefix=f"{prefix}/superadmin/assets", tags=["asset management"])

@@ -503,6 +503,18 @@ export const orgApi = {
   update: (data) => apiClient.patch(ORG, data),
 };
 
+// ── Portal Asset Management (portal JWT — read-only catalog view) ─────────────
+const _ph = (sd, tk) => ({ headers: { Authorization: `Bearer ${tk}` } });
+const _php = (sd, tk, p) => ({ headers: { Authorization: `Bearer ${tk}` }, params: p });
+
+export const portalAssetApi = {
+  metaOptions:      (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/meta/options`, _ph(sd, tk)),
+  listCategories:   (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/categories`, _php(sd, tk, p)),
+  listSubCategories:(sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/sub-categories`, _php(sd, tk, p)),
+  listCatalog:      (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/catalog`, _php(sd, tk, p)),
+  getCatalogItem:   (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/catalog/${id}`, _ph(sd, tk)),
+};
+
 // ── Asset Management Setup (superadmin — categories, sub-categories, masters) ─
 const ASSETS = "/superadmin/assets";
 

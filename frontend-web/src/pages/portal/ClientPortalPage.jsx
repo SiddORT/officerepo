@@ -21,6 +21,10 @@ import EmployeeList from "./employees/EmployeeList";
 import EmployeeForm from "./employees/EmployeeForm";
 import EmployeeDetails from "./employees/EmployeeDetails";
 
+// Asset Management pages
+import AssetCatalog from "./assets/AssetCatalog";
+import AssetCategories from "./assets/AssetCategories";
+
 // Organization Management pages
 import CompanyList from "./org-management/CompanyList";
 import CompanyForm from "./org-management/CompanyForm";
@@ -136,6 +140,12 @@ function PortalRoutes() {
       {/* Redirect /org root → companies */}
       <Route path="/org" element={<Navigate to={`/portal/${subdomain}/org/companies`} replace />} />
       <Route path="/org/*" element={<Navigate to={`/portal/${subdomain}/org/companies`} replace />} />
+
+      {/* ── Asset Management ─────────────────────────────────────────── */}
+      <Route path="/assets/catalog"    element={<Protected><AssetCatalog /></Protected>} />
+      <Route path="/assets/categories" element={<Protected><AssetCategories /></Protected>} />
+      <Route path="/assets"   element={<Navigate to={`/portal/${subdomain}/assets/catalog`} replace />} />
+      <Route path="/assets/*" element={<Navigate to={`/portal/${subdomain}/assets/catalog`} replace />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to={user ? `/portal/${subdomain}/dashboard` : `/portal/${subdomain}`} replace />} />
