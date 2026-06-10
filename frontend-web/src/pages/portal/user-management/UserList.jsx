@@ -58,6 +58,7 @@ export default function UserList() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
@@ -75,7 +76,9 @@ export default function UserList() {
     setLoading(true); setError("");
     try {
       const res = await portalUserMgmtApi.listUsers(subdomain, token, {
-        page, page_size: PAGE_SIZE, ...(statusFilter ? { status: statusFilter } : {}),
+        page, page_size: PAGE_SIZE,
+        ...(statusFilter ? { status: statusFilter } : {}),
+        ...(search ? { search } : {}),
       });
       setUsers(res.data?.data?.data || []);
       setTotal(res.data?.data?.total || 0);
@@ -84,7 +87,7 @@ export default function UserList() {
     } finally {
       setLoading(false);
     }
-  }, [subdomain, token, page, statusFilter]);
+  }, [subdomain, token, page, statusFilter, search]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -164,18 +167,19 @@ export default function UserList() {
       </div>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        {["", "Active", "Inactive", "Invited"].map(s => (
-          <button key={s} onClick={() => { setStatusFilter(s); setPage(1); }}
-            style={{
-              padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
-              background: statusFilter === s ? "var(--c-accent)" : "var(--c-surface)",
-              color: statusFilter === s ? "#fff" : "var(--c-muted)",
-              border: `1px solid ${statusFilter === s ? "var(--c-accent)" : "var(--c-border)"}`,
-            }}>
-            {s || "All"}
-          </button>
-        ))}
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+        <input
+          value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
+          placeholder="Search users…"
+          style={{ flex: 1, minWidth: 180, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}
+        />
+        <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}>
+          <option value="">All statuses</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+          <option value="Invited">Invited</option>
+        </select>
       </div>
 
       {error && (
@@ -284,16 +288,16 @@ export default function UserList() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, fontSize: 13, color: "var(--c-muted)" }}>
-          <span>Page {page} of {totalPages} — {total} users</span>
-          <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, fontSize: 12, color: "var(--c-muted)" }}>
+          <span>{total} total · page {page} of {totalPages}</span>
+          <div style={{ display: "flex", gap: 6 }}>
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.5 : 1 }}>
-              ←
+              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.4 : 1 }}>
+              ← Prev
             </button>
             <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.5 : 1 }}>
-              →
+              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.4 : 1 }}>
+              Next →
             </button>
           </div>
         </div>

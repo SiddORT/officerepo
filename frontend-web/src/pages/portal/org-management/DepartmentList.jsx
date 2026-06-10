@@ -201,6 +201,7 @@ export default function DepartmentList() {
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [search, setSearch] = useState("");
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -229,11 +230,12 @@ export default function DepartmentList() {
       const r = await portalOrgApi.listDepts(subdomain, token, {
         company_id: selectedCompany, page, page_size: PAGE_SIZE,
         ...(statusFilter ? { status: statusFilter } : {}),
+        ...(search ? { search } : {}),
       });
       setRows(r.data.data?.data || []);
       setTotal(r.data.data?.total || 0);
     } catch {} finally { setLoading(false); }
-  }, [subdomain, token, selectedCompany, statusFilter, page]);
+  }, [subdomain, token, selectedCompany, statusFilter, search, page]);
 
   useEffect(() => { setPage(1); }, [selectedCompany, statusFilter]);
   useEffect(() => { load(); }, [load]);
@@ -317,24 +319,23 @@ export default function DepartmentList() {
       </div>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-        <select value={selectedCompany} onChange={e => setSelectedCompany(e.target.value)}
-          style={{ padding: "5px 10px", borderRadius: 6, fontSize: 13, fontWeight: 500, background: "var(--c-surface)", border: "1px solid var(--c-border)", color: "var(--c-text)", cursor: "pointer" }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+        <input
+          value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
+          placeholder="Search departments…"
+          style={{ flex: 1, minWidth: 180, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}
+        />
+        <select value={selectedCompany} onChange={e => { setSelectedCompany(e.target.value); setPage(1); }}
+          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}>
           {companies.length === 0 && <option value="">No companies</option>}
           {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
         </select>
-
-        {["", "Active", "Inactive"].map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)}
-            style={{
-              padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
-              background: statusFilter === s ? "var(--c-accent)" : "var(--c-surface)",
-              color: statusFilter === s ? "#fff" : "var(--c-muted)",
-              border: `1px solid ${statusFilter === s ? "var(--c-accent)" : "var(--c-border)"}`,
-            }}>
-            {s || "All"}
-          </button>
-        ))}
+        <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}>
+          <option value="">All statuses</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
       </div>
 
       {/* Table */}
@@ -427,13 +428,13 @@ export default function DepartmentList() {
       </div>
 
       {Math.ceil(total / PAGE_SIZE) > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, fontSize: 13, color: "var(--c-text2)" }}>
-          <span>Page {page} of {Math.ceil(total / PAGE_SIZE)}</span>
-          <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, fontSize: 12, color: "var(--c-muted)" }}>
+          <span>{total} total · page {page} of {Math.ceil(total / PAGE_SIZE)}</span>
+          <div style={{ display: "flex", gap: 6 }}>
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-              style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 12 }}>← Prev</button>
+              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", opacity: page === 1 ? 0.4 : 1 }}>← Prev</button>
             <button onClick={() => setPage(p => Math.min(Math.ceil(total / PAGE_SIZE), p + 1))} disabled={page === Math.ceil(total / PAGE_SIZE)}
-              style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 12 }}>Next →</button>
+              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", opacity: page === Math.ceil(total / PAGE_SIZE) ? 0.4 : 1 }}>Next →</button>
           </div>
         </div>
       )}

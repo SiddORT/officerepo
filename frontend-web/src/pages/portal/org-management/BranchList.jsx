@@ -213,26 +213,21 @@ export default function BranchList() {
       </div>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
         <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search branch name or code…"
-          style={{ padding: "5px 10px", borderRadius: 6, fontSize: 13, background: "var(--c-surface)", border: "1px solid var(--c-border)", color: "var(--c-text)", minWidth: 200 }} />
+          style={{ flex: 1, minWidth: 180, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }} />
         <select value={filterCompany} onChange={e => { setFilterCompany(e.target.value); setPage(1); }}
-          style={{ padding: "5px 10px", borderRadius: 6, fontSize: 13, fontWeight: 500, background: "var(--c-surface)", border: "1px solid var(--c-border)", color: "var(--c-text)", cursor: "pointer" }}>
+          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}>
           <option value="">All Companies</option>
           {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
         </select>
-        {["", "Active", "Inactive"].map(s => (
-          <button key={s} onClick={() => { setFilterStatus(s); setPage(1); }}
-            style={{
-              padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
-              background: filterStatus === s ? "var(--c-accent)" : "var(--c-surface)",
-              color: filterStatus === s ? "#fff" : "var(--c-muted)",
-              border: `1px solid ${filterStatus === s ? "var(--c-accent)" : "var(--c-border)"}`,
-            }}>
-            {s || "All"}
-          </button>
-        ))}
+        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}
+          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}>
+          <option value="">All statuses</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
       </div>
 
       {error && <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{error}</div>}
@@ -307,11 +302,11 @@ export default function BranchList() {
       </div>
 
       {totalPages > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, fontSize: 13, color: "var(--c-text2)" }}>
-          <span>Page {page} of {totalPages}</span>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 12 }}>← Prev</button>
-            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 12 }}>Next →</button>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, fontSize: 12, color: "var(--c-muted)" }}>
+          <span>{total} total · page {page} of {totalPages}</span>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", opacity: page === 1 ? 0.4 : 1 }}>← Prev</button>
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", opacity: page === totalPages ? 0.4 : 1 }}>Next →</button>
           </div>
         </div>
       )}
