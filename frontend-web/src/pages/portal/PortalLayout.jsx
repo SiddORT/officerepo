@@ -96,12 +96,18 @@ export default function PortalLayout({ children, title }) {
   const [workspaceName, setWorkspaceName] = useState(subdomain.charAt(0).toUpperCase() + subdomain.slice(1));
 
   const loadNavigation = useCallback(async () => {
-    if (!token || !subdomain) return;
+    if (!token || !subdomain) {
+      console.log("[PortalNav] skip — no token or subdomain", { token: !!token, subdomain });
+      return;
+    }
     try {
       const res = await portalNavigationApi.getNavigation(subdomain, token);
-      setNavModules(res.data?.modules || []);
+      const mods = res.data?.modules || [];
+      console.log("[PortalNav] loaded", mods.map(m => m.code));
+      setNavModules(mods);
       if (res.data?.workspace_name) setWorkspaceName(res.data.workspace_name);
-    } catch {
+    } catch (err) {
+      console.error("[PortalNav] failed", err?.response?.status, err?.message);
       setNavModules([]);
     }
   }, [token, subdomain]);
