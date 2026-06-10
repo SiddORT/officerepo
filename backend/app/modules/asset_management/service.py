@@ -25,6 +25,7 @@ def _cat_dict(cat: AssetCategory, sub_count: int = 0) -> Dict[str, Any]:
         "icon": cat.icon,
         "display_order": cat.display_order,
         "is_active": cat.is_active,
+        "status": "Active" if cat.is_active else "Inactive",
         "sub_category_count": sub_count,
         "created_at": cat.created_at,
         "updated_at": cat.updated_at,
@@ -41,6 +42,7 @@ def _subcat_dict(sc: AssetSubCategory, category_name: Optional[str] = None
         "category_name": category_name,
         "description": sc.description,
         "is_active": sc.is_active,
+        "status": "Active" if sc.is_active else "Inactive",
         "created_at": sc.created_at,
         "updated_at": sc.updated_at,
     }
