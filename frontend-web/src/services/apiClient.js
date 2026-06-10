@@ -503,6 +503,34 @@ export const orgApi = {
   update: (data) => apiClient.patch(ORG, data),
 };
 
+// ── Asset Management Setup (superadmin — categories, sub-categories, masters) ─
+const ASSETS = "/superadmin/assets";
+
+export const assetMgmtApi = {
+  metaOptions: () => apiClient.get(`${ASSETS}/meta/options`),
+
+  listCategories: (params) => apiClient.get(`${ASSETS}/categories`, { params }),
+  getCategory: (id) => apiClient.get(`${ASSETS}/categories/${id}`),
+  createCategory: (data) => apiClient.post(`${ASSETS}/categories`, data),
+  updateCategory: (id, data) => apiClient.patch(`${ASSETS}/categories/${id}`, data),
+  activateCategory: (id) => apiClient.post(`${ASSETS}/categories/${id}/activate`),
+  deactivateCategory: (id) => apiClient.post(`${ASSETS}/categories/${id}/deactivate`),
+
+  listSubCategories: (params) => apiClient.get(`${ASSETS}/sub-categories`, { params }),
+  getSubCategory: (id) => apiClient.get(`${ASSETS}/sub-categories/${id}`),
+  createSubCategory: (data) => apiClient.post(`${ASSETS}/sub-categories`, data),
+  updateSubCategory: (id, data) => apiClient.patch(`${ASSETS}/sub-categories/${id}`, data),
+  activateSubCategory: (id) => apiClient.post(`${ASSETS}/sub-categories/${id}/activate`),
+  deactivateSubCategory: (id) => apiClient.post(`${ASSETS}/sub-categories/${id}/deactivate`),
+
+  listMasters: (params) => apiClient.get(`${ASSETS}/masters`, { params }),
+  getMaster: (id) => apiClient.get(`${ASSETS}/masters/${id}`),
+  createMaster: (data) => apiClient.post(`${ASSETS}/masters`, data),
+  updateMaster: (id, data) => apiClient.patch(`${ASSETS}/masters/${id}`, data),
+  activateMaster: (id) => apiClient.post(`${ASSETS}/masters/${id}/activate`),
+  deactivateMaster: (id) => apiClient.post(`${ASSETS}/masters/${id}/deactivate`),
+};
+
 // ── Currency Management (superadmin — global platform settings) ───────────────
 const CURRENCIES = "/superadmin/currencies";
 

@@ -1,0 +1,427 @@
+Let's design and implement Superadmin → Asset Management Setup for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Before Clients can use Asset Management, Superadmin must define the global asset structure.
+
+This setup will be shared across all clients.
+
+Asset Management will be used by:
+
+* Employees
+* Departments
+* Branches
+* IT Teams
+* HR Teams
+* Procurement Teams
+
+Future Features:
+
+* Asset Assignment
+* Asset Returns
+* Asset Transfers
+* Asset Maintenance
+* Asset Audits
+* Asset Disposal
+* Software License Management
+
+Design Asset Management Setup consisting of:
+
+1. Asset Categories
+2. Asset Sub Categories
+3. Asset Masters
+
+Follow Office Repo standards:
+
+* FastAPI
+* SQLAlchemy 2.0
+* PostgreSQL
+* Alembic
+* React
+* TailwindCSS
+* Clean Architecture
+* Repository Pattern
+* Service Layer Pattern
+
+---
+
+# Module Structure
+
+Asset Management
+
+├── Asset Categories
+├── Asset Sub Categories
+└── Asset Masters
+
+---
+
+# Asset Categories
+
+Purpose:
+
+Define top-level asset groups.
+
+Examples:
+
+* IT Assets
+* Furniture
+* Electronics
+* Vehicles
+* Software Licenses
+* Network Equipment
+* Security Equipment
+* Office Equipment
+
+Fields:
+
+* Category Code *
+* Category Name *
+* Description
+* Icon
+* Display Order
+* Status
+
+Status:
+
+* Active
+* Inactive
+
+Actions:
+
+* Create Category
+* Update Category
+* Activate
+* Deactivate
+
+Validation:
+
+* Category Code Unique
+* Category Name Unique
+
+---
+
+# Asset Sub Categories
+
+Purpose:
+
+Classify assets within categories.
+
+Examples:
+
+IT Assets
+├── Laptop
+├── Desktop
+├── Monitor
+├── Printer
+
+Furniture
+├── Chair
+├── Table
+├── Workstation
+
+Software Licenses
+├── Microsoft 365
+├── Adobe
+├── Antivirus
+
+Fields:
+
+* Sub Category Code *
+* Sub Category Name *
+* Asset Category *
+* Description
+* Status
+
+Actions:
+
+* Create Sub Category
+* Update Sub Category
+* Activate
+* Deactivate
+
+Validation:
+
+* Unique Per Category
+
+---
+
+# Asset Masters
+
+Purpose:
+
+Define standard asset templates.
+
+Examples:
+
+Dell Latitude 5440
+
+HP EliteBook 840
+
+Lenovo ThinkPad T14
+
+iPhone 15
+
+Microsoft 365 E3
+
+Fields:
+
+Basic Information
+
+* Asset Code *
+* Asset Name *
+* Asset Category *
+* Asset Sub Category *
+
+Manufacturer
+
+* Brand
+* Model Number
+* Manufacturer
+
+Technical Details
+
+* Specifications
+* Warranty Period
+* Asset Image
+
+Commercial Information
+
+* Purchase Cost
+* Expected Life
+* Depreciation Applicable
+
+Tracking
+
+* Serial Number Required
+* Warranty Tracking Enabled
+* Maintenance Tracking Enabled
+
+Status
+
+* Active
+* Inactive
+
+Actions:
+
+* Create Asset Master
+* Update Asset Master
+* Activate
+* Deactivate
+
+---
+
+# Seed Data
+
+Create default categories:
+
+IT Assets
+Furniture
+Electronics
+Vehicles
+Software Licenses
+Network Equipment
+Security Equipment
+Office Equipment
+
+Create sample sub categories:
+
+IT Assets
+
+* Laptop
+* Desktop
+* Monitor
+* Keyboard
+* Mouse
+* Printer
+* Scanner
+
+Furniture
+
+* Chair
+* Table
+* Workstation
+
+Software
+
+* Microsoft 365
+* Adobe
+* Antivirus
+
+Create sample asset masters:
+
+Dell Latitude 5440
+HP EliteBook 840
+Lenovo ThinkPad T14
+Dell Monitor 24"
+HP LaserJet Printer
+iPhone 15
+
+---
+
+# UI Design
+
+Asset Categories
+
+* List
+* Create
+* Edit
+
+Asset Sub Categories
+
+* List
+* Create
+* Edit
+
+Asset Masters
+
+* List
+* Create
+* Edit
+* Detail View
+
+Provide:
+
+* Search
+* Filters
+* Pagination
+* Dark Mode
+* Responsive Design
+
+---
+
+# Database Design
+
+Design tables:
+
+asset_categories
+
+asset_sub_categories
+
+asset_masters
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_020_asset_categories
+2026_021_asset_sub_categories
+2026_022_asset_masters
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Asset Categories
+
+* Create
+* Update
+* Get
+* List
+* Activate
+* Deactivate
+
+Asset Sub Categories
+
+* Create
+* Update
+* Get
+* List
+
+Asset Masters
+
+* Create
+* Update
+* Get
+* List
+
+Provide:
+
+* Endpoints
+* Request Schemas
+* Response Schemas
+* Error Handling
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Asset Category Repository
+* Asset Sub Category Repository
+* Asset Master Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Asset Category Service
+* Asset Sub Category Service
+* Asset Master Service
+
+Include:
+
+* Validation Logic
+* Business Rules
+
+---
+
+# Activity Logging
+
+Track:
+
+* Category Created
+* Category Updated
+* Sub Category Created
+* Asset Master Created
+* Asset Master Updated
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Future Enhancements
+
+Do not implement yet, but design for:
+
+* Asset Assignment
+* Asset Requests
+* Asset Returns
+* Asset Transfers
+* Asset Maintenance
+* Asset Audits
+* Asset Disposal
+* Software License Allocation
+* Asset QR Codes
+* Barcode Management
+
+Generate production-ready specifications suitable for direct development in Office Repo Superadmin Panel.

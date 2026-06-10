@@ -44,6 +44,9 @@ from backend.app.modules.notification_management.models import (  # noqa: F401
 )
 from backend.app.database.migrations.model import SchemaMigration  # noqa: F401 (registers with metadata)
 from backend.app.modules.module_registry.models import ModuleMaster  # noqa: F401
+from backend.app.modules.asset_management.models import (  # noqa: F401
+    AssetCategory, AssetSubCategory, AssetMaster,
+)
 
 # Alembic — programmatic migration runner
 from alembic.config import Config as AlembicConfig
@@ -72,6 +75,7 @@ from backend.app.modules.portal_user_management.router import router as portal_u
 from backend.app.modules.organization_management.router import router as portal_org_router
 from backend.app.modules.employee_management.router import router as portal_emp_router
 from backend.app.modules.testing.database_provisioning.router import router as db_provisioning_router
+from backend.app.modules.asset_management.router import router as asset_router
 from backend.app.platform.superadmin.rotation_router import router as rotation_router
 from backend.app.platform.superadmin.rotation_status_router import router as rotation_status_router
 
@@ -322,6 +326,7 @@ def init_database() -> None:
     seed_default_data()
     _seed_rbac_data()
     _seed_module_catalog()
+    _seed_asset_defaults()
 
 
 def _seed_rbac_data() -> None:
@@ -345,6 +350,19 @@ def _seed_module_catalog() -> None:
         print("Module catalog seeded.")
     except Exception as e:
         print(f"Module catalog seed error: {e}")
+    finally:
+        db.close()
+
+
+def _seed_asset_defaults() -> None:
+    """Idempotently seed default asset categories, sub-categories, and masters."""
+    from backend.app.modules.asset_management.service import seed_asset_defaults
+    db = SessionLocal()
+    try:
+        seed_asset_defaults(db)
+        print("Asset Management: default categories, sub-categories, and masters seeded.")
+    except Exception as e:
+        print(f"Asset seed error: {e}")
     finally:
         db.close()
 
@@ -463,6 +481,9 @@ def create_app(app_settings=settings) -> FastAPI:
 
     # Client Portal — Employee Management (portal JWT + module gate)
     app.include_router(portal_emp_router, prefix=f"{prefix}/portal", tags=["portal employee management"])
+
+    # Asset Management Setup (superadmin — global platform definitions)
+    app.include_router(asset_router, prefix=f"{prefix}/superadmin/assets", tags=["asset management"])
 
     # [TESTING ONLY] Database provisioning capability check — superadmin JWT required
     app.include_router(db_provisioning_router, prefix=f"{prefix}", tags=["[TESTING] database provisioning"])

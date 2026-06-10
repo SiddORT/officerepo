@@ -30,6 +30,7 @@ import backend.app.modules.auth.preferences_model  # noqa: F401
 import backend.app.modules.notification_management.models  # noqa: F401
 import backend.app.modules.security_settings.models  # noqa: F401
 import backend.app.modules.module_registry.models  # noqa: F401
+import backend.app.modules.asset_management.models  # noqa: F401
 # portal_user_management models live in the CLIENT DB (not platform) — managed by
 # backend.app.database.client_db.provision_portal_schema(), NOT by Alembic.
 import backend.app.database.migrations.model  # noqa: F401  (schema_migrations audit table)
