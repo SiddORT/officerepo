@@ -410,13 +410,19 @@ export const portalOrgApi = {
   deactivateCompany:(sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
 
   // Departments
-  listDepts:   (sd, tk, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
-  getDept:     (sd, tk, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
-  createDept:  (sd, tk, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments`, data, { headers: { Authorization: `Bearer ${tk}` } }),
-  updateDept:  (sd, tk, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
-  activateDept:(sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/activate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
-  deactivateDept:(sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
-  deptHierarchy:(sd, tk, companyId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/hierarchy/${companyId}`, { headers: { Authorization: `Bearer ${tk}` } }),
+  listDepts:        (sd, tk, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
+  getDept:          (sd, tk, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
+  createDept:       (sd, tk, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  updateDept:       (sd, tk, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  activateDept:     (sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/activate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+  deactivateDept:   (sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+  deptHierarchy:    (sd, tk, companyId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/hierarchy/${companyId}`, { headers: { Authorization: `Bearer ${tk}` } }),
+  getDeptStats:     (sd, tk, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/stats`, { headers: { Authorization: `Bearer ${tk}` } }),
+  getDeptEmployees: (sd, tk, id, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/employees`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
+  getDeptDesigs:    (sd, tk, id, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/designations`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
+  getDeptActivities:(sd, tk, id, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/activities`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
+  listActiveEmployees:(sd, tk) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/employees/active`, { headers: { Authorization: `Bearer ${tk}` } }),
+  seedDepts:        (sd, tk, companyId) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/seed/${companyId}`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
 
   // Designations
   listDesigs:    (sd, tk, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),

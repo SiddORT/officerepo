@@ -17,11 +17,19 @@ Routes
   Departments
     GET    /{subdomain}/org/departments
     POST   /{subdomain}/org/departments
+    GET    /{subdomain}/org/departments/hierarchy/{company_id}
     GET    /{subdomain}/org/departments/{dept_id}
     PATCH  /{subdomain}/org/departments/{dept_id}
     POST   /{subdomain}/org/departments/{dept_id}/activate
     POST   /{subdomain}/org/departments/{dept_id}/deactivate
-    GET    /{subdomain}/org/departments/hierarchy/{company_id}
+    GET    /{subdomain}/org/departments/{dept_id}/employees
+    GET    /{subdomain}/org/departments/{dept_id}/designations
+    GET    /{subdomain}/org/departments/{dept_id}/activities
+    GET    /{subdomain}/org/departments/{dept_id}/stats
+    POST   /{subdomain}/org/departments/seed/{company_id}
+
+  Employees picker
+    GET    /{subdomain}/org/employees/active
 
   Designations
     GET    /{subdomain}/org/designations
@@ -182,7 +190,7 @@ def deactivate_company(
     return ApiResponse.ok(result, "Company deactivated.").model_dump()
 
 
-# ── Departments ────────────────────────────────────────────────────────────────
+# ── Departments — static routes FIRST to avoid {dept_id} clash ─────────────────
 
 @router.get("/{subdomain}/org/departments/hierarchy/{company_id}")
 def dept_hierarchy(
@@ -194,6 +202,32 @@ def dept_hierarchy(
     tree = svc.get_department_hierarchy(client_db, portal_user["client_id"], company_id)
     return ApiResponse.ok({"tree": tree}).model_dump()
 
+
+@router.get("/{subdomain}/org/employees/active")
+def list_active_employees(
+    subdomain: str,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    """Return active employees for pickers (e.g. department head selector)."""
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(svc.list_active_employees(client_db, portal_user["client_id"])).model_dump()
+
+
+@router.post("/{subdomain}/org/departments/seed/{company_id}")
+def seed_departments(
+    subdomain: str, company_id: str, request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    """Seed sample departments (HR, Finance, IT, Operations, Sales + sub-depts). Idempotent."""
+    _subdomain_check(portal_user, subdomain)
+    result = svc.seed_departments(client_db, portal_user["client_id"], company_id,
+                                  actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
+    return ApiResponse.ok(result).model_dump()
+
+
+# ── Departments — parameterized routes ─────────────────────────────────────────
 
 @router.get("/{subdomain}/org/departments")
 def list_departments(
@@ -266,6 +300,57 @@ def deactivate_dept(
     result = svc.set_department_status(client_db, portal_user["client_id"], dept_id, False,
                                        actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
     return ApiResponse.ok(result, "Department deactivated.").model_dump()
+
+
+@router.get("/{subdomain}/org/departments/{dept_id}/employees")
+def dept_employees(
+    subdomain: str, dept_id: str,
+    page: int = 1, page_size: int = 50,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(
+        svc.get_dept_employees(client_db, portal_user["client_id"], dept_id, page=page, page_size=page_size)
+    ).model_dump()
+
+
+@router.get("/{subdomain}/org/departments/{dept_id}/designations")
+def dept_designations(
+    subdomain: str, dept_id: str,
+    page: int = 1, page_size: int = 100,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(
+        svc.get_dept_designations(client_db, portal_user["client_id"], dept_id, page=page, page_size=page_size)
+    ).model_dump()
+
+
+@router.get("/{subdomain}/org/departments/{dept_id}/activities")
+def dept_activities(
+    subdomain: str, dept_id: str,
+    page: int = 1, page_size: int = 50,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(
+        svc.get_dept_activities(client_db, portal_user["client_id"], dept_id, page=page, page_size=page_size)
+    ).model_dump()
+
+
+@router.get("/{subdomain}/org/departments/{dept_id}/stats")
+def dept_stats(
+    subdomain: str, dept_id: str,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(
+        svc.get_dept_stats(client_db, portal_user["client_id"], dept_id)
+    ).model_dump()
 
 
 # ── Designations ───────────────────────────────────────────────────────────────

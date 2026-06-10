@@ -10,7 +10,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
+from sqlalchemy import Boolean, Column, Date, DateTime, Integer, String, Text
 
 from backend.app.database.client_db import ClientBase
 
@@ -67,7 +67,10 @@ class OrgDepartment(ClientBase):
     department_code     = Column(String(60),  nullable=False)
     department_name     = Column(String(200), nullable=False)
     parent_id           = Column(String(36), nullable=True, index=True)    # self-ref (no FK across tables needed — same DB)
-    head_user_id        = Column(String(36), nullable=True)                # ClientAdminUser in platform DB
+    head_user_id        = Column(String(36), nullable=True)                # ClientAdminUser in platform DB (legacy)
+    head_employee_id    = Column(String(36), nullable=True)                # Employee in same client DB
+    head_effective_from = Column(Date, nullable=True)
+    head_effective_to   = Column(Date, nullable=True)
     description         = Column(Text, nullable=True)
 
     is_active           = Column(Boolean, nullable=False, default=True)

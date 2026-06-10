@@ -1,8 +1,9 @@
 """Pydantic schemas for Organization Management."""
 from __future__ import annotations
 
+from datetime import date
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, field_validator
 
 
 # ── Companies ──────────────────────────────────────────────────────────────────
@@ -52,12 +53,15 @@ class CompanyUpdate(BaseModel):
 # ── Departments ────────────────────────────────────────────────────────────────
 
 class DepartmentCreate(BaseModel):
-    company_id:      str
-    department_code: str
-    department_name: str
-    parent_id:       Optional[str] = None
-    head_user_id:    Optional[str] = None
-    description:     Optional[str] = None
+    company_id:          str
+    department_code:     str
+    department_name:     str
+    parent_id:           Optional[str] = None
+    head_user_id:        Optional[str] = None
+    head_employee_id:    Optional[str] = None
+    head_effective_from: Optional[date] = None
+    head_effective_to:   Optional[date] = None
+    description:         Optional[str] = None
 
     @field_validator("department_code")
     @classmethod
@@ -66,10 +70,13 @@ class DepartmentCreate(BaseModel):
 
 
 class DepartmentUpdate(BaseModel):
-    department_name: Optional[str] = None
-    parent_id:       Optional[str] = None
-    head_user_id:    Optional[str] = None
-    description:     Optional[str] = None
+    department_name:     Optional[str] = None
+    parent_id:           Optional[str] = None
+    head_user_id:        Optional[str] = None
+    head_employee_id:    Optional[str] = None
+    head_effective_from: Optional[date] = None
+    head_effective_to:   Optional[date] = None
+    description:         Optional[str] = None
 
 
 # ── Designations ───────────────────────────────────────────────────────────────

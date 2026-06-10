@@ -49,11 +49,32 @@ def _company_dict(co) -> Dict[str, Any]:
     }
 
 
-def _dept_dict(d) -> Dict[str, Any]:
+def _emp_mini(emp) -> Optional[Dict[str, Any]]:
+    """Return a minimal employee dict for embedding (head info, list rows)."""
+    if emp is None:
+        return None
+    return {
+        "id": emp.id,
+        "employee_code": emp.employee_code,
+        "full_name": f"{emp.first_name} {emp.last_name}".strip(),
+        "first_name": emp.first_name,
+        "last_name": emp.last_name,
+        "designation_id": getattr(emp, "designation_id", None),
+        "employment_status": getattr(emp, "employment_status", None),
+        "is_active": emp.is_active,
+    }
+
+
+def _dept_dict(d, head_emp=None) -> Dict[str, Any]:
     return {
         "id": d.id, "client_id": d.client_id, "company_id": d.company_id,
         "department_code": d.department_code, "department_name": d.department_name,
-        "parent_id": d.parent_id, "head_user_id": d.head_user_id,
+        "parent_id": d.parent_id,
+        "head_user_id": d.head_user_id,
+        "head_employee_id": getattr(d, "head_employee_id", None),
+        "head_effective_from": getattr(d, "head_effective_from", None),
+        "head_effective_to": getattr(d, "head_effective_to", None),
+        "head_employee": _emp_mini(head_emp) if head_emp is not None else None,
         "description": d.description,
         "is_active": d.is_active, "created_at": d.created_at, "updated_at": d.updated_at,
     }
@@ -66,6 +87,23 @@ def _desig_dict(d) -> Dict[str, Any]:
         "designation_code": d.designation_code, "designation_name": d.designation_name,
         "level": d.level, "description": d.description,
         "is_active": d.is_active, "created_at": d.created_at, "updated_at": d.updated_at,
+    }
+
+
+def _activity_dict(a) -> Dict[str, Any]:
+    import json as _json
+    extra = None
+    try:
+        extra = _json.loads(a.extra) if a.extra else None
+    except Exception:
+        extra = a.extra
+    return {
+        "id": a.id,
+        "action": a.action,
+        "actor_id": getattr(a, "actor_id", None),
+        "ip_address": getattr(a, "ip_address", None),
+        "extra": extra,
+        "created_at": a.created_at,
     }
 
 
@@ -132,9 +170,40 @@ def set_company_status(
 
 # ── Departments ────────────────────────────────────────────────────────────────
 
+def _resolve_head(client_db: Session, client_id: str, dept):
+    """Fetch the head employee row (or None) for a department."""
+    eid = getattr(dept, "head_employee_id", None)
+    if not eid:
+        return None
+    return repo.get_head_employee(client_db, client_id, eid)
+
+
+def _check_no_cycle(client_db: Session, client_id: str, dept_id: str, new_parent_id: str) -> None:
+    """Raise 400 if setting new_parent_id would create a cycle."""
+    visited = set()
+    cursor = new_parent_id
+    while cursor:
+        if cursor == dept_id:
+            raise HTTPException(400, "Setting this parent would create a circular hierarchy.")
+        if cursor in visited:
+            break
+        visited.add(cursor)
+        parent_row = repo.get_department(client_db, client_id, cursor)
+        cursor = parent_row.parent_id if parent_row else None
+
+
 def list_departments(client_db: Session, client_id: str, **kwargs) -> Dict:
     rows, total = repo.list_departments(client_db, client_id, **kwargs)
-    return {"data": [_dept_dict(r) for r in rows], "total": total,
+    stats_map: dict = {}
+    for d in rows:
+        stats_map[d.id] = repo.get_dept_stats(client_db, client_id, d.id)
+    result = []
+    for d in rows:
+        head = _resolve_head(client_db, client_id, d)
+        item = _dept_dict(d, head_emp=head)
+        item.update(stats_map.get(d.id, {}))
+        result.append(item)
+    return {"data": result, "total": total,
             "page": kwargs.get("page", 1), "page_size": kwargs.get("page_size", 200)}
 
 
@@ -142,7 +211,52 @@ def get_department(client_db: Session, client_id: str, dept_id: str) -> Dict:
     d = repo.get_department(client_db, client_id, dept_id)
     if not d:
         raise HTTPException(404, "Department not found.")
-    return _dept_dict(d)
+    head = _resolve_head(client_db, client_id, d)
+    stats = repo.get_dept_stats(client_db, client_id, dept_id)
+    result = _dept_dict(d, head_emp=head)
+    result.update(stats)
+    return result
+
+
+def get_dept_employees(client_db: Session, client_id: str, dept_id: str,
+                       page: int = 1, page_size: int = 50) -> Dict:
+    d = repo.get_department(client_db, client_id, dept_id)
+    if not d:
+        raise HTTPException(404, "Department not found.")
+    rows, total = repo.list_dept_employees(client_db, client_id, dept_id, page=page, page_size=page_size)
+    return {
+        "data": [_emp_mini(e) for e in rows],
+        "total": total, "page": page, "page_size": page_size,
+    }
+
+
+def get_dept_designations(client_db: Session, client_id: str, dept_id: str,
+                          page: int = 1, page_size: int = 100) -> Dict:
+    d = repo.get_department(client_db, client_id, dept_id)
+    if not d:
+        raise HTTPException(404, "Department not found.")
+    rows, total = repo.list_designations(client_db, client_id,
+                                         department_id=dept_id, page=page, page_size=page_size)
+    return {"data": [_desig_dict(r) for r in rows], "total": total, "page": page, "page_size": page_size}
+
+
+def get_dept_activities(client_db: Session, client_id: str, dept_id: str,
+                        page: int = 1, page_size: int = 50) -> Dict:
+    rows, total = repo.list_dept_activities(client_db, client_id, dept_id, page=page, page_size=page_size)
+    return {"data": [_activity_dict(a) for a in rows], "total": total, "page": page, "page_size": page_size}
+
+
+def get_dept_stats(client_db: Session, client_id: str, dept_id: str) -> Dict:
+    d = repo.get_department(client_db, client_id, dept_id)
+    if not d:
+        raise HTTPException(404, "Department not found.")
+    return repo.get_dept_stats(client_db, client_id, dept_id)
+
+
+def list_active_employees(client_db: Session, client_id: str) -> Dict:
+    """Return active employees for use in pickers (e.g. dept head)."""
+    rows = repo.list_active_employees(client_db, client_id)
+    return {"data": [_emp_mini(e) for e in rows], "total": len(rows)}
 
 
 def _build_tree(rows: list, parent_id=None) -> list:
@@ -157,7 +271,13 @@ def _build_tree(rows: list, parent_id=None) -> list:
 
 def get_department_hierarchy(client_db: Session, client_id: str, company_id: str) -> list:
     rows, _ = repo.list_departments(client_db, client_id, company_id=company_id, page_size=1000)
-    flat = [_dept_dict(r) for r in rows]
+    flat = []
+    for d in rows:
+        head = _resolve_head(client_db, client_id, d)
+        stats = repo.get_dept_stats(client_db, client_id, d.id)
+        item = _dept_dict(d, head_emp=head)
+        item.update(stats)
+        flat.append(item)
     return _build_tree(flat, parent_id=None)
 
 
@@ -165,24 +285,26 @@ def create_department(
     client_db: Session, client_id: str, payload,
     actor_id: Optional[str], ip: Optional[str],
 ) -> Dict:
-    # Validate company exists
     if not repo.get_company(client_db, client_id, payload.company_id):
         raise HTTPException(404, "Company not found.")
     if repo.get_dept_by_code(client_db, client_id, payload.company_id, payload.department_code):
         raise HTTPException(409, f"Department code '{payload.department_code}' already exists in this company.")
-    # No self-ref at create (no id yet)
     if payload.parent_id:
         parent = repo.get_department(client_db, client_id, payload.parent_id)
         if not parent:
             raise HTTPException(404, "Parent department not found.")
         if parent.company_id != payload.company_id:
             raise HTTPException(400, "Parent department must belong to the same company.")
+    if payload.head_employee_id:
+        head_emp = repo.get_head_employee(client_db, client_id, payload.head_employee_id)
+        if not head_emp:
+            raise HTTPException(404, "Head employee not found.")
     data = payload.model_dump()
     d = repo.create_department(client_db, client_id, data)
     _log(client_db, client_id, c.ACTION_DEPT_CREATED, actor_id, ip,
          {"department_name": d.department_name})
     client_db.commit()
-    return _dept_dict(d)
+    return get_department(client_db, client_id, d.id)
 
 
 def update_department(
@@ -196,16 +318,27 @@ def update_department(
     if "parent_id" in data and data["parent_id"]:
         if data["parent_id"] == dept_id:
             raise HTTPException(400, "A department cannot be its own parent.")
+        _check_no_cycle(client_db, client_id, dept_id, data["parent_id"])
         parent = repo.get_department(client_db, client_id, data["parent_id"])
         if not parent:
             raise HTTPException(404, "Parent department not found.")
         if parent.company_id != d.company_id:
             raise HTTPException(400, "Parent must belong to the same company.")
+    # Track if head changed for extra log
+    old_head = getattr(d, "head_employee_id", None)
+    new_head = data.get("head_employee_id", old_head)
+    if "head_employee_id" in data and data["head_employee_id"]:
+        head_emp = repo.get_head_employee(client_db, client_id, data["head_employee_id"])
+        if not head_emp:
+            raise HTTPException(404, "Head employee not found.")
     repo.update_department(client_db, d, data)
     _log(client_db, client_id, c.ACTION_DEPT_UPDATED, actor_id, ip,
          {"department_name": d.department_name})
+    if old_head != new_head:
+        _log(client_db, client_id, c.ACTION_DEPT_HEAD_CHANGED, actor_id, ip,
+             {"department_name": d.department_name, "old_head_id": old_head, "new_head_id": new_head})
     client_db.commit()
-    return _dept_dict(d)
+    return get_department(client_db, client_id, dept_id)
 
 
 def set_department_status(
@@ -222,7 +355,24 @@ def set_department_status(
     action = c.ACTION_DEPT_ACTIVATED if is_active else c.ACTION_DEPT_DEACTIVATED
     _log(client_db, client_id, action, actor_id, ip, {"department_name": d.department_name})
     client_db.commit()
-    return _dept_dict(d)
+    return get_department(client_db, client_id, dept_id)
+
+
+def seed_departments(
+    client_db: Session, client_id: str, company_id: str,
+    actor_id: Optional[str], ip: Optional[str],
+) -> Dict:
+    """Seed sample departments for a company. Idempotent (no-op if any exist)."""
+    company = repo.get_company(client_db, client_id, company_id)
+    if not company:
+        raise HTTPException(404, "Company not found.")
+    count = repo.seed_sample_departments(client_db, client_id, company_id)
+    if count:
+        client_db.commit()
+        _log(client_db, client_id, "DEPARTMENTS_SEEDED", actor_id, ip,
+             {"company_id": company_id, "count": count})
+        client_db.commit()
+    return {"seeded": count, "message": f"{count} departments created." if count else "Departments already exist, no changes made."}
 
 
 # ── Designations ───────────────────────────────────────────────────────────────

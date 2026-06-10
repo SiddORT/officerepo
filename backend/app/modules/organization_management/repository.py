@@ -142,6 +142,164 @@ def update_department(db: Session, dept: OrgDepartment, data: dict) -> OrgDepart
     return dept
 
 
+# ── Department employees / designations / activities ──────────────────────────
+
+def list_dept_employees(
+    db: Session, client_id: str, dept_id: str, *,
+    page: int = 1, page_size: int = 50,
+) -> Tuple[list, int]:
+    """Return employees belonging to this department."""
+    try:
+        from backend.app.modules.employee_management.models import Employee
+        q = db.query(Employee).filter(
+            Employee.client_id == client_id,
+            Employee.department_id == dept_id,
+            Employee.is_deleted.is_(False),
+        )
+        total = q.count()
+        rows = q.order_by(Employee.first_name).offset((page - 1) * page_size).limit(page_size).all()
+        return rows, total
+    except Exception:
+        return [], 0
+
+
+def get_dept_stats(db: Session, client_id: str, dept_id: str) -> dict:
+    """Count employees + designations for a department."""
+    try:
+        from backend.app.modules.employee_management.models import Employee
+        from sqlalchemy import func as sqlfunc
+        total_emp = db.query(sqlfunc.count(Employee.id)).filter(
+            Employee.client_id == client_id,
+            Employee.department_id == dept_id,
+            Employee.is_deleted.is_(False),
+        ).scalar() or 0
+        active_emp = db.query(sqlfunc.count(Employee.id)).filter(
+            Employee.client_id == client_id,
+            Employee.department_id == dept_id,
+            Employee.is_deleted.is_(False),
+            Employee.is_active.is_(True),
+        ).scalar() or 0
+    except Exception:
+        total_emp = active_emp = 0
+    desig_count = db.query(OrgDesignation).filter(
+        OrgDesignation.client_id == client_id,
+        OrgDesignation.department_id == dept_id,
+        OrgDesignation.is_deleted.is_(False),
+    ).count()
+    return {
+        "total_employees": total_emp,
+        "active_employees": active_emp,
+        "designations_count": desig_count,
+    }
+
+
+def get_head_employee(db: Session, client_id: str, employee_id: str):
+    """Fetch a single Employee row for the dept head (or None)."""
+    if not employee_id:
+        return None
+    try:
+        from backend.app.modules.employee_management.models import Employee
+        return db.query(Employee).filter(
+            Employee.id == employee_id,
+            Employee.client_id == client_id,
+            Employee.is_deleted.is_(False),
+        ).first()
+    except Exception:
+        return None
+
+
+def list_active_employees(db: Session, client_id: str, *, page_size: int = 500) -> list:
+    """Return all active employees (for dept-head picker)."""
+    try:
+        from backend.app.modules.employee_management.models import Employee
+        return db.query(Employee).filter(
+            Employee.client_id == client_id,
+            Employee.is_deleted.is_(False),
+            Employee.is_active.is_(True),
+        ).order_by(Employee.first_name).limit(page_size).all()
+    except Exception:
+        return []
+
+
+def list_dept_activities(
+    db: Session, client_id: str, dept_id: str, *,
+    page: int = 1, page_size: int = 50,
+) -> Tuple[list, int]:
+    """Return activity logs mentioning this department."""
+    try:
+        from backend.app.modules.portal_user_management.models import ClientPortalActivityLog
+        import json
+        q = db.query(ClientPortalActivityLog).filter(
+            ClientPortalActivityLog.client_id == client_id,
+            ClientPortalActivityLog.action.like("DEPARTMENT%"),
+        )
+        total = q.count()
+        rows = (q.order_by(ClientPortalActivityLog.created_at.desc())
+                 .offset((page - 1) * page_size).limit(page_size).all())
+        return rows, total
+    except Exception:
+        return [], 0
+
+
+# ── Seed departments ───────────────────────────────────────────────────────────
+
+def seed_sample_departments(db: Session, client_id: str, company_id: str) -> int:
+    """Create sample departments if none exist yet. Returns count created."""
+    existing, _ = list_departments(db, client_id, company_id=company_id, page_size=1)
+    if existing:
+        return 0  # already seeded
+
+    _SEEDS = [
+        {"code": "HR",    "name": "Human Resources", "parent": None},
+        {"code": "FIN",   "name": "Finance",          "parent": None},
+        {"code": "IT",    "name": "Information Technology", "parent": None},
+        {"code": "OPS",   "name": "Operations",       "parent": None},
+        {"code": "SALES", "name": "Sales",             "parent": None},
+        # Operations children
+        {"code": "LOG",   "name": "Logistics",    "parent": "OPS"},
+        {"code": "WH",    "name": "Warehouse",    "parent": "OPS"},
+        {"code": "PROC",  "name": "Procurement",  "parent": "OPS"},
+    ]
+
+    created: dict[str, str] = {}  # code → id
+    count = 0
+    for s in _SEEDS:
+        code = s["code"]
+        if get_dept_by_code(db, client_id, company_id, code):
+            continue  # skip if somehow exists
+        parent_id = created.get(s["parent"]) if s["parent"] else None
+        dept = create_department(db, client_id, {
+            "company_id": company_id,
+            "department_code": code,
+            "department_name": s["name"],
+            "parent_id": parent_id,
+        })
+        created[code] = dept.id
+        count += 1
+
+    # Randomly assign active employees to top-level depts
+    try:
+        from backend.app.modules.employee_management.models import Employee
+        import random
+        top_codes = ["HR", "FIN", "IT", "OPS", "SALES"]
+        top_ids = [created[c] for c in top_codes if c in created]
+        emps = db.query(Employee).filter(
+            Employee.client_id == client_id,
+            Employee.is_deleted.is_(False),
+            Employee.is_active.is_(True),
+            Employee.department_id.is_(None),
+        ).all()
+        for emp in emps:
+            if top_ids:
+                emp.department_id = random.choice(top_ids)
+        if emps:
+            db.flush()
+    except Exception:
+        pass
+
+    return count
+
+
 # ── Designations ───────────────────────────────────────────────────────────────
 
 def list_designations(

@@ -99,6 +99,10 @@ _COLUMN_MIGRATIONS = [
     # EmployeeEmergencyContact — country codes
     ("employee_emergency_contacts", "mobile_country_code", "VARCHAR(10) DEFAULT '+91'"),
     ("employee_emergency_contacts", "alternate_country_code", "VARCHAR(10) DEFAULT '+91'"),
+    # OrgDepartment — employee head + effective dates
+    ("org_departments", "head_employee_id", "VARCHAR(36)"),
+    ("org_departments", "head_effective_from", "DATE"),
+    ("org_departments", "head_effective_to", "DATE"),
 ]
 
 

@@ -30,6 +30,16 @@ function DeptNode({ node, depth = 0 }) {
         </svg>
 
         <span style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", flex: 1 }}>{node.department_name}</span>
+        {node.head_employee && (
+          <span style={{ fontSize: 11, color: "var(--c-muted)", display: "flex", alignItems: "center", gap: 3 }}>
+            👤 <span>{node.head_employee.full_name}</span>
+          </span>
+        )}
+        {node.total_employees != null && (
+          <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 3, background: "rgba(0,174,236,0.1)", color: "var(--c-accent)", border: "1px solid rgba(0,174,236,0.2)" }}>
+            {node.active_employees ?? node.total_employees}/{node.total_employees}
+          </span>
+        )}
         <span style={{ fontFamily: "monospace", fontSize: 11, padding: "1px 5px", borderRadius: 3, background: "var(--c-bg)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }}>
           {node.department_code}
         </span>

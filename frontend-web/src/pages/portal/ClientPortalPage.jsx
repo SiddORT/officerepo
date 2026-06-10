@@ -26,6 +26,7 @@ import CompanyList from "./org-management/CompanyList";
 import CompanyForm from "./org-management/CompanyForm";
 import DepartmentList from "./org-management/DepartmentList";
 import DepartmentForm from "./org-management/DepartmentForm";
+import DepartmentDetails from "./org-management/DepartmentDetails";
 import DesignationList from "./org-management/DesignationList";
 import DesignationForm from "./org-management/DesignationForm";
 import OrgHierarchy from "./org-management/OrgHierarchy";
@@ -118,6 +119,7 @@ function PortalRoutes() {
       <Route path="/org/departments"        element={<Protected><DepartmentList /></Protected>} />
       <Route path="/org/departments/new"    element={<Protected><DepartmentForm editMode={false} /></Protected>} />
       <Route path="/org/departments/hierarchy/:companyId" element={<Protected><OrgHierarchy /></Protected>} />
+      <Route path="/org/departments/:deptId" element={<Protected><DepartmentDetails /></Protected>} />
       <Route path="/org/departments/:deptId/edit" element={<Protected><DepartmentForm editMode={true} /></Protected>} />
 
       <Route path="/org/designations"       element={<Protected><DesignationList /></Protected>} />
