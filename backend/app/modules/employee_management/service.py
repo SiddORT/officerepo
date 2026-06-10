@@ -25,8 +25,13 @@ def _emp_dict(e, include_children: bool = False) -> Dict[str, Any]:
         "gender": e.gender, "date_of_birth": e.date_of_birth,
         "marital_status": e.marital_status, "blood_group": e.blood_group,
         "nationality": e.nationality, "profile_photo_url": e.profile_photo_url,
+        "resume_url": getattr(e, "resume_url", None),
+        "resume_filename": getattr(e, "resume_filename", None),
         "personal_email": e.personal_email, "official_email": e.official_email,
-        "mobile_number": e.mobile_number, "alternate_mobile": e.alternate_mobile,
+        "mobile_country_code": getattr(e, "mobile_country_code", "+91") or "+91",
+        "mobile_number": e.mobile_number,
+        "alternate_mobile_country_code": getattr(e, "alternate_mobile_country_code", "+91") or "+91",
+        "alternate_mobile": e.alternate_mobile,
         "landline_number": e.landline_number,
         "current_address_line_1": e.current_address_line_1,
         "current_address_line_2": e.current_address_line_2,
@@ -84,11 +89,29 @@ def _prev_emp_dict(r) -> Dict[str, Any]:
     }
 
 
+def _family_dict(r) -> Dict[str, Any]:
+    return {
+        "id": r.id, "employee_id": r.employee_id,
+        "member_name": r.member_name, "relationship": r.relationship,
+        "date_of_birth": r.date_of_birth, "gender": r.gender,
+        "occupation": r.occupation,
+        "phone_country_code": r.phone_country_code or "+91",
+        "phone": r.phone,
+        "is_dependent": r.is_dependent, "is_nominee": r.is_nominee,
+        "nomination_percentage": float(r.nomination_percentage) if r.nomination_percentage is not None else None,
+        "remarks": r.remarks,
+        "created_at": r.created_at, "updated_at": r.updated_at,
+    }
+
+
 def _contact_dict(r) -> Dict[str, Any]:
     return {
         "id": r.id, "employee_id": r.employee_id,
         "contact_name": r.contact_name, "relationship": r.relationship,
-        "mobile_number": r.mobile_number, "alternate_number": r.alternate_number,
+        "mobile_country_code": getattr(r, "mobile_country_code", "+91") or "+91",
+        "mobile_number": r.mobile_number,
+        "alternate_country_code": getattr(r, "alternate_country_code", "+91") or "+91",
+        "alternate_number": r.alternate_number,
         "address": r.address,
         "created_at": r.created_at, "updated_at": r.updated_at,
     }
@@ -102,7 +125,17 @@ def _bank_dict(r) -> Dict[str, Any]:
         "account_holder_name": r.account_holder_name, "bank_name": r.bank_name,
         "branch_name": r.branch_name,
         "account_number": r.account_number,
+        "account_type": getattr(r, "account_type", None),
         "ifsc_code": r.ifsc_code, "swift_code": r.swift_code, "upi_id": r.upi_id,
+        "salary_credit_date": getattr(r, "salary_credit_date", None),
+        "salary_cycle": getattr(r, "salary_cycle", None),
+        "pf_account_number": getattr(r, "pf_account_number", None),
+        "pf_uan_number": getattr(r, "pf_uan_number", None),
+        "esi_number": getattr(r, "esi_number", None),
+        "gratuity_applicable": getattr(r, "gratuity_applicable", False),
+        "tds_applicable": getattr(r, "tds_applicable", False),
+        "tds_percentage": float(r.tds_percentage) if getattr(r, "tds_percentage", None) is not None else None,
+        "pan_linked_to_account": getattr(r, "pan_linked_to_account", False),
         "created_at": r.created_at, "updated_at": r.updated_at,
     }
 
@@ -181,18 +214,20 @@ def get_employee_profile(db: Session, client_id: str, employee_id: str) -> Dict:
     if not emp:
         raise HTTPException(404, "Employee not found.")
 
-    edu   = [_edu_dict(r)      for r in repo.list_education(db, client_id, employee_id)]
-    prev  = [_prev_emp_dict(r) for r in repo.list_prev_employment(db, client_id, employee_id)]
-    emer  = [_contact_dict(r)  for r in repo.list_emergency_contacts(db, client_id, employee_id)]
-    bank  = _bank_dict(repo.get_bank_details(db, client_id, employee_id))
-    gov   = _gov_dict(repo.get_government_ids(db, client_id, employee_id), mask=True)
-    acts  = [_activity_dict(r) for r in repo.list_activities(db, client_id, employee_id, limit=20)]
+    edu    = [_edu_dict(r)      for r in repo.list_education(db, client_id, employee_id)]
+    prev   = [_prev_emp_dict(r) for r in repo.list_prev_employment(db, client_id, employee_id)]
+    family = [_family_dict(r)   for r in repo.list_family_members(db, client_id, employee_id)]
+    emer   = [_contact_dict(r)  for r in repo.list_emergency_contacts(db, client_id, employee_id)]
+    bank   = _bank_dict(repo.get_bank_details(db, client_id, employee_id))
+    gov    = _gov_dict(repo.get_government_ids(db, client_id, employee_id), mask=True)
+    acts   = [_activity_dict(r) for r in repo.list_activities(db, client_id, employee_id, limit=20)]
 
     return {
         **_emp_dict(emp),
         "education": edu,
         "employment_history": prev,
         "experience_summary": _experience_summary(prev),
+        "family_members": family,
         "emergency_contacts": emer,
         "bank_details": bank,
         "government_ids": gov,
@@ -203,11 +238,9 @@ def get_employee_profile(db: Session, client_id: str, employee_id: str) -> Dict:
 def create_employee(db: Session, client_id: str, payload, actor_id: Optional[str], ip: Optional[str]) -> Dict:
     data = payload.model_dump(exclude_unset=False)
 
-    # Duplicate email check
     if repo.get_employee_by_email(db, client_id, data["official_email"]):
         raise HTTPException(409, f"An employee with email '{data['official_email']}' already exists.")
 
-    # Auto-generate code
     data["employee_code"] = repo.next_employee_code(db, client_id)
     data["created_by"] = actor_id
 
@@ -225,7 +258,6 @@ def update_employee(db: Session, client_id: str, employee_id: str, payload,
 
     data = payload.model_dump(exclude_unset=True, exclude_none=False)
 
-    # Track significant changes for activity log
     notes_parts = []
     if "employment_status" in data and data["employment_status"] != emp.employment_status:
         notes_parts.append(f"Status: {emp.employment_status} → {data['employment_status']}")
@@ -234,7 +266,6 @@ def update_employee(db: Session, client_id: str, employee_id: str, payload,
     if "designation_id" in data and data["designation_id"] != emp.designation_id:
         notes_parts.append("Designation changed")
 
-    # Email uniqueness check
     if "official_email" in data and data["official_email"] != emp.official_email:
         if repo.get_employee_by_email(db, client_id, data["official_email"]):
             raise HTTPException(409, f"Email '{data['official_email']}' already in use.")
@@ -274,6 +305,9 @@ def get_meta_options() -> Dict:
         "marital_statuses": c.MARITAL_STATUSES,
         "blood_groups": c.BLOOD_GROUPS,
         "relationships": c.RELATIONSHIPS,
+        "family_relationships": c.FAMILY_RELATIONSHIPS,
+        "account_types": c.ACCOUNT_TYPES,
+        "salary_cycles": c.SALARY_CYCLES,
     }
 
 
@@ -347,6 +381,40 @@ def delete_prev_employment(db: Session, client_id: str, employee_id: str, hist_i
     if not row or row.employee_id != employee_id:
         raise HTTPException(404, "Employment history record not found.")
     repo.delete_prev_employment(db, row)
+
+
+# ── Family Members ────────────────────────────────────────────────────────────
+
+def list_family_members(db: Session, client_id: str, employee_id: str) -> List:
+    _require_employee(db, client_id, employee_id)
+    return [_family_dict(r) for r in repo.list_family_members(db, client_id, employee_id)]
+
+
+def add_family_member(db: Session, client_id: str, employee_id: str, payload,
+                      actor_id: Optional[str], ip: Optional[str]) -> Dict:
+    _require_employee(db, client_id, employee_id)
+    data = payload.model_dump(exclude_none=True)
+    row = repo.create_family_member(db, client_id, employee_id, data)
+    _log(db, client_id, employee_id, "FAMILY_MEMBER_ADDED", actor_id=actor_id, ip_address=ip,
+         notes=f"Added: {row.member_name} ({row.relationship})")
+    return _family_dict(row)
+
+
+def update_family_member(db: Session, client_id: str, employee_id: str, member_id: str,
+                         payload, actor_id: Optional[str], ip: Optional[str]) -> Dict:
+    row = repo.get_family_member(db, client_id, member_id)
+    if not row or row.employee_id != employee_id:
+        raise HTTPException(404, "Family member not found.")
+    data = payload.model_dump(exclude_unset=True)
+    row = repo.update_family_member(db, row, data)
+    return _family_dict(row)
+
+
+def delete_family_member(db: Session, client_id: str, employee_id: str, member_id: str) -> None:
+    row = repo.get_family_member(db, client_id, member_id)
+    if not row or row.employee_id != employee_id:
+        raise HTTPException(404, "Family member not found.")
+    repo.delete_family_member(db, row)
 
 
 # ── Emergency Contacts ────────────────────────────────────────────────────────

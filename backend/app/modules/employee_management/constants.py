@@ -49,7 +49,21 @@ GENDERS           = ["Male", "Female", "Other", "Prefer not to say"]
 MARITAL_STATUSES  = ["Single", "Married", "Divorced", "Widowed", "Separated"]
 BLOOD_GROUPS      = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
 
-RELATIONSHIPS     = ["Father", "Mother", "Spouse", "Sibling", "Guardian", "Friend", "Other"]
+# Emergency contact relationships
+RELATIONSHIPS = ["Father", "Mother", "Spouse", "Sibling", "Guardian", "Friend", "Other"]
+
+# Family member relationships
+FAMILY_RELATIONSHIPS = [
+    "Spouse", "Son", "Daughter", "Father", "Mother",
+    "Brother", "Sister", "Father-in-Law", "Mother-in-Law",
+    "Grandfather", "Grandmother", "Guardian", "Other",
+]
+
+# Bank account types
+ACCOUNT_TYPES = ["Savings", "Current", "Salary", "NRE", "NRO", "Other"]
+
+# Salary cycles
+SALARY_CYCLES = ["Monthly", "Bi-Monthly", "Weekly", "Bi-Weekly", "Quarterly"]
 
 # Activity actions
 ACTION_CREATED             = "EMPLOYEE_CREATED"

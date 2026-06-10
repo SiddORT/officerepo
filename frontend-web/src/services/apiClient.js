@@ -468,6 +468,12 @@ export const portalEmployeeApi = {
   getGovIds:    (sd, tk, eid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/government-ids`, { headers: { Authorization: `Bearer ${tk}` } }),
   upsertGovIds: (sd, tk, eid, data) => axios.put(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/government-ids`, data, { headers: { Authorization: `Bearer ${tk}` } }),
 
+  // Family Members
+  listFamilyMembers:   (sd, tk, eid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/family-members`, { headers: { Authorization: `Bearer ${tk}` } }),
+  addFamilyMember:     (sd, tk, eid, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/family-members`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  updateFamilyMember:  (sd, tk, eid, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/family-members/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  deleteFamilyMember:  (sd, tk, eid, id) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/family-members/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
+
   // Activities
   listActivities: (sd, tk, eid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/activities`, { headers: { Authorization: `Bearer ${tk}` } }),
 };

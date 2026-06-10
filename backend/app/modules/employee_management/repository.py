@@ -10,7 +10,7 @@ from sqlalchemy import func
 
 from backend.app.modules.employee_management.models import (
     Employee, EmployeeEducation, EmployeePreviousEmployment,
-    EmployeeEmergencyContact, EmployeeBankDetails,
+    EmployeeFamilyMember, EmployeeEmergencyContact, EmployeeBankDetails,
     EmployeeGovernmentIds, EmployeeActivity,
 )
 
@@ -198,6 +198,45 @@ def update_prev_employment(db: Session, row: EmployeePreviousEmployment, data: d
 
 
 def delete_prev_employment(db: Session, row: EmployeePreviousEmployment) -> None:
+    db.delete(row)
+    db.commit()
+
+
+# ── Family Members ────────────────────────────────────────────────────────────
+
+def list_family_members(db: Session, client_id: str, employee_id: str) -> List[EmployeeFamilyMember]:
+    return db.query(EmployeeFamilyMember).filter(
+        EmployeeFamilyMember.client_id == client_id,
+        EmployeeFamilyMember.employee_id == employee_id,
+    ).order_by(EmployeeFamilyMember.created_at).all()
+
+
+def get_family_member(db: Session, client_id: str, member_id: str) -> Optional[EmployeeFamilyMember]:
+    return db.query(EmployeeFamilyMember).filter(
+        EmployeeFamilyMember.id == member_id,
+        EmployeeFamilyMember.client_id == client_id,
+    ).first()
+
+
+def create_family_member(db: Session, client_id: str, employee_id: str, data: dict) -> EmployeeFamilyMember:
+    row = EmployeeFamilyMember(id=_uuid(), client_id=client_id, employee_id=employee_id, **data)
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def update_family_member(db: Session, row: EmployeeFamilyMember, data: dict) -> EmployeeFamilyMember:
+    for k, v in data.items():
+        if hasattr(row, k):
+            setattr(row, k, v)
+    row.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def delete_family_member(db: Session, row: EmployeeFamilyMember) -> None:
     db.delete(row)
     db.commit()
 

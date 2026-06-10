@@ -18,7 +18,7 @@ from __future__ import annotations
 import threading
 from typing import Dict
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
@@ -77,6 +77,43 @@ def make_client_session(url: str) -> Session:
 # create_all calls on every request while still catching new tables for old clients).
 _provisioned: set = set()
 
+# ── Column migrations for tables that may have been created before new columns were added ──
+# Each entry: (table_name, column_name, column_definition)
+_COLUMN_MIGRATIONS = [
+    # Employee — country codes + resume
+    ("employees", "mobile_country_code", "VARCHAR(10) DEFAULT '+91'"),
+    ("employees", "alternate_mobile_country_code", "VARCHAR(10) DEFAULT '+91'"),
+    ("employees", "resume_url", "VARCHAR(500)"),
+    ("employees", "resume_filename", "VARCHAR(255)"),
+    # EmployeeBankDetails — salary + TDS fields
+    ("employee_bank_details", "account_type", "VARCHAR(30)"),
+    ("employee_bank_details", "salary_credit_date", "INTEGER"),
+    ("employee_bank_details", "salary_cycle", "VARCHAR(20)"),
+    ("employee_bank_details", "pf_account_number", "VARCHAR(30)"),
+    ("employee_bank_details", "pf_uan_number", "VARCHAR(30)"),
+    ("employee_bank_details", "esi_number", "VARCHAR(30)"),
+    ("employee_bank_details", "gratuity_applicable", "BOOLEAN DEFAULT FALSE"),
+    ("employee_bank_details", "tds_applicable", "BOOLEAN DEFAULT FALSE"),
+    ("employee_bank_details", "tds_percentage", "NUMERIC(5,2)"),
+    ("employee_bank_details", "pan_linked_to_account", "BOOLEAN DEFAULT FALSE"),
+    # EmployeeEmergencyContact — country codes
+    ("employee_emergency_contacts", "mobile_country_code", "VARCHAR(10) DEFAULT '+91'"),
+    ("employee_emergency_contacts", "alternate_country_code", "VARCHAR(10) DEFAULT '+91'"),
+]
+
+
+def _migrate_columns(engine: Engine) -> None:
+    """Idempotently add any new columns that may be missing on pre-existing tables."""
+    with engine.connect() as conn:
+        for table, column, col_def in _COLUMN_MIGRATIONS:
+            try:
+                conn.execute(text(
+                    f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {column} {col_def}"
+                ))
+                conn.commit()
+            except Exception:
+                conn.rollback()
+
 
 def provision_portal_schema(url: str) -> None:
     """Create all ClientBase tables on the client DB (idempotent — uses CREATE IF NOT EXISTS)."""
@@ -88,4 +125,5 @@ def provision_portal_schema(url: str) -> None:
     import backend.app.modules.employee_management.models  # noqa: F401
     engine = _get_engine(url)
     ClientBase.metadata.create_all(engine)
+    _migrate_columns(engine)
     _provisioned.add(url)

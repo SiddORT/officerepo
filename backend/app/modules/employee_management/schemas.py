@@ -25,9 +25,14 @@ class EmployeeCreate(BaseModel):
     nationality:    Optional[str] = None
     profile_photo_url: Optional[str] = None
 
+    resume_url:      Optional[str] = None
+    resume_filename: Optional[str] = None
+
     personal_email:   Optional[str] = None
     official_email:   str
+    mobile_country_code: Optional[str] = "+91"
     mobile_number:    str
+    alternate_mobile_country_code: Optional[str] = "+91"
     alternate_mobile: Optional[str] = None
     landline_number:  Optional[str] = None
 
@@ -78,9 +83,14 @@ class EmployeeUpdate(BaseModel):
     nationality:    Optional[str] = None
     profile_photo_url: Optional[str] = None
 
+    resume_url:      Optional[str] = None
+    resume_filename: Optional[str] = None
+
     personal_email:   Optional[str] = None
     official_email:   Optional[str] = None
+    mobile_country_code: Optional[str] = None
     mobile_number:    Optional[str] = None
+    alternate_mobile_country_code: Optional[str] = None
     alternate_mobile: Optional[str] = None
     landline_number:  Optional[str] = None
 
@@ -152,34 +162,78 @@ class PreviousEmploymentUpdate(PreviousEmploymentCreate):
     pass
 
 
+# ── Family Members ────────────────────────────────────────────────────────────
+
+class FamilyMemberCreate(BaseModel):
+    member_name:          str
+    relationship:         Optional[str] = None
+    date_of_birth:        Optional[date] = None
+    gender:               Optional[str] = None
+    occupation:           Optional[str] = None
+    phone_country_code:   Optional[str] = "+91"
+    phone:                Optional[str] = None
+    is_dependent:         bool = False
+    is_nominee:           bool = False
+    nomination_percentage: Optional[Decimal] = None
+    remarks:              Optional[str] = None
+
+
+class FamilyMemberUpdate(BaseModel):
+    member_name:          Optional[str] = None
+    relationship:         Optional[str] = None
+    date_of_birth:        Optional[date] = None
+    gender:               Optional[str] = None
+    occupation:           Optional[str] = None
+    phone_country_code:   Optional[str] = None
+    phone:                Optional[str] = None
+    is_dependent:         Optional[bool] = None
+    is_nominee:           Optional[bool] = None
+    nomination_percentage: Optional[Decimal] = None
+    remarks:              Optional[str] = None
+
+
 # ── Emergency Contacts ────────────────────────────────────────────────────────
 
 class EmergencyContactCreate(BaseModel):
-    contact_name:     str
-    relationship:     Optional[str] = None
-    mobile_number:    str
-    alternate_number: Optional[str] = None
-    address:          Optional[str] = None
+    contact_name:          str
+    relationship:          Optional[str] = None
+    mobile_country_code:   Optional[str] = "+91"
+    mobile_number:         str
+    alternate_country_code: Optional[str] = "+91"
+    alternate_number:      Optional[str] = None
+    address:               Optional[str] = None
 
 
 class EmergencyContactUpdate(BaseModel):
-    contact_name:     Optional[str] = None
-    relationship:     Optional[str] = None
-    mobile_number:    Optional[str] = None
-    alternate_number: Optional[str] = None
-    address:          Optional[str] = None
+    contact_name:          Optional[str] = None
+    relationship:          Optional[str] = None
+    mobile_country_code:   Optional[str] = None
+    mobile_number:         Optional[str] = None
+    alternate_country_code: Optional[str] = None
+    alternate_number:      Optional[str] = None
+    address:               Optional[str] = None
 
 
 # ── Bank Details ──────────────────────────────────────────────────────────────
 
 class BankDetailsUpsert(BaseModel):
-    account_holder_name: Optional[str] = None
-    bank_name:           Optional[str] = None
-    branch_name:         Optional[str] = None
-    account_number:      Optional[str] = None
-    ifsc_code:           Optional[str] = None
-    swift_code:          Optional[str] = None
-    upi_id:              Optional[str] = None
+    account_holder_name:   Optional[str] = None
+    bank_name:             Optional[str] = None
+    branch_name:           Optional[str] = None
+    account_number:        Optional[str] = None
+    account_type:          Optional[str] = None
+    ifsc_code:             Optional[str] = None
+    swift_code:            Optional[str] = None
+    upi_id:                Optional[str] = None
+    salary_credit_date:    Optional[int] = None
+    salary_cycle:          Optional[str] = None
+    pf_account_number:     Optional[str] = None
+    pf_uan_number:         Optional[str] = None
+    esi_number:            Optional[str] = None
+    gratuity_applicable:   Optional[bool] = None
+    tds_applicable:        Optional[bool] = None
+    tds_percentage:        Optional[Decimal] = None
+    pan_linked_to_account: Optional[bool] = None
 
 
 # ── Government IDs ────────────────────────────────────────────────────────────

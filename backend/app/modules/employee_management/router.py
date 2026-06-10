@@ -16,6 +16,7 @@ Routes
   POST   /{subdomain}/employees/{emp_id}/deactivate
   GET/POST/PATCH/DELETE  .../education[/{edu_id}]
   GET/POST/PATCH/DELETE  .../employment-history[/{hist_id}]
+  GET/POST/PATCH/DELETE  .../family-members[/{member_id}]
   GET/POST/PATCH/DELETE  .../emergency-contacts[/{contact_id}]
   GET/PUT                .../bank-details
   GET/PUT                .../government-ids
@@ -37,6 +38,7 @@ from backend.app.modules.employee_management.schemas import (
     EmployeeCreate, EmployeeUpdate,
     EducationCreate, EducationUpdate,
     PreviousEmploymentCreate, PreviousEmploymentUpdate,
+    FamilyMemberCreate, FamilyMemberUpdate,
     EmergencyContactCreate, EmergencyContactUpdate,
     BankDetailsUpsert, GovernmentIdsUpsert,
 )
@@ -284,6 +286,41 @@ def delete_prev_employment(subdomain: str, emp_id: str, hist_id: str,
     _sub(portal_user, subdomain)
     svc.delete_prev_employment(client_db, portal_user["client_id"], emp_id, hist_id)
     return ApiResponse.ok(None, "Employment history removed.").model_dump()
+
+
+# ── Family Members ────────────────────────────────────────────────────────────
+
+@router.get("/{subdomain}/employees/{emp_id}/family-members")
+def list_family_members(subdomain: str, emp_id: str,
+    portal_user: dict = Depends(_portal_jwt), client_db: Session = Depends(_client_db_dep)):
+    _sub(portal_user, subdomain)
+    return ApiResponse.ok(svc.list_family_members(client_db, portal_user["client_id"], emp_id)).model_dump()
+
+
+@router.post("/{subdomain}/employees/{emp_id}/family-members")
+def add_family_member(subdomain: str, emp_id: str, payload: FamilyMemberCreate, request: Request,
+    portal_user: dict = Depends(_portal_jwt), client_db: Session = Depends(_client_db_dep)):
+    _sub(portal_user, subdomain)
+    result = svc.add_family_member(client_db, portal_user["client_id"], emp_id, payload,
+                                   actor_id=portal_user.get("admin_user_id"), ip=_get_ip(request))
+    return ApiResponse.ok(result, "Family member added.").model_dump()
+
+
+@router.patch("/{subdomain}/employees/{emp_id}/family-members/{member_id}")
+def update_family_member(subdomain: str, emp_id: str, member_id: str, payload: FamilyMemberUpdate,
+    request: Request, portal_user: dict = Depends(_portal_jwt), client_db: Session = Depends(_client_db_dep)):
+    _sub(portal_user, subdomain)
+    result = svc.update_family_member(client_db, portal_user["client_id"], emp_id, member_id, payload,
+                                      actor_id=portal_user.get("admin_user_id"), ip=_get_ip(request))
+    return ApiResponse.ok(result, "Family member updated.").model_dump()
+
+
+@router.delete("/{subdomain}/employees/{emp_id}/family-members/{member_id}")
+def delete_family_member(subdomain: str, emp_id: str, member_id: str,
+    portal_user: dict = Depends(_portal_jwt), client_db: Session = Depends(_client_db_dep)):
+    _sub(portal_user, subdomain)
+    svc.delete_family_member(client_db, portal_user["client_id"], emp_id, member_id)
+    return ApiResponse.ok(None, "Family member removed.").model_dump()
 
 
 # ── Emergency Contacts ────────────────────────────────────────────────────────

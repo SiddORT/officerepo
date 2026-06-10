@@ -1,3 +1,4 @@
+// @refresh reset
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
@@ -41,7 +42,7 @@ function Toggle({ value, onChange, label }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <button type="button" onClick={() => onChange(!value)}
-        style={{ width: 40, height: 22, borderRadius: 999, border: "none", cursor: "pointer", padding: 2, background: value ? "var(--c-accent)" : "var(--c-border)", transition: "background 0.2s", flexShrink: 0, position: "relative" }}>
+        style={{ width: 40, height: 22, borderRadius: 999, border: "none", cursor: "pointer", padding: 2, background: value ? "var(--c-accent)" : "var(--c-border)", transition: "background 0.2s", flexShrink: 0 }}>
         <span style={{ display: "block", width: 18, height: 18, borderRadius: "50%", background: "#fff", transform: value ? "translateX(18px)" : "translateX(0)", transition: "transform 0.2s" }} />
       </button>
       <span style={{ fontSize: 13, color: "var(--c-text)" }}>{label}</span>
@@ -49,11 +50,63 @@ function Toggle({ value, onChange, label }) {
   );
 }
 
+// ── Country codes (emoji flags — no CDN, no CSP issues) ────────────────────────
+const COUNTRY_CODES = [
+  { code: "+91",  label: "🇮🇳 +91",  name: "India" },
+  { code: "+1",   label: "🇺🇸 +1",   name: "USA/Canada" },
+  { code: "+44",  label: "🇬🇧 +44",  name: "UK" },
+  { code: "+971", label: "🇦🇪 +971", name: "UAE" },
+  { code: "+65",  label: "🇸🇬 +65",  name: "Singapore" },
+  { code: "+61",  label: "🇦🇺 +61",  name: "Australia" },
+  { code: "+60",  label: "🇲🇾 +60",  name: "Malaysia" },
+  { code: "+66",  label: "🇹🇭 +66",  name: "Thailand" },
+  { code: "+880", label: "🇧🇩 +880", name: "Bangladesh" },
+  { code: "+92",  label: "🇵🇰 +92",  name: "Pakistan" },
+  { code: "+94",  label: "🇱🇰 +94",  name: "Sri Lanka" },
+  { code: "+977", label: "🇳🇵 +977", name: "Nepal" },
+  { code: "+968", label: "🇴🇲 +968", name: "Oman" },
+  { code: "+966", label: "🇸🇦 +966", name: "Saudi Arabia" },
+  { code: "+974", label: "🇶🇦 +974", name: "Qatar" },
+  { code: "+973", label: "🇧🇭 +973", name: "Bahrain" },
+  { code: "+49",  label: "🇩🇪 +49",  name: "Germany" },
+  { code: "+33",  label: "🇫🇷 +33",  name: "France" },
+  { code: "+39",  label: "🇮🇹 +39",  name: "Italy" },
+  { code: "+81",  label: "🇯🇵 +81",  name: "Japan" },
+  { code: "+86",  label: "🇨🇳 +86",  name: "China" },
+  { code: "+82",  label: "🇰🇷 +82",  name: "South Korea" },
+  { code: "+27",  label: "🇿🇦 +27",  name: "South Africa" },
+  { code: "+55",  label: "🇧🇷 +55",  name: "Brazil" },
+  { code: "+7",   label: "🇷🇺 +7",   name: "Russia" },
+];
+
+function PhoneInput({ countryCode, number, onCountryChange, onNumberChange, placeholder, required }) {
+  return (
+    <div style={{ display: "flex" }}>
+      <select
+        value={countryCode || "+91"}
+        onChange={e => onCountryChange(e.target.value)}
+        style={{ ...inp, width: 100, borderRadius: "6px 0 0 6px", borderRight: "none", flexShrink: 0, fontSize: 12, paddingLeft: 6, paddingRight: 2 }}
+      >
+        {COUNTRY_CODES.map(c => (
+          <option key={c.code} value={c.code} title={c.name}>{c.label}</option>
+        ))}
+      </select>
+      <input
+        value={number || ""}
+        onChange={e => onNumberChange(e.target.value)}
+        placeholder={placeholder || "9876543210"}
+        required={required}
+        style={{ ...inp, borderRadius: "0 6px 6px 0", flex: 1 }}
+      />
+    </div>
+  );
+}
+
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: "personal",   label: "Personal",        icon: "👤" },
-  { id: "contact",    label: "Contact & Address", icon: "📍" },
-  { id: "employment", label: "Employment",       icon: "💼" },
+  { id: "personal",   label: "Personal",          icon: "👤", step: 1 },
+  { id: "contact",    label: "Contact & Address",  icon: "📍", step: 2 },
+  { id: "employment", label: "Employment",         icon: "💼", step: 3 },
 ];
 
 export default function EmployeeForm({ editMode = false }) {
@@ -71,14 +124,22 @@ export default function EmployeeForm({ editMode = false }) {
   const [designations, setDesignations] = useState([]);
   const [options, setOptions] = useState({});
 
+  const todayStr = new Date().toISOString().split("T")[0];
+
   const blank = {
     company_id: "", department_id: "", designation_id: "",
     first_name: "", middle_name: "", last_name: "", display_name: "",
     gender: "", date_of_birth: "", marital_status: "", blood_group: "", nationality: "",
-    personal_email: "", official_email: "", mobile_number: "", alternate_mobile: "", landline_number: "",
-    current_address_line_1: "", current_address_line_2: "", current_city: "", current_state: "", current_country: "", current_postal_code: "",
+    personal_email: "", official_email: "",
+    mobile_country_code: "+91", mobile_number: "",
+    alternate_mobile_country_code: "+91", alternate_mobile: "",
+    landline_number: "",
+    resume_url: "", resume_filename: "",
+    current_address_line_1: "", current_address_line_2: "",
+    current_city: "", current_state: "", current_country: "", current_postal_code: "",
     permanent_same_as_current: true,
-    permanent_address_line_1: "", permanent_address_line_2: "", permanent_city: "", permanent_state: "", permanent_country: "", permanent_postal_code: "",
+    permanent_address_line_1: "", permanent_address_line_2: "",
+    permanent_city: "", permanent_state: "", permanent_country: "", permanent_postal_code: "",
     employee_category: "", employment_type: "", employment_status: "Draft",
     joining_date: "", confirmation_date: "", relieving_date: "",
     reporting_manager_id: "", functional_manager_id: "",
@@ -87,7 +148,6 @@ export default function EmployeeForm({ editMode = false }) {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  // Load companies, departments, designations
   useEffect(() => {
     portalOrgApi.listCompanies(subdomain, token, { page_size: 200, is_active: true })
       .then(r => setCompanies(r.data.data?.data || [])).catch(() => {});
@@ -103,7 +163,6 @@ export default function EmployeeForm({ editMode = false }) {
       .then(r => setDesignations(r.data.data?.data || [])).catch(() => {});
   }, [subdomain, token, form.company_id]);
 
-  // Load existing employee on edit
   useEffect(() => {
     if (!editMode || !empId) { setLoading(false); return; }
     portalEmployeeApi.get(subdomain, token, empId).then(r => {
@@ -115,8 +174,10 @@ export default function EmployeeForm({ editMode = false }) {
         gender: e.gender || "", date_of_birth: e.date_of_birth || "", marital_status: e.marital_status || "",
         blood_group: e.blood_group || "", nationality: e.nationality || "",
         personal_email: e.personal_email || "", official_email: e.official_email || "",
-        mobile_number: e.mobile_number || "", alternate_mobile: e.alternate_mobile || "",
+        mobile_country_code: e.mobile_country_code || "+91", mobile_number: e.mobile_number || "",
+        alternate_mobile_country_code: e.alternate_mobile_country_code || "+91", alternate_mobile: e.alternate_mobile || "",
         landline_number: e.landline_number || "",
+        resume_url: e.resume_url || "", resume_filename: e.resume_filename || "",
         current_address_line_1: e.current_address_line_1 || "", current_address_line_2: e.current_address_line_2 || "",
         current_city: e.current_city || "", current_state: e.current_state || "",
         current_country: e.current_country || "", current_postal_code: e.current_postal_code || "",
@@ -147,12 +208,13 @@ export default function EmployeeForm({ editMode = false }) {
     if (err) { setError(err); return; }
     setSaving(true); setError("");
     const payload = { ...form };
-    // Null-ify empty strings for optional fields
     Object.keys(payload).forEach(k => { if (payload[k] === "") payload[k] = null; });
     payload.first_name = form.first_name;
     payload.last_name = form.last_name;
     payload.official_email = form.official_email;
     payload.mobile_number = form.mobile_number;
+    payload.mobile_country_code = form.mobile_country_code || "+91";
+    payload.alternate_mobile_country_code = form.alternate_mobile_country_code || "+91";
     payload.company_id = form.company_id;
     payload.employment_status = form.employment_status || "Draft";
     payload.permanent_same_as_current = form.permanent_same_as_current;
@@ -176,16 +238,17 @@ export default function EmployeeForm({ editMode = false }) {
     </EmployeeLayout>;
   }
 
-  const genders = options.genders || [];
+  const genders         = options.genders || [];
   const maritalStatuses = options.marital_statuses || [];
-  const bloodGroups = options.blood_groups || [];
-  const empCategories = options.employee_categories || [];
-  const empTypes = options.employment_types || [];
-  const empStatuses = options.employment_statuses || [];
+  const bloodGroups     = options.blood_groups || [];
+  const empCategories   = options.employee_categories || [];
+  const empTypes        = options.employment_types || [];
+  const empStatuses     = options.employment_statuses || [];
+  const tabIdx          = TABS.findIndex(t => t.id === tab);
 
   return (
     <EmployeeLayout title={editMode ? "Edit Employee" : "Add Employee"}>
-      {/* Back + title */}
+      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
         <button onClick={() => navigate(-1)}
           style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-muted)", fontSize: 20, padding: 0, lineHeight: 1 }}>←</button>
@@ -203,23 +266,31 @@ export default function EmployeeForm({ editMode = false }) {
         <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 14, border: "1px solid rgba(239,68,68,0.2)" }}>{error}</div>
       )}
 
-      {/* Tab bar */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 20, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, padding: 4 }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            style={{
-              flex: 1, padding: "8px 12px", borderRadius: 8, border: "none", cursor: "pointer",
-              background: tab === t.id ? "var(--c-accent)" : "transparent",
-              color: tab === t.id ? "#fff" : "var(--c-text2)",
-              fontSize: 13, fontWeight: tab === t.id ? 600 : 400,
-              transition: "all 0.15s",
-            }}>
-            <span style={{ marginRight: 6 }}>{t.icon}</span>{t.label}
-          </button>
-        ))}
+      {/* Step tab bar */}
+      <div style={{ display: "flex", gap: 0, marginBottom: 24, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 6, position: "relative" }}>
+        {TABS.map((t, i) => {
+          const active = tab === t.id;
+          const done = i < tabIdx;
+          return (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              style={{
+                flex: 1, padding: "10px 8px", borderRadius: 8, border: "none", cursor: "pointer",
+                background: active ? "var(--c-accent)" : done ? "rgba(var(--c-accent-rgb,99,102,241),0.08)" : "transparent",
+                color: active ? "#fff" : done ? "var(--c-accent)" : "var(--c-text2)",
+                fontSize: 13, fontWeight: active ? 700 : 500,
+                transition: "all 0.15s",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              }}>
+              <span style={{ fontSize: 11, fontWeight: 700, width: 18, height: 18, borderRadius: "50%", background: active ? "rgba(255,255,255,0.25)" : done ? "var(--c-accent)" : "var(--c-border)", color: active ? "#fff" : done ? "#fff" : "var(--c-muted)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {done ? "✓" : t.step}
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: 5 }}>{t.icon} {t.label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* ── Tab: Personal ─────────────────────────────────────────────────── */}
+      {/* ── Tab: Personal ─────────────────────────────────────────────────────── */}
       {tab === "personal" && (
         <>
           <Section icon="👤" title="Name" subtitle="Legal name as on official documents">
@@ -237,14 +308,14 @@ export default function EmployeeForm({ editMode = false }) {
                 <input value={form.last_name} onChange={e => set("last_name", e.target.value)} style={inp} placeholder="Sharma" />
               </div>
             </Grid3>
-            <div>
+            <div style={{ maxWidth: 360 }}>
               <Label>Display Name</Label>
-              <input value={form.display_name} onChange={e => set("display_name", e.target.value)} style={inp} placeholder="Rajan Sharma (auto-filled if left blank)" />
+              <input value={form.display_name} onChange={e => set("display_name", e.target.value)} style={inp} placeholder="Rajan Sharma (optional)" />
             </div>
           </Section>
 
           <Section icon="🪪" title="Personal Details">
-            <Grid2>
+            <Grid3>
               <div>
                 <Label>Gender</Label>
                 <select value={form.gender} onChange={e => set("gender", e.target.value)} style={inp}>
@@ -254,7 +325,14 @@ export default function EmployeeForm({ editMode = false }) {
               </div>
               <div>
                 <Label>Date of Birth</Label>
-                <input type="date" value={form.date_of_birth} onChange={e => set("date_of_birth", e.target.value)} style={inp} />
+                <input
+                  type="date"
+                  value={form.date_of_birth}
+                  onChange={e => set("date_of_birth", e.target.value)}
+                  max={todayStr}
+                  min="1940-01-01"
+                  style={inp}
+                />
               </div>
               <div>
                 <Label>Marital Status</Label>
@@ -274,12 +352,12 @@ export default function EmployeeForm({ editMode = false }) {
                 <Label>Nationality</Label>
                 <input value={form.nationality} onChange={e => set("nationality", e.target.value)} style={inp} placeholder="Indian" />
               </div>
-            </Grid2>
+            </Grid3>
           </Section>
         </>
       )}
 
-      {/* ── Tab: Contact & Address ─────────────────────────────────────────── */}
+      {/* ── Tab: Contact & Address ──────────────────────────────────────────── */}
       {tab === "contact" && (
         <>
           <Section icon="📧" title="Contact Information">
@@ -290,15 +368,30 @@ export default function EmployeeForm({ editMode = false }) {
               </div>
               <div>
                 <Label>Personal Email</Label>
-                <input type="email" value={form.personal_email} onChange={e => set("personal_email", e.target.value)} style={inp} placeholder="rajan@personal.com" />
+                <input type="email" value={form.personal_email} onChange={e => set("personal_email", e.target.value)} style={inp} placeholder="rajan@gmail.com" />
               </div>
+            </Grid2>
+            <Grid2>
               <div>
                 <Label required>Mobile Number</Label>
-                <input value={form.mobile_number} onChange={e => set("mobile_number", e.target.value)} style={inp} placeholder="+91 9876543210" />
+                <PhoneInput
+                  countryCode={form.mobile_country_code}
+                  number={form.mobile_number}
+                  onCountryChange={v => set("mobile_country_code", v)}
+                  onNumberChange={v => set("mobile_number", v)}
+                  placeholder="9876543210"
+                  required
+                />
               </div>
               <div>
                 <Label>Alternate Mobile</Label>
-                <input value={form.alternate_mobile} onChange={e => set("alternate_mobile", e.target.value)} style={inp} placeholder="+91 9876543210" />
+                <PhoneInput
+                  countryCode={form.alternate_mobile_country_code}
+                  number={form.alternate_mobile}
+                  onCountryChange={v => set("alternate_mobile_country_code", v)}
+                  onNumberChange={v => set("alternate_mobile", v)}
+                  placeholder="9876543210"
+                />
               </div>
               <div>
                 <Label>Landline</Label>
@@ -317,22 +410,10 @@ export default function EmployeeForm({ editMode = false }) {
               <input value={form.current_address_line_2} onChange={e => set("current_address_line_2", e.target.value)} style={inp} placeholder="Street / Area / Locality" />
             </div>
             <Grid3>
-              <div>
-                <Label>City</Label>
-                <input value={form.current_city} onChange={e => set("current_city", e.target.value)} style={inp} placeholder="Mumbai" />
-              </div>
-              <div>
-                <Label>State</Label>
-                <input value={form.current_state} onChange={e => set("current_state", e.target.value)} style={inp} placeholder="Maharashtra" />
-              </div>
-              <div>
-                <Label>Country</Label>
-                <input value={form.current_country} onChange={e => set("current_country", e.target.value)} style={inp} placeholder="India" />
-              </div>
-              <div>
-                <Label>Postal Code</Label>
-                <input value={form.current_postal_code} onChange={e => set("current_postal_code", e.target.value)} style={inp} placeholder="400001" />
-              </div>
+              <div><Label>City</Label><input value={form.current_city} onChange={e => set("current_city", e.target.value)} style={inp} placeholder="Mumbai" /></div>
+              <div><Label>State</Label><input value={form.current_state} onChange={e => set("current_state", e.target.value)} style={inp} placeholder="Maharashtra" /></div>
+              <div><Label>Country</Label><input value={form.current_country} onChange={e => set("current_country", e.target.value)} style={inp} placeholder="India" /></div>
+              <div><Label>Postal Code</Label><input value={form.current_postal_code} onChange={e => set("current_postal_code", e.target.value)} style={inp} placeholder="400001" /></div>
             </Grid3>
           </Section>
 
@@ -344,31 +425,13 @@ export default function EmployeeForm({ editMode = false }) {
             />
             {!form.permanent_same_as_current && (
               <>
-                <div>
-                  <Label>Address Line 1</Label>
-                  <input value={form.permanent_address_line_1} onChange={e => set("permanent_address_line_1", e.target.value)} style={inp} placeholder="Flat / House / Building" />
-                </div>
-                <div>
-                  <Label>Address Line 2</Label>
-                  <input value={form.permanent_address_line_2} onChange={e => set("permanent_address_line_2", e.target.value)} style={inp} placeholder="Street / Area / Locality" />
-                </div>
+                <div><Label>Address Line 1</Label><input value={form.permanent_address_line_1} onChange={e => set("permanent_address_line_1", e.target.value)} style={inp} placeholder="Flat / House / Building" /></div>
+                <div><Label>Address Line 2</Label><input value={form.permanent_address_line_2} onChange={e => set("permanent_address_line_2", e.target.value)} style={inp} placeholder="Street / Area / Locality" /></div>
                 <Grid3>
-                  <div>
-                    <Label>City</Label>
-                    <input value={form.permanent_city} onChange={e => set("permanent_city", e.target.value)} style={inp} placeholder="Delhi" />
-                  </div>
-                  <div>
-                    <Label>State</Label>
-                    <input value={form.permanent_state} onChange={e => set("permanent_state", e.target.value)} style={inp} placeholder="Delhi" />
-                  </div>
-                  <div>
-                    <Label>Country</Label>
-                    <input value={form.permanent_country} onChange={e => set("permanent_country", e.target.value)} style={inp} placeholder="India" />
-                  </div>
-                  <div>
-                    <Label>Postal Code</Label>
-                    <input value={form.permanent_postal_code} onChange={e => set("permanent_postal_code", e.target.value)} style={inp} placeholder="110001" />
-                  </div>
+                  <div><Label>City</Label><input value={form.permanent_city} onChange={e => set("permanent_city", e.target.value)} style={inp} placeholder="Delhi" /></div>
+                  <div><Label>State</Label><input value={form.permanent_state} onChange={e => set("permanent_state", e.target.value)} style={inp} placeholder="Delhi" /></div>
+                  <div><Label>Country</Label><input value={form.permanent_country} onChange={e => set("permanent_country", e.target.value)} style={inp} placeholder="India" /></div>
+                  <div><Label>Postal Code</Label><input value={form.permanent_postal_code} onChange={e => set("permanent_postal_code", e.target.value)} style={inp} placeholder="110001" /></div>
                 </Grid3>
               </>
             )}
@@ -376,10 +439,10 @@ export default function EmployeeForm({ editMode = false }) {
         </>
       )}
 
-      {/* ── Tab: Employment ────────────────────────────────────────────────── */}
+      {/* ── Tab: Employment ─────────────────────────────────────────────────── */}
       {tab === "employment" && (
         <>
-          <Section icon="🏢" title="Organization" subtitle="Company, department and designation assignment">
+          <Section icon="🏢" title="Organization" subtitle="Company, department and designation">
             <div>
               <Label required>Company</Label>
               <select value={form.company_id} onChange={e => { set("company_id", e.target.value); set("department_id", ""); set("designation_id", ""); }} style={inp}>
@@ -430,7 +493,7 @@ export default function EmployeeForm({ editMode = false }) {
             </Grid3>
           </Section>
 
-          <Section icon="📅" title="Dates">
+          <Section icon="📅" title="Employment Dates">
             <Grid3>
               <div>
                 <Label>Joining Date</Label>
@@ -446,26 +509,54 @@ export default function EmployeeForm({ editMode = false }) {
               </div>
             </Grid3>
           </Section>
+
+          <Section icon="📎" title="Resume" subtitle="Link to resume document (Google Drive, Dropbox, etc.)">
+            <Grid2>
+              <div>
+                <Label>Resume / CV URL</Label>
+                <input
+                  type="url"
+                  value={form.resume_url}
+                  onChange={e => set("resume_url", e.target.value)}
+                  style={inp}
+                  placeholder="https://drive.google.com/…"
+                />
+              </div>
+              <div>
+                <Label>Document Label</Label>
+                <input
+                  value={form.resume_filename}
+                  onChange={e => set("resume_filename", e.target.value)}
+                  style={inp}
+                  placeholder="Resume_Rajan_2024.pdf"
+                />
+              </div>
+            </Grid2>
+          </Section>
         </>
       )}
 
       {/* Actions */}
-      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
+      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8, paddingBottom: 24 }}>
+        <button onClick={() => navigate(-1)}
+          style={{ padding: "9px 18px", borderRadius: 8, border: "1px solid var(--c-border)", cursor: "pointer", background: "transparent", color: "var(--c-text)", fontSize: 13 }}>
+          Cancel
+        </button>
         {tab !== "personal" && (
-          <button onClick={() => setTab(TABS[TABS.findIndex(t => t.id === tab) - 1]?.id || "personal")}
+          <button onClick={() => setTab(TABS[tabIdx - 1]?.id || "personal")}
             style={{ padding: "9px 18px", borderRadius: 8, border: "1px solid var(--c-border)", cursor: "pointer", background: "transparent", color: "var(--c-text)", fontSize: 13 }}>
             ← Back
           </button>
         )}
         {tab !== "employment" ? (
-          <button onClick={() => setTab(TABS[TABS.findIndex(t => t.id === tab) + 1]?.id || "employment")}
+          <button onClick={() => setTab(TABS[tabIdx + 1]?.id || "employment")}
             style={{ padding: "9px 18px", borderRadius: 8, border: "none", cursor: "pointer", background: "var(--c-accent)", color: "#fff", fontSize: 13, fontWeight: 600 }}>
             Next →
           </button>
         ) : (
           <button onClick={handleSave} disabled={saving}
-            style={{ padding: "9px 18px", borderRadius: 8, border: "none", cursor: "pointer", background: saving ? "var(--c-border)" : "var(--c-accent)", color: saving ? "var(--c-muted)" : "#fff", fontSize: 13, fontWeight: 600 }}>
-            {saving ? "Saving…" : editMode ? "Save Changes" : "Create Employee"}
+            style={{ padding: "9px 20px", borderRadius: 8, border: "none", cursor: "pointer", background: saving ? "var(--c-border)" : "var(--c-accent)", color: saving ? "var(--c-muted)" : "#fff", fontSize: 13, fontWeight: 600 }}>
+            {saving ? "Saving…" : editMode ? "Save Changes" : "✓ Create Employee"}
           </button>
         )}
       </div>
