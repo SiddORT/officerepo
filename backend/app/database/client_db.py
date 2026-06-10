@@ -67,8 +67,18 @@ def build_client_db_url(conn) -> str:
 
 
 def make_client_session(url: str) -> Session:
-    """Return a new SQLAlchemy Session connected to the client DB."""
+    """Return a new SQLAlchemy Session connected to the client DB.
+
+    Also runs column migrations once per URL per process so that existing
+    client DBs pick up new columns without needing a full re-provision.
+    """
     engine = _get_engine(url)
+    if url not in _migrated:
+        try:
+            _migrate_columns(engine)
+        except Exception:
+            pass  # never block normal requests
+        _migrated.add(url)
     factory = sessionmaker(bind=engine, autoflush=True, autocommit=False)
     return factory()
 
@@ -76,6 +86,9 @@ def make_client_session(url: str) -> Session:
 # Track which URLs have already been provisioned in this process (avoids redundant
 # create_all calls on every request while still catching new tables for old clients).
 _provisioned: set = set()
+
+# Track which URLs have had column migrations applied this process (once per URL).
+_migrated: set = set()
 
 # ── Column migrations for tables that may have been created before new columns were added ──
 # Each entry: (table_name, column_name, column_definition)
