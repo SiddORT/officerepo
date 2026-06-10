@@ -29,6 +29,7 @@ export default function UserDetails() {
   const [toast, setToast] = useState(null);
   const [resetPw, setResetPw] = useState("");
   const [showReset, setShowReset] = useState(false);
+  const [showResetPw, setShowResetPw] = useState(false);
   const [actionBusy, setActionBusy] = useState("");
 
   const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3500); };
@@ -147,8 +148,24 @@ export default function UserDetails() {
 
             {showReset && (
               <div style={{ marginBottom: 10 }}>
-                <input type="password" placeholder="New password (min 8)" value={resetPw} onChange={e => setResetPw(e.target.value)}
-                  style={{ width: "100%", padding: "7px 10px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-bg)", color: "var(--c-text)", fontSize: 12, marginBottom: 6, boxSizing: "border-box" }} />
+                <div style={{ position: "relative", marginBottom: 6 }}>
+                  <input type={showResetPw ? "text" : "password"} placeholder="New password (min 8)" value={resetPw} onChange={e => setResetPw(e.target.value)}
+                    style={{ width: "100%", padding: "7px 36px 7px 10px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-bg)", color: "var(--c-text)", fontSize: 12, boxSizing: "border-box" }} />
+                  <button type="button" onClick={() => setShowResetPw(s => !s)}
+                    aria-label={showResetPw ? "Hide password" : "Show password"}
+                    style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: showResetPw ? "var(--c-accent)" : "var(--c-muted)", padding: 2, display: "flex", alignItems: "center" }}>
+                    {showResetPw ? (
+                      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
                 <button onClick={doReset} disabled={actionBusy === "reset"}
                   style={{ width: "100%", padding: "7px 0", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "#f59e0b", color: "#fff", border: "none", cursor: "pointer" }}>
                   {actionBusy === "reset" ? "Saving…" : "Set Password"}
