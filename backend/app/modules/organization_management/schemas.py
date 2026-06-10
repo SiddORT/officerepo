@@ -94,9 +94,23 @@ class DesignationCreate(BaseModel):
     def strip_code(cls, v: str) -> str:
         return v.strip().upper()
 
+    @field_validator("level")
+    @classmethod
+    def validate_level(cls, v):
+        if v is not None and not (1 <= v <= 10):
+            raise ValueError("Level must be between 1 and 10.")
+        return v
+
 
 class DesignationUpdate(BaseModel):
     designation_name: Optional[str] = None
     department_id:    Optional[str] = None
     level:            Optional[int] = None
     description:      Optional[str] = None
+
+    @field_validator("level")
+    @classmethod
+    def validate_level(cls, v):
+        if v is not None and not (1 <= v <= 10):
+            raise ValueError("Level must be between 1 and 10.")
+        return v

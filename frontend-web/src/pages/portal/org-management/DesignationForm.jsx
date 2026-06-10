@@ -134,9 +134,20 @@ export default function DesignationForm({ editMode }) {
             </div>
 
             <div>
-              <Label>Seniority Level <span style={{ fontWeight: 400, textTransform: "none" }}>(lower = more senior)</span></Label>
-              <input type="number" min={1} value={form.level} onChange={e => set("level", e.target.value)}
-                placeholder="e.g. 1" style={inputStyle} />
+              <Label>Seniority Level</Label>
+              <select value={form.level} onChange={e => set("level", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+                <option value="">— Not set —</option>
+                <option value="1">Level 1 — Executive / CEO</option>
+                <option value="2">Level 2 — Director</option>
+                <option value="3">Level 3 — Head of Department</option>
+                <option value="4">Level 4 — Manager</option>
+                <option value="5">Level 5 — Team Lead</option>
+                <option value="6">Level 6 — Senior Employee</option>
+                <option value="7">Level 7 — Employee</option>
+                <option value="8">Level 8</option>
+                <option value="9">Level 9</option>
+                <option value="10">Level 10</option>
+              </select>
             </div>
 
             <div>

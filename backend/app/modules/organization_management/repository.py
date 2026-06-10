@@ -359,3 +359,130 @@ def update_designation(db: Session, desig: OrgDesignation, data: dict) -> OrgDes
     desig.updated_at = datetime.utcnow()
     db.flush()
     return desig
+
+
+# ── Designation employees / stats / activities / seed ─────────────────────────
+
+def get_desig_stats(db: Session, client_id: str, desig_id: str) -> dict:
+    """Return employee counts for a designation."""
+    try:
+        from backend.app.modules.employee_management.models import Employee
+        from sqlalchemy import func as sqlfunc
+        total = db.query(sqlfunc.count(Employee.id)).filter(
+            Employee.client_id == client_id,
+            Employee.designation_id == desig_id,
+            Employee.is_deleted.is_(False),
+        ).scalar() or 0
+        active = db.query(sqlfunc.count(Employee.id)).filter(
+            Employee.client_id == client_id,
+            Employee.designation_id == desig_id,
+            Employee.is_deleted.is_(False),
+            Employee.is_active.is_(True),
+        ).scalar() or 0
+    except Exception:
+        total = active = 0
+    return {"total_employees": total, "active_employees": active}
+
+
+def list_desig_employees(
+    db: Session, client_id: str, desig_id: str, *,
+    page: int = 1, page_size: int = 50,
+) -> Tuple[list, int]:
+    """Return employees with this designation."""
+    try:
+        from backend.app.modules.employee_management.models import Employee
+        q = db.query(Employee).filter(
+            Employee.client_id == client_id,
+            Employee.designation_id == desig_id,
+            Employee.is_deleted.is_(False),
+        )
+        total = q.count()
+        rows = q.order_by(Employee.first_name).offset((page - 1) * page_size).limit(page_size).all()
+        return rows, total
+    except Exception:
+        return [], 0
+
+
+def list_desig_activities(
+    db: Session, client_id: str, *, page: int = 1, page_size: int = 50,
+) -> Tuple[list, int]:
+    """Return activity log entries related to designations."""
+    try:
+        from backend.app.modules.portal_user_management.models import ClientPortalActivityLog
+        q = db.query(ClientPortalActivityLog).filter(
+            ClientPortalActivityLog.client_id == client_id,
+            ClientPortalActivityLog.action.like("DESIGNATION%"),
+        )
+        total = q.count()
+        rows = (q.order_by(ClientPortalActivityLog.created_at.desc())
+                 .offset((page - 1) * page_size).limit(page_size).all())
+        return rows, total
+    except Exception:
+        return [], 0
+
+
+def seed_sample_designations(db: Session, client_id: str, company_id: str) -> int:
+    """Create sample designations. Idempotent — no-op if any already exist. Returns count created."""
+    existing, _ = list_designations(db, client_id, company_id=company_id, page_size=1)
+    if existing:
+        return 0
+
+    # Fetch departments by code for linking
+    dept_map: dict[str, str] = {}
+    for code in ("HR", "FIN", "IT", "OPS", "SALES", "LOG"):
+        d = get_dept_by_code(db, client_id, company_id, code)
+        if d:
+            dept_map[code] = d.id
+
+    _SEEDS = [
+        # code,   name,                      level, dept_key
+        ("CEO",   "CEO",                      1,  None),
+        ("DIR",   "Director",                 2,  None),
+        ("HRHD",  "HR Head",                  3,  "HR"),
+        ("HREX",  "HR Executive",             6,  "HR"),
+        ("FINMGR","Finance Manager",           4,  "FIN"),
+        ("ACCT",  "Accountant",               6,  "FIN"),
+        ("ITMGR", "IT Manager",               4,  "IT"),
+        ("SWENG", "Software Engineer",        7,  "IT"),
+        ("SRSWENG","Senior Software Engineer", 6, "IT"),
+        ("SYSADM","System Administrator",     5,  "IT"),
+        ("OPSMGR","Operations Manager",       4,  "OPS"),
+        ("LOGEX", "Logistics Executive",      6,  "LOG"),
+        ("SLSMGR","Sales Manager",            4,  "SALES"),
+        ("SLSEX", "Sales Executive",          6,  "SALES"),
+    ]
+
+    count = 0
+    created_ids: list[str] = []
+    for code, name, level, dept_key in _SEEDS:
+        if get_desig_by_code(db, client_id, company_id, code):
+            continue
+        dept_id = dept_map.get(dept_key) if dept_key else None
+        desig = create_designation(db, client_id, {
+            "company_id": company_id,
+            "designation_code": code,
+            "designation_name": name,
+            "level": level,
+            "department_id": dept_id,
+        })
+        created_ids.append(desig.id)
+        count += 1
+
+    # Assign active employees round-robin to newly created designations
+    try:
+        from backend.app.modules.employee_management.models import Employee
+        import random
+        emps = db.query(Employee).filter(
+            Employee.client_id == client_id,
+            Employee.is_deleted.is_(False),
+            Employee.is_active.is_(True),
+            Employee.designation_id.is_(None),
+        ).all()
+        if emps and created_ids:
+            for emp in emps:
+                emp.designation_id = random.choice(created_ids)
+            db.flush()
+    except Exception:
+        pass
+
+    return count

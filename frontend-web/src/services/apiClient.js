@@ -431,6 +431,9 @@ export const portalOrgApi = {
   updateDesig:   (sd, tk, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
   activateDesig: (sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}/activate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
   deactivateDesig:(sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+  getDesigEmployees: (sd, tk, id, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}/employees`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
+  getDesigActivities: (sd, tk, id, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}/activities`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
+  seedDesigs: (sd, tk, companyId) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/seed/${companyId}`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
 
   // Full hierarchy (company + dept tree + designations)
   hierarchy: (sd, tk, companyId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/hierarchy/${companyId}`, { headers: { Authorization: `Bearer ${tk}` } }),

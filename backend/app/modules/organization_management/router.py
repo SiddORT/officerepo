@@ -383,6 +383,18 @@ def create_designation(
     return ApiResponse.ok(result, "Designation created.").model_dump()
 
 
+# Static routes BEFORE /{desig_id} to avoid conflicts
+@router.post("/{subdomain}/org/designations/seed/{company_id}")
+def seed_designations(
+    subdomain: str, company_id: str,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    result = svc.seed_designations(client_db, portal_user["client_id"], company_id)
+    return ApiResponse.ok(result, result["message"]).model_dump()
+
+
 @router.get("/{subdomain}/org/designations/{desig_id}")
 def get_designation(
     subdomain: str, desig_id: str,
@@ -427,6 +439,32 @@ def deactivate_desig(
     result = svc.set_designation_status(client_db, portal_user["client_id"], desig_id, False,
                                         actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
     return ApiResponse.ok(result, "Designation deactivated.").model_dump()
+
+
+@router.get("/{subdomain}/org/designations/{desig_id}/employees")
+def desig_employees(
+    subdomain: str, desig_id: str,
+    page: int = 1, page_size: int = 50,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    result = svc.get_desig_employees(client_db, portal_user["client_id"], desig_id,
+                                     page=page, page_size=page_size)
+    return ApiResponse.ok(result).model_dump()
+
+
+@router.get("/{subdomain}/org/designations/{desig_id}/activities")
+def desig_activities(
+    subdomain: str, desig_id: str,
+    page: int = 1, page_size: int = 50,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    result = svc.get_desig_activities(client_db, portal_user["client_id"],
+                                      page=page, page_size=page_size)
+    return ApiResponse.ok(result).model_dump()
 
 
 # ── Hierarchy (org-wide view) ──────────────────────────────────────────────────

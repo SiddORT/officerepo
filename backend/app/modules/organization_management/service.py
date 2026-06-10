@@ -80,13 +80,15 @@ def _dept_dict(d, head_emp=None) -> Dict[str, Any]:
     }
 
 
-def _desig_dict(d) -> Dict[str, Any]:
+def _desig_dict(d, total_employees: int = 0) -> Dict[str, Any]:
     return {
         "id": d.id, "client_id": d.client_id, "company_id": d.company_id,
         "department_id": d.department_id,
         "designation_code": d.designation_code, "designation_name": d.designation_name,
         "level": d.level, "description": d.description,
-        "is_active": d.is_active, "created_at": d.created_at, "updated_at": d.updated_at,
+        "is_active": d.is_active,
+        "total_employees": total_employees,
+        "created_at": d.created_at, "updated_at": d.updated_at,
     }
 
 
@@ -379,7 +381,15 @@ def seed_departments(
 
 def list_designations(client_db: Session, client_id: str, **kwargs) -> Dict:
     rows, total = repo.list_designations(client_db, client_id, **kwargs)
-    return {"data": [_desig_dict(r) for r in rows], "total": total,
+    # Batch-fetch employee counts for all returned designations
+    emp_counts: Dict[str, int] = {}
+    try:
+        for r in rows:
+            stats = repo.get_desig_stats(client_db, client_id, r.id)
+            emp_counts[r.id] = stats.get("total_employees", 0)
+    except Exception:
+        pass
+    return {"data": [_desig_dict(r, emp_counts.get(r.id, 0)) for r in rows], "total": total,
             "page": kwargs.get("page", 1), "page_size": kwargs.get("page_size", 200)}
 
 
@@ -387,7 +397,60 @@ def get_designation(client_db: Session, client_id: str, desig_id: str) -> Dict:
     d = repo.get_designation(client_db, client_id, desig_id)
     if not d:
         raise HTTPException(404, "Designation not found.")
-    return _desig_dict(d)
+    stats = repo.get_desig_stats(client_db, client_id, desig_id)
+    return _desig_dict(d, stats.get("total_employees", 0))
+
+
+def get_desig_employees(
+    client_db: Session, client_id: str, desig_id: str,
+    *, page: int = 1, page_size: int = 50,
+) -> Dict:
+    d = repo.get_designation(client_db, client_id, desig_id)
+    if not d:
+        raise HTTPException(404, "Designation not found.")
+    rows, total = repo.list_desig_employees(client_db, client_id, desig_id,
+                                            page=page, page_size=page_size)
+    data = []
+    for emp in rows:
+        # Resolve department name if available
+        dept_name = None
+        try:
+            if emp.department_id:
+                dept = repo.get_department(client_db, client_id, emp.department_id)
+                if dept:
+                    dept_name = dept.department_name
+        except Exception:
+            pass
+        data.append({
+            "id": emp.id,
+            "employee_code": emp.employee_code,
+            "first_name": emp.first_name,
+            "last_name": emp.last_name,
+            "full_name": f"{emp.first_name} {emp.last_name or ''}".strip(),
+            "department_id": emp.department_id,
+            "department_name": dept_name,
+            "is_active": emp.is_active,
+        })
+    return {"data": data, "total": total, "page": page, "page_size": page_size}
+
+
+def get_desig_activities(
+    client_db: Session, client_id: str,
+    *, page: int = 1, page_size: int = 50,
+) -> Dict:
+    rows, total = repo.list_desig_activities(client_db, client_id, page=page, page_size=page_size)
+    return {
+        "data": [_activity_dict(a) for a in rows],
+        "total": total, "page": page, "page_size": page_size,
+    }
+
+
+def seed_designations(
+    client_db: Session, client_id: str, company_id: str,
+) -> Dict:
+    count = repo.seed_sample_designations(client_db, client_id, company_id)
+    client_db.commit()
+    return {"created": count, "message": f"{count} designations seeded." if count else "Designations already exist — no seed needed."}
 
 
 def create_designation(
