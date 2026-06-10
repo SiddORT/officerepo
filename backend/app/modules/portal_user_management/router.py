@@ -1,22 +1,23 @@
 """Portal User Management Router.
 
-All routes require a valid portal_access JWT.
+All routes require a valid portal_access JWT unless marked (public).
 Prefix: /api/v1/portal
 
-Data splits:
-  platform_db  →  ClientAdminUser (reads + writes)
-  client_db    →  ClientRole, ClientUserRole, ClientLoginLog,
-                  ClientUserSession, ClientPortalActivityLog
-
 Routes
+  GET    /{subdomain}/permissions               — catalog grouped by module
+  GET    /{subdomain}/roles/{role_id}/permissions
+  PUT    /{subdomain}/roles/{role_id}/permissions
+
   GET    /{subdomain}/users
-  POST   /{subdomain}/users
+  POST   /{subdomain}/users                     — invite flow (returns invite_link)
   GET    /{subdomain}/users/{user_id}
   PATCH  /{subdomain}/users/{user_id}
+  DELETE /{subdomain}/users/{user_id}           — remove pending user only
   POST   /{subdomain}/users/{user_id}/activate
   POST   /{subdomain}/users/{user_id}/deactivate
   POST   /{subdomain}/users/{user_id}/reset-password
   POST   /{subdomain}/users/{user_id}/force-logout
+  POST   /{subdomain}/users/{user_id}/resend-invite
 
   GET    /{subdomain}/roles
   POST   /{subdomain}/roles
@@ -34,7 +35,7 @@ Routes
 """
 from __future__ import annotations
 
-from typing import Generator, Optional
+from typing import Generator, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -88,11 +89,6 @@ def _client_db_dep(
     portal_user: dict = Depends(_portal_jwt),
     platform_db: Session = Depends(get_platform_db),
 ) -> Generator[Session, None, None]:
-    """Yield a Session connected to the client's own database.
-
-    Raises 503 if the client database has not been provisioned yet.
-    FastAPI deduplicates _portal_jwt and get_platform_db within one request.
-    """
     from backend.app.modules.client_management import repository as client_repo
     from backend.app.modules.client_management.constants import DB_STATUS_ACTIVE
 
@@ -100,12 +96,12 @@ def _client_db_dep(
     if not conn or conn.database_status != DB_STATUS_ACTIVE:
         raise HTTPException(
             status_code=503,
-            detail=(
-                "This workspace's database has not been provisioned yet. "
-                "Please contact your administrator."
-            ),
+            detail="This workspace's database has not been provisioned yet.",
         )
     url = build_client_db_url(conn)
+    # Ensure new tables (permissions, etc.) exist on existing client DBs
+    from backend.app.database.client_db import provision_portal_schema
+    provision_portal_schema(url)
     session = make_client_session(url)
     try:
         yield session
@@ -114,6 +110,48 @@ def _client_db_dep(
         raise
     finally:
         session.close()
+
+
+# ── Permissions ────────────────────────────────────────────────────────────────
+
+@router.get("/{subdomain}/permissions")
+def get_permissions_catalog(
+    subdomain: str,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _verify_subdomain(portal_user, subdomain)
+    result = svc.get_permissions_catalog(client_db, portal_user["client_id"])
+    return ApiResponse.ok(result).model_dump()
+
+
+@router.get("/{subdomain}/roles/{role_id}/permissions")
+def get_role_permissions(
+    subdomain: str, role_id: str,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _verify_subdomain(portal_user, subdomain)
+    result = svc.get_role_permissions(client_db, portal_user["client_id"], role_id)
+    return ApiResponse.ok(result).model_dump()
+
+
+class SetPermissionsBody(BaseModel):
+    permission_ids: List[str]
+
+
+@router.put("/{subdomain}/roles/{role_id}/permissions")
+def set_role_permissions(
+    subdomain: str, role_id: str, payload: SetPermissionsBody, request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _verify_subdomain(portal_user, subdomain)
+    result = svc.set_role_permissions(
+        client_db, portal_user["client_id"], role_id, payload.permission_ids,
+        actor_id=portal_user["admin_user_id"], ip=_get_ip(request),
+    )
+    return ApiResponse.ok(result, "Permissions updated.").model_dump()
 
 
 # ── Users ──────────────────────────────────────────────────────────────────────
@@ -133,16 +171,18 @@ def list_users(
 
 
 @router.post("/{subdomain}/users")
-def create_user(
+def invite_user(
     subdomain: str, payload: UserCreate, request: Request,
     portal_user: dict = Depends(_portal_jwt),
     platform_db: Session = Depends(get_platform_db),
     client_db: Session = Depends(_client_db_dep),
 ):
     _verify_subdomain(portal_user, subdomain)
-    result = svc.create_user(platform_db, client_db, portal_user["client_id"], payload,
-                             actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
-    return ApiResponse.ok(result, "User created.").model_dump()
+    result = svc.invite_user(
+        platform_db, client_db, portal_user["client_id"], subdomain, payload,
+        actor_id=portal_user["admin_user_id"], ip=_get_ip(request),
+    )
+    return ApiResponse.ok(result, "Invitation sent.").model_dump()
 
 
 @router.get("/{subdomain}/users/{user_id}")
@@ -168,6 +208,33 @@ def update_user(
     result = svc.update_user(platform_db, client_db, portal_user["client_id"], user_id, payload,
                              actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
     return ApiResponse.ok(result, "User updated.").model_dump()
+
+
+@router.delete("/{subdomain}/users/{user_id}")
+def remove_user(
+    subdomain: str, user_id: str, request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    platform_db: Session = Depends(get_platform_db),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _verify_subdomain(portal_user, subdomain)
+    svc.remove_user(platform_db, client_db, portal_user["client_id"], user_id,
+                    actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
+    return ApiResponse.ok(None, "User removed.").model_dump()
+
+
+@router.post("/{subdomain}/users/{user_id}/resend-invite")
+def resend_invite(
+    subdomain: str, user_id: str, request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    platform_db: Session = Depends(get_platform_db),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _verify_subdomain(portal_user, subdomain)
+    result = svc.resend_invite(platform_db, client_db, portal_user["client_id"],
+                               subdomain, user_id,
+                               actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
+    return ApiResponse.ok(result, "Invite resent.").model_dump()
 
 
 @router.post("/{subdomain}/users/{user_id}/activate")

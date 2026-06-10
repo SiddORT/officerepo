@@ -4,8 +4,11 @@ All queries are scoped to (client_id) for multi-tenant isolation.
 """
 from __future__ import annotations
 
+import hashlib
 import json
-from datetime import datetime
+import os
+import secrets
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
@@ -13,8 +16,10 @@ from sqlalchemy.orm import Session
 from backend.app.modules.client_management.models import ClientAdminUser
 from backend.app.modules.portal_user_management.models import (
     ClientLoginLog,
+    ClientPermission,
     ClientPortalActivityLog,
     ClientRole,
+    ClientRolePermission,
     ClientUserRole,
     ClientUserSession,
 )
@@ -70,6 +75,56 @@ def set_user_roles(db: Session, user_id: str, role_ids: List[str]) -> None:
     db.query(ClientUserRole).filter(ClientUserRole.user_id == user_id).delete()
     for rid in role_ids:
         db.add(ClientUserRole(user_id=user_id, role_id=rid))
+
+
+def create_user_invite(
+    db: Session, client_id: str, data: Dict[str, Any], enc_fn,
+    *, token_expiry_hours: int = 72,
+) -> Tuple["ClientAdminUser", str]:
+    """Create a ClientAdminUser in Invited status with a secure invite token.
+
+    Returns (user, raw_token).  The raw token is shown once; the hash is stored.
+    """
+    import uuid
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+    expires_at = datetime.utcnow() + timedelta(hours=token_expiry_hours)
+
+    user = ClientAdminUser(
+        id=str(uuid.uuid4()),
+        client_id=client_id,
+        first_name=data["first_name"],
+        last_name=data.get("last_name"),
+        display_name=data.get("display_name"),
+        email_encrypted=enc_fn(data["email"]) if data.get("email") else None,
+        phone_encrypted=enc_fn(data["phone"]) if data.get("phone") else None,
+        country_code=data.get("country_code"),
+        status=c.STATUS_INVITED,
+        invite_token_hash=token_hash,
+        invite_expires_at=expires_at,
+    )
+    db.add(user)
+    db.flush()
+    return user, raw_token
+
+
+def refresh_invite_token(
+    db: Session, user: ClientAdminUser, *, token_expiry_hours: int = 72,
+) -> str:
+    """Generate a fresh invite token for an existing user. Returns raw token."""
+    raw_token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+    user.invite_token_hash = token_hash
+    user.invite_expires_at = datetime.utcnow() + timedelta(hours=token_expiry_hours)
+    user.status = c.STATUS_INVITED
+    user.updated_at = datetime.utcnow()
+    db.flush()
+    return raw_token
+
+
+def soft_delete_user(db: Session, user: ClientAdminUser) -> None:
+    user.is_deleted = True
+    user.updated_at = datetime.utcnow()
 
 
 def create_user(db: Session, client_id: str, data: Dict[str, Any], enc_fn) -> ClientAdminUser:
@@ -189,14 +244,102 @@ def seed_default_roles(db: Session, client_id: str) -> None:
     """Create the 4 built-in roles if this client has none yet."""
     if count_roles(db, client_id) > 0:
         return
+    roles = []
     for r in c.DEFAULT_ROLES:
-        db.add(ClientRole(
+        role = ClientRole(
             client_id=client_id,
             name=r["name"],
             description=r["description"],
             is_system_role=r["is_system_role"],
             is_active=True,
-        ))
+        )
+        db.add(role)
+        roles.append((r["name"], role))
+    db.flush()
+    # seed permissions + assign to system roles
+    seed_permissions(db, client_id)
+    db.flush()
+    for role_name, role in roles:
+        _assign_default_perms_to_role(db, client_id, role, role_name)
+    db.flush()
+
+
+# ── Permissions ───────────────────────────────────────────────────────────────
+
+def count_permissions(db: Session, client_id: str) -> int:
+    return db.query(ClientPermission).filter(ClientPermission.client_id == client_id).count()
+
+
+def list_permissions(db: Session, client_id: str) -> List[ClientPermission]:
+    return (
+        db.query(ClientPermission)
+        .filter(ClientPermission.client_id == client_id)
+        .order_by(ClientPermission.module, ClientPermission.name)
+        .all()
+    )
+
+
+def get_permission_by_name(db: Session, client_id: str, name: str) -> Optional[ClientPermission]:
+    return db.query(ClientPermission).filter(
+        ClientPermission.client_id == client_id,
+        ClientPermission.name == name,
+    ).first()
+
+
+def seed_permissions(db: Session, client_id: str) -> None:
+    """Upsert all catalog permissions for this client (idempotent)."""
+    existing = {p.name for p in list_permissions(db, client_id)}
+    for name, description, module in c.PERMISSION_CATALOG:
+        if name not in existing:
+            db.add(ClientPermission(
+                client_id=client_id,
+                name=name,
+                description=description,
+                module=module,
+            ))
+    db.flush()
+
+
+def get_role_permissions(db: Session, role_id: str) -> List[ClientPermission]:
+    return (
+        db.query(ClientPermission)
+        .join(ClientRolePermission, ClientRolePermission.permission_id == ClientPermission.id)
+        .filter(ClientRolePermission.role_id == role_id)
+        .all()
+    )
+
+
+def set_role_permissions(db: Session, role_id: str, permission_ids: List[str]) -> None:
+    """Full-replace permission set for a role."""
+    db.query(ClientRolePermission).filter(ClientRolePermission.role_id == role_id).delete()
+    for pid in permission_ids:
+        db.add(ClientRolePermission(role_id=role_id, permission_id=pid))
+    db.flush()
+
+
+def copy_role_permissions(db: Session, source_role_id: str, dest_role_id: str) -> None:
+    """Copy all permissions from source role to dest role."""
+    perms = get_role_permissions(db, source_role_id)
+    for p in perms:
+        db.add(ClientRolePermission(role_id=dest_role_id, permission_id=p.id))
+    db.flush()
+
+
+def _assign_default_perms_to_role(db: Session, client_id: str, role: ClientRole, role_name: str) -> None:
+    """Assign the correct default permissions to a seeded role."""
+    if role_name == "Super Admin":
+        target_names = c.SUPER_ADMIN_PERMISSIONS
+    elif role_name == "Admin":
+        target_names = c.ADMIN_PERMISSIONS
+    else:
+        return  # Manager and Employee start with no permissions
+
+    perm_ids = [
+        p.id for p in list_permissions(db, client_id)
+        if p.name in target_names
+    ]
+    for pid in perm_ids:
+        db.add(ClientRolePermission(role_id=role.id, permission_id=pid))
     db.flush()
 
 

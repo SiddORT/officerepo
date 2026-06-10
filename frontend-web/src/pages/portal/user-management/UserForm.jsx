@@ -16,6 +16,22 @@ const Label = ({ children }) => (
   </label>
 );
 
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button type="button" onClick={copy}
+      style={{ padding: "4px 10px", borderRadius: 5, fontSize: 11, fontWeight: 600, border: "1px solid var(--c-border)", background: copied ? "rgba(74,222,128,0.12)" : "var(--c-surface2)", color: copied ? "#4ade80" : "var(--c-text2)", cursor: "pointer", whiteSpace: "nowrap" }}>
+      {copied ? "Copied!" : "Copy link"}
+    </button>
+  );
+}
+
 export default function UserForm({ editMode = false }) {
   const { subdomain, userId } = useParams();
   const { token } = usePortalAuth();
@@ -29,6 +45,7 @@ export default function UserForm({ editMode = false }) {
   const [loading, setLoading] = useState(editMode);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [inviteResult, setInviteResult] = useState(null); // {invite_link, name}
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -89,8 +106,9 @@ export default function UserForm({ editMode = false }) {
           country_code: form.country_code || undefined,
           role_ids: form.role_ids,
         });
+        navigate(`/portal/${subdomain}/user-management/users`);
       } else {
-        await portalUserMgmtApi.createUser(subdomain, token, {
+        const res = await portalUserMgmtApi.inviteUser(subdomain, token, {
           first_name: form.first_name,
           last_name: form.last_name || undefined,
           display_name: form.display_name || undefined,
@@ -99,8 +117,12 @@ export default function UserForm({ editMode = false }) {
           country_code: form.country_code || undefined,
           role_ids: form.role_ids,
         });
+        const result = res.data?.data || {};
+        setInviteResult({
+          invite_link: result.invite_link,
+          name: result.display_name || `${result.first_name} ${result.last_name || ""}`.trim(),
+        });
       }
-      navigate(`/portal/${subdomain}/user-management/users`);
     } catch (e) {
       setError(e.response?.data?.detail || "Save failed.");
     } finally {
@@ -110,15 +132,64 @@ export default function UserForm({ editMode = false }) {
 
   const activeRoles = roles.filter(r => r.is_active);
 
+  // ── Invite success screen ────────────────────────────────────────────────
+  if (inviteResult) {
+    return (
+      <UserManagementLayout title="Invite Sent">
+        <div style={{ maxWidth: 520 }}>
+          <div style={{ background: "var(--c-surface)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 12, padding: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(74,222,128,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <svg width="20" height="20" fill="none" stroke="#4ade80" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-heading)" }}>Invitation created</div>
+                <div style={{ fontSize: 12, color: "var(--c-muted)" }}>Share this link with {inviteResult.name} to let them set their password.</div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <Label>Invite Link</Label>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", padding: "8px 10px", background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 6 }}>
+                <span style={{ flex: 1, fontSize: 12, color: "var(--c-text2)", wordBreak: "break-all", fontFamily: "monospace" }}>
+                  {inviteResult.invite_link}
+                </span>
+                <CopyButton text={inviteResult.invite_link} />
+              </div>
+              <p style={{ margin: "6px 0 0", fontSize: 11, color: "var(--c-muted)" }}>
+                This link expires in 72 hours. You can resend it from the Users list.
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => navigate(`/portal/${subdomain}/user-management/users`)}
+                style={{ flex: 1, padding: "8px 0", borderRadius: 6, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", border: "none", cursor: "pointer" }}>
+                Back to Users
+              </button>
+              <button onClick={() => { setInviteResult(null); setForm({ first_name: "", last_name: "", display_name: "", email: "", phone: "", country_code: "", role_ids: [] }); }}
+                style={{ flex: 1, padding: "8px 0", borderRadius: 6, fontWeight: 500, fontSize: 13, background: "transparent", color: "var(--c-text2)", border: "1px solid var(--c-border)", cursor: "pointer" }}>
+                Invite Another
+              </button>
+            </div>
+          </div>
+        </div>
+      </UserManagementLayout>
+    );
+  }
+
   return (
-    <UserManagementLayout title={editMode ? "Edit User" : "Add User"}>
+    <UserManagementLayout title={editMode ? "Edit User" : "Invite User"}>
       <div style={{ maxWidth: 560 }}>
         <div style={{ marginBottom: 20 }}>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--c-text)" }}>
-            {editMode ? "Edit User" : "Add User"}
+            {editMode ? "Edit User" : "Invite User"}
           </h2>
           <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--c-muted)" }}>
-            {editMode ? "Update user information and role assignments." : "Create a new workspace member."}
+            {editMode
+              ? "Update user information and role assignments."
+              : "An invitation link will be generated for the user to set their own password."}
           </p>
         </div>
 
@@ -150,8 +221,9 @@ export default function UserForm({ editMode = false }) {
 
               {!editMode && (
                 <div>
-                  <Label>Email *</Label>
+                  <Label>Work Email *</Label>
                   <input type="email" style={inputStyle} value={form.email} onChange={e => set("email", e.target.value)} placeholder="reena@company.com" />
+                  <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--c-muted)" }}>The invite link will be tied to this email address.</p>
                 </div>
               )}
 
@@ -193,7 +265,7 @@ export default function UserForm({ editMode = false }) {
             <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
               <button onClick={handleSubmit} disabled={saving}
                 style={{ flex: 1, padding: "9px 0", borderRadius: 6, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}>
-                {saving ? "Saving…" : editMode ? "Save Changes" : "Create User"}
+                {saving ? "Saving…" : editMode ? "Save Changes" : "Send Invite"}
               </button>
               <button onClick={() => navigate(-1)} disabled={saving}
                 style={{ flex: 1, padding: "9px 0", borderRadius: 6, fontWeight: 500, fontSize: 13, background: "transparent", color: "var(--c-text2)", border: "1px solid var(--c-border)", cursor: "pointer" }}>

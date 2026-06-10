@@ -55,6 +55,39 @@ class ClientUserRole(ClientBase):
     assigned_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
+# ── Permission catalog ─────────────────────────────────────────────────────────
+
+class ClientPermission(ClientBase):
+    """Workspace permission catalog — one row per permission name.
+
+    Seeded on first roles call; keyed by (client_id, name) so each workspace
+    gets its own copy (future custom permissions possible).
+    """
+    __tablename__ = "client_permissions"
+
+    id          = Column(String(36), primary_key=True, default=_uuid)
+    client_id   = Column(String(36), nullable=False, index=True)
+    name        = Column(String(120), nullable=False)        # e.g. "user.invite"
+    description = Column(Text, nullable=True)
+    module      = Column(String(60), nullable=False)         # grouping key
+    created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index("ix_client_permissions_client_name", "client_id", "name", unique=True),
+    )
+
+
+# ── Role ↔ Permission join table ──────────────────────────────────────────────
+
+class ClientRolePermission(ClientBase):
+    """Many-to-many: workspace roles ↔ permissions."""
+    __tablename__ = "client_role_permissions"
+
+    role_id       = Column(String(36), primary_key=True)   # FK client_roles.id
+    permission_id = Column(String(36), primary_key=True)   # FK client_permissions.id
+    granted_at    = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 # ── Login Logs ─────────────────────────────────────────────────────────────────
 
 class ClientLoginLog(ClientBase):

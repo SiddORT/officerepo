@@ -369,19 +369,27 @@ export const portalUserMgmtApi = {
   // Users
   listUsers:     (subdomain, token, params) => axios.get(`${API_BASE_URL}/api/v1/portal/${subdomain}/users`, { headers: { Authorization: `Bearer ${token}` }, params }),
   getUser:       (subdomain, token, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${subdomain}/users/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
+  inviteUser:    (subdomain, token, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/users`, data, { headers: { Authorization: `Bearer ${token}` } }),
   createUser:    (subdomain, token, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/users`, data, { headers: { Authorization: `Bearer ${token}` } }),
   updateUser:    (subdomain, token, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${subdomain}/users/${id}`, data, { headers: { Authorization: `Bearer ${token}` } }),
+  removeUser:    (subdomain, token, id) => axios.delete(`${API_BASE_URL}/api/v1/portal/${subdomain}/users/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
+  resendInvite:  (subdomain, token, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/users/${id}/resend-invite`, {}, { headers: { Authorization: `Bearer ${token}` } }),
   activateUser:  (subdomain, token, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/users/${id}/activate`, {}, { headers: { Authorization: `Bearer ${token}` } }),
   deactivateUser:(subdomain, token, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/users/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${token}` } }),
   resetPassword: (subdomain, token, id, new_password) => axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/users/${id}/reset-password`, { new_password }, { headers: { Authorization: `Bearer ${token}` } }),
   forceLogout:   (subdomain, token, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/users/${id}/force-logout`, {}, { headers: { Authorization: `Bearer ${token}` } }),
   // Roles
-  listRoles:     (subdomain, token) => axios.get(`${API_BASE_URL}/api/v1/portal/${subdomain}/roles`, { headers: { Authorization: `Bearer ${token}` } }),
-  getRole:       (subdomain, token, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${subdomain}/roles/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
-  createRole:    (subdomain, token, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/roles`, data, { headers: { Authorization: `Bearer ${token}` } }),
-  updateRole:    (subdomain, token, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${subdomain}/roles/${id}`, data, { headers: { Authorization: `Bearer ${token}` } }),
-  cloneRole:     (subdomain, token, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/roles/${id}/clone`, {}, { headers: { Authorization: `Bearer ${token}` } }),
-  setRoleStatus: (subdomain, token, id, is_active) => axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/roles/${id}/status`, { is_active }, { headers: { Authorization: `Bearer ${token}` } }),
+  listRoles:       (subdomain, token) => axios.get(`${API_BASE_URL}/api/v1/portal/${subdomain}/roles`, { headers: { Authorization: `Bearer ${token}` } }),
+  getRole:         (subdomain, token, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${subdomain}/roles/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
+  createRole:      (subdomain, token, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/roles`, data, { headers: { Authorization: `Bearer ${token}` } }),
+  updateRole:      (subdomain, token, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${subdomain}/roles/${id}`, data, { headers: { Authorization: `Bearer ${token}` } }),
+  cloneRole:       (subdomain, token, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/roles/${id}/clone`, {}, { headers: { Authorization: `Bearer ${token}` } }),
+  setRoleStatus:   (subdomain, token, id, is_active) => axios.post(`${API_BASE_URL}/api/v1/portal/${subdomain}/roles/${id}/status`, { is_active }, { headers: { Authorization: `Bearer ${token}` } }),
+  // Role permissions
+  getRolePermissions: (subdomain, token, roleId) => axios.get(`${API_BASE_URL}/api/v1/portal/${subdomain}/roles/${roleId}/permissions`, { headers: { Authorization: `Bearer ${token}` } }),
+  setRolePermissions: (subdomain, token, roleId, permission_ids) => axios.put(`${API_BASE_URL}/api/v1/portal/${subdomain}/roles/${roleId}/permissions`, { permission_ids }, { headers: { Authorization: `Bearer ${token}` } }),
+  // Permission catalog
+  getPermissions: (subdomain, token) => axios.get(`${API_BASE_URL}/api/v1/portal/${subdomain}/permissions`, { headers: { Authorization: `Bearer ${token}` } }),
   // Logs
   loginLogs:     (subdomain, token, params) => axios.get(`${API_BASE_URL}/api/v1/portal/${subdomain}/logs/login`, { headers: { Authorization: `Bearer ${token}` }, params }),
   activityLogs:  (subdomain, token, params) => axios.get(`${API_BASE_URL}/api/v1/portal/${subdomain}/logs/activity`, { headers: { Authorization: `Bearer ${token}` }, params }),

@@ -305,6 +305,7 @@ export default function PortalLayout({ children, title }) {
                 </div>
                 {[
                   { label: "My Profile", action: () => { setProfileOpen(false); navigate(`/portal/${subdomain}/profile`); }, color: "var(--c-text)" },
+                  { label: "User Management", action: () => { setProfileOpen(false); navigate(`/portal/${subdomain}/user-management/users`); }, color: "var(--c-text)" },
                   { label: "Sign Out", action: handleLogout, color: "#ef4444" },
                 ].map(item => (
                   <button key={item.label} onClick={item.action}

@@ -73,10 +73,18 @@ def make_client_session(url: str) -> Session:
     return factory()
 
 
+# Track which URLs have already been provisioned in this process (avoids redundant
+# create_all calls on every request while still catching new tables for old clients).
+_provisioned: set = set()
+
+
 def provision_portal_schema(url: str) -> None:
     """Create all ClientBase tables on the client DB (idempotent — uses CREATE IF NOT EXISTS)."""
+    if url in _provisioned:
+        return
     # Imports ensure models register themselves with ClientBase before create_all
     import backend.app.modules.portal_user_management.models  # noqa: F401
     import backend.app.modules.organization_management.models  # noqa: F401
     engine = _get_engine(url)
     ClientBase.metadata.create_all(engine)
+    _provisioned.add(url)
