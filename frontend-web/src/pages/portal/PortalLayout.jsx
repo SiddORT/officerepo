@@ -9,6 +9,10 @@ const STATIC_NAV = [
     label: "Dashboard", path: "dashboard",
     icon: <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>,
   },
+  {
+    label: "Organization", path: "org",
+    icon: <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>,
+  },
 ];
 
 // ── Sub-nav definitions (keyed by mod.route from the catalog) ─────────────
@@ -175,16 +179,49 @@ export default function PortalLayout({ children, title }) {
 
         {/* Nav */}
         <nav style={{ flex: 1, overflowY: "auto", padding: "8px 6px", display: "flex", flexDirection: "column", gap: 1 }}>
-          {/* Static: Dashboard */}
+          {/* Static nav items (Dashboard, Organization, …) */}
           {STATIC_NAV.map((item) => {
-            const href = `/portal/${subdomain}/${item.path}`;
-            const isActive = location.pathname === href;
+            const subItems = MODULE_SUB_NAV[item.path] || [];
+            const href = subItems.length > 0
+              ? `/portal/${subdomain}/${subItems[0].path}`
+              : `/portal/${subdomain}/${item.path}`;
+            const basePath = `/portal/${subdomain}/${item.path}`;
+            const isActive = subItems.length > 0
+              ? location.pathname.startsWith(basePath)
+              : location.pathname === basePath;
             return (
-              <Link key={item.path} to={href} style={navLinkStyle(isActive)} title={collapsed ? item.label : undefined}>
-                {item.icon}
-                {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
-                {isActive && !collapsed && <span style={{ width: 3, height: 16, borderRadius: 2, background: "var(--c-accent)", marginLeft: "auto" }} />}
-              </Link>
+              <div key={item.path}>
+                <Link to={href} style={navLinkStyle(isActive && subItems.length === 0)} title={collapsed ? item.label : undefined}>
+                  {item.icon}
+                  {!collapsed && (
+                    <>
+                      <span style={{ flex: 1 }}>{item.label}</span>
+                      {subItems.length > 0 && (
+                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                          style={{ color: "var(--c-muted)", transform: isActive ? "rotate(90deg)" : "none", transition: "transform 0.15s", flexShrink: 0 }}>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                        </svg>
+                      )}
+                      {!subItems.length && isActive && <span style={{ width: 3, height: 16, borderRadius: 2, background: "var(--c-accent)", marginLeft: "auto" }} />}
+                    </>
+                  )}
+                </Link>
+                {!collapsed && isActive && subItems.length > 0 && (
+                  <div style={{ marginTop: 1, marginBottom: 2 }}>
+                    {subItems.map((sub) => {
+                      const subHref = `/portal/${subdomain}/${sub.path}`;
+                      const isSubActive = location.pathname.startsWith(subHref);
+                      return (
+                        <Link key={sub.path} to={subHref} style={subNavLinkStyle(isSubActive)}>
+                          <span style={{ opacity: 0.7 }}>{sub.icon}</span>
+                          <span>{sub.label}</span>
+                          {isSubActive && <span style={{ width: 3, height: 12, borderRadius: 2, background: "var(--c-accent)", marginLeft: "auto" }} />}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
 
