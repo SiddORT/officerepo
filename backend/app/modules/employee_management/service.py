@@ -10,31 +10,37 @@ from sqlalchemy.orm import Session
 from backend.app.modules.employee_management import constants as c
 from backend.app.modules.employee_management import repository as repo
 from backend.app.modules.organization_management.models import (
-    OrgCompany, OrgDepartment, OrgDesignation,
+    OrgBranch, OrgCompany, OrgDepartment, OrgDesignation,
 )
 
 
 def _resolve_names(db: Session, rows) -> tuple:
-    """Batch-fetch company/dept/desig names for a list of employee rows."""
+    """Batch-fetch company/branch/dept/desig names for a list of employee rows."""
     company_ids  = {r.company_id      for r in rows if r.company_id}
+    branch_ids   = {getattr(r, "branch_id", None) for r in rows if getattr(r, "branch_id", None)}
     dept_ids     = {r.department_id   for r in rows if r.department_id}
     desig_ids    = {r.designation_id  for r in rows if r.designation_id}
     companies = {c.id: c.company_name for c in db.query(OrgCompany).filter(OrgCompany.id.in_(company_ids))} if company_ids else {}
+    branches  = {b.id: b.branch_name  for b in db.query(OrgBranch).filter(OrgBranch.id.in_(branch_ids))}   if branch_ids  else {}
     depts     = {d.id: d.department_name  for d in db.query(OrgDepartment).filter(OrgDepartment.id.in_(dept_ids))}  if dept_ids  else {}
     desigs    = {d.id: d.designation_name for d in db.query(OrgDesignation).filter(OrgDesignation.id.in_(desig_ids))} if desig_ids else {}
-    return companies, depts, desigs
+    return companies, branches, depts, desigs
 
 
 # ── Serializers ───────────────────────────────────────────────────────────────
 
-def _emp_dict(e, *, company_name=None, department_name=None, designation_name=None, include_children: bool = False) -> Dict[str, Any]:
+def _emp_dict(e, *, company_name=None, branch_name=None, department_name=None, designation_name=None, include_children: bool = False) -> Dict[str, Any]:
     d = {
         "id": e.id, "client_id": e.client_id,
-        "company_id": e.company_id, "department_id": e.department_id,
+        "company_id": e.company_id,
+        "branch_id": getattr(e, "branch_id", None),
+        "department_id": e.department_id,
         "designation_id": e.designation_id,
         "company_name": company_name,
+        "branch_name": branch_name,
         "department_name": department_name,
         "designation_name": designation_name,
+        "work_mode": getattr(e, "work_mode", None),
         "employee_code": e.employee_code,
         "first_name": e.first_name, "middle_name": e.middle_name,
         "last_name": e.last_name, "display_name": e.display_name,
@@ -211,9 +217,10 @@ def _experience_summary(records: list) -> Dict[str, Any]:
 
 def _emp_names(db: Session, emp) -> dict:
     """Single-row name lookup for detail views."""
-    companies, depts, desigs = _resolve_names(db, [emp])
+    companies, branches, depts, desigs = _resolve_names(db, [emp])
     return {
         "company_name":     companies.get(emp.company_id),
+        "branch_name":      branches.get(getattr(emp, "branch_id", None)),
         "department_name":  depts.get(emp.department_id),
         "designation_name": desigs.get(emp.designation_id),
     }
@@ -221,10 +228,11 @@ def _emp_names(db: Session, emp) -> dict:
 
 def list_employees(db: Session, client_id: str, **kwargs) -> Dict:
     rows, total = repo.list_employees(db, client_id, **kwargs)
-    companies, depts, desigs = _resolve_names(db, rows)
+    companies, branches, depts, desigs = _resolve_names(db, rows)
     return {
         "data": [_emp_dict(r,
                            company_name=companies.get(r.company_id),
+                           branch_name=branches.get(getattr(r, "branch_id", None)),
                            department_name=depts.get(r.department_id),
                            designation_name=desigs.get(r.designation_id))
                  for r in rows],

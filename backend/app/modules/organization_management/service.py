@@ -172,26 +172,38 @@ def set_company_status(
 
 # ── Branches ───────────────────────────────────────────────────────────────────
 
-def _branch_dict(b, total_employees: int = 0, active_employees: int = 0) -> Dict[str, Any]:
+def _branch_dict(b, company_name: Optional[str] = None, total_employees: int = 0, active_employees: int = 0) -> Dict[str, Any]:
     return {
         "id": b.id, "client_id": b.client_id, "company_id": b.company_id,
+        "company_name": company_name,
         "branch_code": b.branch_code, "branch_name": b.branch_name,
         "branch_type": b.branch_type,
         "email": b.email, "phone": b.phone,
         "address_line_1": b.address_line_1, "address_line_2": b.address_line_2,
         "city": b.city, "state": b.state, "country": b.country, "postal_code": b.postal_code,
+        "description": getattr(b, "description", None),
         "is_active": b.is_active,
         "total_employees": total_employees, "active_employees": active_employees,
         "created_at": b.created_at, "updated_at": b.updated_at,
     }
 
 
+def _branch_company_names(client_db: Session, rows) -> Dict[str, str]:
+    """Batch-fetch company names for a list of branch rows."""
+    company_ids = {b.company_id for b in rows if b.company_id}
+    if not company_ids:
+        return {}
+    cos = client_db.query(OrgCompany).filter(OrgCompany.id.in_(company_ids)).all()
+    return {c.id: c.company_name for c in cos}
+
+
 def list_branches(client_db: Session, client_id: str, **kwargs) -> Dict:
     rows, total = repo.list_branches(client_db, client_id, **kwargs)
+    company_map = _branch_company_names(client_db, rows)
     result = []
     for b in rows:
         counts = repo.get_branch_employee_count(client_db, client_id, b.id)
-        result.append(_branch_dict(b, **counts))
+        result.append(_branch_dict(b, company_name=company_map.get(b.company_id), **counts))
     return {"data": result, "total": total,
             "page": kwargs.get("page", 1), "page_size": kwargs.get("page_size", 50)}
 
@@ -201,7 +213,8 @@ def get_branch(client_db: Session, client_id: str, branch_id: str) -> Dict:
     if not b:
         raise HTTPException(404, "Branch not found.")
     counts = repo.get_branch_employee_count(client_db, client_id, branch_id)
-    return _branch_dict(b, **counts)
+    company_map = _branch_company_names(client_db, [b])
+    return _branch_dict(b, company_name=company_map.get(b.company_id), **counts)
 
 
 def create_branch(

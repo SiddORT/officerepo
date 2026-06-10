@@ -55,6 +55,7 @@ from backend.app.database.client_db import build_client_db_url, make_client_sess
 from backend.app.modules.organization_management import service as svc
 from backend.app.modules.organization_management.constants import MODULE_NAME
 from backend.app.modules.organization_management.schemas import (
+    BranchCreate, BranchUpdate,
     CompanyCreate, CompanyUpdate,
     DepartmentCreate, DepartmentUpdate,
     DesignationCreate, DesignationUpdate,
@@ -188,6 +189,82 @@ def deactivate_company(
     result = svc.set_company_status(client_db, portal_user["client_id"], company_id, False,
                                     actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
     return ApiResponse.ok(result, "Company deactivated.").model_dump()
+
+
+# ── Branches ───────────────────────────────────────────────────────────────────
+
+@router.get("/{subdomain}/org/branches")
+def list_branches(
+    subdomain: str,
+    page: int = 1, page_size: int = 20,
+    search: Optional[str] = None, status: Optional[str] = None,
+    company_id: Optional[str] = None,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    result = svc.list_branches(client_db, portal_user["client_id"],
+                               page=page, page_size=page_size,
+                               search=search, status=status, company_id=company_id)
+    return ApiResponse.ok(result).model_dump()
+
+
+@router.post("/{subdomain}/org/branches")
+def create_branch(
+    subdomain: str, payload: BranchCreate, request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    result = svc.create_branch(client_db, portal_user["client_id"], payload,
+                               actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
+    return ApiResponse.ok(result, "Branch created.").model_dump()
+
+
+@router.get("/{subdomain}/org/branches/{branch_id}")
+def get_branch(
+    subdomain: str, branch_id: str,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(svc.get_branch(client_db, portal_user["client_id"], branch_id)).model_dump()
+
+
+@router.patch("/{subdomain}/org/branches/{branch_id}")
+def update_branch(
+    subdomain: str, branch_id: str, payload: BranchUpdate, request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    result = svc.update_branch(client_db, portal_user["client_id"], branch_id, payload,
+                               actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
+    return ApiResponse.ok(result, "Branch updated.").model_dump()
+
+
+@router.post("/{subdomain}/org/branches/{branch_id}/activate")
+def activate_branch(
+    subdomain: str, branch_id: str, request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    result = svc.set_branch_status(client_db, portal_user["client_id"], branch_id, True,
+                                   actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
+    return ApiResponse.ok(result, "Branch activated.").model_dump()
+
+
+@router.post("/{subdomain}/org/branches/{branch_id}/deactivate")
+def deactivate_branch(
+    subdomain: str, branch_id: str, request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    result = svc.set_branch_status(client_db, portal_user["client_id"], branch_id, False,
+                                   actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
+    return ApiResponse.ok(result, "Branch deactivated.").model_dump()
 
 
 # ── Departments — static routes FIRST to avoid {dept_id} clash ─────────────────

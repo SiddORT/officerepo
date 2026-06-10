@@ -120,6 +120,7 @@ export default function EmployeeForm({ editMode = false }) {
   const [error, setError] = useState("");
 
   const [companies, setCompanies] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [options, setOptions] = useState({});
@@ -127,7 +128,8 @@ export default function EmployeeForm({ editMode = false }) {
   const todayStr = new Date().toISOString().split("T")[0];
 
   const blank = {
-    company_id: "", department_id: "", designation_id: "",
+    company_id: "", branch_id: "", department_id: "", designation_id: "",
+    work_mode: "",
     first_name: "", middle_name: "", last_name: "", display_name: "",
     gender: "", date_of_birth: "", marital_status: "", blood_group: "", nationality: "",
     personal_email: "", official_email: "",
@@ -157,6 +159,8 @@ export default function EmployeeForm({ editMode = false }) {
 
   useEffect(() => {
     if (!form.company_id) return;
+    portalOrgApi.listBranches(subdomain, token, { company_id: form.company_id, page_size: 200, status: "active" })
+      .then(r => setBranches(r.data.data?.data || [])).catch(() => {});
     portalOrgApi.listDepts(subdomain, token, { company_id: form.company_id, page_size: 200 })
       .then(r => setDepartments(r.data.data?.data || [])).catch(() => {});
     portalOrgApi.listDesigs(subdomain, token, { company_id: form.company_id, page_size: 200 })
@@ -185,6 +189,7 @@ export default function EmployeeForm({ editMode = false }) {
         permanent_address_line_1: e.permanent_address_line_1 || "", permanent_address_line_2: e.permanent_address_line_2 || "",
         permanent_city: e.permanent_city || "", permanent_state: e.permanent_state || "",
         permanent_country: e.permanent_country || "", permanent_postal_code: e.permanent_postal_code || "",
+        branch_id: e.branch_id || "", work_mode: e.work_mode || "",
         employee_category: e.employee_category || "", employment_type: e.employment_type || "",
         employment_status: e.employment_status || "Draft",
         joining_date: e.joining_date || "", confirmation_date: e.confirmation_date || "",
@@ -442,14 +447,30 @@ export default function EmployeeForm({ editMode = false }) {
       {/* ── Tab: Employment ─────────────────────────────────────────────────── */}
       {tab === "employment" && (
         <>
-          <Section icon="🏢" title="Organization" subtitle="Company, department and designation">
+          <Section icon="🏢" title="Organization" subtitle="Company, branch, department and designation">
             <div>
               <Label required>Company</Label>
-              <select value={form.company_id} onChange={e => { set("company_id", e.target.value); set("department_id", ""); set("designation_id", ""); }} style={inp}>
+              <select value={form.company_id} onChange={e => { set("company_id", e.target.value); set("branch_id", ""); set("department_id", ""); set("designation_id", ""); }} style={inp}>
                 <option value="">Select company…</option>
                 {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
               </select>
             </div>
+            <Grid2>
+              <div>
+                <Label>Branch</Label>
+                <select value={form.branch_id} onChange={e => set("branch_id", e.target.value)} style={inp} disabled={!form.company_id}>
+                  <option value="">Select branch…</option>
+                  {branches.map(b => <option key={b.id} value={b.id}>{b.branch_name}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label>Work Mode</Label>
+                <select value={form.work_mode} onChange={e => set("work_mode", e.target.value)} style={inp}>
+                  <option value="">Select…</option>
+                  {["Onsite", "Work From Home", "Hybrid", "Remote"].map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+            </Grid2>
             <Grid2>
               <div>
                 <Label>Department</Label>

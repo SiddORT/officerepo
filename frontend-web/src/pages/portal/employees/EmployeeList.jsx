@@ -196,7 +196,7 @@ export default function EmployeeList() {
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--c-border)", background: "var(--c-surface2)" }}>
-                  {["#", "Employee", "Code", "Department", "Designation", "Since", "Status", ""].map(h => (
+                  {["#", "Employee", "Code", "Branch", "Department", "Designation", "Since", "Status", ""].map(h => (
                     <th key={h} style={{ padding: "10px 16px", textAlign: h === "#" ? "center" : "left", fontSize: 11, fontWeight: 600, color: "var(--c-text2)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", width: h === "#" ? 40 : undefined }}>{h}</th>
                   ))}
                 </tr>
@@ -217,6 +217,11 @@ export default function EmployeeList() {
                       </div>
                     </td>
                     <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)", fontFamily: "monospace" }}>{emp.employee_code}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)", whiteSpace: "nowrap" }}>
+                      {emp.branch_name
+                        ? <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 999, background: "rgba(168,85,247,0.08)", color: "#a855f7", border: "1px solid rgba(168,85,247,0.15)", fontWeight: 500 }}>{emp.branch_name}</span>
+                        : <span style={{ opacity: 0.4 }}>—</span>}
+                    </td>
                     <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)" }}>{emp.department_name || <span style={{ opacity: 0.4 }}>—</span>}</td>
                     <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)" }}>{emp.designation_name || <span style={{ opacity: 0.4 }}>—</span>}</td>
                     <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)", whiteSpace: "nowrap" }}>

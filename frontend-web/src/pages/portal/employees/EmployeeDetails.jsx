@@ -678,6 +678,16 @@ export default function EmployeeDetails() {
                 📅 Since {new Date(emp.joining_date).toLocaleDateString("en-IN", { month: "short", year: "numeric" })} · {tenureDetail(emp.joining_date)}
               </span>
             )}
+            {emp.branch_name && (
+              <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 999, background: "rgba(168,85,247,0.1)", color: "#a855f7", border: "1px solid rgba(168,85,247,0.2)", fontWeight: 500 }}>
+                📍 {emp.branch_name}
+              </span>
+            )}
+            {emp.work_mode && (
+              <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 999, background: "rgba(251,146,60,0.1)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.2)", fontWeight: 500 }}>
+                🖥 {emp.work_mode}
+              </span>
+            )}
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

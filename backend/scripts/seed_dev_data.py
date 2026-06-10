@@ -63,7 +63,7 @@ def run() -> None:
     db = make_client_session(client_url)
 
     from backend.app.modules.organization_management.models import (
-        OrgCompany, OrgDepartment, OrgDesignation,
+        OrgBranch, OrgCompany, OrgDepartment, OrgDesignation,
     )
     from backend.app.modules.employee_management.models import Employee
 
@@ -73,6 +73,7 @@ def run() -> None:
         db.query(Employee).filter(Employee.client_id == ORT_CLIENT_ID).delete(synchronize_session=False)
         db.query(OrgDesignation).filter(OrgDesignation.client_id == ORT_CLIENT_ID).delete(synchronize_session=False)
         db.query(OrgDepartment).filter(OrgDepartment.client_id == ORT_CLIENT_ID).delete(synchronize_session=False)
+        db.query(OrgBranch).filter(OrgBranch.client_id == ORT_CLIENT_ID).delete(synchronize_session=False)
         db.query(OrgCompany).filter(OrgCompany.client_id == ORT_CLIENT_ID).delete(synchronize_session=False)
         db.commit()
         print("✓ Flush complete")
@@ -126,7 +127,27 @@ def run() -> None:
         db.commit()
         print("✓ Acme Technologies Pvt Ltd created")
 
-        # ── 4. ACME — departments ─────────────────────────────────────────────────
+        # ── 4. ACME — branches ───────────────────────────────────────────────────
+        branch_defs = [
+            ("ACME-MUM", "Mumbai Head Office",     "Head Office",    "Mumbai",    "Maharashtra", "+91-22-40006001", "mumbai@acmetech.in"),
+            ("ACME-PUN", "Pune Office",            "Branch Office",  "Pune",      "Maharashtra", "+91-20-40006002", "pune@acmetech.in"),
+            ("ACME-BLR", "Bangalore Office",       "Regional Office","Bangalore", "Karnataka",   "+91-80-40006003", "blr@acmetech.in"),
+            ("ACME-DEL", "Delhi Office",           "Branch Office",  "New Delhi", "Delhi",       "+91-11-40006004", "delhi@acmetech.in"),
+        ]
+        branch_ids: list[str] = []
+        for code, name, btype, city, state, phone, email in branch_defs:
+            bid = _uuid()
+            branch_ids.append(bid)
+            db.add(OrgBranch(
+                id=bid, client_id=ORT_CLIENT_ID, company_id=acme_id,
+                branch_code=code, branch_name=name, branch_type=btype,
+                city=city, state=state, country="India",
+                phone=phone, email=email, is_active=True,
+            ))
+        db.commit()
+        print(f"✓ {len(branch_defs)} branches created for Acme Technologies")
+
+        # ── 5. ACME — departments ─────────────────────────────────────────────────
         dept_defs = [
             ("HR",  "Human Resources",        "Talent acquisition, payroll and employee lifecycle"),
             ("FIN", "Finance",                "Financial planning, accounting and compliance"),
@@ -240,6 +261,14 @@ def run() -> None:
 
         assert len(emp_defs) == 50, f"Expected 50 employees, got {len(emp_defs)}"
 
+        # Branch + work-mode assignment patterns (cycle through branches, vary work modes)
+        WORK_MODES = ["Onsite", "Work From Home", "Hybrid", "Remote"]
+        # Deterministic assignment: (idx-1) % 4 → branch, (idx-1) % 4 → work_mode (offset by 1)
+        def _branch_for(idx: int) -> str:
+            return branch_ids[(idx - 1) % len(branch_ids)]
+        def _work_mode_for(idx: int) -> str:
+            return WORK_MODES[(idx) % len(WORK_MODES)]
+
         # Pass 1 — allocate all IDs so manager refs can be resolved
         code_to_id: dict[str, str] = {}
         emp_payloads = []
@@ -249,6 +278,7 @@ def run() -> None:
             code_to_id[code] = eid
             emp_payloads.append(dict(
                 id=eid, client_id=ORT_CLIENT_ID, company_id=acme_id,
+                branch_id=_branch_for(idx),
                 department_id=dept_ids.get(dept_code) if dept_code else None,
                 designation_id=desig_ids.get(desig_code),
                 employee_code=code,
@@ -260,6 +290,7 @@ def run() -> None:
                 employment_type="Full-time",
                 employee_category="Permanent",
                 employment_status="Active",
+                work_mode=_work_mode_for(idx),
                 nationality="Indian",
                 current_city="Bangalore",
                 current_state="Karnataka",
@@ -280,7 +311,7 @@ def run() -> None:
         print("\n── Seed complete ──────────────────────────────────────────────────────────")
         print(f"  ORT group:  {len(ort_companies)} companies  (ORT · HYW · HYC · PRS · IFC)")
         print(f"  Acme Tech:  {len(emp_payloads)} employees  "
-              f"across {len(dept_defs)} depts  ·  {len(desig_defs)} designations")
+              f"across {len(dept_defs)} depts  ·  {len(desig_defs)} designations  ·  {len(branch_defs)} branches")
 
     except Exception:
         db.rollback()
