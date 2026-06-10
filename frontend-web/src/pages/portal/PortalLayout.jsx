@@ -194,8 +194,11 @@ export default function PortalLayout({ children, title }) {
               ? `/portal/${subdomain}/${subItems[0].path}`
               : `/portal/${subdomain}/${item.path}`;
             const basePath = `/portal/${subdomain}/${item.path}`;
+            // Also activate parent section when any sub-item's path matches
+            const subPaths = subItems.map((s) => `/portal/${subdomain}/${s.path}`);
             const isActive = subItems.length > 0
-              ? location.pathname.startsWith(basePath)
+              ? location.pathname.startsWith(basePath) ||
+                subPaths.some((sp) => location.pathname.startsWith(sp))
               : location.pathname === basePath;
             return (
               <div key={item.path}>

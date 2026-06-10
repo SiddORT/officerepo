@@ -80,7 +80,11 @@ def _client_db_dep(
     if not conn or conn.database_status != DB_STATUS_ACTIVE:
         raise HTTPException(503, "Client workspace database is not provisioned.")
 
-    session = make_client_session(build_client_db_url(conn))
+    url = build_client_db_url(conn)
+    from backend.app.database.client_db import provision_portal_schema
+    provision_portal_schema(url)
+
+    session = make_client_session(url)
     try:
         yield session
     except Exception:
