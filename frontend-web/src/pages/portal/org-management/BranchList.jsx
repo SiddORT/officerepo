@@ -213,18 +213,26 @@ export default function BranchList() {
       </div>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
         <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
-          placeholder="Search branch name or code…" style={{ ...inp, minWidth: 200, flex: 1 }} />
-        <select value={filterCompany} onChange={e => { setFilterCompany(e.target.value); setPage(1); }} style={{ ...inp, minWidth: 160 }}>
+          placeholder="Search branch name or code…"
+          style={{ padding: "5px 10px", borderRadius: 6, fontSize: 13, background: "var(--c-surface)", border: "1px solid var(--c-border)", color: "var(--c-text)", minWidth: 200 }} />
+        <select value={filterCompany} onChange={e => { setFilterCompany(e.target.value); setPage(1); }}
+          style={{ padding: "5px 10px", borderRadius: 6, fontSize: 13, fontWeight: 500, background: "var(--c-surface)", border: "1px solid var(--c-border)", color: "var(--c-text)", cursor: "pointer" }}>
           <option value="">All Companies</option>
           {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
         </select>
-        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} style={{ ...inp, minWidth: 130 }}>
-          <option value="">All Statuses</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
+        {["", "Active", "Inactive"].map(s => (
+          <button key={s} onClick={() => { setFilterStatus(s); setPage(1); }}
+            style={{
+              padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
+              background: filterStatus === s ? "var(--c-accent)" : "var(--c-surface)",
+              color: filterStatus === s ? "#fff" : "var(--c-muted)",
+              border: `1px solid ${filterStatus === s ? "var(--c-accent)" : "var(--c-border)"}`,
+            }}>
+            {s || "All"}
+          </button>
+        ))}
       </div>
 
       {error && <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{error}</div>}
