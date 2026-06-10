@@ -84,16 +84,17 @@ SUBSCRIPTION_STATUSES = [
 BILLING_CYCLES = ["Monthly", "Quarterly", "Half-Yearly", "Yearly"]
 
 # ── Modules (assignable to a client) ─────────────────────────────────────────
-MODULE_EMPLOYEE = "Employee Management"
-MODULE_HRMS = "HRMS"
-MODULE_ASSET = "Asset Management"
-MODULE_BILLING = "Billing Management"
-MODULE_WORKFLOW = "Workflow Engine"
-MODULE_REPORTS = "Reports"
-MODULE_KNOWLEDGE = "Knowledge Base"
-MODULE_HELPDESK = "Helpdesk"
+MODULE_ORG        = "Organization Management"
+MODULE_HRMS       = "HRMS"
+MODULE_ASSET      = "Asset Management"
+MODULE_BILLING    = "Billing Management"
+MODULE_WORKFLOW   = "Workflow Engine"
+MODULE_REPORTS    = "Reports"
+MODULE_KNOWLEDGE  = "Knowledge Base"
+MODULE_HELPDESK   = "Helpdesk"
+MODULE_RECRUIT    = "Recruitment"
 CLIENT_MODULES = [
-    MODULE_EMPLOYEE,
+    MODULE_ORG,
     MODULE_HRMS,
     MODULE_ASSET,
     MODULE_BILLING,
@@ -101,6 +102,7 @@ CLIENT_MODULES = [
     MODULE_REPORTS,
     MODULE_KNOWLEDGE,
     MODULE_HELPDESK,
+    MODULE_RECRUIT,
 ]
 
 # ── Documents ────────────────────────────────────────────────────────────────

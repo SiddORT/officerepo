@@ -1,6 +1,6 @@
 """Employee Management — constants."""
 
-MODULE_NAME = "Employee Management"
+MODULE_NAME = "Organization Management"
 MODULE_CODE = "EMPLOYEE"
 
 # Employee Categories

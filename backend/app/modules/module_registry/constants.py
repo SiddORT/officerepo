@@ -18,19 +18,10 @@ MODULE_CATALOG = [
     {
         "code": "ORGANIZATION",
         "name": "Organization Management",
-        "description": "Companies, departments, and designations — foundation for all HR modules",
+        "description": "Companies, departments, designations, and employees — foundation for all workplace modules",
         "route": "org",
         "icon": "building",
         "display_order": 5,
-        "is_system_module": False,
-    },
-    {
-        "code": "employees",
-        "name": "Employee Management",
-        "description": "Employee records, profiles, and employment history",
-        "route": "employees",
-        "icon": "id-card",
-        "display_order": 10,
         "is_system_module": False,
     },
     {

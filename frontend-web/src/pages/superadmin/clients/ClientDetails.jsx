@@ -396,32 +396,310 @@ function CommercialsTab({ clientId, billing, options, onChange }) {
   );
 }
 
+// ── Module sub-features catalog (UI-only metadata) ────────────────────────────
+const MODULE_DETAILS = {
+  "Organization Management": {
+    description: "Companies, departments, designations, and employee records — the foundation for all workplace modules.",
+    color: "#00aeec",
+    features: ["Companies", "Departments", "Designations", "Employee Profiles", "Employment History", "Education Records", "Emergency Contacts", "Bank Details", "Government IDs"],
+  },
+  "HRMS": {
+    description: "Full human-resource management suite covering leave, payroll, and attendance.",
+    color: "#8b5cf6",
+    features: ["Leave Management", "Payroll Processing", "Attendance Tracking", "Shift Management", "Leave Policies", "Holiday Calendar"],
+  },
+  "Asset Management": {
+    description: "Track and manage company assets across locations and teams.",
+    color: "#f59e0b",
+    features: ["Asset Catalog", "Asset Assignments", "Maintenance Logs", "Disposal Records", "Location Tracking", "QR Code Labels"],
+  },
+  "Helpdesk": {
+    description: "Support ticket and service-request management with SLA tracking.",
+    color: "#ef4444",
+    features: ["Support Tickets", "Ticket Categories", "SLA Policies", "Agent Assignment", "Customer Portal", "Email Integration"],
+  },
+  "Billing Management": {
+    description: "Invoices, payments, and financial records for the workspace.",
+    color: "#10b981",
+    features: ["Invoice Generation", "Payment Tracking", "Subscription Billing", "Tax Management", "Financial Reports", "Recurring Invoices"],
+  },
+  "Workflow Engine": {
+    description: "Process automation and multi-step approval workflows.",
+    color: "#06b6d4",
+    features: ["Workflow Builder", "Triggers & Conditions", "Approval Chains", "Email Notifications", "Audit Trail", "Scheduled Automations"],
+  },
+  "Reports": {
+    description: "Analytics dashboards and exportable reports across all modules.",
+    color: "#f97316",
+    features: ["Analytics Dashboards", "Custom Report Builder", "Scheduled Exports", "Data Visualizations", "Cross-module Reports", "Role-based Views"],
+  },
+  "Knowledge Base": {
+    description: "Internal wiki, SOPs, and documentation with version control.",
+    color: "#84cc16",
+    features: ["Article Editor", "Category Management", "Version History", "Search & Tags", "Access Control", "Public/Private Articles"],
+  },
+  "Recruitment": {
+    description: "Job postings, applicant tracking, and full hiring pipelines.",
+    color: "#ec4899",
+    features: ["Job Postings", "Application Tracking", "Interview Scheduling", "Hiring Pipelines", "Offer Management", "Candidate Portal"],
+  },
+};
+
 // ── Modules ───────────────────────────────────────────────────────────────────
 function ModulesTab({ clientId, modules = [], options, onChange }) {
-  const [busy, setBusy] = useState("");
-  const enabledMap = Object.fromEntries(modules.map((m) => [m.module_name, m.is_enabled]));
+  const savedMap = Object.fromEntries(modules.map((m) => [m.module_name, m.is_enabled]));
   const allModules = options.modules || [];
 
-  const toggle = async (name, value) => {
-    setBusy(name);
-    try { await clientsApi.toggleModule(clientId, name, value); onChange(); }
-    catch (e) { alert(e.response?.data?.detail || "Failed."); }
-    finally { setBusy(""); }
+  const [pending, setPending]       = useState({});   // name → bool (staged changes only)
+  const [viewModule, setViewModule] = useState(null); // module name to show detail for
+  const [confirming, setConfirming] = useState(false);
+  const [saving, setSaving]         = useState(false);
+  const [err, setErr]               = useState("");
+
+  const effective = (name) => (name in pending ? pending[name] : !!savedMap[name]);
+
+  const stageToggle = (name, value) => {
+    const savedVal = !!savedMap[name];
+    setPending((prev) => {
+      const next = { ...prev };
+      if (value === savedVal) {
+        delete next[name];
+      } else {
+        next[name] = value;
+      }
+      return next;
+    });
   };
 
+  const hasPending = Object.keys(pending).length > 0;
+
+  const discard = () => { setPending({}); setErr(""); };
+
+  const saveAll = async () => {
+    setSaving(true); setErr("");
+    try {
+      for (const [name, value] of Object.entries(pending)) {
+        await clientsApi.toggleModule(clientId, name, value);
+      }
+      setPending({});
+      setConfirming(false);
+      onChange();
+    } catch (e) {
+      setErr(e.response?.data?.detail || "Some changes could not be saved.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const enabledChanges  = Object.entries(pending).filter(([, v]) => v).map(([n]) => n);
+  const disabledChanges = Object.entries(pending).filter(([, v]) => !v).map(([n]) => n);
+
   return (
-    <Card title="Modules">
-      {allModules.length === 0 ? <Empty>No modules available.</Empty> : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {allModules.map((name) => (
-            <div key={name} className="flex items-center justify-between rounded-lg p-3" style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)" }}>
-              <span className="text-sm t-body">{name}</span>
-              <Toggle checked={!!enabledMap[name]} disabled={busy === name} onChange={(v) => toggle(name, v)} />
+    <>
+      <Card title="Modules">
+        {/* Pending changes banner */}
+        {hasPending && (
+          <div style={{
+            marginBottom: 16, padding: "10px 14px", borderRadius: 8,
+            background: "rgba(0,174,236,0.08)", border: "1px solid rgba(0,174,236,0.25)",
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+          }}>
+            <span style={{ fontSize: 13, color: "var(--c-accent)" }}>
+              {Object.keys(pending).length} unsaved change{Object.keys(pending).length !== 1 ? "s" : ""}
+            </span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="button" onClick={discard}
+                style={{ fontSize: 12, padding: "4px 12px", borderRadius: 5, border: "1px solid var(--c-border)", background: "var(--c-surface2)", color: "var(--c-text2)", cursor: "pointer" }}>
+                Discard
+              </button>
+              <button type="button" onClick={() => setConfirming(true)}
+                style={{ fontSize: 12, padding: "4px 14px", borderRadius: 5, border: "none", background: "var(--c-accent)", color: "#fff", fontWeight: 600, cursor: "pointer" }}>
+                Save Changes
+              </button>
             </div>
-          ))}
+          </div>
+        )}
+
+        {err && <p style={{ color: "#ef4444", fontSize: 13, marginBottom: 12 }}>{err}</p>}
+
+        {allModules.length === 0 ? <Empty>No modules available.</Empty> : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {allModules.map((name) => {
+              const detail = MODULE_DETAILS[name];
+              const isOn   = effective(name);
+              const isDirty = name in pending;
+              return (
+                <div key={name} style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  borderRadius: 8, padding: "10px 12px",
+                  background: "var(--c-bg)",
+                  border: `1px solid ${isDirty ? "rgba(0,174,236,0.4)" : "var(--c-border)"}`,
+                  transition: "border-color 0.15s",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                    {detail && (
+                      <span style={{
+                        width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                        background: detail.color, opacity: isOn ? 1 : 0.35,
+                      }} />
+                    )}
+                    <span style={{ fontSize: 13, color: "var(--c-text)", fontWeight: isDirty ? 600 : 400 }}>{name}</span>
+                    {isDirty && (
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 5px", borderRadius: 3, background: "rgba(0,174,236,0.15)", color: "var(--c-accent)" }}>
+                        {pending[name] ? "Enabling" : "Disabling"}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    {detail && (
+                      <button type="button" title={`What's in ${name}`}
+                        onClick={() => setViewModule(name)}
+                        style={{
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          width: 26, height: 26, borderRadius: 6, border: "1px solid var(--c-border)",
+                          background: "var(--c-surface2)", color: "var(--c-muted)", cursor: "pointer",
+                          flexShrink: 0,
+                        }}>
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                    )}
+                    <Toggle checked={isOn} onChange={(v) => stageToggle(name, v)} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
+      {/* ── Module detail panel ──────────────────────────────────────────── */}
+      {viewModule && MODULE_DETAILS[viewModule] && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9000,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+        }} onClick={() => setViewModule(null)}>
+          <div style={{
+            background: "var(--c-surface)", borderRadius: 14, padding: "28px 28px 24px",
+            width: "100%", maxWidth: 440, boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
+            border: "1px solid var(--c-border)",
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: MODULE_DETAILS[viewModule].color, flexShrink: 0 }} />
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--c-heading)" }}>{viewModule}</h3>
+                </div>
+                <p style={{ margin: 0, fontSize: 13, color: "var(--c-text2)", lineHeight: 1.5 }}>
+                  {MODULE_DETAILS[viewModule].description}
+                </p>
+              </div>
+              <button type="button" onClick={() => setViewModule(null)}
+                style={{ marginLeft: 12, flexShrink: 0, background: "none", border: "none", color: "var(--c-muted)", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 2 }}>
+                ×
+              </button>
+            </div>
+            <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--c-muted)" }}>
+              Included features
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {MODULE_DETAILS[viewModule].features.map((f) => (
+                <span key={f} style={{
+                  fontSize: 12, padding: "4px 10px", borderRadius: 999,
+                  background: `${MODULE_DETAILS[viewModule].color}18`,
+                  color: MODULE_DETAILS[viewModule].color,
+                  border: `1px solid ${MODULE_DETAILS[viewModule].color}33`,
+                  fontWeight: 500,
+                }}>
+                  {f}
+                </span>
+              ))}
+            </div>
+            <div style={{ marginTop: 20, textAlign: "right" }}>
+              <button type="button" onClick={() => setViewModule(null)}
+                style={{ padding: "7px 20px", borderRadius: 7, border: "1px solid var(--c-border)", background: "var(--c-surface2)", color: "var(--c-text2)", fontSize: 13, cursor: "pointer" }}>
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
-    </Card>
+
+      {/* ── Confirmation modal ───────────────────────────────────────────── */}
+      {confirming && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9100,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+        }}>
+          <div style={{
+            background: "var(--c-surface)", borderRadius: 14, padding: "28px 28px 24px",
+            width: "100%", maxWidth: 420, boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
+            border: "1px solid var(--c-border)",
+          }}>
+            <h3 style={{ margin: "0 0 6px", fontSize: 16, fontWeight: 700, color: "var(--c-heading)" }}>
+              Apply module changes?
+            </h3>
+            <p style={{ margin: "0 0 18px", fontSize: 13, color: "var(--c-text2)" }}>
+              The following changes will take effect immediately for this client's portal.
+            </p>
+
+            {enabledChanges.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#4ade80" }}>
+                  Enabling ({enabledChanges.length})
+                </p>
+                {enabledChanges.map((n) => (
+                  <div key={n} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 0" }}>
+                    <svg width="14" height="14" fill="none" stroke="#4ade80" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span style={{ fontSize: 13, color: "var(--c-text)" }}>{n}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {disabledChanges.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#f87171" }}>
+                  Disabling ({disabledChanges.length})
+                </p>
+                {disabledChanges.map((n) => (
+                  <div key={n} style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 0" }}>
+                    <svg width="14" height="14" fill="none" stroke="#f87171" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span style={{ fontSize: 13, color: "var(--c-text)" }}>{n}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {err && <p style={{ color: "#ef4444", fontSize: 13, margin: "0 0 12px" }}>{err}</p>}
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 20 }}>
+              <button type="button" onClick={() => { setConfirming(false); setErr(""); }}
+                disabled={saving}
+                style={{ padding: "8px 18px", borderRadius: 7, border: "1px solid var(--c-border)", background: "var(--c-surface2)", color: "var(--c-text2)", fontSize: 13, cursor: "pointer", opacity: saving ? 0.5 : 1 }}>
+                Cancel
+              </button>
+              <button type="button" onClick={saveAll} disabled={saving}
+                style={{ padding: "8px 20px", borderRadius: 7, border: "none", background: "var(--c-accent)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1, display: "flex", alignItems: "center", gap: 7 }}>
+                {saving ? (
+                  <>
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ animation: "spin 0.8s linear infinite" }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Saving…
+                  </>
+                ) : "Apply Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
