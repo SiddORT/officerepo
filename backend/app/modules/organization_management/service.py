@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from backend.app.modules.organization_management import constants as c
 from backend.app.modules.organization_management import repository as repo
+from backend.app.modules.organization_management.models import OrgCompany
 from backend.app.modules.portal_user_management import repository as uum_repo
 
 
