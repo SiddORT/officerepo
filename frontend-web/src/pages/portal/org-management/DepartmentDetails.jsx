@@ -116,10 +116,11 @@ function EmployeesTab({ subdomain, token, deptId }) {
         <span style={{ fontSize: 11, color: "var(--c-muted)" }}>{total} total</span>
       </div>
       <SectionTable
-        cols={["Employee", "Status", "Employment Status"]}
+        cols={["#", "Employee", "Status", "Employment Status"]}
         rows={rows}
         renderRow={(e, i) => (
           <tr key={e.id} style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--c-border)" : "none" }}>
+            <td style={{ padding: "11px 14px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{i + 1}</td>
             <td style={{ padding: "11px 14px" }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>{e.full_name}</div>
               <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 1, fontFamily: "monospace" }}>{e.employee_code}</div>
@@ -156,10 +157,11 @@ function DesignationsTab({ subdomain, token, deptId }) {
         <span style={{ fontSize: 11, color: "var(--c-muted)" }}>{total} total</span>
       </div>
       <SectionTable
-        cols={["Code", "Designation", "Level", "Status"]}
+        cols={["#", "Code", "Designation", "Level", "Status"]}
         rows={rows}
         renderRow={(d, i) => (
           <tr key={d.id} style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--c-border)" : "none" }}>
+            <td style={{ padding: "10px 14px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{i + 1}</td>
             <td style={{ padding: "10px 14px" }}>
               <span style={{ fontFamily: "monospace", fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }}>{d.designation_code}</span>
             </td>

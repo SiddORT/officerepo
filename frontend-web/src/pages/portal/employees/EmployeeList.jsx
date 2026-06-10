@@ -185,16 +185,17 @@ export default function EmployeeList() {
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--c-border)", background: "var(--c-surface2)" }}>
-                  {["Employee", "Code", "Department", "Type", "Joining Date", "Status", ""].map(h => (
-                    <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--c-text2)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+                  {["#", "Employee", "Code", "Department", "Type", "Joining Date", "Status", ""].map(h => (
+                    <th key={h} style={{ padding: "10px 16px", textAlign: h === "#" ? "center" : "left", fontSize: 11, fontWeight: 600, color: "var(--c-text2)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", width: h === "#" ? 40 : undefined }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {rows.map(emp => (
+                {rows.map((emp, i) => (
                   <tr key={emp.id} style={{ borderBottom: "1px solid var(--c-border)", transition: "background 0.15s" }}
                     onMouseEnter={e => e.currentTarget.style.background = "var(--c-surface2)"}
                     onMouseLeave={e => e.currentTarget.style.background = ""}>
+                    <td style={{ padding: "12px 16px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * pageSize + i + 1}</td>
                     <td style={{ padding: "12px 16px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <Avatar name={emp.full_name} />

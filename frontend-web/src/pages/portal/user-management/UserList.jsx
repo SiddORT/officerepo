@@ -194,8 +194,8 @@ export default function UserList() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
-                {["User", "Email", "Roles", "Status", "Last Login", "Actions"].map(h => (
-                  <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                {["#", "User", "Email", "Roles", "Status", "Last Login", "Actions"].map(h => (
+                  <th key={h} style={{ padding: "10px 14px", textAlign: h === "#" ? "center" : "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", width: h === "#" ? 40 : undefined }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -207,6 +207,7 @@ export default function UserList() {
                 const isInactive = u.status === "Inactive";
                 return (
                   <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? "1px solid var(--c-border)" : "none" }}>
+                    <td style={{ padding: "12px 14px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
                     <td style={{ padding: "12px 14px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <Avatar name={displayName} size={32} />

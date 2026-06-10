@@ -367,8 +367,8 @@ export default function DesignationList() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
-                {["Code", "Designation", "Department", "Level", "Employees", "Status", ""].map(h => (
-                  <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                {["#", "Code", "Designation", "Department", "Level", "Employees", "Status", ""].map(h => (
+                  <th key={h} style={{ padding: "10px 14px", textAlign: h === "#" ? "center" : "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", width: h === "#" ? 40 : undefined }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -377,6 +377,7 @@ export default function DesignationList() {
                 const dept = departments.find(x => x.id === d.department_id);
                 return (
                   <tr key={d.id} style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--c-border)" : "none" }}>
+                    <td style={{ padding: "12px 14px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{i + 1}</td>
                     <td style={{ padding: "12px 14px" }}>
                       <span style={{ fontFamily: "monospace", fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }}>
                         {d.designation_code}

@@ -255,14 +255,15 @@ export default function DesignationDetails() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
-                  {["Code", "Name", "Department", "Status"].map(h => (
-                    <th key={h} style={{ padding: "9px 14px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                  {["#", "Code", "Name", "Department", "Status"].map(h => (
+                    <th key={h} style={{ padding: "9px 14px", textAlign: h === "#" ? "center" : "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", width: h === "#" ? 40 : undefined }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {employees.map((emp, i) => (
                   <tr key={emp.id} style={{ borderBottom: i < employees.length - 1 ? "1px solid var(--c-border)" : "none" }}>
+                    <td style={{ padding: "11px 14px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{i + 1}</td>
                     <td style={{ padding: "11px 14px" }}>
                       <span style={{ fontFamily: "monospace", fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }}>
                         {emp.employee_code}

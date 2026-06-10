@@ -92,14 +92,15 @@ export default function Sessions() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
-                {["User", "Status", "Device", "Browser", "IP", "Login Time", "Last Active", ""].map(h => (
-                  <th key={h} style={{ padding: "9px 14px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+                {["#", "User", "Status", "Device", "Browser", "IP", "Login Time", "Last Active", ""].map(h => (
+                  <th key={h} style={{ padding: "9px 14px", textAlign: h === "#" ? "center" : "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", width: h === "#" ? 40 : undefined }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {sessions.map((s, i) => (
                 <tr key={s.id} style={{ borderBottom: i < sessions.length - 1 ? "1px solid var(--c-border)" : "none", opacity: s.is_active ? 1 : 0.6 }}>
+                  <td style={{ padding: "10px 14px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
                   <td style={{ padding: "10px 14px", fontSize: 13, color: "var(--c-text)", whiteSpace: "nowrap" }}>{s.user_name || "—"}</td>
                   <td style={{ padding: "10px 14px" }}>
                     <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999,

@@ -116,14 +116,15 @@ export default function ActivityLogs() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
-                {["Action", "By", "Affected User", "IP", "When"].map(h => (
-                  <th key={h} style={{ padding: "9px 14px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                {["#", "Action", "By", "Affected User", "IP", "When"].map(h => (
+                  <th key={h} style={{ padding: "9px 14px", textAlign: h === "#" ? "center" : "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", width: h === "#" ? 40 : undefined }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {logs.map((log, i) => (
                 <tr key={log.id} style={{ borderBottom: i < logs.length - 1 ? "1px solid var(--c-border)" : "none" }}>
+                  <td style={{ padding: "10px 14px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
                   <td style={{ padding: "10px 14px" }}><ActionBadge action={log.action} /></td>
                   <td style={{ padding: "10px 14px", fontSize: 13, color: "var(--c-text2)" }}>{log.actor_name || "—"}</td>
                   <td style={{ padding: "10px 14px", fontSize: 13, color: "var(--c-text2)" }}>{log.target_user_name || "—"}</td>
