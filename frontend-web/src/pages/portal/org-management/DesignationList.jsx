@@ -4,6 +4,19 @@ import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
 
+// ── Shared styles ────────────────────────────────────────────────────────────
+const inputStyle = {
+  width: "100%", padding: "8px 10px",
+  background: "var(--c-bg)", border: "1px solid var(--c-border)",
+  borderRadius: 6, fontSize: 13, color: "var(--c-text)", boxSizing: "border-box",
+};
+const Label = ({ children }) => (
+  <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--c-text2)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+    {children}
+  </label>
+);
+
+// ── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ active }) {
   const s = active
     ? { bg: "rgba(34,197,94,0.1)", color: "#4ade80" }
@@ -15,6 +28,139 @@ function StatusBadge({ active }) {
   );
 }
 
+// ── Modal ────────────────────────────────────────────────────────────────────
+function DesigModal({ subdomain, token, companies, allDepartments, editDesig, onClose, onSaved }) {
+  const isEdit = !!editDesig;
+  const [departments, setDepartments] = useState(
+    editDesig ? allDepartments.filter(d => d.company_id === editDesig.company_id) : []
+  );
+  const [form, setForm] = useState({
+    company_id: editDesig?.company_id || (companies[0]?.id || ""),
+    department_id: editDesig?.department_id || "",
+    designation_code: editDesig?.designation_code || "",
+    designation_name: editDesig?.designation_name || "",
+    level: editDesig?.level != null ? String(editDesig.level) : "",
+    description: editDesig?.description || "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  useEffect(() => {
+    if (!form.company_id) return;
+    portalOrgApi.listDepts(subdomain, token, { company_id: form.company_id, page_size: 200 })
+      .then(r => setDepartments(r.data.data?.data || []))
+      .catch(() => {});
+  }, [subdomain, token, form.company_id]);
+
+  const handleSubmit = async () => {
+    if (!form.company_id) { setError("Select a company."); return; }
+    if (!form.designation_code.trim()) { setError("Designation Code is required."); return; }
+    if (!form.designation_name.trim()) { setError("Designation Name is required."); return; }
+    setSaving(true); setError("");
+    const payload = {
+      ...form,
+      designation_code: form.designation_code.toUpperCase(),
+      department_id: form.department_id || null,
+      level: form.level ? parseInt(form.level, 10) : null,
+      description: form.description || null,
+    };
+    try {
+      if (isEdit) await portalOrgApi.updateDesig(subdomain, token, editDesig.id, payload);
+      else await portalOrgApi.createDesig(subdomain, token, payload);
+      onSaved();
+    } catch (e) { setError(e?.response?.data?.detail || "Save failed."); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ width: "100%", maxWidth: 520, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12, boxShadow: "0 20px 60px rgba(0,0,0,0.4)", overflow: "hidden" }}>
+        {/* Modal header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--c-border)" }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)" }}>{isEdit ? "Edit Designation" : "Add Designation"}</div>
+            <div style={{ fontSize: 12, color: "var(--c-muted)", marginTop: 1 }}>Job title or role within the organization</div>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-muted)", fontSize: 18, lineHeight: 1, padding: 4 }}>✕</button>
+        </div>
+
+        {/* Modal body */}
+        <div style={{ padding: 20, display: "grid", gap: 14 }}>
+          {error && (
+            <div style={{ padding: "9px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 7, fontSize: 13, color: "#f87171" }}>
+              {error}
+            </div>
+          )}
+
+          <div>
+            <Label>Company *</Label>
+            <select
+              value={form.company_id}
+              onChange={e => { set("company_id", e.target.value); set("department_id", ""); }}
+              disabled={isEdit}
+              style={{ ...inputStyle, cursor: isEdit ? "not-allowed" : "pointer" }}>
+              <option value="">Select a company</option>
+              {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <Label>Department</Label>
+            <select value={form.department_id} onChange={e => set("department_id", e.target.value)}
+              style={{ ...inputStyle, cursor: "pointer" }}>
+              <option value="">All departments (cross-department)</option>
+              {departments.map(d => <option key={d.id} value={d.id}>{d.department_name}</option>)}
+            </select>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <Label>Code *</Label>
+              <input value={form.designation_code} onChange={e => set("designation_code", e.target.value.toUpperCase())}
+                placeholder="MGR" style={{ ...inputStyle, fontFamily: "monospace" }} />
+            </div>
+            <div>
+              <Label>Designation Name *</Label>
+              <input value={form.designation_name} onChange={e => set("designation_name", e.target.value)}
+                placeholder="Manager" style={inputStyle} />
+            </div>
+          </div>
+
+          <div>
+            <Label>Seniority Level <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(lower = more senior)</span></Label>
+            <input type="number" min={1} value={form.level} onChange={e => set("level", e.target.value)}
+              placeholder="e.g. 1" style={inputStyle} />
+          </div>
+
+          <div>
+            <Label>Description</Label>
+            <textarea value={form.description} onChange={e => set("description", e.target.value)}
+              rows={3} placeholder="Brief description of this role…"
+              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5 }} />
+          </div>
+        </div>
+
+        {/* Modal footer */}
+        <div style={{ display: "flex", gap: 10, padding: "14px 20px", borderTop: "1px solid var(--c-border)", background: "var(--c-surface2)" }}>
+          <button onClick={handleSubmit} disabled={saving}
+            style={{ flex: 1, padding: "9px 0", borderRadius: 7, fontWeight: 600, fontSize: 13, background: saving ? "var(--c-muted)" : "var(--c-accent)", color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer" }}>
+            {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Designation"}
+          </button>
+          <button onClick={onClose} disabled={saving}
+            style={{ flex: 1, padding: "9px 0", borderRadius: 7, fontWeight: 500, fontSize: 13, background: "transparent", color: "var(--c-text2)", border: "1px solid var(--c-border)", cursor: "pointer" }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main list ────────────────────────────────────────────────────────────────
 export default function DesignationList() {
   const { subdomain } = useParams();
   const { token } = usePortalAuth();
@@ -29,6 +175,9 @@ export default function DesignationList() {
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState(null);
   const [toast, setToast] = useState(null);
+
+  // Modal state
+  const [modal, setModal] = useState(null); // null | { editDesig: object|null }
 
   const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
@@ -76,12 +225,30 @@ export default function DesignationList() {
     finally { setActing(null); }
   };
 
+  const handleSaved = () => {
+    setModal(null);
+    showToast(modal?.editDesig ? "Designation updated." : "Designation created.");
+    load();
+  };
+
   return (
     <OrgLayout title="Designations">
       {toast && (
         <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: toast.ok ? "#166534" : "#dc2626", color: "#fff", padding: "10px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>
           {toast.msg}
         </div>
+      )}
+
+      {modal && (
+        <DesigModal
+          subdomain={subdomain}
+          token={token}
+          companies={companies}
+          allDepartments={departments}
+          editDesig={modal.editDesig}
+          onClose={() => setModal(null)}
+          onSaved={handleSaved}
+        />
       )}
 
       {/* Header */}
@@ -91,10 +258,10 @@ export default function DesignationList() {
           <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--c-muted)" }}>Job titles and seniority levels — {total} total</p>
         </div>
         {selectedCompany && (
-          <Link to={`/portal/${subdomain}/org/designations/new?company_id=${selectedCompany}${selectedDept ? `&department_id=${selectedDept}` : ""}`}
-            style={{ padding: "8px 16px", borderRadius: 7, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
+          <button onClick={() => setModal({ editDesig: null })}
+            style={{ padding: "8px 16px", borderRadius: 7, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>
             + Add Designation
-          </Link>
+          </button>
         )}
       </div>
 
@@ -131,7 +298,12 @@ export default function DesignationList() {
         ) : loading ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</div>
         ) : rows.length === 0 ? (
-          <div style={{ padding: 60, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>No designations found.</div>
+          <div style={{ padding: 60, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>
+            No designations found.{" "}
+            <button onClick={() => setModal({ editDesig: null })} style={{ color: "var(--c-accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: "inherit" }}>
+              Add one.
+            </button>
+          </div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -166,8 +338,10 @@ export default function DesignationList() {
                     <td style={{ padding: "12px 14px" }}><StatusBadge active={d.is_active} /></td>
                     <td style={{ padding: "12px 14px" }}>
                       <div style={{ display: "flex", gap: 10 }}>
-                        <Link to={`/portal/${subdomain}/org/designations/${d.id}/edit`}
-                          style={{ fontSize: 12, color: "var(--c-accent)", fontWeight: 500, textDecoration: "none" }}>Edit</Link>
+                        <button onClick={() => setModal({ editDesig: d })}
+                          style={{ fontSize: 12, color: "var(--c-accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                          Edit
+                        </button>
                         <button onClick={() => toggleStatus(d)} disabled={acting === d.id}
                           style={{ fontSize: 12, color: d.is_active ? "#f87171" : "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
                           {acting === d.id ? "…" : d.is_active ? "Deactivate" : "Activate"}

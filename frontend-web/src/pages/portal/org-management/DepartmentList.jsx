@@ -4,6 +4,19 @@ import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
 
+// ── Shared styles ────────────────────────────────────────────────────────────
+const inputStyle = {
+  width: "100%", padding: "8px 10px",
+  background: "var(--c-bg)", border: "1px solid var(--c-border)",
+  borderRadius: 6, fontSize: 13, color: "var(--c-text)", boxSizing: "border-box",
+};
+const Label = ({ children }) => (
+  <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--c-text2)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+    {children}
+  </label>
+);
+
+// ── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ active }) {
   const s = active
     ? { bg: "rgba(34,197,94,0.1)", color: "#4ade80" }
@@ -15,6 +28,126 @@ function StatusBadge({ active }) {
   );
 }
 
+// ── Modal ────────────────────────────────────────────────────────────────────
+function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) {
+  const isEdit = !!editDept;
+  const [siblings, setSiblings] = useState([]);
+  const [form, setForm] = useState({
+    company_id: editDept?.company_id || (companies[0]?.id || ""),
+    department_code: editDept?.department_code || "",
+    department_name: editDept?.department_name || "",
+    parent_id: editDept?.parent_id || "",
+    description: editDept?.description || "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  useEffect(() => {
+    if (!form.company_id) return;
+    portalOrgApi.listDepts(subdomain, token, { company_id: form.company_id, page_size: 200 })
+      .then(r => setSiblings((r.data.data?.data || []).filter(d => d.id !== editDept?.id)))
+      .catch(() => {});
+  }, [subdomain, token, form.company_id, editDept]);
+
+  const handleSubmit = async () => {
+    if (!form.company_id) { setError("Select a company."); return; }
+    if (!form.department_code.trim()) { setError("Department Code is required."); return; }
+    if (!form.department_name.trim()) { setError("Department Name is required."); return; }
+    setSaving(true); setError("");
+    const payload = {
+      ...form,
+      department_code: form.department_code.toUpperCase(),
+      parent_id: form.parent_id || null,
+      description: form.description || null,
+    };
+    try {
+      if (isEdit) await portalOrgApi.updateDept(subdomain, token, editDept.id, payload);
+      else await portalOrgApi.createDept(subdomain, token, payload);
+      onSaved();
+    } catch (e) { setError(e?.response?.data?.detail || "Save failed."); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ width: "100%", maxWidth: 520, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12, boxShadow: "0 20px 60px rgba(0,0,0,0.4)", overflow: "hidden" }}>
+        {/* Modal header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--c-border)" }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)" }}>{isEdit ? "Edit Department" : "Add Department"}</div>
+            <div style={{ fontSize: 12, color: "var(--c-muted)", marginTop: 1 }}>Functional unit within a company</div>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-muted)", fontSize: 18, lineHeight: 1, padding: 4 }}>✕</button>
+        </div>
+
+        {/* Modal body */}
+        <div style={{ padding: 20, display: "grid", gap: 14 }}>
+          {error && (
+            <div style={{ padding: "9px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 7, fontSize: 13, color: "#f87171" }}>
+              {error}
+            </div>
+          )}
+
+          <div>
+            <Label>Company *</Label>
+            <select value={form.company_id} onChange={e => { set("company_id", e.target.value); set("parent_id", ""); }}
+              disabled={isEdit} style={{ ...inputStyle, cursor: isEdit ? "not-allowed" : "pointer" }}>
+              <option value="">Select a company</option>
+              {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+            </select>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <Label>Code *</Label>
+              <input value={form.department_code} onChange={e => set("department_code", e.target.value.toUpperCase())}
+                placeholder="e.g. HR" style={{ ...inputStyle, fontFamily: "monospace" }} />
+            </div>
+            <div>
+              <Label>Department Name *</Label>
+              <input value={form.department_name} onChange={e => set("department_name", e.target.value)}
+                placeholder="Human Resources" style={inputStyle} />
+            </div>
+          </div>
+
+          <div>
+            <Label>Parent Department</Label>
+            <select value={form.parent_id} onChange={e => set("parent_id", e.target.value)}
+              style={{ ...inputStyle, cursor: "pointer" }}>
+              <option value="">None (top-level)</option>
+              {siblings.map(d => <option key={d.id} value={d.id}>{d.department_name}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <Label>Description</Label>
+            <textarea value={form.description} onChange={e => set("description", e.target.value)}
+              rows={3} placeholder="Brief description…"
+              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5 }} />
+          </div>
+        </div>
+
+        {/* Modal footer */}
+        <div style={{ display: "flex", gap: 10, padding: "14px 20px", borderTop: "1px solid var(--c-border)", background: "var(--c-surface2)" }}>
+          <button onClick={handleSubmit} disabled={saving}
+            style={{ flex: 1, padding: "9px 0", borderRadius: 7, fontWeight: 600, fontSize: 13, background: saving ? "var(--c-muted)" : "var(--c-accent)", color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer" }}>
+            {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Department"}
+          </button>
+          <button onClick={onClose} disabled={saving}
+            style={{ flex: 1, padding: "9px 0", borderRadius: 7, fontWeight: 500, fontSize: 13, background: "transparent", color: "var(--c-text2)", border: "1px solid var(--c-border)", cursor: "pointer" }}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main list ────────────────────────────────────────────────────────────────
 export default function DepartmentList() {
   const { subdomain } = useParams();
   const { token } = usePortalAuth();
@@ -27,6 +160,9 @@ export default function DepartmentList() {
   const [loading, setLoading] = useState(false);
   const [acting, setActing] = useState(null);
   const [toast, setToast] = useState(null);
+
+  // Modal state
+  const [modal, setModal] = useState(null); // null | { editDept: object|null }
 
   const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
@@ -65,6 +201,12 @@ export default function DepartmentList() {
     finally { setActing(null); }
   };
 
+  const handleSaved = () => {
+    setModal(null);
+    showToast(modal?.editDept ? "Department updated." : "Department created.");
+    load();
+  };
+
   const companyName = companies.find(c => c.id === selectedCompany)?.company_name || "";
 
   return (
@@ -73,6 +215,17 @@ export default function DepartmentList() {
         <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: toast.ok ? "#166534" : "#dc2626", color: "#fff", padding: "10px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>
           {toast.msg}
         </div>
+      )}
+
+      {modal && (
+        <DeptModal
+          subdomain={subdomain}
+          token={token}
+          companies={companies}
+          editDept={modal.editDept}
+          onClose={() => setModal(null)}
+          onSaved={handleSaved}
+        />
       )}
 
       {/* Header */}
@@ -89,24 +242,22 @@ export default function DepartmentList() {
             </Link>
           )}
           {selectedCompany && (
-            <Link to={`/portal/${subdomain}/org/departments/new?company_id=${selectedCompany}`}
-              style={{ padding: "8px 16px", borderRadius: 7, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
+            <button onClick={() => setModal({ editDept: null })}
+              style={{ padding: "8px 16px", borderRadius: 7, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>
               + Add Department
-            </Link>
+            </button>
           )}
         </div>
       </div>
 
       {/* Filters row */}
       <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-        {/* Company selector */}
         <select value={selectedCompany} onChange={e => setSelectedCompany(e.target.value)}
           style={{ padding: "5px 10px", borderRadius: 6, fontSize: 13, fontWeight: 500, background: "var(--c-surface)", border: "1px solid var(--c-border)", color: "var(--c-text)", cursor: "pointer" }}>
           {companies.length === 0 && <option value="">No companies</option>}
           {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
         </select>
 
-        {/* Status filter pills */}
         {["", "Active", "Inactive"].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)}
             style={{
@@ -130,7 +281,12 @@ export default function DepartmentList() {
         ) : loading ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</div>
         ) : rows.length === 0 ? (
-          <div style={{ padding: 60, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>No departments in {companyName}.</div>
+          <div style={{ padding: 60, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>
+            No departments in {companyName}.{" "}
+            <button onClick={() => setModal({ editDept: null })} style={{ color: "var(--c-accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: "inherit" }}>
+              Add one.
+            </button>
+          </div>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -155,13 +311,15 @@ export default function DepartmentList() {
                       {d.description && <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 1 }}>{d.description}</div>}
                     </td>
                     <td style={{ padding: "12px 14px", fontSize: 12, color: "var(--c-muted)" }}>
-                      {parent ? parent.department_name : <span style={{ color: "var(--c-muted)", opacity: 0.5 }}>—</span>}
+                      {parent ? parent.department_name : <span style={{ opacity: 0.5 }}>—</span>}
                     </td>
                     <td style={{ padding: "12px 14px" }}><StatusBadge active={d.is_active} /></td>
                     <td style={{ padding: "12px 14px" }}>
                       <div style={{ display: "flex", gap: 10 }}>
-                        <Link to={`/portal/${subdomain}/org/departments/${d.id}/edit`}
-                          style={{ fontSize: 12, color: "var(--c-accent)", fontWeight: 500, textDecoration: "none" }}>Edit</Link>
+                        <button onClick={() => setModal({ editDept: d })}
+                          style={{ fontSize: 12, color: "var(--c-accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                          Edit
+                        </button>
                         <button onClick={() => toggleStatus(d)} disabled={acting === d.id}
                           style={{ fontSize: 12, color: d.is_active ? "#f87171" : "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
                           {acting === d.id ? "…" : d.is_active ? "Deactivate" : "Activate"}
