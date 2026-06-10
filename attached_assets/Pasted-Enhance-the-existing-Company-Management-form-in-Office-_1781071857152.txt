@@ -1,0 +1,269 @@
+Enhance the existing Company Management form in Office Repo.
+
+Do NOT rebuild the form from scratch.
+
+Keep all existing fields and reorganize them into logical sections.
+
+Use the existing Office Repo UI style:
+
+- Dark Mode
+- Responsive Design
+- Consistent Card Layout
+- Uniform Spacing
+- Reusable Components
+
+Current fields already exist:
+
+- Company Code
+- Company Name
+- Legal Name
+- Display Name
+- Registration Number
+- GST Number
+- Website
+- Email
+- Phone
+- Address
+
+Reorganize and expand the form into the following sections.
+
+---------------------------------------------------
+SECTION 1 - GENERAL INFORMATION
+---------------------------------------------------
+
+- Company Code *
+- Company Name *
+- Legal Name *
+- Display Name
+
+Add:
+
+- Company Type
+  Dropdown:
+  - Private Limited
+  - Public Limited
+  - LLP
+  - Partnership
+  - Proprietorship
+  - NGO
+  - Other
+
+- Industry
+- Sub Industry
+
+- Date Of Incorporation
+
+- Company Description
+
+---------------------------------------------------
+SECTION 2 - REGISTRATION & COMPLIANCE
+---------------------------------------------------
+
+Keep:
+
+- Registration Number
+
+Add:
+
+- CIN Number
+- PAN Number
+- TAN Number
+
+MSME Information
+
+- MSME Registered (Toggle)
+
+When enabled:
+
+- MSME Number
+
+---------------------------------------------------
+SECTION 3 - TAX INFORMATION
+---------------------------------------------------
+
+Keep:
+
+- GST Number
+
+Add:
+
+- GST Registered (Toggle)
+
+When enabled:
+
+- GST Number
+- GST Registration Date
+
+- Tax Identification Number
+
+---------------------------------------------------
+SECTION 4 - CONTACT INFORMATION
+---------------------------------------------------
+
+Keep:
+
+- Email
+- Phone
+
+Add:
+
+- Primary Contact Person
+- Support Email
+- HR Email
+- Accounts Email
+- Website
+
+---------------------------------------------------
+SECTION 5 - REGISTERED ADDRESS
+---------------------------------------------------
+
+Keep current address fields.
+
+Rename section:
+
+Registered Address
+
+Fields:
+
+- Address Line 1
+- Address Line 2
+- City
+- State
+- Country
+- Postal Code
+
+---------------------------------------------------
+SECTION 6 - OFFICE ADDRESS
+---------------------------------------------------
+
+Add:
+
+Checkbox:
+
+[ ] Same As Registered Address
+
+If unchecked:
+
+- Address Line 1
+- Address Line 2
+- City
+- State
+- Country
+- Postal Code
+
+---------------------------------------------------
+SECTION 7 - BRANDING
+---------------------------------------------------
+
+Add:
+
+- Company Logo Upload
+
+Display:
+
+- Logo Preview
+
+Validation:
+
+- JPG
+- PNG
+- WEBP
+
+Future note:
+
+Storage abstraction should support AWS S3 later.
+
+---------------------------------------------------
+SECTION 8 - COMPANY DOCUMENTS
+---------------------------------------------------
+
+Create a document upload section.
+
+Allow multiple documents.
+
+Document Types:
+
+- Certificate Of Incorporation
+- GST Certificate
+- PAN Copy
+- TAN Certificate
+- MSME Certificate
+- Trade License
+- Shop & Establishment License
+- Other
+
+For every document store:
+
+- Document Type
+- Document Number
+- Issue Date
+- Expiry Date
+- Remarks
+- File Upload
+
+Display uploaded documents in a table.
+
+Columns:
+
+- Document Type
+- Document Number
+- Issue Date
+- Expiry Date
+- Status
+- Actions
+
+---------------------------------------------------
+SECTION 9 - STATUS
+---------------------------------------------------
+
+Add:
+
+Status
+
+Dropdown:
+
+- Draft
+- Active
+- Inactive
+- Suspended
+- Closed
+
+---------------------------------------------------
+VALIDATION
+---------------------------------------------------
+
+Company Name Required
+
+Company Code Required
+
+Legal Name Required
+
+GST Validation
+
+PAN Validation
+
+Website URL Validation
+
+Email Validation
+
+Phone Validation
+
+No leading/trailing spaces.
+
+Prevent duplicate spaces.
+
+---------------------------------------------------
+UI IMPROVEMENTS
+---------------------------------------------------
+
+- Each section should be displayed inside its own card.
+- Add section icons.
+- Use 2-column responsive layout where possible.
+- Keep document uploads in a dedicated card.
+- Keep branding in a dedicated card.
+- Improve visual hierarchy between sections.
+- Follow existing Office Repo design language.
+
+Do not modify backend APIs yet.
+
+Only enhance the UI structure and form fields first.
