@@ -102,10 +102,11 @@ export default function PortalLayout({ children, title }) {
     }
     try {
       const res = await portalNavigationApi.getNavigation(subdomain, token);
-      const mods = res.data?.modules || [];
+      const payload = res.data?.data || res.data || {};
+      const mods = payload.modules || [];
       console.log("[PortalNav] loaded", mods.map(m => m.code));
       setNavModules(mods);
-      if (res.data?.workspace_name) setWorkspaceName(res.data.workspace_name);
+      if (payload.workspace_name) setWorkspaceName(payload.workspace_name);
     } catch (err) {
       console.error("[PortalNav] failed", err?.response?.status, err?.message);
       setNavModules([]);
