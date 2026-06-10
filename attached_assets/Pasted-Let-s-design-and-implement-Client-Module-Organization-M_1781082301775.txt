@@ -1,0 +1,218 @@
+Let's design and implement Client Module → Organization Management → Branches for Office Repo.
+
+Context:
+
+Completed Modules:
+
+- Companies
+- Departments
+- Designations
+- Employees
+
+Hierarchy:
+
+Company
+↓
+Branch
+↓
+Department
+↓
+Designation
+↓
+Employee
+
+A Company can have multiple Branches.
+
+Examples:
+
+Acme Technologies
+├── Mumbai Head Office
+├── Pune Office
+├── Bangalore Office
+└── Dubai Office
+
+Employees must be assigned to a Branch.
+
+This module will be used by:
+
+- Employee Management
+- Attendance
+- Leave Management
+- Payroll
+- Assets
+- Recruitment
+- Reports
+
+---------------------------------------------------
+BRANCH MASTER
+---------------------------------------------------
+
+Fields:
+
+- Branch Code *
+- Branch Name *
+- Company *
+- Branch Type
+
+Branch Types:
+
+- Head Office
+- Corporate Office
+- Regional Office
+- Branch Office
+- Warehouse
+- Project Site
+
+Contact Information:
+
+- Email
+- Phone
+
+Address Information:
+
+- Address Line 1
+- Address Line 2
+- City
+- State
+- Country
+- Postal Code
+
+Status:
+
+- Active
+- Inactive
+
+---------------------------------------------------
+EMPLOYEE BRANCH ASSIGNMENT
+---------------------------------------------------
+
+Enhance Employee Management.
+
+Add:
+
+- Branch *
+
+Every employee must belong to a Branch.
+
+Display Branch in:
+
+- Employee List
+- Employee Profile
+- Employee Directory
+
+---------------------------------------------------
+WORK LOCATION TYPE
+---------------------------------------------------
+
+Add Employee Work Mode.
+
+Values:
+
+- Onsite
+- Work From Home
+- Hybrid
+- Remote
+
+For Hybrid:
+
+Allow:
+
+- Office Days Per Week
+- Work From Home Days Per Week
+
+Display Work Mode in:
+
+- Employee List
+- Employee Profile
+
+---------------------------------------------------
+EMPLOYEE LOCATION DETAILS
+---------------------------------------------------
+
+Add:
+
+- Primary Work Branch
+- Work Mode
+- Seat / Desk Number (Future)
+
+---------------------------------------------------
+UI CHANGES
+---------------------------------------------------
+
+Create:
+
+Organization Management
+└── Branches
+
+Pages:
+
+- Branch List
+- Create Branch
+- Edit Branch
+- View Branch
+
+Employee screens should show:
+
+- Branch
+- Work Mode
+
+---------------------------------------------------
+DATABASE
+---------------------------------------------------
+
+Create:
+
+branches
+
+Add to employees:
+
+- branch_id
+- work_mode
+
+---------------------------------------------------
+SEED DATA
+---------------------------------------------------
+
+Create sample branches:
+
+Mumbai Head Office
+Pune Office
+Bangalore Office
+Delhi Office
+
+Assign existing employees across branches.
+
+Assign random work modes:
+
+- Onsite
+- Hybrid
+- WFH
+
+---------------------------------------------------
+ACTIVITY LOGS
+---------------------------------------------------
+
+Track:
+
+- Branch Created
+- Branch Updated
+- Branch Activated
+- Branch Deactivated
+- Employee Branch Changed
+- Employee Work Mode Changed
+
+---------------------------------------------------
+FUTURE SUPPORT
+---------------------------------------------------
+
+Design Branch module so it can later support:
+
+- Attendance
+- Shift Management
+- Payroll
+- Assets
+- Branch Holidays
+- Branch Managers
+- Seating Management
+
+Generate production-ready specifications and implementation plan using existing Office Repo architecture.

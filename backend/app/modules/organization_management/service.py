@@ -170,6 +170,86 @@ def set_company_status(
     return _company_dict(co)
 
 
+# ── Branches ───────────────────────────────────────────────────────────────────
+
+def _branch_dict(b, total_employees: int = 0, active_employees: int = 0) -> Dict[str, Any]:
+    return {
+        "id": b.id, "client_id": b.client_id, "company_id": b.company_id,
+        "branch_code": b.branch_code, "branch_name": b.branch_name,
+        "branch_type": b.branch_type,
+        "email": b.email, "phone": b.phone,
+        "address_line_1": b.address_line_1, "address_line_2": b.address_line_2,
+        "city": b.city, "state": b.state, "country": b.country, "postal_code": b.postal_code,
+        "is_active": b.is_active,
+        "total_employees": total_employees, "active_employees": active_employees,
+        "created_at": b.created_at, "updated_at": b.updated_at,
+    }
+
+
+def list_branches(client_db: Session, client_id: str, **kwargs) -> Dict:
+    rows, total = repo.list_branches(client_db, client_id, **kwargs)
+    result = []
+    for b in rows:
+        counts = repo.get_branch_employee_count(client_db, client_id, b.id)
+        result.append(_branch_dict(b, **counts))
+    return {"data": result, "total": total,
+            "page": kwargs.get("page", 1), "page_size": kwargs.get("page_size", 50)}
+
+
+def get_branch(client_db: Session, client_id: str, branch_id: str) -> Dict:
+    b = repo.get_branch(client_db, client_id, branch_id)
+    if not b:
+        raise HTTPException(404, "Branch not found.")
+    counts = repo.get_branch_employee_count(client_db, client_id, branch_id)
+    return _branch_dict(b, **counts)
+
+
+def create_branch(
+    client_db: Session, client_id: str, payload,
+    actor_id: Optional[str], ip: Optional[str],
+) -> Dict:
+    if repo.get_branch_by_code(client_db, client_id, payload.company_id, payload.branch_code):
+        raise HTTPException(409, f"Branch code '{payload.branch_code}' already exists for this company.")
+    data = payload.model_dump()
+    b = repo.create_branch(client_db, client_id, data)
+    _log(client_db, client_id, c.ACTION_BRANCH_CREATED, actor_id, ip,
+         {"branch_name": b.branch_name, "branch_code": b.branch_code})
+    client_db.commit()
+    return _branch_dict(b)
+
+
+def update_branch(
+    client_db: Session, client_id: str, branch_id: str, payload,
+    actor_id: Optional[str], ip: Optional[str],
+) -> Dict:
+    b = repo.get_branch(client_db, client_id, branch_id)
+    if not b:
+        raise HTTPException(404, "Branch not found.")
+    data = {k: v for k, v in payload.model_dump(exclude_unset=True).items()}
+    repo.update_branch(client_db, b, data)
+    _log(client_db, client_id, c.ACTION_BRANCH_UPDATED, actor_id, ip,
+         {"branch_name": b.branch_name})
+    client_db.commit()
+    return _branch_dict(b)
+
+
+def set_branch_status(
+    client_db: Session, client_id: str, branch_id: str, is_active: bool,
+    actor_id: Optional[str], ip: Optional[str],
+) -> Dict:
+    b = repo.get_branch(client_db, client_id, branch_id)
+    if not b:
+        raise HTTPException(404, "Branch not found.")
+    if b.is_active == is_active:
+        raise HTTPException(400, f"Branch is already {'active' if is_active else 'inactive'}.")
+    b.is_active = is_active
+    b.updated_at = datetime.utcnow()
+    action = c.ACTION_BRANCH_ACTIVATED if is_active else c.ACTION_BRANCH_DEACTIVATED
+    _log(client_db, client_id, action, actor_id, ip, {"branch_name": b.branch_name})
+    client_db.commit()
+    return _branch_dict(b)
+
+
 # ── Departments ────────────────────────────────────────────────────────────────
 
 def _resolve_head(client_db: Session, client_id: str, dept):

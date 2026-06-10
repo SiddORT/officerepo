@@ -116,6 +116,9 @@ _COLUMN_MIGRATIONS = [
     ("org_departments", "head_employee_id", "VARCHAR(36)"),
     ("org_departments", "head_effective_from", "DATE"),
     ("org_departments", "head_effective_to", "DATE"),
+    # Employee — branch assignment + work mode
+    ("employees", "branch_id", "VARCHAR(36)"),
+    ("employees", "work_mode", "VARCHAR(50)"),
 ]
 
 

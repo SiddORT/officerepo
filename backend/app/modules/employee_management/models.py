@@ -32,8 +32,12 @@ class Employee(ClientBase):
 
     # Employment org references
     company_id      = Column(String(36), nullable=False, index=True)
+    branch_id       = Column(String(36), nullable=True,  index=True)
     department_id   = Column(String(36), nullable=True,  index=True)
     designation_id  = Column(String(36), nullable=True,  index=True)
+
+    # Work location
+    work_mode       = Column(String(50), nullable=True)   # Onsite / WFH / Hybrid / Remote
 
     # Code (EMP-00001 series)
     employee_code   = Column(String(30), nullable=False, index=True)

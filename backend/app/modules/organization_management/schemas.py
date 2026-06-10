@@ -50,6 +50,41 @@ class CompanyUpdate(BaseModel):
     logo_url:            Optional[str] = None
 
 
+# ── Branches ───────────────────────────────────────────────────────────────────
+
+class BranchCreate(BaseModel):
+    company_id:    str
+    branch_code:   str
+    branch_name:   str
+    branch_type:   Optional[str] = None
+    email:         Optional[str] = None
+    phone:         Optional[str] = None
+    address_line_1: Optional[str] = None
+    address_line_2: Optional[str] = None
+    city:          Optional[str] = None
+    state:         Optional[str] = None
+    country:       Optional[str] = None
+    postal_code:   Optional[str] = None
+
+    @field_validator("branch_code")
+    @classmethod
+    def strip_code(cls, v: str) -> str:
+        return v.strip().upper()
+
+
+class BranchUpdate(BaseModel):
+    branch_name:   Optional[str] = None
+    branch_type:   Optional[str] = None
+    email:         Optional[str] = None
+    phone:         Optional[str] = None
+    address_line_1: Optional[str] = None
+    address_line_2: Optional[str] = None
+    city:          Optional[str] = None
+    state:         Optional[str] = None
+    country:       Optional[str] = None
+    postal_code:   Optional[str] = None
+
+
 # ── Departments ────────────────────────────────────────────────────────────────
 
 class DepartmentCreate(BaseModel):

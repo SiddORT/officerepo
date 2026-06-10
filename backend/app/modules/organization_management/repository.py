@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
 
 from backend.app.modules.organization_management.models import (
-    OrgCompany, OrgDepartment, OrgDesignation,
+    OrgBranch, OrgCompany, OrgDepartment, OrgDesignation,
 )
 
 
@@ -77,6 +77,87 @@ def soft_delete_company(db: Session, company: OrgCompany) -> None:
     company.is_deleted = True
     company.deleted_at = datetime.utcnow()
     db.flush()
+
+
+# ── Branches ───────────────────────────────────────────────────────────────────
+
+def list_branches(
+    db: Session, client_id: str, *,
+    company_id: Optional[str] = None,
+    page: int = 1, page_size: int = 50,
+    search: Optional[str] = None,
+    status: Optional[str] = None,
+) -> Tuple[List[OrgBranch], int]:
+    q = db.query(OrgBranch).filter(
+        OrgBranch.client_id == client_id,
+        OrgBranch.is_deleted.is_(False),
+    )
+    if company_id:
+        q = q.filter(OrgBranch.company_id == company_id)
+    if search:
+        term = f"%{search}%"
+        q = q.filter(
+            OrgBranch.branch_name.ilike(term) |
+            OrgBranch.branch_code.ilike(term)
+        )
+    if status:
+        q = q.filter(OrgBranch.is_active == (status == "Active"))
+    total = q.count()
+    rows = q.order_by(OrgBranch.branch_name).offset((page - 1) * page_size).limit(page_size).all()
+    return rows, total
+
+
+def get_branch(db: Session, client_id: str, branch_id: str) -> Optional[OrgBranch]:
+    return db.query(OrgBranch).filter(
+        OrgBranch.id == branch_id,
+        OrgBranch.client_id == client_id,
+        OrgBranch.is_deleted.is_(False),
+    ).first()
+
+
+def get_branch_by_code(db: Session, client_id: str, company_id: str, code: str) -> Optional[OrgBranch]:
+    return db.query(OrgBranch).filter(
+        OrgBranch.client_id == client_id,
+        OrgBranch.company_id == company_id,
+        OrgBranch.branch_code == code.upper(),
+        OrgBranch.is_deleted.is_(False),
+    ).first()
+
+
+def create_branch(db: Session, client_id: str, data: dict) -> OrgBranch:
+    b = OrgBranch(id=_uuid(), client_id=client_id, **data)
+    db.add(b)
+    db.flush()
+    return b
+
+
+def update_branch(db: Session, branch: OrgBranch, data: dict) -> OrgBranch:
+    for k, v in data.items():
+        setattr(branch, k, v)
+    branch.updated_at = datetime.utcnow()
+    db.flush()
+    return branch
+
+
+def get_branch_employee_count(db: Session, client_id: str, branch_id: str) -> dict:
+    """Count active and total employees assigned to this branch."""
+    try:
+        from backend.app.modules.employee_management.models import Employee
+        from sqlalchemy import func as sqlfunc
+        total = db.query(sqlfunc.count(Employee.id)).filter(
+            Employee.client_id == client_id,
+            Employee.branch_id == branch_id,
+            Employee.is_deleted.is_(False),
+        ).scalar() or 0
+        active = db.query(sqlfunc.count(Employee.id)).filter(
+            Employee.client_id == client_id,
+            Employee.branch_id == branch_id,
+            Employee.is_deleted.is_(False),
+            Employee.is_active.is_(True),
+        ).scalar() or 0
+    except Exception:
+        total = active = 0
+    return {"total_employees": total, "active_employees": active}
 
 
 # ── Departments ────────────────────────────────────────────────────────────────

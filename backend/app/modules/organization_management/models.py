@@ -2,6 +2,7 @@
 
 Tables:
   org_companies     — companies owned by a client (ABC Group → ABC Tech, ABC Consulting …)
+  org_branches      — physical offices / work locations per company
   org_departments   — departments within a company (supports self-referential hierarchy)
   org_designations  — job designations within a company / department
 """
@@ -50,6 +51,36 @@ class OrgCompany(ClientBase):
 
     # Branding
     logo_url            = Column(String(500), nullable=True)
+
+    is_active           = Column(Boolean, nullable=False, default=True)
+    is_deleted          = Column(Boolean, nullable=False, default=False)
+    deleted_at          = Column(DateTime, nullable=True)
+    created_at          = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at          = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class OrgBranch(ClientBase):
+    __tablename__ = "org_branches"
+
+    id                  = Column(String(36), primary_key=True, default=_uuid)
+    client_id           = Column(String(36), nullable=False, index=True)
+    company_id          = Column(String(36), nullable=False, index=True)
+
+    branch_code         = Column(String(60),  nullable=False)
+    branch_name         = Column(String(200), nullable=False)
+    branch_type         = Column(String(60),  nullable=True)   # Head Office / Regional Office …
+
+    # Contact
+    email               = Column(String(254), nullable=True)
+    phone               = Column(String(30),  nullable=True)
+
+    # Address
+    address_line_1      = Column(String(255), nullable=True)
+    address_line_2      = Column(String(255), nullable=True)
+    city                = Column(String(100), nullable=True)
+    state               = Column(String(100), nullable=True)
+    country             = Column(String(100), nullable=True)
+    postal_code         = Column(String(20),  nullable=True)
 
     is_active           = Column(Boolean, nullable=False, default=True)
     is_deleted          = Column(Boolean, nullable=False, default=False)
