@@ -78,7 +78,7 @@ export default function CompanyForm({ editMode }) {
 
   return (
     <OrgLayout title={editMode ? "Edit Company" : "Add Company"}>
-      <div style={{ maxWidth: 700 }}>
+      <div>
         {/* Page header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <div>
