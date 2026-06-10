@@ -2,7 +2,7 @@
 
 Prefix: /api/v1/portal/{subdomain}/assets
 Requires: valid portal_access JWT + "Asset Management" module enabled for the client.
-Reads from the platform DB (catalog is platform-level, not per-tenant).
+Reads and writes the platform DB (catalog is platform-level, shared across tenants).
 """
 from __future__ import annotations
 
@@ -14,6 +14,10 @@ from sqlalchemy.orm import Session
 from backend.app.core.security import decode_access_token
 from backend.app.database.platform import get_platform_db
 from backend.app.modules.asset_management import service as svc
+from backend.app.modules.asset_management.schemas import (
+    AssetCategoryCreate, AssetCategoryUpdate,
+    AssetSubCategoryCreate, AssetSubCategoryUpdate,
+)
 from backend.shared.response import ApiResponse
 
 router = APIRouter()
@@ -70,6 +74,7 @@ def get_meta_options(
 def list_categories(
     subdomain: str,
     search: Optional[str] = None,
+    status: Optional[str] = None,
     page: int = 1,
     page_size: int = 50,
     db: Session = Depends(get_platform_db),
@@ -77,8 +82,78 @@ def list_categories(
 ):
     _subdomain_check(portal_user, subdomain)
     return ApiResponse.ok(svc.list_categories(
-        db, search=search, status="Active", page=page, page_size=page_size,
+        db, search=search, status=status, page=page, page_size=page_size,
     )).model_dump()
+
+
+@router.post("/{subdomain}/assets/categories", status_code=201)
+def create_category(
+    subdomain: str,
+    payload: AssetCategoryCreate,
+    db: Session = Depends(get_platform_db),
+    portal_user: dict = Depends(_module_guard),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(svc.create_category(
+        db, payload,
+        actor_id=portal_user.get("user_id"),
+        actor_email=portal_user.get("email"),
+    ), "Category created.").model_dump()
+
+
+@router.get("/{subdomain}/assets/categories/{category_id}")
+def get_category(
+    subdomain: str,
+    category_id: str,
+    db: Session = Depends(get_platform_db),
+    portal_user: dict = Depends(_module_guard),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(svc.get_category(db, category_id)).model_dump()
+
+
+@router.patch("/{subdomain}/assets/categories/{category_id}")
+def update_category(
+    subdomain: str,
+    category_id: str,
+    payload: AssetCategoryUpdate,
+    db: Session = Depends(get_platform_db),
+    portal_user: dict = Depends(_module_guard),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(svc.update_category(
+        db, category_id, payload,
+        actor_id=portal_user.get("user_id"),
+        actor_email=portal_user.get("email"),
+    ), "Category updated.").model_dump()
+
+
+@router.post("/{subdomain}/assets/categories/{category_id}/activate")
+def activate_category(
+    subdomain: str,
+    category_id: str,
+    db: Session = Depends(get_platform_db),
+    portal_user: dict = Depends(_module_guard),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(svc.set_category_status(
+        db, category_id, activate=True,
+        actor_email=portal_user.get("email"),
+    ), "Category activated.").model_dump()
+
+
+@router.post("/{subdomain}/assets/categories/{category_id}/deactivate")
+def deactivate_category(
+    subdomain: str,
+    category_id: str,
+    db: Session = Depends(get_platform_db),
+    portal_user: dict = Depends(_module_guard),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(svc.set_category_status(
+        db, category_id, activate=False,
+        actor_email=portal_user.get("email"),
+    ), "Category deactivated.").model_dump()
 
 
 # ── Sub-Categories ────────────────────────────────────────────────────────────
@@ -88,19 +163,90 @@ def list_sub_categories(
     subdomain: str,
     category_id: Optional[str] = None,
     search: Optional[str] = None,
+    status: Optional[str] = None,
     page: int = 1,
-    page_size: int = 200,
+    page_size: int = 100,
     db: Session = Depends(get_platform_db),
     portal_user: dict = Depends(_module_guard),
 ):
     _subdomain_check(portal_user, subdomain)
     return ApiResponse.ok(svc.list_sub_categories(
-        db, category_id=category_id, search=search, status="Active",
+        db, category_id=category_id, search=search, status=status,
         page=page, page_size=page_size,
     )).model_dump()
 
 
-# ── Asset Masters (Catalog) ───────────────────────────────────────────────────
+@router.post("/{subdomain}/assets/sub-categories", status_code=201)
+def create_sub_category(
+    subdomain: str,
+    payload: AssetSubCategoryCreate,
+    db: Session = Depends(get_platform_db),
+    portal_user: dict = Depends(_module_guard),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(svc.create_sub_category(
+        db, payload,
+        actor_id=portal_user.get("user_id"),
+        actor_email=portal_user.get("email"),
+    ), "Sub-category created.").model_dump()
+
+
+@router.get("/{subdomain}/assets/sub-categories/{sub_cat_id}")
+def get_sub_category(
+    subdomain: str,
+    sub_cat_id: str,
+    db: Session = Depends(get_platform_db),
+    portal_user: dict = Depends(_module_guard),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(svc.get_sub_category(db, sub_cat_id)).model_dump()
+
+
+@router.patch("/{subdomain}/assets/sub-categories/{sub_cat_id}")
+def update_sub_category(
+    subdomain: str,
+    sub_cat_id: str,
+    payload: AssetSubCategoryUpdate,
+    db: Session = Depends(get_platform_db),
+    portal_user: dict = Depends(_module_guard),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(svc.update_sub_category(
+        db, sub_cat_id, payload,
+        actor_id=portal_user.get("user_id"),
+        actor_email=portal_user.get("email"),
+    ), "Sub-category updated.").model_dump()
+
+
+@router.post("/{subdomain}/assets/sub-categories/{sub_cat_id}/activate")
+def activate_sub_category(
+    subdomain: str,
+    sub_cat_id: str,
+    db: Session = Depends(get_platform_db),
+    portal_user: dict = Depends(_module_guard),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(svc.set_sub_category_status(
+        db, sub_cat_id, activate=True,
+        actor_email=portal_user.get("email"),
+    ), "Sub-category activated.").model_dump()
+
+
+@router.post("/{subdomain}/assets/sub-categories/{sub_cat_id}/deactivate")
+def deactivate_sub_category(
+    subdomain: str,
+    sub_cat_id: str,
+    db: Session = Depends(get_platform_db),
+    portal_user: dict = Depends(_module_guard),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(svc.set_sub_category_status(
+        db, sub_cat_id, activate=False,
+        actor_email=portal_user.get("email"),
+    ), "Sub-category deactivated.").model_dump()
+
+
+# ── Asset Masters (Catalog — read-only browse) ────────────────────────────────
 
 @router.get("/{subdomain}/assets/catalog")
 def list_catalog(

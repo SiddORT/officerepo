@@ -24,6 +24,7 @@ import EmployeeDetails from "./employees/EmployeeDetails";
 // Asset Management pages
 import AssetCatalog from "./assets/AssetCatalog";
 import AssetCategories from "./assets/AssetCategories";
+import AssetSubCategoryList from "./assets/AssetSubCategoryList";
 
 // Organization Management pages
 import CompanyList from "./org-management/CompanyList";
@@ -142,10 +143,11 @@ function PortalRoutes() {
       <Route path="/org/*" element={<Navigate to={`/portal/${subdomain}/org/companies`} replace />} />
 
       {/* ── Asset Management ─────────────────────────────────────────── */}
-      <Route path="/assets/catalog"    element={<Protected><AssetCatalog /></Protected>} />
-      <Route path="/assets/categories" element={<Protected><AssetCategories /></Protected>} />
-      <Route path="/assets"   element={<Navigate to={`/portal/${subdomain}/assets/catalog`} replace />} />
-      <Route path="/assets/*" element={<Navigate to={`/portal/${subdomain}/assets/catalog`} replace />} />
+      <Route path="/assets/categories"     element={<Protected><AssetCategories /></Protected>} />
+      <Route path="/assets/sub-categories" element={<Protected><AssetSubCategoryList /></Protected>} />
+      <Route path="/assets/catalog"        element={<Protected><AssetCatalog /></Protected>} />
+      <Route path="/assets"   element={<Navigate to={`/portal/${subdomain}/assets/categories`} replace />} />
+      <Route path="/assets/*" element={<Navigate to={`/portal/${subdomain}/assets/categories`} replace />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to={user ? `/portal/${subdomain}/dashboard` : `/portal/${subdomain}`} replace />} />

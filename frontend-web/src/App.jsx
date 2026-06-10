@@ -37,11 +37,6 @@ import SettingsVariantA from "./pages/mockups/SettingsVariantA";
 import SettingsVariantB from "./pages/mockups/SettingsVariantB";
 import SettingsVariantC from "./pages/mockups/SettingsVariantC";
 import ClientPortalPage from "./pages/portal/ClientPortalPage";
-import AssetCategoryList from "./pages/superadmin/assets/AssetCategoryList";
-import AssetSubCategoryList from "./pages/superadmin/assets/AssetSubCategoryList";
-import AssetMasterList from "./pages/superadmin/assets/AssetMasterList";
-import AssetMasterDetails from "./pages/superadmin/assets/AssetMasterDetails";
-import AssetMasterForm from "./pages/superadmin/assets/AssetMasterForm";
 
 function ProtectedRoute({ children, requireRole }) {
   const { user, loading } = useAuth();
@@ -170,59 +165,6 @@ function AppRoutes() {
         }
       />
 
-      {/* Protected — Asset Management Setup */}
-      <Route
-        path="/superadmin/assets"
-        element={<Navigate to="/superadmin/assets/categories" replace />}
-      />
-      <Route
-        path="/superadmin/assets/categories"
-        element={
-          <ProtectedRoute requireRole="superadmin">
-            <Layout><AssetCategoryList /></Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/superadmin/assets/sub-categories"
-        element={
-          <ProtectedRoute requireRole="superadmin">
-            <Layout><AssetSubCategoryList /></Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/superadmin/assets/masters"
-        element={
-          <ProtectedRoute requireRole="superadmin">
-            <Layout><AssetMasterList /></Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/superadmin/assets/masters/new"
-        element={
-          <ProtectedRoute requireRole="superadmin">
-            <Layout><AssetMasterForm /></Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/superadmin/assets/masters/:id"
-        element={
-          <ProtectedRoute requireRole="superadmin">
-            <Layout><AssetMasterDetails /></Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/superadmin/assets/masters/:id/edit"
-        element={
-          <ProtectedRoute requireRole="superadmin">
-            <Layout><AssetMasterForm /></Layout>
-          </ProtectedRoute>
-        }
-      />
 
       {/* Protected — Settings */}
       <Route

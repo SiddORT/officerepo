@@ -503,14 +503,30 @@ export const orgApi = {
   update: (data) => apiClient.patch(ORG, data),
 };
 
-// ── Portal Asset Management (portal JWT — read-only catalog view) ─────────────
+// ── Portal Asset Management (portal JWT — categories, sub-cats CRUD + catalog browse) ──
 const _ph = (sd, tk) => ({ headers: { Authorization: `Bearer ${tk}` } });
 const _php = (sd, tk, p) => ({ headers: { Authorization: `Bearer ${tk}` }, params: p });
 
 export const portalAssetApi = {
   metaOptions:      (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/meta/options`, _ph(sd, tk)),
+
+  // Categories
   listCategories:   (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/categories`, _php(sd, tk, p)),
+  getCategory:      (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/categories/${id}`, _ph(sd, tk)),
+  createCategory:   (sd, tk, data)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/categories`, data, _ph(sd, tk)),
+  updateCategory:   (sd, tk, id, d) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/assets/categories/${id}`, d, _ph(sd, tk)),
+  activateCategory: (sd, tk, id)    => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/categories/${id}/activate`, {}, _ph(sd, tk)),
+  deactivateCategory:(sd, tk, id)   => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/categories/${id}/deactivate`, {}, _ph(sd, tk)),
+
+  // Sub-Categories
   listSubCategories:(sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/sub-categories`, _php(sd, tk, p)),
+  getSubCategory:   (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/sub-categories/${id}`, _ph(sd, tk)),
+  createSubCategory:(sd, tk, data)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/sub-categories`, data, _ph(sd, tk)),
+  updateSubCategory:(sd, tk, id, d) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/assets/sub-categories/${id}`, d, _ph(sd, tk)),
+  activateSubCategory:(sd, tk, id)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/sub-categories/${id}/activate`, {}, _ph(sd, tk)),
+  deactivateSubCategory:(sd, tk, id)=> axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/sub-categories/${id}/deactivate`, {}, _ph(sd, tk)),
+
+  // Catalog (browse-only)
   listCatalog:      (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/catalog`, _php(sd, tk, p)),
   getCatalogItem:   (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/catalog/${id}`, _ph(sd, tk)),
 };
