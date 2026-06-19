@@ -143,7 +143,19 @@ def _run_migrations() -> None:
 
     with engine.connect() as _conn:
         _ctx = MigrationContext.configure(_conn)
-        current_rev = _ctx.get_current_revision()
+        current_heads = _ctx.get_current_heads()
+
+    # Multiple heads in the DB means the migration history has diverged; upgrade head merges them.
+    if len(current_heads) > 1:
+        _startup_log.warning(
+            "Alembic: multiple heads detected (%s); running upgrade head to converge.",
+            ", ".join(current_heads),
+        )
+        alembic_command.upgrade(cfg, "head")
+        _startup_log.info("Alembic migrations: converged to HEAD.")
+        return
+
+    current_rev = current_heads[0] if current_heads else None
 
     # walk_revisions() with no args returns all revisions newest→oldest; reverse for upgrade order
     all_revs = list(script.walk_revisions())

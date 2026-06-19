@@ -62,16 +62,19 @@ class AssetMasterCreate(BaseModel):
     sub_category_id: Optional[str] = None
     brand: Optional[str] = Field(None, max_length=100)
     model_number: Optional[str] = Field(None, max_length=100)
+    part_number: Optional[str] = Field(None, max_length=100)
     manufacturer: Optional[str] = Field(None, max_length=150)
     specifications: Optional[str] = None
     warranty_period_months: Optional[int] = Field(None, ge=0)
     asset_image_url: Optional[str] = Field(None, max_length=500)
     purchase_cost: Optional[float] = Field(None, ge=0)
-    expected_life_years: Optional[int] = Field(None, ge=0)
+    expected_life_months: Optional[int] = Field(None, ge=0)
     depreciation_applicable: bool = False
+    depreciation_method: Optional[str] = Field(None, max_length=50)
     serial_number_required: bool = False
     warranty_tracking_enabled: bool = False
     maintenance_tracking_enabled: bool = False
+    is_active: bool = True
 
     @field_validator("asset_code", "asset_name", mode="before")
     @classmethod
@@ -86,16 +89,19 @@ class AssetMasterUpdate(BaseModel):
     sub_category_id: Optional[str] = None
     brand: Optional[str] = Field(None, max_length=100)
     model_number: Optional[str] = Field(None, max_length=100)
+    part_number: Optional[str] = Field(None, max_length=100)
     manufacturer: Optional[str] = Field(None, max_length=150)
     specifications: Optional[str] = None
     warranty_period_months: Optional[int] = Field(None, ge=0)
     asset_image_url: Optional[str] = Field(None, max_length=500)
     purchase_cost: Optional[float] = Field(None, ge=0)
-    expected_life_years: Optional[int] = Field(None, ge=0)
+    expected_life_months: Optional[int] = Field(None, ge=0)
     depreciation_applicable: Optional[bool] = None
+    depreciation_method: Optional[str] = Field(None, max_length=50)
     serial_number_required: Optional[bool] = None
     warranty_tracking_enabled: Optional[bool] = None
     maintenance_tracking_enabled: Optional[bool] = None
+    is_active: Optional[bool] = None
 
     @field_validator("asset_code", "asset_name", mode="before")
     @classmethod

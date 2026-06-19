@@ -79,6 +79,7 @@ class AssetMaster(Base):
 
     brand           = Column(String(100), nullable=True)
     model_number    = Column(String(100), nullable=True)
+    part_number     = Column(String(100), nullable=True)
     manufacturer    = Column(String(150), nullable=True)
 
     specifications              = Column(Text, nullable=True)
@@ -86,8 +87,9 @@ class AssetMaster(Base):
     asset_image_url             = Column(String(500), nullable=True)
 
     purchase_cost               = Column(Numeric(14, 2), nullable=True)
-    expected_life_years         = Column(Integer, nullable=True)
+    expected_life_months        = Column(Integer, nullable=True)
     depreciation_applicable     = Column(Boolean, nullable=False, default=False)
+    depreciation_method         = Column(String(50), nullable=True)
 
     serial_number_required      = Column(Boolean, nullable=False, default=False)
     warranty_tracking_enabled   = Column(Boolean, nullable=False, default=False)

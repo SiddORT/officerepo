@@ -12,6 +12,7 @@ from backend.app.modules.asset_management.models import (
     AssetCategory, AssetSubCategory, AssetMaster,
 )
 from backend.shared.audit.audit_logger import record_audit
+from backend.shared.audit.models import AuditLog
 
 
 # ── Dict helpers ──────────────────────────────────────────────────────────────
@@ -60,17 +61,20 @@ def _master_dict(m: AssetMaster, category_name: Optional[str] = None,
         "sub_category_name": sub_category_name,
         "brand": m.brand,
         "model_number": m.model_number,
+        "part_number": m.part_number,
         "manufacturer": m.manufacturer,
         "specifications": m.specifications,
         "warranty_period_months": m.warranty_period_months,
         "asset_image_url": m.asset_image_url,
         "purchase_cost": float(m.purchase_cost) if m.purchase_cost is not None else None,
-        "expected_life_years": m.expected_life_years,
+        "expected_life_months": m.expected_life_months,
         "depreciation_applicable": m.depreciation_applicable,
+        "depreciation_method": m.depreciation_method,
         "serial_number_required": m.serial_number_required,
         "warranty_tracking_enabled": m.warranty_tracking_enabled,
         "maintenance_tracking_enabled": m.maintenance_tracking_enabled,
         "is_active": m.is_active,
+        "status": "Active" if m.is_active else "Inactive",
         "created_at": m.created_at,
         "updated_at": m.updated_at,
     }
@@ -288,6 +292,8 @@ def create_asset_master(db: Session, payload, actor_id: Optional[int],
     if data.get("sub_category_id"):
         if not repo.get_sub_category(db, data["sub_category_id"]):
             raise HTTPException(404, "Asset sub-category not found.")
+    if not data.get("depreciation_applicable"):
+        data["depreciation_method"] = None
     data["created_by"] = actor_id
     m = repo.create_asset_master(db, data)
     record_audit(db, action=c.ACTION_MASTER_CREATED, entity_type="asset_master",
@@ -302,7 +308,13 @@ def update_asset_master(db: Session, master_id: str, payload, actor_id: Optional
     m = repo.get_asset_master(db, master_id)
     if not m:
         raise HTTPException(404, "Asset master not found.")
-    data = {k: v for k, v in payload.model_dump().items() if v is not None}
+    raw = payload.model_dump()
+    data = {k: v for k, v in raw.items() if v is not None}
+    # allow explicit False for booleans
+    for bool_field in ("depreciation_applicable", "serial_number_required",
+                       "warranty_tracking_enabled", "maintenance_tracking_enabled", "is_active"):
+        if raw.get(bool_field) is False:
+            data[bool_field] = False
     if "asset_code" in data:
         if repo.get_master_by_code(db, data["asset_code"], exclude_id=master_id):
             raise HTTPException(409, f"Asset code '{data['asset_code']}' already exists.")
@@ -311,6 +323,10 @@ def update_asset_master(db: Session, master_id: str, payload, actor_id: Optional
     if "sub_category_id" in data and data["sub_category_id"]:
         if not repo.get_sub_category(db, data["sub_category_id"]):
             raise HTTPException(404, "Asset sub-category not found.")
+    dep_applicable = data.get("depreciation_applicable",
+                               raw.get("depreciation_applicable", m.depreciation_applicable))
+    if dep_applicable is False:
+        data["depreciation_method"] = None
     repo.update_asset_master(db, m, data)
     record_audit(db, action=c.ACTION_MASTER_UPDATED, entity_type="asset_master",
                  entity_id=master_id, actor=actor_email, metadata={"updated": data})
@@ -328,9 +344,34 @@ def set_asset_master_status(db: Session, master_id: str, activate: bool,
     repo.update_asset_master(db, m, {"is_active": activate})
     action = c.ACTION_MASTER_ACTIVATED if activate else c.ACTION_MASTER_DEACTIVATED
     record_audit(db, action=action, entity_type="asset_master",
-                 entity_id=master_id, actor=actor_email)
+                 entity_id=master_id, actor=actor_email,
+                 metadata={"is_active": activate})
     db.commit()
     return get_asset_master(db, master_id)
+
+
+def list_asset_master_activities(db: Session, master_id: str,
+                                 page: int = 1, page_size: int = 20) -> Dict:
+    m = repo.get_asset_master(db, master_id)
+    if not m:
+        raise HTTPException(404, "Asset master not found.")
+    q = (db.query(AuditLog)
+           .filter(AuditLog.entity_type == "asset_master",
+                   AuditLog.entity_id == master_id)
+           .order_by(AuditLog.created_at.desc()))
+    total = q.count()
+    rows = q.offset((page - 1) * page_size).limit(page_size).all()
+    data = [
+        {
+            "id": r.id,
+            "action": r.action,
+            "actor": r.actor,
+            "metadata": r.log_metadata,
+            "created_at": r.created_at,
+        }
+        for r in rows
+    ]
+    return {"data": data, "total": total, "page": page, "page_size": page_size}
 
 
 # ── Meta Options ─────────────────────────────────────────────────────────────
@@ -339,14 +380,15 @@ def get_meta_options(db: Session) -> Dict:
     cats, _ = repo.list_categories(db, status="Active", page=1, page_size=500)
     subcats, _ = repo.list_sub_categories(db, status="Active", page=1, page_size=500)
     return {
-        "categories": [{"id": c.id, "category_code": c.category_code,
-                         "category_name": c.category_name, "icon": c.icon}
-                        for c in cats],
+        "categories": [{"id": cat.id, "category_code": cat.category_code,
+                         "category_name": cat.category_name, "icon": cat.icon}
+                        for cat in cats],
         "sub_categories": [{"id": s.id, "sub_category_code": s.sub_category_code,
                               "sub_category_name": s.sub_category_name,
                               "category_id": s.category_id}
                             for s in subcats],
         "statuses": c.ASSET_STATUSES,
+        "depreciation_methods": c.DEPRECIATION_METHODS,
     }
 
 

@@ -557,6 +557,7 @@ export const assetMgmtApi = {
   updateMaster: (id, data) => apiClient.patch(`${ASSETS}/masters/${id}`, data),
   activateMaster: (id) => apiClient.post(`${ASSETS}/masters/${id}/activate`),
   deactivateMaster: (id) => apiClient.post(`${ASSETS}/masters/${id}/deactivate`),
+  listMasterActivities: (id, params) => apiClient.get(`${ASSETS}/masters/${id}/activities`, { params }),
 };
 
 // ── Currency Management (superadmin — global platform settings) ───────────────

@@ -207,6 +207,19 @@ def create_asset_master(
     ), "Asset master created.").model_dump()
 
 
+@router.get("/masters/{master_id}/activities")
+def list_master_activities(
+    master_id: str,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_platform_db),
+    _admin: dict = Depends(require_superadmin),
+):
+    return ApiResponse.ok(svc.list_asset_master_activities(
+        db, master_id, page=page, page_size=page_size,
+    )).model_dump()
+
+
 @router.get("/masters/{master_id}")
 def get_asset_master(
     master_id: str,

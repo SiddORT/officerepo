@@ -4,6 +4,10 @@ ASSET_STATUS_ACTIVE = "Active"
 ASSET_STATUS_INACTIVE = "Inactive"
 ASSET_STATUSES = [ASSET_STATUS_ACTIVE, ASSET_STATUS_INACTIVE]
 
+DEPRECIATION_METHOD_SLM = "Straight Line"
+DEPRECIATION_METHOD_WDV = "Written Down Value"
+DEPRECIATION_METHODS = [DEPRECIATION_METHOD_SLM, DEPRECIATION_METHOD_WDV]
+
 DEFAULT_CATEGORIES = [
     {"category_code": "IT",   "category_name": "IT Assets",          "icon": "💻", "display_order": 1},
     {"category_code": "FURN", "category_name": "Furniture",           "icon": "🪑", "display_order": 2},
@@ -29,6 +33,7 @@ DEFAULT_SUB_CATEGORIES = [
     {"sub_category_code": "SW-M365", "sub_category_name": "Microsoft 365","category_code": "SW"},
     {"sub_category_code": "SW-ADO",  "sub_category_name": "Adobe",        "category_code": "SW"},
     {"sub_category_code": "SW-AV",   "sub_category_name": "Antivirus",    "category_code": "SW"},
+    {"sub_category_code": "EL-MOB",  "sub_category_name": "Mobile Phone", "category_code": "ELEC"},
 ]
 
 DEFAULT_ASSET_MASTERS = [
@@ -38,7 +43,8 @@ DEFAULT_ASSET_MASTERS = [
         "brand": "Dell", "model_number": "Latitude 5440",
         "manufacturer": "Dell Technologies", "warranty_period_months": 36,
         "serial_number_required": True, "warranty_tracking_enabled": True,
-        "depreciation_applicable": True, "expected_life_years": 4,
+        "depreciation_applicable": True, "depreciation_method": "Straight Line",
+        "expected_life_months": 48,
     },
     {
         "asset_code": "AM-LAP-002", "asset_name": "HP EliteBook 840",
@@ -46,7 +52,8 @@ DEFAULT_ASSET_MASTERS = [
         "brand": "HP", "model_number": "EliteBook 840",
         "manufacturer": "HP Inc.", "warranty_period_months": 36,
         "serial_number_required": True, "warranty_tracking_enabled": True,
-        "depreciation_applicable": True, "expected_life_years": 4,
+        "depreciation_applicable": True, "depreciation_method": "Straight Line",
+        "expected_life_months": 48,
     },
     {
         "asset_code": "AM-LAP-003", "asset_name": "Lenovo ThinkPad T14",
@@ -54,15 +61,16 @@ DEFAULT_ASSET_MASTERS = [
         "brand": "Lenovo", "model_number": "ThinkPad T14",
         "manufacturer": "Lenovo", "warranty_period_months": 36,
         "serial_number_required": True, "warranty_tracking_enabled": True,
-        "depreciation_applicable": True, "expected_life_years": 4,
+        "depreciation_applicable": True, "depreciation_method": "Straight Line",
+        "expected_life_months": 48,
     },
     {
-        "asset_code": "AM-MON-001", "asset_name": 'Dell Monitor 24"',
+        "asset_code": "AM-MON-001", "asset_name": "Dell Monitor 24 Inch",
         "category_code": "IT", "sub_category_code": "IT-MON",
         "brand": "Dell", "model_number": "P2422H",
         "manufacturer": "Dell Technologies", "warranty_period_months": 36,
         "serial_number_required": True, "depreciation_applicable": True,
-        "expected_life_years": 6,
+        "depreciation_method": "Straight Line", "expected_life_months": 72,
     },
     {
         "asset_code": "AM-PRN-001", "asset_name": "HP LaserJet Printer",
@@ -70,15 +78,35 @@ DEFAULT_ASSET_MASTERS = [
         "brand": "HP", "model_number": "LaserJet Pro M404dn",
         "manufacturer": "HP Inc.", "warranty_period_months": 12,
         "serial_number_required": True, "maintenance_tracking_enabled": True,
-        "depreciation_applicable": True, "expected_life_years": 5,
+        "depreciation_applicable": True, "depreciation_method": "Straight Line",
+        "expected_life_months": 60,
     },
     {
         "asset_code": "AM-MOB-001", "asset_name": "iPhone 15",
-        "category_code": "ELEC", "sub_category_code": None,
+        "category_code": "ELEC", "sub_category_code": "EL-MOB",
         "brand": "Apple", "model_number": "A3089",
         "manufacturer": "Apple Inc.", "warranty_period_months": 12,
         "serial_number_required": True, "warranty_tracking_enabled": True,
-        "depreciation_applicable": True, "expected_life_years": 3,
+        "depreciation_applicable": True, "depreciation_method": "Written Down Value",
+        "expected_life_months": 36,
+    },
+    {
+        "asset_code": "AM-SW-001", "asset_name": "Microsoft 365 E3",
+        "category_code": "SW", "sub_category_code": "SW-M365",
+        "brand": "Microsoft", "model_number": "365 E3",
+        "manufacturer": "Microsoft Corporation",
+        "depreciation_applicable": False,
+        "serial_number_required": False, "warranty_tracking_enabled": False,
+        "expected_life_months": 12,
+    },
+    {
+        "asset_code": "AM-SW-002", "asset_name": "Adobe Creative Cloud",
+        "category_code": "SW", "sub_category_code": "SW-ADO",
+        "brand": "Adobe", "model_number": "Creative Cloud All Apps",
+        "manufacturer": "Adobe Inc.",
+        "depreciation_applicable": False,
+        "serial_number_required": False, "warranty_tracking_enabled": False,
+        "expected_life_months": 12,
     },
 ]
 
@@ -96,3 +124,4 @@ ACTION_MASTER_CREATED = "asset_master.created"
 ACTION_MASTER_UPDATED = "asset_master.updated"
 ACTION_MASTER_ACTIVATED = "asset_master.activated"
 ACTION_MASTER_DEACTIVATED = "asset_master.deactivated"
+ACTION_MASTER_STATUS_CHANGED = "asset_master.status_changed"

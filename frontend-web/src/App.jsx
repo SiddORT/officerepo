@@ -37,6 +37,9 @@ import SettingsVariantA from "./pages/mockups/SettingsVariantA";
 import SettingsVariantB from "./pages/mockups/SettingsVariantB";
 import SettingsVariantC from "./pages/mockups/SettingsVariantC";
 import ClientPortalPage from "./pages/portal/ClientPortalPage";
+import AssetMasterList from "./pages/superadmin/assets/AssetMasterList";
+import AssetMasterForm from "./pages/superadmin/assets/AssetMasterForm";
+import AssetMasterDetails from "./pages/superadmin/assets/AssetMasterDetails";
 
 function ProtectedRoute({ children, requireRole }) {
   const { user, loading } = useAuth();
@@ -276,6 +279,40 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireRole="superadmin">
             <Layout><SettingsLayout><NotificationsPage /></SettingsLayout></Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Protected — Asset Management → Asset Masters */}
+      <Route
+        path="/superadmin/assets/masters"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><AssetMasterList /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/assets/masters/new"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><AssetMasterForm /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/assets/masters/:id/edit"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><AssetMasterForm /></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/assets/masters/:id"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><AssetMasterDetails /></Layout>
           </ProtectedRoute>
         }
       />

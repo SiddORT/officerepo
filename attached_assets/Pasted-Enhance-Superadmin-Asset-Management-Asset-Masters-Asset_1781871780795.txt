@@ -1,0 +1,194 @@
+Enhance Superadmin → Asset Management → Asset Masters.
+
+Asset Masters currently have only list functionality.
+
+Implement complete Create, Edit, View and Activate/Deactivate functionality.
+
+Asset Master is a global template shared across all clients.
+
+Clients cannot modify Asset Masters.
+
+Clients only consume Asset Masters while creating inventory assets.
+
+---------------------------------------------------
+ADD ASSET MASTER FORM
+---------------------------------------------------
+
+Section 1 - Basic Information
+
+- Asset Code *
+- Asset Name *
+- Category *
+- Sub Category *
+
+Rules:
+
+- Sub Category filtered by Category
+
+---------------------------------------------------
+Section 2 - Manufacturer Information
+
+- Brand
+- Manufacturer
+- Model Number
+- Part Number
+
+---------------------------------------------------
+Section 3 - Technical Specifications
+
+- Specifications (Rich Text)
+
+Examples:
+
+RAM
+Storage
+Processor
+Operating System
+
+Store as JSON for future flexibility.
+
+---------------------------------------------------
+Section 4 - Commercial Information
+
+- Standard Purchase Cost
+- Expected Useful Life (Months)
+
+Depreciation Applicable
+
+Toggle:
+
+- Yes
+- No
+
+If enabled:
+
+- Depreciation Method
+
+Values:
+
+- Straight Line
+- Written Down Value
+
+---------------------------------------------------
+Section 5 - Tracking Configuration
+
+Checkboxes:
+
+- Serial Number Required
+- Warranty Tracking Enabled
+- Maintenance Tracking Enabled
+
+---------------------------------------------------
+Section 6 - Media
+
+- Asset Image Upload
+
+Validation:
+
+- JPG
+- PNG
+- WEBP
+
+---------------------------------------------------
+Section 7 - Status
+
+- Active
+- Inactive
+
+---------------------------------------------------
+LIST PAGE
+---------------------------------------------------
+
+Columns:
+
+- Asset Code
+- Asset Name
+- Category
+- Sub Category
+- Brand
+- Model Number
+- Status
+
+Actions:
+
+- View
+- Edit
+- Activate
+- Deactivate
+
+Filters:
+
+- Category
+- Sub Category
+- Status
+
+Search:
+
+- Asset Code
+- Asset Name
+- Brand
+
+---------------------------------------------------
+DETAIL PAGE
+---------------------------------------------------
+
+Tabs:
+
+- Overview
+- Specifications
+- Activities
+
+---------------------------------------------------
+VALIDATIONS
+---------------------------------------------------
+
+- Asset Code Unique
+- Asset Name Required
+- Category Required
+- Sub Category Required
+
+---------------------------------------------------
+SEED DATA
+---------------------------------------------------
+
+Create sample asset masters:
+
+Dell Latitude 5440
+
+HP EliteBook 840
+
+Lenovo ThinkPad T14
+
+Dell 24 Inch Monitor
+
+HP LaserJet Printer
+
+iPhone 15
+
+Microsoft 365 E3
+
+Adobe Creative Cloud
+
+---------------------------------------------------
+AUDIT LOGGING
+---------------------------------------------------
+
+Track:
+
+- Asset Master Created
+- Asset Master Updated
+- Status Changed
+
+Store:
+
+- User
+- Timestamp
+- Old Value
+- New Value
+
+Follow Office Repo UI standards:
+
+- Dark Mode
+- Responsive Design
+- Reusable Components
+- Consistent Spacing
