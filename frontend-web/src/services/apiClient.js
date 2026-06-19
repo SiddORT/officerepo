@@ -529,6 +529,7 @@ export const portalAssetApi = {
   // Catalog (browse-only)
   listCatalog:      (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/catalog`, _php(sd, tk, p)),
   getCatalogItem:   (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/catalog/${id}`, _ph(sd, tk)),
+  createCatalogItem:(sd, tk, data)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/catalog`, data, _ph(sd, tk)),
 };
 
 // ── Asset Management Setup (superadmin — categories, sub-categories, masters) ─

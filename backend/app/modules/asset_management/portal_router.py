@@ -17,6 +17,7 @@ from backend.app.modules.asset_management import service as svc
 from backend.app.modules.asset_management.schemas import (
     AssetCategoryCreate, AssetCategoryUpdate,
     AssetSubCategoryCreate, AssetSubCategoryUpdate,
+    AssetMasterCreate, AssetMasterUpdate,
 )
 from backend.shared.response import ApiResponse
 
@@ -246,7 +247,22 @@ def deactivate_sub_category(
     ), "Sub-category deactivated.").model_dump()
 
 
-# ── Asset Masters (Catalog — read-only browse) ────────────────────────────────
+# ── Asset Masters (Catalog) ───────────────────────────────────────────────────
+
+@router.post("/{subdomain}/assets/catalog", status_code=201)
+def create_catalog_item(
+    subdomain: str,
+    payload: AssetMasterCreate,
+    db: Session = Depends(get_platform_db),
+    portal_user: dict = Depends(_module_guard),
+):
+    _subdomain_check(portal_user, subdomain)
+    return ApiResponse.ok(svc.create_asset_master(
+        db, payload,
+        actor_id=portal_user.get("user_id"),
+        actor_email=portal_user.get("email"),
+    ), "Asset added to catalog.").model_dump()
+
 
 @router.get("/{subdomain}/assets/catalog")
 def list_catalog(

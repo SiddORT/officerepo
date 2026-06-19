@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAssetApi } from "../../../services/apiClient";
 import AssetLayout from "./AssetLayout";
@@ -34,6 +34,7 @@ function SubCatBadge({ name }) {
 
 export default function AssetCatalog() {
   const { subdomain } = useParams();
+  const navigate = useNavigate();
   const { token } = usePortalAuth();
 
   const [rows, setRows] = useState([]);
@@ -83,6 +84,11 @@ export default function AssetCatalog() {
             Browse all available asset types — {total} items
           </p>
         </div>
+        <button
+          onClick={() => navigate(`/portal/${subdomain}/assets/catalog/new`)}
+          style={{ padding: "8px 16px", borderRadius: 7, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }}>
+          + Add Asset
+        </button>
       </div>
 
       {/* Filters */}
