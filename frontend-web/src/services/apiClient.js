@@ -530,6 +530,18 @@ export const portalAssetApi = {
   listCatalog:      (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/catalog`, _php(sd, tk, p)),
   getCatalogItem:   (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/catalog/${id}`, _ph(sd, tk)),
   createCatalogItem:(sd, tk, data)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/catalog`, data, _ph(sd, tk)),
+
+  // Inventory (client-owned assets)
+  inventoryMeta:         (sd, tk)          => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/inventory/meta/options`, _ph(sd, tk)),
+  listInventory:         (sd, tk, p)       => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/inventory`, _php(sd, tk, p)),
+  createInventoryItem:   (sd, tk, data)    => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/inventory`, data, _ph(sd, tk)),
+  getInventoryItem:      (sd, tk, id)      => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/inventory/${id}`, _ph(sd, tk)),
+  updateInventoryItem:   (sd, tk, id, d)   => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/assets/inventory/${id}`, d, _ph(sd, tk)),
+  deleteInventoryItem:   (sd, tk, id)      => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/assets/inventory/${id}`, _ph(sd, tk)),
+  assignAsset:           (sd, tk, id, d)   => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/inventory/${id}/assign`, d, _ph(sd, tk)),
+  returnAsset:           (sd, tk, id, d)   => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/inventory/${id}/return`, d, _ph(sd, tk)),
+  listInventoryDocs:     (sd, tk, id)      => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/inventory/${id}/documents`, _ph(sd, tk)),
+  listInventoryActivities:(sd, tk, id)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/inventory/${id}/activities`, _ph(sd, tk)),
 };
 
 // ── Asset Management Setup (superadmin — categories, sub-categories, masters) ─

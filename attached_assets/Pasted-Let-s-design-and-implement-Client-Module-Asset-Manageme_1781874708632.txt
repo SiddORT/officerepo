@@ -1,0 +1,681 @@
+Let's design and implement Client Module → Asset Management → Asset Inventory for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Completed Modules:
+
+* Companies
+* Branches
+* Departments
+* Designations
+* Employees
+
+Superadmin manages:
+
+* Asset Categories
+* Asset Sub Categories
+
+Clients manage their own Asset Inventory.
+
+Architecture:
+
+Client
+↓
+Company
+↓
+Branch
+↓
+Department
+↓
+Employee
+↓
+Asset Inventory
+
+Asset Inventory stores actual client-owned assets.
+
+Examples:
+
+* Laptops
+* Desktops
+* Monitors
+* Printers
+* Servers
+* Mobile Phones
+* SIM Cards
+* Access Cards
+* Machines
+* Vehicles
+* Furniture
+* Tools
+* Software Licenses
+
+Every asset must have a unique QR Code.
+
+Scanning the QR Code should display the complete asset profile.
+
+This module must be developed as a reusable business module controlled through client_modules.
+
+Module Code:
+
+ASSET
+
+When enabled:
+
+* Visible in Sidebar
+* Routes Accessible
+* APIs Accessible
+
+When disabled:
+
+* Hidden from Sidebar
+* Routes Blocked
+* APIs Blocked
+
+---
+
+# Module Structure
+
+Asset Management
+
+├── Asset Inventory
+├── Asset Assignments
+├── Asset Returns
+├── Asset Transfers
+├── Asset Maintenance
+├── Asset Documents
+├── Asset Reminders
+├── QR Code Scanner
+└── Asset Activities
+
+---
+
+# Asset Lifecycle
+
+Available
+↓
+Assigned
+↓
+Returned
+↓
+Maintenance
+↓
+Assigned
+↓
+Retired
+
+Asset Status:
+
+* Draft
+* Available
+* Assigned
+* Under Maintenance
+* Lost
+* Damaged
+* Retired
+* Disposed
+
+---
+
+# Asset Information
+
+## Basic Information
+
+* Asset Number *
+* Asset Name *
+* Category *
+* Sub Category *
+
+Asset Number must be generated from Number Series.
+
+Examples:
+
+AST-000001
+AST-000002
+
+---
+
+## Asset Details
+
+* Brand
+* Manufacturer
+* Model Number
+* Part Number
+* Serial Number
+* Barcode Number
+
+Serial Number must be unique within the client.
+
+---
+
+## Organization Mapping
+
+* Company *
+* Branch *
+* Department
+
+Employee assignment is optional.
+
+Assets such as furniture or machines may not belong to a specific employee.
+
+---
+
+## Assignment Information
+
+* Assigned Employee
+* Assigned Date
+* Expected Return Date
+* Assignment Notes
+
+Rules:
+
+* Only Available assets can be assigned
+* One asset can have only one active assignment
+
+---
+
+## Work Location
+
+* Work Location Type
+
+Values:
+
+* Office
+* Remote
+* Hybrid
+* Shared Workspace
+
+---
+
+## Purchase Information
+
+* Purchase Date
+* Purchase Cost
+* Currency
+* Vendor Name
+* Vendor Contact
+* Invoice Number
+* Purchase Order Number
+
+---
+
+## Warranty Information
+
+* Warranty Available
+* Warranty Start Date
+* Warranty End Date
+* Warranty Provider
+* Warranty Reference Number
+
+Automatically calculate:
+
+* Days Remaining
+
+---
+
+## AMC Information
+
+* AMC Applicable
+* AMC Start Date
+* AMC End Date
+* AMC Vendor
+* AMC Cost
+
+Automatically calculate:
+
+* AMC Days Remaining
+
+---
+
+## Insurance Information
+
+* Insurance Available
+* Insurance Provider
+* Policy Number
+* Coverage Amount
+* Insurance Start Date
+* Insurance End Date
+
+Automatically calculate:
+
+* Insurance Days Remaining
+
+---
+
+## Maintenance Information
+
+* Maintenance Required
+* Last Maintenance Date
+* Next Maintenance Date
+* Maintenance Frequency
+
+Values:
+
+* Monthly
+* Quarterly
+* Half Yearly
+* Yearly
+
+---
+
+## Asset Documents
+
+Support multiple uploads.
+
+Document Types:
+
+* Purchase Invoice
+* Warranty Card
+* User Manual
+* Insurance Policy
+* AMC Agreement
+* Calibration Certificate
+* Asset Photo
+* Other
+
+For each document store:
+
+* Document Type
+* File
+* Remarks
+* Upload Date
+
+Storage:
+
+* Local Storage (Current)
+* AWS S3 (Future)
+
+Design storage abstraction accordingly.
+
+---
+
+# QR Code Management
+
+Generate QR Code automatically.
+
+QR Code should contain:
+
+* Asset UUID
+
+Do not expose internal IDs.
+
+Example URL:
+
+https://client.office-repo.com/assets/{asset_uuid}
+
+Scanning the QR Code should display:
+
+* Asset Name
+* Asset Number
+* Category
+* Branch
+* Status
+* Assigned Employee
+* Purchase Date
+* Warranty Status
+* Last Maintenance Date
+* Asset Documents
+* Asset History
+
+Provide:
+
+* Download QR Code
+* Print QR Code
+
+Support:
+
+* Single Print
+* Bulk Print
+
+---
+
+# Asset Reminders
+
+Support automatic reminders for:
+
+* Warranty Expiry
+* AMC Renewal
+* Insurance Renewal
+* Maintenance Due
+* Calibration Due
+
+Fields:
+
+* Reminder Type
+* Days Before
+
+Examples:
+
+30 Days
+60 Days
+90 Days
+
+Notification Channels:
+
+* Email
+* SMS
+* Push Notification
+
+---
+
+# Asset Transfers
+
+Support:
+
+* Branch To Branch
+* Department To Department
+* Employee To Employee
+
+Track:
+
+* From
+* To
+* Reason
+* Approval Status
+* Transfer Date
+
+---
+
+# Asset Returns
+
+Fields:
+
+* Return Date
+* Asset Condition
+* Remarks
+
+Asset Conditions:
+
+* Good
+* Damaged
+* Lost
+
+Automatically update status.
+
+---
+
+# Asset Maintenance
+
+Fields:
+
+* Maintenance Type
+* Vendor
+* Cost
+* Start Date
+* End Date
+* Remarks
+
+Maintenance Types:
+
+* Preventive
+* Corrective
+* Calibration
+* Upgrade
+
+---
+
+# Asset Activities
+
+Track complete lifecycle.
+
+Examples:
+
+* Asset Created
+* Asset Updated
+* Asset Assigned
+* Asset Returned
+* Asset Transferred
+* Asset Maintained
+* Document Uploaded
+* Warranty Renewed
+* Status Changed
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# UI Design
+
+## Asset Inventory List
+
+Columns:
+
+* Asset Number
+* Asset Name
+* Category
+* Branch
+* Assigned To
+* Status
+* Warranty Status
+
+Actions:
+
+* View
+* Edit
+* Assign
+* Return
+* Transfer
+* Print QR
+
+Filters:
+
+* Company
+* Branch
+* Category
+* Sub Category
+* Status
+* Assigned Employee
+
+Search:
+
+* Asset Number
+* Asset Name
+* Serial Number
+
+---
+
+## Asset Create
+
+Use section-based form.
+
+Sections:
+
+1. Basic Information
+2. Organization Mapping
+3. Assignment Information
+4. Purchase Information
+5. Warranty Information
+6. AMC Information
+7. Insurance Information
+8. Maintenance Information
+9. Documents
+
+---
+
+## Asset Details
+
+Tabs:
+
+* Overview
+* Assignment History
+* Maintenance History
+* Documents
+* Reminders
+* Activities
+
+Display QR Code prominently.
+
+---
+
+## Dashboard Widgets
+
+* Total Assets
+* Assigned Assets
+* Available Assets
+* Assets Under Maintenance
+* Expiring Warranties
+* Upcoming Renewals
+
+---
+
+# Database Design
+
+Design tables:
+
+assets
+
+asset_assignments
+
+asset_transfers
+
+asset_maintenance
+
+asset_documents
+
+asset_reminders
+
+asset_activities
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+* Relationships
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+* Enums
+
+Use SQLAlchemy 2.0 standards.
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_030_assets
+
+2026_031_asset_assignments
+
+2026_032_asset_transfers
+
+2026_033_asset_maintenance
+
+2026_034_asset_documents
+
+2026_035_asset_reminders
+
+2026_036_asset_activities
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Assets
+
+* Create Asset
+* Update Asset
+* Get Asset
+* List Assets
+* Assign Asset
+* Return Asset
+* Transfer Asset
+* Print QR
+
+Maintenance
+
+* Create Maintenance Record
+* Update Maintenance Record
+
+Documents
+
+* Upload Document
+* Download Document
+* Delete Document
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Asset Repository
+* Assignment Repository
+* Maintenance Repository
+* Document Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Asset Service
+* Assignment Service
+* QR Service
+* Reminder Service
+* Maintenance Service
+
+Include:
+
+* Business Rules
+* Validation Logic
+* Lifecycle Management
+
+---
+
+# Validation Rules
+
+* Asset Number Unique
+* Serial Number Unique
+* Assignment Allowed Only For Available Assets
+* Warranty End Date >= Warranty Start Date
+* AMC End Date >= AMC Start Date
+* Insurance End Date >= Insurance Start Date
+
+---
+
+# Seed Data
+
+Create sample assets:
+
+* Dell Latitude 5440
+* HP EliteBook 840
+* Dell Monitor 24"
+* HP LaserJet Printer
+* Office Chair
+* Access Card
+* Forklift Machine
+
+Assign sample employees and branches.
+
+Generate QR Codes for all seeded assets.
+
+---
+
+Generate production-ready specifications suitable for direct implementation in Office Repo using FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, React and TailwindCSS.

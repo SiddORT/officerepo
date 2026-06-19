@@ -26,6 +26,9 @@ import AssetCatalog from "./assets/AssetCatalog";
 import AssetCatalogForm from "./assets/AssetCatalogForm";
 import AssetCategories from "./assets/AssetCategories";
 import AssetSubCategoryList from "./assets/AssetSubCategoryList";
+import AssetInventoryList from "./assets/AssetInventoryList";
+import AssetInventoryForm from "./assets/AssetInventoryForm";
+import AssetInventoryDetails from "./assets/AssetInventoryDetails";
 
 // Organization Management pages
 import CompanyList from "./org-management/CompanyList";
@@ -144,12 +147,16 @@ function PortalRoutes() {
       <Route path="/org/*" element={<Navigate to={`/portal/${subdomain}/org/companies`} replace />} />
 
       {/* ── Asset Management ─────────────────────────────────────────── */}
-      <Route path="/assets/categories"     element={<Protected><AssetCategories /></Protected>} />
-      <Route path="/assets/sub-categories" element={<Protected><AssetSubCategoryList /></Protected>} />
-      <Route path="/assets/catalog/new"    element={<Protected><AssetCatalogForm /></Protected>} />
-      <Route path="/assets/catalog"        element={<Protected><AssetCatalog /></Protected>} />
-      <Route path="/assets"   element={<Navigate to={`/portal/${subdomain}/assets/categories`} replace />} />
-      <Route path="/assets/*" element={<Navigate to={`/portal/${subdomain}/assets/categories`} replace />} />
+      <Route path="/assets/categories"         element={<Protected><AssetCategories /></Protected>} />
+      <Route path="/assets/sub-categories"     element={<Protected><AssetSubCategoryList /></Protected>} />
+      <Route path="/assets/catalog/new"        element={<Protected><AssetCatalogForm /></Protected>} />
+      <Route path="/assets/catalog"            element={<Protected><AssetCatalog /></Protected>} />
+      <Route path="/assets/inventory/new"      element={<Protected><AssetInventoryForm editMode={false} /></Protected>} />
+      <Route path="/assets/inventory/:assetId/edit" element={<Protected><AssetInventoryForm editMode={true} /></Protected>} />
+      <Route path="/assets/inventory/:assetId" element={<Protected><AssetInventoryDetails /></Protected>} />
+      <Route path="/assets/inventory"          element={<Protected><AssetInventoryList /></Protected>} />
+      <Route path="/assets"   element={<Navigate to={`/portal/${subdomain}/assets/inventory`} replace />} />
+      <Route path="/assets/*" element={<Navigate to={`/portal/${subdomain}/assets/inventory`} replace />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to={user ? `/portal/${subdomain}/dashboard` : `/portal/${subdomain}`} replace />} />
