@@ -42,6 +42,17 @@ import CandidateDetails from "./recruitment/CandidateDetails";
 import OfferList from "./recruitment/OfferList";
 import OfferForm from "./recruitment/OfferForm";
 
+// Attendance Management pages
+import AttendanceDashboard  from "./attendance/AttendanceDashboard";
+import AttendanceList       from "./attendance/AttendanceList";
+import AttendanceCalendar   from "./attendance/AttendanceCalendar";
+import ShiftList            from "./attendance/ShiftList";
+import ShiftForm            from "./attendance/ShiftForm";
+import CheckIn              from "./attendance/CheckIn";
+import RegularizationList   from "./attendance/RegularizationList";
+import PolicyList           from "./attendance/PolicyList";
+import DeviceRegistry       from "./attendance/DeviceRegistry";
+
 // Onboarding pages
 import OnboardingDashboard from "./onboarding/OnboardingDashboard";
 import OnboardingList      from "./onboarding/OnboardingList";
@@ -246,7 +257,17 @@ function PortalRoutes() {
       <Route path="/hrms/onboarding/list"                       element={<Protected><PortalLayout title="All Onboardings"><OnboardingList /></PortalLayout></Protected>} />
       <Route path="/hrms/onboarding/:onboardingId"              element={<Protected><PortalLayout title="Onboarding Details"><OnboardingDetails /></PortalLayout></Protected>} />
       <Route path="/hrms/onboarding"                            element={<Protected><PortalLayout title="Employee Onboarding"><OnboardingDashboard /></PortalLayout></Protected>} />
-      <Route path="/hrms/attendance"  element={<CS module="HRMS" submodule="Attendance Management" />} />
+      {/* ── Attendance Management ────────────────────────────────────────── */}
+      <Route path="/hrms/attendance/shifts/new"           element={<Protected><PortalLayout title="New Shift"><ShiftForm editMode={false} /></PortalLayout></Protected>} />
+      <Route path="/hrms/attendance/shifts/:shiftId/edit" element={<Protected><PortalLayout title="Edit Shift"><ShiftForm editMode={true} /></PortalLayout></Protected>} />
+      <Route path="/hrms/attendance/shifts"               element={<Protected><PortalLayout title="Shifts"><ShiftList /></PortalLayout></Protected>} />
+      <Route path="/hrms/attendance/check-in"             element={<Protected><PortalLayout title="Check-In / Check-Out"><CheckIn /></PortalLayout></Protected>} />
+      <Route path="/hrms/attendance/regularizations"      element={<Protected><PortalLayout title="Regularizations"><RegularizationList /></PortalLayout></Protected>} />
+      <Route path="/hrms/attendance/records"              element={<Protected><PortalLayout title="Attendance Records"><AttendanceList /></PortalLayout></Protected>} />
+      <Route path="/hrms/attendance/calendar"             element={<Protected><PortalLayout title="Attendance Calendar"><AttendanceCalendar /></PortalLayout></Protected>} />
+      <Route path="/hrms/attendance/policies"             element={<Protected><PortalLayout title="Attendance Policies"><PolicyList /></PortalLayout></Protected>} />
+      <Route path="/hrms/attendance/devices"              element={<Protected><PortalLayout title="Device Registry"><DeviceRegistry /></PortalLayout></Protected>} />
+      <Route path="/hrms/attendance"                      element={<Protected><PortalLayout title="Attendance Management"><AttendanceDashboard /></PortalLayout></Protected>} />
       <Route path="/hrms/leave"       element={<CS module="HRMS" submodule="Leave Management" />} />
       <Route path="/hrms/payroll"     element={<CS module="HRMS" submodule="Payroll Management" />} />
       <Route path="/hrms/loans"       element={<CS module="HRMS" submodule="Employee Loan Management" />} />

@@ -152,6 +152,7 @@ def provision_portal_schema(url: str, *, force: bool = False) -> None:
     import backend.app.modules.recruitment.models  # noqa: F401
     import backend.app.modules.interview.models  # noqa: F401
     import backend.app.modules.onboarding.models  # noqa: F401
+    import backend.app.modules.attendance.models  # noqa: F401
     engine = _get_engine(url)
     ClientBase.metadata.create_all(engine)
     _migrate_columns(engine)

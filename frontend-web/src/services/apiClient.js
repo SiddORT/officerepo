@@ -755,6 +755,70 @@ export const portalOnboardingApi = {
   activities: (sd, tk, id)             => axios.get(_oburl(sd, `/${id}/activities`),         _obh(sd, tk)),
 };
 
+// ── Attendance Management (portal — client DB) ────────────────────────────────
+const _aturl = (sd, path) => `${API_BASE_URL}/api/v1/portal/${sd}/hrms/attendance${path}`;
+const _ath   = (sd, tk)   => ({ headers: { Authorization: `Bearer ${tk}` } });
+const _athp  = (sd, tk, params) => ({ headers: { Authorization: `Bearer ${tk}` }, params });
+
+export const portalAttendanceApi = {
+  metaOptions: (sd, tk)              => axios.get(_aturl(sd, "/meta/options"),  _ath(sd, tk)),
+  dashboard:   (sd, tk)              => axios.get(_aturl(sd, "/dashboard"),     _ath(sd, tk)),
+
+  // Shifts
+  listShifts:      (sd, tk, activeOnly = false) => axios.get(_aturl(sd, "/shifts"), { ..._ath(sd, tk), params: { active_only: activeOnly } }),
+  getShift:        (sd, tk, id)      => axios.get(_aturl(sd, `/shifts/${id}`),          _ath(sd, tk)),
+  createShift:     (sd, tk, d)       => axios.post(_aturl(sd, "/shifts"),          d,   _ath(sd, tk)),
+  updateShift:     (sd, tk, id, d)   => axios.patch(_aturl(sd, `/shifts/${id}`),   d,   _ath(sd, tk)),
+  deleteShift:     (sd, tk, id)      => axios.delete(_aturl(sd, `/shifts/${id}`),       _ath(sd, tk)),
+
+  // Shift Assignments
+  listAssignments:  (sd, tk, p)      => axios.get(_aturl(sd, "/shift-assignments"),     _athp(sd, tk, p)),
+  createAssignment: (sd, tk, d)      => axios.post(_aturl(sd, "/shift-assignments"), d, _ath(sd, tk)),
+  deleteAssignment: (sd, tk, id)     => axios.delete(_aturl(sd, `/shift-assignments/${id}`), _ath(sd, tk)),
+
+  // Check-In / Check-Out
+  checkIn:   (sd, tk, d)             => axios.post(_aturl(sd, "/check-in"),        d,   _ath(sd, tk)),
+  checkOut:  (sd, tk, d)             => axios.post(_aturl(sd, "/check-out"),       d,   _ath(sd, tk)),
+
+  // Records
+  listRecords:  (sd, tk, p)          => axios.get(_aturl(sd, "/records"),               _athp(sd, tk, p)),
+  getRecord:    (sd, tk, id)         => axios.get(_aturl(sd, `/records/${id}`),          _ath(sd, tk)),
+  createRecord: (sd, tk, d)          => axios.post(_aturl(sd, "/records"),         d,   _ath(sd, tk)),
+  updateRecord: (sd, tk, id, d)      => axios.patch(_aturl(sd, `/records/${id}`),  d,   _ath(sd, tk)),
+
+  // Calendar
+  calendar: (sd, tk, employeeId, year, month) =>
+    axios.get(_aturl(sd, "/calendar"), { ..._ath(sd, tk), params: { employee_id: employeeId, year, month } }),
+
+  // Regularizations
+  listRegularizations:  (sd, tk, p)  => axios.get(_aturl(sd, "/regularizations"),       _athp(sd, tk, p)),
+  createRegularization: (sd, tk, d)  => axios.post(_aturl(sd, "/regularizations"), d,   _ath(sd, tk)),
+  reviewRegularization: (sd, tk, id, d) => axios.patch(_aturl(sd, `/regularizations/${id}/review`), d, _ath(sd, tk)),
+
+  // Overtime
+  listOvertime:   (sd, tk, p)        => axios.get(_aturl(sd, "/overtime"),               _athp(sd, tk, p)),
+  createOvertime: (sd, tk, d)        => axios.post(_aturl(sd, "/overtime"),        d,   _ath(sd, tk)),
+  reviewOvertime: (sd, tk, id, d)    => axios.patch(_aturl(sd, `/overtime/${id}/review`), d, _ath(sd, tk)),
+
+  // Policies
+  listPolicies:  (sd, tk)            => axios.get(_aturl(sd, "/policies"),               _ath(sd, tk)),
+  getPolicy:     (sd, tk, id)        => axios.get(_aturl(sd, `/policies/${id}`),          _ath(sd, tk)),
+  createPolicy:  (sd, tk, d)         => axios.post(_aturl(sd, "/policies"),        d,   _ath(sd, tk)),
+  updatePolicy:  (sd, tk, id, d)     => axios.patch(_aturl(sd, `/policies/${id}`), d,   _ath(sd, tk)),
+  deletePolicy:  (sd, tk, id)        => axios.delete(_aturl(sd, `/policies/${id}`),      _ath(sd, tk)),
+
+  // Devices (registry — biometric Coming Soon)
+  listDevices:   (sd, tk)            => axios.get(_aturl(sd, "/devices"),                _ath(sd, tk)),
+  getDevice:     (sd, tk, id)        => axios.get(_aturl(sd, `/devices/${id}`),           _ath(sd, tk)),
+  createDevice:  (sd, tk, d)         => axios.post(_aturl(sd, "/devices"),         d,   _ath(sd, tk)),
+  updateDevice:  (sd, tk, id, d)     => axios.patch(_aturl(sd, `/devices/${id}`),  d,   _ath(sd, tk)),
+  deleteDevice:  (sd, tk, id)        => axios.delete(_aturl(sd, `/devices/${id}`),       _ath(sd, tk)),
+  triggerSync:   (sd, tk, id)        => axios.post(_aturl(sd, `/devices/${id}/sync`), {}, _ath(sd, tk)),
+
+  // Activities
+  activities: (sd, tk, p)            => axios.get(_aturl(sd, "/activities"),             _athp(sd, tk, p)),
+};
+
 // ── Currency Management (superadmin — global platform settings) ───────────────
 const CURRENCIES = "/superadmin/currencies";
 
