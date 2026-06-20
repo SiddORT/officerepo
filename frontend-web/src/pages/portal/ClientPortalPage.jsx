@@ -22,8 +22,6 @@ import EmployeeForm from "./employees/EmployeeForm";
 import EmployeeDetails from "./employees/EmployeeDetails";
 
 // Asset Management pages
-import AssetCatalog from "./assets/AssetCatalog";
-import AssetCatalogForm from "./assets/AssetCatalogForm";
 import AssetCategories from "./assets/AssetCategories";
 import AssetSubCategoryList from "./assets/AssetSubCategoryList";
 import AssetInventoryList from "./assets/AssetInventoryList";
@@ -149,8 +147,6 @@ function PortalRoutes() {
       {/* ── Asset Management ─────────────────────────────────────────── */}
       <Route path="/assets/categories"         element={<Protected><AssetCategories /></Protected>} />
       <Route path="/assets/sub-categories"     element={<Protected><AssetSubCategoryList /></Protected>} />
-      <Route path="/assets/catalog/new"        element={<Protected><AssetCatalogForm /></Protected>} />
-      <Route path="/assets/catalog"            element={<Protected><AssetCatalog /></Protected>} />
       <Route path="/assets/inventory/new"      element={<Protected><AssetInventoryForm editMode={false} /></Protected>} />
       <Route path="/assets/inventory/:assetId/edit" element={<Protected><AssetInventoryForm editMode={true} /></Protected>} />
       <Route path="/assets/inventory/:assetId" element={<Protected><AssetInventoryDetails /></Protected>} />
