@@ -826,6 +826,72 @@ export const portalAttendanceApi = {
   setEmployeeSchedule: (sd, tk, empId, data) => axios.put(_aturl(sd, `/employees/${empId}/schedule`), data, _ath(sd, tk)),
 };
 
+// ── Leave Management ───────────────────────────────────────────────────────────
+const _lvurl = (sd, path) => `${API_BASE_URL}/api/v1/portal/${sd}/hrms/leave${path}`;
+const _lvh  = (sd, tk)          => ({ headers: { Authorization: `Bearer ${tk}` } });
+const _lvhp = (sd, tk, params)  => ({ headers: { Authorization: `Bearer ${tk}` }, params });
+
+export const portalLeaveApi = {
+  metaOptions:  (sd, tk)          => axios.get(_lvurl(sd, "/meta/options"),  _lvh(sd, tk)),
+  dashboard:    (sd, tk)          => axios.get(_lvurl(sd, "/dashboard"),      _lvh(sd, tk)),
+
+  // Leave Types
+  listLeaveTypes:   (sd, tk)            => axios.get(_lvurl(sd, "/types"),           _lvh(sd, tk)),
+  createLeaveType:  (sd, tk, d)         => axios.post(_lvurl(sd, "/types"),   d,     _lvh(sd, tk)),
+  updateLeaveType:  (sd, tk, id, d)     => axios.patch(_lvurl(sd, `/types/${id}`), d, _lvh(sd, tk)),
+  deleteLeaveType:  (sd, tk, id)        => axios.delete(_lvurl(sd, `/types/${id}`),  _lvh(sd, tk)),
+
+  // Leave Policies
+  listPolicies:  (sd, tk)            => axios.get(_lvurl(sd, "/policies"),            _lvh(sd, tk)),
+  getPolicy:     (sd, tk, id)        => axios.get(_lvurl(sd, `/policies/${id}`),       _lvh(sd, tk)),
+  createPolicy:  (sd, tk, d)         => axios.post(_lvurl(sd, "/policies"),   d,      _lvh(sd, tk)),
+  updatePolicy:  (sd, tk, id, d)     => axios.patch(_lvurl(sd, `/policies/${id}`), d, _lvh(sd, tk)),
+  deletePolicy:  (sd, tk, id)        => axios.delete(_lvurl(sd, `/policies/${id}`),    _lvh(sd, tk)),
+
+  // Holiday Calendars
+  listCalendars:   (sd, tk)           => axios.get(_lvurl(sd, "/holiday-calendars"),            _lvh(sd, tk)),
+  createCalendar:  (sd, tk, d)        => axios.post(_lvurl(sd, "/holiday-calendars"),  d,       _lvh(sd, tk)),
+  updateCalendar:  (sd, tk, id, d)    => axios.patch(_lvurl(sd, `/holiday-calendars/${id}`), d, _lvh(sd, tk)),
+  deleteCalendar:  (sd, tk, id)       => axios.delete(_lvurl(sd, `/holiday-calendars/${id}`),   _lvh(sd, tk)),
+  listHolidays:    (sd, tk, calId, p) => axios.get(_lvurl(sd, `/holiday-calendars/${calId}/holidays`), _lvhp(sd, tk, p)),
+  addHoliday:      (sd, tk, calId, d) => axios.post(_lvurl(sd, `/holiday-calendars/${calId}/holidays`), d, _lvh(sd, tk)),
+  deleteHoliday:   (sd, tk, calId, hId) => axios.delete(_lvurl(sd, `/holiday-calendars/${calId}/holidays/${hId}`), _lvh(sd, tk)),
+
+  // Weekly Off Rules
+  listWeeklyOff:   (sd, tk)         => axios.get(_lvurl(sd, "/weekly-off-rules"),              _lvh(sd, tk)),
+  createWeeklyOff: (sd, tk, d)      => axios.post(_lvurl(sd, "/weekly-off-rules"),   d,        _lvh(sd, tk)),
+  updateWeeklyOff: (sd, tk, id, d)  => axios.patch(_lvurl(sd, `/weekly-off-rules/${id}`), d,   _lvh(sd, tk)),
+
+  // Leave Balances
+  getBalances:        (sd, tk, empId, year) => axios.get(_lvurl(sd, "/balances"), _lvhp(sd, tk, { employee_id: empId, year })),
+  initializeBalance:  (sd, tk, d)           => axios.post(_lvurl(sd, "/balances/initialize"), d, _lvh(sd, tk)),
+  adjustBalance:      (sd, tk, d)           => axios.post(_lvurl(sd, "/balances/adjust"),     d, _lvh(sd, tk)),
+
+  // Leave Requests
+  applyLeave:    (sd, tk, d)        => axios.post(_lvurl(sd, "/requests"),               d,   _lvh(sd, tk)),
+  listRequests:  (sd, tk, p)        => axios.get(_lvurl(sd, "/requests"),                     _lvhp(sd, tk, p)),
+  getRequest:    (sd, tk, id)       => axios.get(_lvurl(sd, `/requests/${id}`),                _lvh(sd, tk)),
+  reviewLeave:   (sd, tk, id, d)    => axios.patch(_lvurl(sd, `/requests/${id}/review`), d,   _lvh(sd, tk)),
+  cancelLeave:   (sd, tk, id, d)    => axios.patch(_lvurl(sd, `/requests/${id}/cancel`), d,   _lvh(sd, tk)),
+
+  // Calendar
+  calendarEvents: (sd, tk, p)       => axios.get(_lvurl(sd, "/calendar"),                     _lvhp(sd, tk, p)),
+
+  // Comp Offs
+  listCompOffs:   (sd, tk, p)       => axios.get(_lvurl(sd, "/comp-offs"),                    _lvhp(sd, tk, p)),
+  createCompOff:  (sd, tk, d)       => axios.post(_lvurl(sd, "/comp-offs"),          d,       _lvh(sd, tk)),
+  reviewCompOff:  (sd, tk, id, d)   => axios.patch(_lvurl(sd, `/comp-offs/${id}/review`), d,  _lvh(sd, tk)),
+
+  // Encashments
+  listEncashments:   (sd, tk, p)    => axios.get(_lvurl(sd, "/encashments"),                  _lvhp(sd, tk, p)),
+  createEncashment:  (sd, tk, d)    => axios.post(_lvurl(sd, "/encashments"),        d,       _lvh(sd, tk)),
+  reviewEncashment:  (sd, tk, id, d) => axios.patch(_lvurl(sd, `/encashments/${id}/review`), d, _lvh(sd, tk)),
+
+  // Payroll summary
+  payrollSummary: (sd, tk, empId, year, month) =>
+    axios.get(_lvurl(sd, "/payroll-summary"), _lvhp(sd, tk, { employee_id: empId, year, month })),
+};
+
 // ── Currency Management (superadmin — global platform settings) ───────────────
 const CURRENCIES = "/superadmin/currencies";
 

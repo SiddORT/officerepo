@@ -42,6 +42,17 @@ import CandidateDetails from "./recruitment/CandidateDetails";
 import OfferList from "./recruitment/OfferList";
 import OfferForm from "./recruitment/OfferForm";
 
+// Leave Management pages
+import LeaveDashboard      from "./leave/LeaveDashboard";
+import LeaveTypeList       from "./leave/LeaveTypeList";
+import LeavePolicyList     from "./leave/LeavePolicyList";
+import HolidayCalendarList from "./leave/HolidayCalendarList";
+import LeaveRequestList    from "./leave/LeaveRequestList";
+import LeaveRequestForm    from "./leave/LeaveRequestForm";
+import LeaveBalances       from "./leave/LeaveBalances";
+import LeaveCalendar       from "./leave/LeaveCalendar";
+import CompOffList         from "./leave/CompOffList";
+
 // Attendance Management pages
 import AttendanceDashboard  from "./attendance/AttendanceDashboard";
 import AttendanceList       from "./attendance/AttendanceList";
@@ -268,7 +279,16 @@ function PortalRoutes() {
       <Route path="/hrms/attendance/policies"             element={<Protected><PortalLayout title="Attendance Policies"><PolicyList /></PortalLayout></Protected>} />
       <Route path="/hrms/attendance/devices"              element={<Protected><PortalLayout title="Device Registry"><DeviceRegistry /></PortalLayout></Protected>} />
       <Route path="/hrms/attendance"                      element={<Protected><PortalLayout title="Attendance Management"><AttendanceDashboard /></PortalLayout></Protected>} />
-      <Route path="/hrms/leave"       element={<CS module="HRMS" submodule="Leave Management" />} />
+      {/* ── Leave Management ─────────────────────────────────────────── */}
+      <Route path="/hrms/leave/requests/new"     element={<Protected><PortalLayout title="Apply Leave"><LeaveRequestForm /></PortalLayout></Protected>} />
+      <Route path="/hrms/leave/requests"         element={<Protected><PortalLayout title="Leave Requests"><LeaveRequestList /></PortalLayout></Protected>} />
+      <Route path="/hrms/leave/types"            element={<Protected><PortalLayout title="Leave Types"><LeaveTypeList /></PortalLayout></Protected>} />
+      <Route path="/hrms/leave/policies"         element={<Protected><PortalLayout title="Leave Policies"><LeavePolicyList /></PortalLayout></Protected>} />
+      <Route path="/hrms/leave/calendars"        element={<Protected><PortalLayout title="Holiday Calendars"><HolidayCalendarList /></PortalLayout></Protected>} />
+      <Route path="/hrms/leave/balances"         element={<Protected><PortalLayout title="Leave Balances"><LeaveBalances /></PortalLayout></Protected>} />
+      <Route path="/hrms/leave/calendar"         element={<Protected><PortalLayout title="Leave Calendar"><LeaveCalendar /></PortalLayout></Protected>} />
+      <Route path="/hrms/leave/comp-offs"        element={<Protected><PortalLayout title="Comp Off Management"><CompOffList /></PortalLayout></Protected>} />
+      <Route path="/hrms/leave"                  element={<Protected><PortalLayout title="Leave Management"><LeaveDashboard /></PortalLayout></Protected>} />
       <Route path="/hrms/payroll"     element={<CS module="HRMS" submodule="Payroll Management" />} />
       <Route path="/hrms/loans"       element={<CS module="HRMS" submodule="Employee Loan Management" />} />
       <Route path="/hrms/expenses"    element={<CS module="HRMS" submodule="Expense & Reimbursements" />} />
