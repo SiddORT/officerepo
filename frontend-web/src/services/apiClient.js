@@ -701,6 +701,60 @@ export const assetMgmtApi = {
   listMasterActivities: (id, params) => apiClient.get(`${ASSETS}/masters/${id}/activities`, { params }),
 };
 
+// ── Portal — Employee Onboarding ─────────────────────────────────────────────
+const _oburl = (sd, path) => `${API_BASE_URL}/api/v1/portal/${sd}/hrms/onboarding${path}`;
+const _obh   = (sd, tk)   => ({ headers: { Authorization: `Bearer ${tk}` } });
+const _obhp  = (sd, tk, params) => ({ headers: { Authorization: `Bearer ${tk}` }, params });
+
+export const portalOnboardingApi = {
+  metaOptions: (sd, tk)                => axios.get(_oburl(sd, "/meta/options"), _obh(sd, tk)),
+  dashboard:   (sd, tk)                => axios.get(_oburl(sd, "/dashboard"),    _obh(sd, tk)),
+
+  // Templates
+  listTemplates:      (sd, tk, activeOnly = false) => axios.get(_oburl(sd, "/templates"),          { ..._obh(sd, tk), params: { active_only: activeOnly } }),
+  getTemplate:        (sd, tk, id)     => axios.get(_oburl(sd, `/templates/${id}`),                _obh(sd, tk)),
+  createTemplate:     (sd, tk, d)      => axios.post(_oburl(sd, "/templates"),               d, _obh(sd, tk)),
+  updateTemplate:     (sd, tk, id, d)  => axios.patch(_oburl(sd, `/templates/${id}`),        d, _obh(sd, tk)),
+  deleteTemplate:     (sd, tk, id)     => axios.delete(_oburl(sd, `/templates/${id}`),          _obh(sd, tk)),
+
+  // Template tasks
+  addTemplateTask:    (sd, tk, tid, d)         => axios.post(_oburl(sd, `/templates/${tid}/tasks`),                 d, _obh(sd, tk)),
+  updateTemplateTask: (sd, tk, tid, tkid, d)   => axios.patch(_oburl(sd, `/templates/${tid}/tasks/${tkid}`),        d, _obh(sd, tk)),
+  deleteTemplateTask: (sd, tk, tid, tkid)      => axios.delete(_oburl(sd, `/templates/${tid}/tasks/${tkid}`),          _obh(sd, tk)),
+
+  // Onboarding records
+  list:      (sd, tk, p)               => axios.get(_oburl(sd, ""),              _obhp(sd, tk, p)),
+  start:     (sd, tk, d)               => axios.post(_oburl(sd, "/start"),  d,   _obh(sd, tk)),
+  get:       (sd, tk, id)              => axios.get(_oburl(sd, `/${id}`),        _obh(sd, tk)),
+  setStatus: (sd, tk, id, d)           => axios.patch(_oburl(sd, `/${id}/status`), d, _obh(sd, tk)),
+  readiness: (sd, tk, id)              => axios.get(_oburl(sd, `/${id}/readiness`), _obh(sd, tk)),
+  activate:  (sd, tk, id)              => axios.post(_oburl(sd, `/${id}/activate`), {}, _obh(sd, tk)),
+
+  // Tasks
+  listTasks:  (sd, tk, id)             => axios.get(_oburl(sd, `/${id}/tasks`),         _obh(sd, tk)),
+  addTask:    (sd, tk, id, d)          => axios.post(_oburl(sd, `/${id}/tasks`),   d,   _obh(sd, tk)),
+  updateTask: (sd, tk, id, tid, d)     => axios.patch(_oburl(sd, `/${id}/tasks/${tid}`), d, _obh(sd, tk)),
+
+  // Accounts
+  listAccounts:   (sd, tk, id)         => axios.get(_oburl(sd, `/${id}/accounts`),          _obh(sd, tk)),
+  createAccount:  (sd, tk, id, d)      => axios.post(_oburl(sd, `/${id}/accounts`),    d,   _obh(sd, tk)),
+  updateAccount:  (sd, tk, id, aid, d) => axios.patch(_oburl(sd, `/${id}/accounts/${aid}`), d, _obh(sd, tk)),
+  deleteAccount:  (sd, tk, id, aid)    => axios.delete(_oburl(sd, `/${id}/accounts/${aid}`),   _obh(sd, tk)),
+
+  // Training
+  listTraining:   (sd, tk, id)         => axios.get(_oburl(sd, `/${id}/training`),          _obh(sd, tk)),
+  createTraining: (sd, tk, id, d)      => axios.post(_oburl(sd, `/${id}/training`),    d,   _obh(sd, tk)),
+  updateTraining: (sd, tk, id, tid, d) => axios.patch(_oburl(sd, `/${id}/training/${tid}`), d, _obh(sd, tk)),
+  deleteTraining: (sd, tk, id, tid)    => axios.delete(_oburl(sd, `/${id}/training/${tid}`),   _obh(sd, tk)),
+
+  // Assets
+  getAssets:   (sd, tk, id)            => axios.get(_oburl(sd, `/${id}/assets`),             _obh(sd, tk)),
+  assignAsset: (sd, tk, id, d)         => axios.post(_oburl(sd, `/${id}/assets`),       d,   _obh(sd, tk)),
+
+  // Activities
+  activities: (sd, tk, id)             => axios.get(_oburl(sd, `/${id}/activities`),         _obh(sd, tk)),
+};
+
 // ── Currency Management (superadmin — global platform settings) ───────────────
 const CURRENCIES = "/superadmin/currencies";
 

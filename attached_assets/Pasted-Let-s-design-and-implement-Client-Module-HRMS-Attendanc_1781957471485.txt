@@ -1,0 +1,661 @@
+Let's design and implement Client Module → HRMS → Attendance Management for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Completed Modules:
+
+* Organization Management
+* Employee Management
+* Employee Documents
+* Recruitment
+* Interview Management
+* Employee Onboarding
+* Asset Inventory
+
+Attendance Management must support multiple attendance capture methods and future biometric integrations.
+
+Module Hierarchy:
+
+HRMS
+└── Attendance Management
+
+Module Code:
+
+ATTENDANCE
+
+Purpose:
+
+Track employee attendance, work hours, shifts, overtime and attendance compliance across multiple branches, work modes and attendance sources.
+
+The module must support:
+
+* Office Employees
+* Remote Employees
+* Hybrid Employees
+* Contract Employees
+* Interns
+
+Attendance must integrate with:
+
+* Employees
+* Branches
+* Shifts
+* Leave Management
+* Payroll
+* Workflow Engine
+* Notifications
+
+---
+
+# Attendance Workflow
+
+Employee
+↓
+Shift Assignment
+↓
+Attendance Capture
+↓
+Regularization
+↓
+Approval
+↓
+Payroll Processing
+
+---
+
+# Module Structure
+
+Attendance Management
+
+├── Shift Management
+├── Shift Assignment
+├── Attendance Capture
+├── Attendance Regularization
+├── Attendance Approval
+├── Overtime Management
+├── Attendance Calendar
+├── Attendance Reports
+└── Biometric Integrations
+
+---
+
+# Attendance Sources
+
+Support multiple attendance methods.
+
+Attendance Source Types:
+
+* Web Check-In
+* Mobile Check-In
+* QR Code Check-In
+* Biometric Device
+* RFID Card
+* Manual Entry
+* API Integration
+
+Track attendance source for every record.
+
+---
+
+# Employee Work Modes
+
+Integrate with Employee Master.
+
+Values:
+
+* Onsite
+* Work From Home
+* Hybrid
+* Remote
+
+Attendance rules should vary by work mode.
+
+Example:
+
+Remote employees do not require geofencing.
+
+---
+
+# Shift Management
+
+Fields:
+
+* Shift Name *
+* Shift Code *
+* Company *
+* Branch
+* Start Time *
+* End Time *
+* Break Duration
+* Grace Period
+* Minimum Working Hours
+
+Shift Types:
+
+* General
+* Morning
+* Evening
+* Night
+* Rotational
+* Flexible
+
+Support:
+
+* Cross-Day Shifts
+* Split Shifts
+* Rotating Shifts
+
+Status:
+
+* Active
+* Inactive
+
+---
+
+# Shift Assignment
+
+Assign shifts by:
+
+* Employee
+* Department
+* Branch
+* Company
+
+Fields:
+
+* Effective From
+* Effective To
+
+Support:
+
+* Bulk Assignment
+* Future Assignment
+
+Maintain assignment history.
+
+---
+
+# Attendance Capture
+
+Fields:
+
+* Employee *
+* Attendance Date *
+* Check-In Time
+* Check-Out Time
+* Source
+* Work Mode
+* Branch
+
+Auto-calculate:
+
+* Total Hours
+* Break Hours
+* Productive Hours
+* Overtime Hours
+
+Attendance Status:
+
+* Present
+* Absent
+* Half Day
+* Late
+* Early Exit
+* On Leave
+* Holiday
+* Week Off
+
+---
+
+# Geolocation Support
+
+For mobile and web check-in:
+
+Capture:
+
+* Latitude
+* Longitude
+* IP Address
+
+Support geofencing.
+
+Rules:
+
+Onsite employees may be restricted to approved locations.
+
+Remote employees bypass geofencing.
+
+Do not implement maps now.
+
+Design APIs for future support.
+
+---
+
+# QR Code Attendance
+
+Allow branch-level QR code generation.
+
+Flow:
+
+Employee
+↓
+Scan QR
+↓
+Check-In
+
+Support:
+
+* Dynamic QR Codes
+* Time-Based Expiry
+
+---
+
+# Attendance Regularization
+
+Allow employees to request corrections.
+
+Examples:
+
+* Missed Check-In
+* Missed Check-Out
+* Incorrect Time
+
+Fields:
+
+* Requested Time
+* Reason
+* Attachment
+
+Approval Status:
+
+* Pending
+* Approved
+* Rejected
+
+Integrate with Workflow Engine.
+
+---
+
+# Overtime Management
+
+Fields:
+
+* Employee
+* Overtime Hours
+* Overtime Type
+* Approval Status
+
+Overtime Types:
+
+* Weekday
+* Weekend
+* Holiday
+
+Integrate with Payroll.
+
+---
+
+# Attendance Calendar
+
+Provide:
+
+* Daily View
+* Weekly View
+* Monthly View
+
+Display:
+
+* Present
+* Absent
+* Leave
+* Holidays
+* Week Off
+
+Filters:
+
+* Company
+* Branch
+* Department
+* Shift
+* Employee
+* Work Mode
+
+---
+
+# Biometric Integration
+
+Attendance module must be designed for future biometric device integrations.
+
+Do not hardcode device vendors.
+
+Create an extensible integration architecture.
+
+Supported Future Vendors:
+
+* eSSL
+* ZKTeco
+* Matrix
+* Suprema
+* FingerTec
+
+Future Integration Methods:
+
+* REST API
+* Device SDK
+* Webhooks
+* File Import
+* Scheduled Sync
+
+Design adapter pattern.
+
+Example:
+
+attendance_provider
+
+Implement provider interface:
+
+* sync_attendance()
+* validate_device()
+* fetch_logs()
+
+Current Release:
+
+Show:
+
+Biometric Integrations
+
+Badge:
+
+Coming Soon
+
+Provide:
+
+* Vendor Configuration Screen
+* Device Registry
+* Sync Logs
+
+Do not implement actual integrations now.
+
+---
+
+# Device Registry
+
+Design tables for future use.
+
+Fields:
+
+* Device Name
+* Vendor
+* Device Identifier
+* Branch
+* IP Address
+* API Credentials
+* Sync Frequency
+* Status
+
+---
+
+# Attendance Policies
+
+Fields:
+
+* Policy Name
+* Grace Period
+* Minimum Hours
+* Late Mark Rules
+* Half Day Rules
+* Overtime Rules
+
+Assign policies by:
+
+* Company
+* Branch
+* Department
+
+---
+
+# Dashboard Widgets
+
+* Employees Present
+* Employees Absent
+* Late Check-Ins
+* Pending Regularizations
+* Overtime Hours
+
+---
+
+# Employee Attendance Profile
+
+Tabs:
+
+* Attendance Calendar
+* Daily Logs
+* Regularization Requests
+* Overtime
+* Activities
+
+---
+
+# Payroll Integration
+
+Attendance data must provide:
+
+* Working Days
+* Absent Days
+* Overtime Hours
+* Late Marks
+
+for payroll calculation.
+
+Design APIs accordingly.
+
+---
+
+# Leave Integration
+
+Approved leave should automatically reflect in attendance.
+
+Attendance status:
+
+On Leave
+
+Leave cancellation should update attendance.
+
+---
+
+# Notifications
+
+Send notifications for:
+
+* Missed Check-In
+* Missed Check-Out
+* Regularization Approval
+* Late Check-In
+
+Channels:
+
+* Email
+* SMS
+* Push Notification
+
+Use Notification Settings module.
+
+---
+
+# Database Design
+
+Design tables:
+
+attendance_shifts
+
+attendance_shift_assignments
+
+attendance_records
+
+attendance_regularizations
+
+attendance_overtime
+
+attendance_policies
+
+attendance_devices
+
+attendance_sync_logs
+
+attendance_activities
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+* Relationships
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+* Enums
+
+Use SQLAlchemy 2.0 standards.
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_080_attendance_shifts
+
+2026_081_shift_assignments
+
+2026_082_attendance_records
+
+2026_083_attendance_regularizations
+
+2026_084_attendance_overtime
+
+2026_085_attendance_policies
+
+2026_086_attendance_devices
+
+2026_087_attendance_sync_logs
+
+2026_088_attendance_activities
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Shifts
+
+* Create Shift
+* Assign Shift
+* Get Shift Calendar
+
+Attendance
+
+* Check-In
+* Check-Out
+* Get Attendance
+* Regularize Attendance
+
+Biometric
+
+* Register Device
+* Trigger Sync
+* Get Sync Logs
+
+Current Release:
+
+Return:
+
+501 Not Implemented
+
+for biometric sync APIs.
+
+Provide endpoint contracts now.
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Shift Repository
+* Attendance Repository
+* Device Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Attendance Service
+* Shift Service
+* Regularization Service
+* Biometric Adapter Service
+
+Include:
+
+* Attendance Calculation Logic
+* Shift Logic
+* Overtime Calculation
+* Provider-Based Integration Design
+
+---
+
+# Validation Rules
+
+* Check-Out Time > Check-In Time
+* One Active Check-In Per Employee
+* Shift Required
+* Prevent Duplicate Attendance
+
+---
+
+# Activity Logging
+
+Track:
+
+* Check-In
+* Check-Out
+* Attendance Updated
+* Regularization Requested
+* Device Registered
+* Sync Triggered
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Seed Data
+
+Create sample:
+
+* Shifts
+* Attendance Policies
+* Attendance Records
+
+Generate sample biometric devices.
+
+Mark biometric features as:
+
+Coming Soon
+
+Generate production-ready specifications suitable for direct implementation in Office Repo using FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, React and TailwindCSS.

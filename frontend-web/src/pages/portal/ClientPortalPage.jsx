@@ -42,6 +42,14 @@ import CandidateDetails from "./recruitment/CandidateDetails";
 import OfferList from "./recruitment/OfferList";
 import OfferForm from "./recruitment/OfferForm";
 
+// Onboarding pages
+import OnboardingDashboard from "./onboarding/OnboardingDashboard";
+import OnboardingList      from "./onboarding/OnboardingList";
+import OnboardingDetails   from "./onboarding/OnboardingDetails";
+import OnboardingStart     from "./onboarding/OnboardingStart";
+import TemplateList        from "./onboarding/TemplateList";
+import TemplateForm        from "./onboarding/TemplateForm";
+
 // Interview Management pages
 import InterviewDashboard from "./interview/InterviewDashboard";
 import InterviewList from "./interview/InterviewList";
@@ -230,7 +238,14 @@ function PortalRoutes() {
       <Route path="/hrms/interviews/:interviewId/reschedule" element={<Protected><PortalLayout title="Reschedule Interview"><InterviewReschedule /></PortalLayout></Protected>} />
       <Route path="/hrms/interviews/:interviewId"            element={<Protected><PortalLayout title="Interview Details"><InterviewDetails /></PortalLayout></Protected>} />
       <Route path="/hrms/interviews"                         element={<Protected><PortalLayout title="Interview Management"><InterviewDashboard /></PortalLayout></Protected>} />
-      <Route path="/hrms/onboarding"  element={<CS module="HRMS" submodule="Employee Onboarding" />} />
+      {/* ── Employee Onboarding ──────────────────────────────────────────── */}
+      <Route path="/hrms/onboarding/templates/new"              element={<Protected><PortalLayout title="New Template"><TemplateForm editMode={false} /></PortalLayout></Protected>} />
+      <Route path="/hrms/onboarding/templates/:templateId/edit" element={<Protected><PortalLayout title="Edit Template"><TemplateForm editMode={true} /></PortalLayout></Protected>} />
+      <Route path="/hrms/onboarding/templates"                  element={<Protected><PortalLayout title="Onboarding Templates"><TemplateList /></PortalLayout></Protected>} />
+      <Route path="/hrms/onboarding/start"                      element={<Protected><PortalLayout title="Start Onboarding"><OnboardingStart /></PortalLayout></Protected>} />
+      <Route path="/hrms/onboarding/list"                       element={<Protected><PortalLayout title="All Onboardings"><OnboardingList /></PortalLayout></Protected>} />
+      <Route path="/hrms/onboarding/:onboardingId"              element={<Protected><PortalLayout title="Onboarding Details"><OnboardingDetails /></PortalLayout></Protected>} />
+      <Route path="/hrms/onboarding"                            element={<Protected><PortalLayout title="Employee Onboarding"><OnboardingDashboard /></PortalLayout></Protected>} />
       <Route path="/hrms/attendance"  element={<CS module="HRMS" submodule="Attendance Management" />} />
       <Route path="/hrms/leave"       element={<CS module="HRMS" submodule="Leave Management" />} />
       <Route path="/hrms/payroll"     element={<CS module="HRMS" submodule="Payroll Management" />} />

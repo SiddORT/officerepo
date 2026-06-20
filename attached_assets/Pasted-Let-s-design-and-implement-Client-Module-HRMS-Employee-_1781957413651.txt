@@ -1,0 +1,632 @@
+Let's design and implement Client Module → HRMS → Employee Onboarding for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Completed Modules:
+
+* Organization Management
+* Employees
+* Employee Documents
+* Recruitment
+* Interview Management
+* Offer Management
+* Asset Inventory
+
+Employee Onboarding must act as the bridge between Recruitment and Employee Management.
+
+Module Hierarchy:
+
+HRMS
+└── Employee Onboarding
+
+Module Code:
+
+ONBOARDING
+
+Purpose:
+
+Automate the complete employee onboarding process from offer acceptance to employee activation.
+
+The onboarding module must integrate with:
+
+* Recruitment
+* Employee Master
+* Employee Documents
+* Asset Inventory
+* Organization Structure
+* LMS
+* Notifications
+* Workflow Engine
+
+Employee should become Active only after onboarding completion.
+
+---
+
+# Onboarding Workflow
+
+Candidate Selected
+↓
+Offer Accepted
+↓
+Create Onboarding Record
+↓
+Assign Onboarding Template
+↓
+Collect Documents
+↓
+Assign Assets
+↓
+Create User Account
+↓
+Assign Training
+↓
+Complete Checklist
+↓
+Employee Activated
+
+---
+
+# Employee Status Lifecycle
+
+Candidate
+↓
+Offer Accepted
+↓
+Preboarding
+↓
+Onboarding In Progress
+↓
+Ready For Activation
+↓
+Active
+
+Alternative Statuses:
+
+* On Hold
+* Cancelled
+* Deferred
+
+Employee status must update automatically.
+
+---
+
+# Module Structure
+
+Employee Onboarding
+
+├── Onboarding Templates
+├── Onboarding Tasks
+├── Document Collection
+├── Asset Assignment
+├── Account Provisioning
+├── Induction & Training
+├── Employee Activation
+├── Checklists
+└── Activities
+
+---
+
+# Onboarding Templates
+
+Purpose:
+
+Create reusable onboarding workflows.
+
+Examples:
+
+* Full-Time Employee
+* Intern
+* Contractor
+* Consultant
+* Remote Employee
+
+Fields:
+
+* Template Name
+* Employee Category
+* Department
+* Designation
+* Description
+* Active Status
+
+Template should support:
+
+* Task Sequencing
+* Mandatory Tasks
+* Due Dates
+* Responsible Teams
+
+---
+
+# Onboarding Tasks
+
+Task Categories:
+
+HR
+
+* Document Collection
+* Background Verification
+* NDA Signing
+
+IT
+
+* Email Creation
+* System Access
+* Asset Assignment
+
+Admin
+
+* Desk Allocation
+* Access Card
+* Parking Access
+
+Manager
+
+* Assign Buddy
+* Team Introduction
+* Goal Setting
+
+Fields:
+
+* Task Name
+* Category
+* Owner Team
+* Due Offset Days
+* Mandatory
+* Status
+
+Task Status:
+
+* Pending
+* In Progress
+* Completed
+* Skipped
+
+---
+
+# Candidate To Employee Conversion
+
+When Offer Status becomes:
+
+Accepted
+
+Automatically:
+
+* Create Employee Record
+* Generate Employee Code
+* Map Company
+* Map Branch
+* Map Department
+* Map Designation
+* Assign Reporting Manager
+* Create Onboarding Record
+
+Maintain relationship:
+
+candidate_id → employee_id
+
+---
+
+# Document Collection
+
+Integrate with existing Employee Documents module.
+
+Do not duplicate document storage.
+
+Use existing:
+
+employee_documents
+
+Display required documents based on:
+
+* Employee Category
+* Country
+* Company Policy
+
+Track:
+
+* Uploaded
+* Verified
+* Pending
+* Rejected
+
+Show:
+
+Document Completion Percentage
+
+Examples:
+
+90% Complete
+
+Rules:
+
+Employee cannot be activated until all mandatory documents are verified.
+
+Open document upload directly within onboarding flow.
+
+---
+
+# Asset Assignment
+
+Integrate with existing Asset Inventory module.
+
+Do not create separate asset tables.
+
+Use existing:
+
+assets
+
+asset_assignments
+
+Allow assignment of:
+
+* Laptop
+* Desktop
+* Mobile Phone
+* SIM Card
+* Access Card
+* Monitor
+* Software License
+
+Rules:
+
+* Only Available assets can be assigned.
+* Asset assignment must update asset status.
+* Assigned assets must reflect immediately in Asset Inventory.
+* Asset Inventory must show assigned employee.
+* Asset history must record onboarding assignment.
+
+Update Asset Status:
+
+Available
+↓
+Assigned
+
+When onboarding is cancelled:
+
+Assigned assets must automatically return to:
+
+Available
+
+---
+
+# Account Provisioning
+
+Track creation of:
+
+* Official Email
+* Employee Portal Access
+* VPN Access
+* HRMS Access
+* Project Tools
+
+Fields:
+
+* Account Type
+* Username
+* Created Date
+* Status
+
+Current Release:
+
+Manual tracking only.
+
+Future Integrations:
+
+* Google Workspace
+* Microsoft 365
+* Okta
+* Azure AD
+
+Do not implement integrations now.
+
+---
+
+# Induction & Training
+
+Integrate with LMS.
+
+Assign:
+
+* Mandatory Courses
+* Policies
+* Compliance Training
+
+Examples:
+
+* Company Introduction
+* Information Security
+* Workplace Safety
+
+Track:
+
+* Assigned
+* In Progress
+* Completed
+
+---
+
+# Checklists
+
+Provide checklist view.
+
+Categories:
+
+* HR
+* IT
+* Admin
+* Manager
+
+Show:
+
+* Total Tasks
+* Completed Tasks
+* Pending Tasks
+* Overdue Tasks
+
+Progress Example:
+
+18/22 Tasks Completed
+
+82% Complete
+
+---
+
+# Employee Activation Rules
+
+Employee can become Active only when:
+
+* Mandatory documents verified
+* Mandatory assets assigned
+* Mandatory tasks completed
+* Required accounts created
+* Required training assigned
+
+Provide activation readiness score.
+
+Example:
+
+95% Ready
+
+Show blocking items.
+
+Example:
+
+Missing:
+
+* Signed NDA
+* Laptop Assignment
+
+Prevent activation until blockers resolved.
+
+---
+
+# Dashboard Widgets
+
+* Employees In Onboarding
+* Pending Documents
+* Pending Asset Assignment
+* Overdue Tasks
+* Ready For Activation
+
+---
+
+# Employee Onboarding Profile
+
+Tabs:
+
+* Overview
+* Checklist
+* Documents
+* Assets
+* Accounts
+* Training
+* Activities
+
+---
+
+# Notifications
+
+Send notifications for:
+
+* Onboarding Started
+* Task Assigned
+* Document Pending
+* Asset Assigned
+* Employee Activated
+
+Channels:
+
+* Email
+* SMS
+* Push Notification
+
+Use Notification Settings module.
+
+---
+
+# Database Design
+
+Design tables:
+
+onboarding_templates
+
+onboarding_template_tasks
+
+employee_onboarding
+
+employee_onboarding_tasks
+
+employee_accounts
+
+employee_training_assignments
+
+onboarding_activities
+
+Do not duplicate:
+
+employee_documents
+
+assets
+
+asset_assignments
+
+Use relationships only.
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+* Relationships
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+* Enums
+
+Use SQLAlchemy 2.0 standards.
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_070_onboarding_templates
+
+2026_071_onboarding_template_tasks
+
+2026_072_employee_onboarding
+
+2026_073_employee_onboarding_tasks
+
+2026_074_employee_accounts
+
+2026_075_employee_training_assignments
+
+2026_076_onboarding_activities
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Templates
+
+* Create Template
+* Update Template
+* Get Template
+* List Templates
+
+Onboarding
+
+* Start Onboarding
+* Get Onboarding Profile
+* Update Task Status
+* Assign Assets
+* Upload Documents
+* Activate Employee
+
+Accounts
+
+* Create Account Entry
+* Update Account Status
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Onboarding Repository
+* Task Repository
+* Account Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Onboarding Service
+* Activation Service
+* Asset Assignment Service
+* Document Validation Service
+
+Include:
+
+* Candidate Conversion Logic
+* Activation Validation Logic
+* Asset Status Updates
+* Notification Logic
+
+---
+
+# Validation Rules
+
+* Candidate must have accepted offer.
+* Employee cannot have multiple active onboarding records.
+* Mandatory tasks must be completed.
+* Mandatory documents must be verified.
+* Mandatory assets must be assigned.
+
+Prevent employee activation if any blocker exists.
+
+---
+
+# Activity Logging
+
+Track:
+
+* Onboarding Started
+* Task Completed
+* Document Verified
+* Asset Assigned
+* Employee Activated
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Seed Data
+
+Create templates:
+
+* Full-Time Employee
+* Intern
+* Contractor
+* Remote Employee
+
+Generate sample onboarding tasks.
+
+Use existing:
+
+* Candidates
+* Employees
+* Assets
+* Documents
+
+Generate production-ready specifications suitable for direct implementation in Office Repo using FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, React and TailwindCSS.
