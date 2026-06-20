@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../contexts/PortalAuthContext";
 import { usePortalNav } from "../../contexts/PortalNavContext";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // ── Static nav (always shown, regardless of module toggles) ───────────────
 // Only Dashboard is hardcoded. Every other module comes from the API-driven
@@ -172,6 +173,7 @@ export default function PortalLayout({ children, title }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
   const { navModules, workspaceName } = usePortalNav();
+  const { isDark, toggle: toggleTheme } = useTheme();
 
   useEffect(() => {
     function onClick(e) {
@@ -402,6 +404,28 @@ export default function PortalLayout({ children, title }) {
         }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-heading)" }}>{title || "Dashboard"}</div>
 
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Theme toggle */}
+            <button onClick={toggleTheme} title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                width: 34, height: 34, borderRadius: 8, cursor: "pointer",
+                border: "1px solid var(--c-border)", background: "transparent",
+                color: "var(--c-muted)", transition: "all 0.15s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "var(--c-surface2)"; e.currentTarget.style.color = "var(--c-text)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--c-muted)"; }}>
+              {isDark ? (
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14A7 7 0 0012 5z" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+            </button>
+
           <div ref={profileRef} style={{ position: "relative" }}>
             <button onClick={() => setProfileOpen(o => !o)}
               style={{
@@ -446,6 +470,7 @@ export default function PortalLayout({ children, title }) {
               </div>
             )}
           </div>
+          </div>{/* end topbar right flex */}
         </header>
 
         {/* Page content */}

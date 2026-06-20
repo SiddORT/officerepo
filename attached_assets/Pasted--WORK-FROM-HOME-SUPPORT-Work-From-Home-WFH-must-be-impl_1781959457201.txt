@@ -1,0 +1,338 @@
+---
+
+## WORK FROM HOME SUPPORT
+
+Work From Home (WFH) must be implemented within Attendance Management.
+
+Do not create a separate WFH module.
+
+WFH should be managed through:
+
+* Employee Work Mode
+* Attendance Policies
+* Attendance Capture
+* Workflow Engine
+
+---
+
+# Employee Work Modes
+
+Integrate with Employee Master.
+
+Supported values:
+
+* Onsite
+* Work From Home
+* Hybrid
+* Remote
+
+Fields already exist in Employee Master:
+
+* work_mode
+* primary_branch
+
+Hybrid employees may optionally define:
+
+* Office Days
+* WFH Days
+
+Example:
+
+Monday → Office
+
+Tuesday → WFH
+
+Wednesday → Office
+
+Thursday → WFH
+
+Friday → Office
+
+---
+
+# Attendance Check-In Screen
+
+Enhance Check-In flow.
+
+Before check-in, display:
+
+Where are you working today?
+
+Options:
+
+* Office
+* Work From Home
+
+For Hybrid employees:
+
+Preselect based on configured work schedule.
+
+Allow override if policy permits.
+
+Capture:
+
+* Attendance Location Type
+* Check-In Source
+* Employee Work Mode
+
+Store separately.
+
+Example:
+
+Employee Work Mode: Hybrid
+
+Attendance Location Type: Work From Home
+
+---
+
+# Attendance Location Types
+
+Values:
+
+* Office
+* Work From Home
+* Client Site
+* Remote
+
+Store in attendance_records.
+
+Do not derive from employee work mode.
+
+Employees may work from different locations on different days.
+
+---
+
+# Check-In Rules
+
+## Office Check-In
+
+Require:
+
+* Geofence Validation (Optional)
+* Branch Validation
+* QR Validation (Optional)
+* Biometric Validation (Future)
+
+Capture:
+
+* Latitude
+* Longitude
+* IP Address
+
+---
+
+## Work From Home Check-In
+
+Require:
+
+* Web Check-In
+* Mobile Check-In
+
+Capture:
+
+* IP Address
+* Device Information
+* Optional Location Coordinates
+
+Do not enforce geofencing.
+
+Future support:
+
+* Activity Tracking
+* Screen Monitoring
+* Time Tracking
+
+Display:
+
+Coming Soon
+
+Do not implement now.
+
+---
+
+# Hybrid Work Validation
+
+If employee work mode is Hybrid:
+
+Validate expected location.
+
+Example:
+
+Tuesday → WFH
+
+If employee selects Office:
+
+Show warning:
+
+You are scheduled to work from home today.
+
+Allow override if configured.
+
+Policy setting:
+
+Allow Schedule Override
+
+Values:
+
+* Yes
+* No
+
+---
+
+# Attendance Policies
+
+Enhance attendance policies.
+
+Add:
+
+* WFH Allowed
+* Maximum WFH Days Per Month
+* Require WFH Approval
+* Allow Hybrid Schedule Override
+
+Assign policies by:
+
+* Company
+* Branch
+* Department
+* Employee
+
+---
+
+# WFH Approval Workflow
+
+Optional.
+
+If enabled:
+
+Employee
+↓
+Request WFH
+↓
+Manager Approval
+↓
+HR Approval
+↓
+Approved
+
+Integrate with Workflow Engine.
+
+Do not build standalone WFH screens.
+
+Create request directly from attendance check-in.
+
+---
+
+# Attendance Calendar
+
+Display location indicator.
+
+Examples:
+
+P → Present (Office)
+
+WFH → Work From Home
+
+R → Remote
+
+CL → Casual Leave
+
+SL → Sick Leave
+
+Color-code location types.
+
+---
+
+# Dashboard Widgets
+
+Add:
+
+* Employees Working From Home Today
+* Hybrid Employees
+* WFH Utilization
+* Branch Occupancy
+
+---
+
+# Reports
+
+Create reports:
+
+* WFH Attendance Report
+* Hybrid Attendance Report
+* Office Occupancy Report
+* WFH Trend Analysis
+
+Filters:
+
+* Company
+* Branch
+* Department
+* Employee
+* Date Range
+
+---
+
+# Database Changes
+
+Enhance attendance_records.
+
+Add:
+
+* attendance_location_type
+* work_mode_snapshot
+* ip_address
+* device_info
+
+Create:
+
+employee_work_schedules
+
+Fields:
+
+* employee_id
+* weekday
+* expected_location_type
+
+---
+
+# API Changes
+
+Enhance:
+
+Check-In API
+
+Request:
+
+{
+"location_type": "WORK_FROM_HOME"
+}
+
+Response:
+
+{
+"status": "success",
+"attendance_status": "PRESENT",
+"location_type": "WORK_FROM_HOME"
+}
+
+---
+
+# Activity Logging
+
+Track:
+
+* WFH Check-In
+* WFH Check-Out
+* WFH Request Created
+* WFH Request Approved
+* Work Location Changed
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+Maintain existing Office Repo attendance architecture and ensure WFH is treated as an attendance location type, not a separate module.
