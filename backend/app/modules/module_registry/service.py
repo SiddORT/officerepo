@@ -67,9 +67,16 @@ def deactivate_module(db: Session, code: str, actor: str) -> Dict:
 
 
 def seed_module_catalog(db: Session) -> None:
-    """Idempotent seed — insert catalog rows that don't exist yet."""
+    """Idempotent upsert — insert new catalog rows and update mutable fields on existing ones."""
     from backend.app.modules.module_registry.constants import MODULE_CATALOG
+    MUTABLE = {"name", "description", "route", "icon", "display_order",
+               "is_system_module", "parent_module_code"}
     for entry in MODULE_CATALOG:
-        if not repo.get_by_code(db, entry["code"]):
+        existing = repo.get_by_code(db, entry["code"])
+        if existing:
+            updates = {k: v for k, v in entry.items() if k in MUTABLE and getattr(existing, k) != v}
+            if updates:
+                repo.update(db, existing, updates)
+        else:
             repo.create(db, {**entry, "is_active": True})
     db.commit()
