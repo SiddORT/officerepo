@@ -156,8 +156,15 @@ def soft_delete_interview(db: Session, obj: Interview) -> None:
 
 def calendar_events(
     db: Session, client_id: str, start_date: str, end_date: str,
+    *,
+    statuses: Optional[List[str]] = None,
+    round_types: Optional[List[str]] = None,
+    modes: Optional[List[str]] = None,
+    candidate_ids: Optional[List[str]] = None,
+    opening_ids: Optional[List[str]] = None,
+    interviewer_name: Optional[str] = None,
 ) -> List[Interview]:
-    return (
+    q = (
         db.query(Interview)
         .filter(
             Interview.client_id == client_id,
@@ -165,9 +172,69 @@ def calendar_events(
             Interview.interview_date >= start_date,
             Interview.interview_date <= end_date,
         )
-        .order_by(Interview.interview_date, Interview.start_time)
+    )
+    if statuses:
+        q = q.filter(Interview.status.in_(statuses))
+    if round_types:
+        q = q.filter(Interview.round_type.in_(round_types))
+    if modes:
+        q = q.filter(Interview.mode.in_(modes))
+    if candidate_ids:
+        q = q.filter(Interview.candidate_id.in_(candidate_ids))
+    if opening_ids:
+        q = q.filter(Interview.opening_id.in_(opening_ids))
+    if interviewer_name:
+        panel_ids = (
+            db.query(InterviewPanel.interview_id)
+            .filter(
+                InterviewPanel.employee_name.ilike(f"%{interviewer_name}%"),
+            )
+            .subquery()
+        )
+        q = q.filter(Interview.id.in_(panel_ids))
+    return q.order_by(Interview.interview_date, Interview.start_time).all()
+
+
+def calendar_filter_options(db: Session, client_id: str) -> Dict:
+    """Return distinct values used to populate calendar filter dropdowns."""
+    from sqlalchemy import distinct
+    candidates = (
+        db.query(distinct(Interview.candidate_id), Interview.candidate_name)
+        .filter(Interview.client_id == client_id, Interview.is_deleted.is_(False),
+                Interview.candidate_id.isnot(None))
+        .limit(200).all()
+    )
+    openings = (
+        db.query(distinct(Interview.opening_id), Interview.opening_title)
+        .filter(Interview.client_id == client_id, Interview.is_deleted.is_(False),
+                Interview.opening_id.isnot(None))
+        .limit(200).all()
+    )
+    round_types = (
+        db.query(distinct(Interview.round_type))
+        .filter(Interview.client_id == client_id, Interview.is_deleted.is_(False),
+                Interview.round_type.isnot(None))
         .all()
     )
+    modes = (
+        db.query(distinct(Interview.mode))
+        .filter(Interview.client_id == client_id, Interview.is_deleted.is_(False),
+                Interview.mode.isnot(None))
+        .all()
+    )
+    interviewers = (
+        db.query(distinct(InterviewPanel.employee_name))
+        .join(Interview, Interview.id == InterviewPanel.interview_id)
+        .filter(Interview.client_id == client_id, Interview.is_deleted.is_(False))
+        .limit(200).all()
+    )
+    return {
+        "candidates":   [{"id": r[0], "name": r[1]} for r in candidates if r[0]],
+        "openings":     [{"id": r[0], "title": r[1]} for r in openings if r[0]],
+        "round_types":  [r[0] for r in round_types if r[0]],
+        "modes":        [r[0] for r in modes if r[0]],
+        "interviewers": [r[0] for r in interviewers if r[0]],
+    }
 
 
 def dashboard_stats(db: Session, client_id: str) -> Dict[str, int]:
@@ -202,6 +269,19 @@ def add_panel_member(db: Session, data: Dict) -> InterviewPanel:
     db.add(obj)
     db.flush()
     return obj
+
+
+def list_panel_for_interviews(
+    db: Session, client_id: str, interview_ids: List[str]
+) -> List[InterviewPanel]:
+    """Batch-load panel members for multiple interviews (avoids N+1)."""
+    if not interview_ids:
+        return []
+    return (
+        db.query(InterviewPanel)
+        .filter(InterviewPanel.interview_id.in_(interview_ids))
+        .all()
+    )
 
 
 def list_panel(db: Session, interview_id: str) -> List[InterviewPanel]:

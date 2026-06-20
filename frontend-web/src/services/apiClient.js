@@ -625,8 +625,10 @@ export const portalInterviewApi = {
   dashboard:   (sd, tk)               => axios.get(_iurl(sd, "/dashboard"),        _rh(sd, tk)),
 
   // Calendar
-  calendarEvents: (sd, tk, start, end) =>
-    axios.get(_iurl(sd, "/calendar/events"), { ..._rh(sd, tk), params: { start, end } }),
+  calendarFilterOptions: (sd, tk) =>
+    axios.get(_iurl(sd, "/calendar/filter-options"), _rh(sd, tk)),
+  calendarEvents: (sd, tk, start, end, filters = {}) =>
+    axios.get(_iurl(sd, "/calendar/events"), { ..._rh(sd, tk), params: { start, end, ...filters } }),
 
   // Pipelines
   listPipelines:   (sd, tk, p)        => axios.get(_iurl(sd, "/pipelines"),         { ..._rh(sd, tk), params: p }),

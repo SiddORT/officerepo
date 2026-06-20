@@ -134,10 +134,6 @@ export default function InterviewDetails() {
 
   const isActive = iv.status === "Scheduled" || iv.status === "Rescheduled";
 
-  const REC_COLOR = {
-    "Strong Hire": "#10b981", "Hire": "#22c55e", "Hold": "#f59e0b", "Reject": "#ef4444",
-  };
-
   const Row = ({ label, value, link }) => !value ? null : (
     <div style={{ display: "flex", gap: 12, padding: "8px 0", borderBottom: "1px solid var(--c-border)" }}>
       <div style={{ minWidth: 160, fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>{label}</div>

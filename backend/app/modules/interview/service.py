@@ -595,9 +595,35 @@ def dashboard(db: Session, client_id: str) -> Dict:
 
 # ── Calendar ──────────────────────────────────────────────────────────────────
 
-def calendar_events(db: Session, client_id: str, start_date: str, end_date: str) -> List[Dict]:
-    items = repo.calendar_events(db, client_id, start_date, end_date)
-    return [_interview_dict(iv) for iv in items]
+def calendar_events(
+    db: Session, client_id: str, start_date: str, end_date: str,
+    *,
+    statuses: Optional[List[str]] = None,
+    round_types: Optional[List[str]] = None,
+    modes: Optional[List[str]] = None,
+    candidate_ids: Optional[List[str]] = None,
+    opening_ids: Optional[List[str]] = None,
+    interviewer_name: Optional[str] = None,
+) -> List[Dict]:
+    items = repo.calendar_events(
+        db, client_id, start_date, end_date,
+        statuses=statuses, round_types=round_types, modes=modes,
+        candidate_ids=candidate_ids, opening_ids=opening_ids,
+        interviewer_name=interviewer_name,
+    )
+    if not items:
+        return []
+    # Batch-load panel members for all interviews (avoids N+1)
+    iv_ids = [iv.id for iv in items]
+    panel_rows = repo.list_panel_for_interviews(db, client_id, iv_ids)
+    panel_map: Dict[str, List] = {}
+    for p in panel_rows:
+        panel_map.setdefault(p.interview_id, []).append(p)
+    return [_interview_dict(iv, panel=panel_map.get(iv.id, [])) for iv in items]
+
+
+def calendar_filter_options(db: Session, client_id: str) -> Dict:
+    return repo.calendar_filter_options(db, client_id)
 
 
 # ── Activities ────────────────────────────────────────────────────────────────

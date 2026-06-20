@@ -6,7 +6,7 @@ Data    : CLIENT database.
 """
 from __future__ import annotations
 
-from typing import Generator
+from typing import Generator, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
@@ -112,14 +112,36 @@ def dashboard(subdomain: str,
 
 # ── Calendar ──────────────────────────────────────────────────────────────────
 
+@router.get("/{subdomain}/hrms/interviews/calendar/filter-options")
+def calendar_filter_options(subdomain: str,
+                             portal_user: dict = Depends(_portal_jwt),
+                             db: Session = Depends(_client_db_dep)):
+    _sub(portal_user, subdomain)
+    return ApiResponse.ok(svc.calendar_filter_options(db, _cid(portal_user))).model_dump()
+
+
 @router.get("/{subdomain}/hrms/interviews/calendar/events")
 def calendar_events(subdomain: str,
                     start: str = Query(...),
-                    end: str   = Query(...),
+                    end:   str = Query(...),
+                    status:       Optional[List[str]] = Query(None),
+                    round_type:   Optional[List[str]] = Query(None),
+                    mode:         Optional[List[str]] = Query(None),
+                    candidate_id: Optional[List[str]] = Query(None),
+                    opening_id:   Optional[List[str]] = Query(None),
+                    interviewer:  Optional[str]       = Query(None),
                     portal_user: dict = Depends(_portal_jwt),
                     db: Session = Depends(_client_db_dep)):
     _sub(portal_user, subdomain)
-    return ApiResponse.ok(svc.calendar_events(db, _cid(portal_user), start, end)).model_dump()
+    return ApiResponse.ok(svc.calendar_events(
+        db, _cid(portal_user), start, end,
+        statuses=status or None,
+        round_types=round_type or None,
+        modes=mode or None,
+        candidate_ids=candidate_id or None,
+        opening_ids=opening_id or None,
+        interviewer_name=interviewer or None,
+    )).model_dump()
 
 
 # ── Pipelines ─────────────────────────────────────────────────────────────────
