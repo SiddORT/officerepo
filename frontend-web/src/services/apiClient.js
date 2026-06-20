@@ -991,6 +991,51 @@ export const portalLoanApi = {
   getActiveEmis: (sd, tk, empId) => axios.get(_lnurl(sd, "/payroll/active-emis"), _lnhp(sd, tk, { employee_id: empId })),
 };
 
+// ── Portal Expense & Reimbursements ───────────────────────────────────────────
+const _exurl  = (sd, path) => `/api/v1/portal/${sd}/hrms/expenses${path}`;
+const _exh    = (sd)       => ({ headers: { Authorization: `Bearer ${_portalToken(sd)}` } });
+const _exhp   = (sd, p)    => ({ headers: { Authorization: `Bearer ${_portalToken(sd)}` }, params: p });
+
+export const portalExpenseApi = {
+  meta:      (sd)      => axios.get(_exurl(sd, "/meta/options"), _exh(sd)),
+  getDashboard: (sd)   => axios.get(_exurl(sd, "/dashboard"),    _exh(sd)),
+
+  // Categories
+  listCategories:  (sd, incInactive = false) => axios.get(_exurl(sd, "/categories"), _exhp(sd, { include_inactive: incInactive })),
+  createCategory:  (sd, d)       => axios.post(_exurl(sd, "/categories"),             d, _exh(sd)),
+  updateCategory:  (sd, id, d)   => axios.patch(_exurl(sd, `/categories/${id}`),      d, _exh(sd)),
+
+  // Policies
+  listPolicies:    (sd, incInactive = false) => axios.get(_exurl(sd, "/policies"), _exhp(sd, { include_inactive: incInactive })),
+  createPolicy:    (sd, d)       => axios.post(_exurl(sd, "/policies"),             d, _exh(sd)),
+  updatePolicy:    (sd, id, d)   => axios.patch(_exurl(sd, `/policies/${id}`),      d, _exh(sd)),
+  deletePolicy:    (sd, id)      => axios.delete(_exurl(sd, `/policies/${id}`),        _exh(sd)),
+
+  // Claims
+  listClaims:    (sd, p)       => axios.get(_exurl(sd, "/claims"),            _exhp(sd, p)),
+  createClaim:   (sd, d)       => axios.post(_exurl(sd, "/claims"),        d, _exh(sd)),
+  getClaim:      (sd, id)      => axios.get(_exurl(sd, `/claims/${id}`),      _exh(sd)),
+  updateClaim:   (sd, id, d)   => axios.patch(_exurl(sd, `/claims/${id}`), d, _exh(sd)),
+  deleteClaim:   (sd, id)      => axios.delete(_exurl(sd, `/claims/${id}`),   _exh(sd)),
+  submitClaim:   (sd, id)      => axios.post(_exurl(sd, `/claims/${id}/submit`),  {}, _exh(sd)),
+  approveClaim:  (sd, id, d)   => axios.post(_exurl(sd, `/claims/${id}/approve`), d,  _exh(sd)),
+  rejectClaim:   (sd, id, d)   => axios.post(_exurl(sd, `/claims/${id}/reject`),  d,  _exh(sd)),
+  cancelClaim:   (sd, id, d)   => axios.post(_exurl(sd, `/claims/${id}/cancel`),  d,  _exh(sd)),
+  returnClaim:   (sd, id, d)   => axios.post(_exurl(sd, `/claims/${id}/return`),  d,  _exh(sd)),
+
+  // Reimbursements
+  listReimbursements:   (sd, p)       => axios.get(_exurl(sd, "/reimbursements"),           _exhp(sd, p)),
+  createReimbursement:  (sd, d)       => axios.post(_exurl(sd, "/reimbursements"),        d, _exh(sd)),
+  updateReimbursement:  (sd, id, d)   => axios.patch(_exurl(sd, `/reimbursements/${id}`), d, _exh(sd)),
+  getPayrollReimb:      (sd, empId)   => axios.get(_exurl(sd, `/reimbursements/payroll/${empId}`), _exh(sd)),
+
+  // Mileage
+  listMileage:    (sd, p)       => axios.get(_exurl(sd, "/mileage"),            _exhp(sd, p)),
+  createMileage:  (sd, d)       => axios.post(_exurl(sd, "/mileage"),        d, _exh(sd)),
+  updateMileage:  (sd, id, d)   => axios.patch(_exurl(sd, `/mileage/${id}`), d, _exh(sd)),
+  deleteMileage:  (sd, id)      => axios.delete(_exurl(sd, `/mileage/${id}`),   _exh(sd)),
+};
+
 // ── Currency Management (superadmin — global platform settings) ───────────────
 const CURRENCIES = "/superadmin/currencies";
 

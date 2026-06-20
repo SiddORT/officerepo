@@ -61,6 +61,16 @@ import LoanApplicationList    from "./loans/LoanApplicationList";
 import LoanApplicationDetails from "./loans/LoanApplicationDetails";
 import LoanRepaymentList      from "./loans/LoanRepaymentList";
 
+// Expense & Reimbursements pages
+import ExpenseDashboard    from "./expenses/ExpenseDashboard";
+import ExpenseCategoryList from "./expenses/ExpenseCategoryList";
+import ExpensePolicyList   from "./expenses/ExpensePolicyList";
+import ExpenseClaimList    from "./expenses/ExpenseClaimList";
+import ExpenseClaimDetails from "./expenses/ExpenseClaimDetails";
+import ExpenseClaimForm    from "./expenses/ExpenseClaimForm";
+import MileageClaimList    from "./expenses/MileageClaimList";
+import ReimbursementList   from "./expenses/ReimbursementList";
+
 // Payroll Management pages
 import PayrollDashboard        from "./payroll/PayrollDashboard";
 import SalaryComponentList     from "./payroll/SalaryComponentList";
@@ -324,7 +334,15 @@ function PortalRoutes() {
       <Route path="/hrms/loans/policies"            element={<Protected><LoanPolicyList /></Protected>} />
       <Route path="/hrms/loans/repayments"          element={<Protected><LoanRepaymentList /></Protected>} />
       <Route path="/hrms/loans"                     element={<Protected><LoanDashboard /></Protected>} />
-      <Route path="/hrms/expenses"    element={<CS module="HRMS" submodule="Expense & Reimbursements" />} />
+      <Route path="/hrms/expenses/claims/new"         element={<Protected><ExpenseClaimForm /></Protected>} />
+      <Route path="/hrms/expenses/claims/:claimId/edit" element={<Protected><ExpenseClaimForm editMode /></Protected>} />
+      <Route path="/hrms/expenses/claims/:claimId"   element={<Protected><ExpenseClaimDetails /></Protected>} />
+      <Route path="/hrms/expenses/claims"            element={<Protected><ExpenseClaimList /></Protected>} />
+      <Route path="/hrms/expenses/categories"        element={<Protected><ExpenseCategoryList /></Protected>} />
+      <Route path="/hrms/expenses/policies"          element={<Protected><ExpensePolicyList /></Protected>} />
+      <Route path="/hrms/expenses/mileage"           element={<Protected><MileageClaimList /></Protected>} />
+      <Route path="/hrms/expenses/reimbursements"    element={<Protected><ReimbursementList /></Protected>} />
+      <Route path="/hrms/expenses"                   element={<Protected><ExpenseDashboard /></Protected>} />
       <Route path="/hrms/ess"         element={<CS module="HRMS" submodule="Employee Self Service" />} />
       <Route path="/hrms"             element={<Navigate to={`/portal/${subdomain}/recruitment`} replace />} />
       <Route path="/hrms/*"           element={<Navigate to={`/portal/${subdomain}/recruitment`} replace />} />
