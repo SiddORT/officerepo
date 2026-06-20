@@ -44,13 +44,48 @@ ATTENDANCE_SOURCES = [
     SRC_BIOMETRIC, SRC_RFID, SRC_MANUAL, SRC_API,
 ]
 
-# ── Work modes (mirrors Employee) ─────────────────────────────────────────────
+# ── Work modes (mirrors Employee Master) ──────────────────────────────────────
 WORK_MODE_ONSITE = "Onsite"
 WORK_MODE_WFH    = "Work From Home"
 WORK_MODE_HYBRID = "Hybrid"
 WORK_MODE_REMOTE = "Remote"
 
 WORK_MODES = [WORK_MODE_ONSITE, WORK_MODE_WFH, WORK_MODE_HYBRID, WORK_MODE_REMOTE]
+
+# ── Attendance location types ─────────────────────────────────────────────────
+LOC_OFFICE      = "Office"
+LOC_WFH         = "Work From Home"
+LOC_CLIENT_SITE = "Client Site"
+LOC_REMOTE      = "Remote"
+
+LOCATION_TYPES = [LOC_OFFICE, LOC_WFH, LOC_CLIENT_SITE, LOC_REMOTE]
+
+# ── Calendar display codes ────────────────────────────────────────────────────
+LOCATION_CODES = {
+    LOC_OFFICE:      "P",
+    LOC_WFH:         "WFH",
+    LOC_CLIENT_SITE: "CS",
+    LOC_REMOTE:      "R",
+}
+
+# ── Weekdays ──────────────────────────────────────────────────────────────────
+WEEKDAY_MONDAY    = "Monday"
+WEEKDAY_TUESDAY   = "Tuesday"
+WEEKDAY_WEDNESDAY = "Wednesday"
+WEEKDAY_THURSDAY  = "Thursday"
+WEEKDAY_FRIDAY    = "Friday"
+WEEKDAY_SATURDAY  = "Saturday"
+WEEKDAY_SUNDAY    = "Sunday"
+
+WEEKDAYS = [
+    WEEKDAY_MONDAY, WEEKDAY_TUESDAY, WEEKDAY_WEDNESDAY,
+    WEEKDAY_THURSDAY, WEEKDAY_FRIDAY, WEEKDAY_SATURDAY, WEEKDAY_SUNDAY,
+]
+
+# Python weekday() → name (0=Monday)
+WEEKDAY_MAP = {0: WEEKDAY_MONDAY, 1: WEEKDAY_TUESDAY, 2: WEEKDAY_WEDNESDAY,
+               3: WEEKDAY_THURSDAY, 4: WEEKDAY_FRIDAY, 5: WEEKDAY_SATURDAY,
+               6: WEEKDAY_SUNDAY}
 
 # ── Regularization statuses ───────────────────────────────────────────────────
 REG_PENDING  = "Pending"
@@ -108,9 +143,14 @@ ACT_SYNC_TRIGGERED       = "Sync Triggered"
 ACT_SHIFT_CREATED        = "Shift Created"
 ACT_SHIFT_ASSIGNED       = "Shift Assigned"
 ACT_POLICY_UPDATED       = "Policy Updated"
+ACT_WFH_CHECKIN          = "WFH Check-In"
+ACT_WFH_CHECKOUT         = "WFH Check-Out"
+ACT_LOCATION_CHANGED     = "Work Location Changed"
+ACT_SCHEDULE_SET         = "Work Schedule Set"
 
 # ── Default policy values ─────────────────────────────────────────────────────
 DEFAULT_GRACE_PERIOD_MINS  = 15
 DEFAULT_MIN_WORKING_HOURS  = 8.0
 DEFAULT_HALF_DAY_HOURS     = 4.0
 DEFAULT_OT_THRESHOLD_HOURS = 9.0
+DEFAULT_MAX_WFH_DAYS       = 10

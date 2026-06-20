@@ -12,14 +12,16 @@ from backend.app.modules.attendance.models import (
     AttendanceShift, AttendanceShiftAssignment, AttendanceRecord,
     AttendanceRegularization, AttendanceOvertime, AttendancePolicy,
     AttendanceDevice, AttendanceSyncLog, AttendanceActivity,
+    EmployeeWorkSchedule,
 )
 from backend.app.modules.attendance.constants import (
     ACT_CHECKIN, ACT_CHECKOUT, ACT_RECORD_UPDATED, ACT_REGULARIZATION_REQ,
     ACT_REGULARIZATION_APP, ACT_REGULARIZATION_REJ, ACT_OVERTIME_RECORDED,
     ACT_DEVICE_REGISTERED, ACT_SHIFT_CREATED, ACT_SHIFT_ASSIGNED, ACT_POLICY_UPDATED,
+    ACT_WFH_CHECKIN, ACT_SCHEDULE_SET,
     ATT_PRESENT, ATT_LATE, ATT_ABSENT, ATT_HALF_DAY,
     DEFAULT_GRACE_PERIOD_MINS, DEFAULT_MIN_WORKING_HOURS, DEFAULT_HALF_DAY_HOURS,
-    DEFAULT_OT_THRESHOLD_HOURS,
+    DEFAULT_OT_THRESHOLD_HOURS, WEEKDAY_MAP, WEEKDAYS, LOCATION_TYPES, LOC_WFH,
 )
 
 
@@ -104,6 +106,8 @@ def _record_dict(r: AttendanceRecord) -> Dict:
         "check_out_time":  _dt_str(r.check_out_time),
         "source":          r.source,
         "work_mode":       r.work_mode,
+        "location_type":   r.location_type,
+        "work_mode_snapshot": r.work_mode_snapshot,
         "status":          r.status,
         "total_hours":     r.total_hours,
         "break_hours":     r.break_hours,
@@ -168,6 +172,10 @@ def _policy_dict(p: AttendancePolicy) -> Dict:
         "allow_regularization": p.allow_regularization,
         "max_regularization_per_month": p.max_regularization_per_month,
         "work_days":         p.work_days,
+        "wfh_allowed":       p.wfh_allowed,
+        "max_wfh_days_per_month": p.max_wfh_days_per_month,
+        "require_wfh_approval":   p.require_wfh_approval,
+        "allow_hybrid_override":  p.allow_hybrid_override,
         "description":       p.description,
         "is_active":         p.is_active,
         "created_at":        _dt_str(p.created_at),
@@ -221,6 +229,14 @@ def _activity_dict(a: AttendanceActivity) -> Dict:
     }
 
 
+def _schedule_entry_dict(s: EmployeeWorkSchedule) -> Dict:
+    return {
+        "weekday":               s.weekday,
+        "expected_location_type": s.expected_location_type,
+        "notes":                 s.notes,
+    }
+
+
 # ── Calculations ──────────────────────────────────────────────────────────────
 
 def _compute_hours(check_in: datetime, check_out: datetime,
@@ -268,7 +284,8 @@ def _parse_time(time_str: str):
 
 def dashboard(db: Session, client_id: str) -> Dict:
     today = date.today()
-    by_status = repo.count_records_by_status(db, client_id, today)
+    by_status   = repo.count_records_by_status(db, client_id, today)
+    by_location = repo.count_records_by_location(db, client_id, today)
     pending_regs = repo.count_pending_regularizations(db, client_id)
     pending_ot   = repo.count_pending_overtime(db, client_id)
     return {
@@ -278,9 +295,88 @@ def dashboard(db: Session, client_id: str) -> Dict:
         "late":              by_status.get("Late", 0),
         "half_day":          by_status.get("Half Day", 0),
         "on_leave":          by_status.get("On Leave", 0),
+        "wfh_today":         by_location.get("Work From Home", 0),
+        "office_today":      by_location.get("Office", 0),
+        "remote_today":      by_location.get("Remote", 0),
+        "client_site_today": by_location.get("Client Site", 0),
         "pending_regularizations": pending_regs,
         "pending_overtime":  pending_ot,
         "total_today":       sum(by_status.values()),
+    }
+
+
+# ── Employee Work Schedules ───────────────────────────────────────────────────
+
+def get_employee_schedule(db: Session, client_id: str, employee_id: str) -> Dict:
+    entries = repo.get_employee_schedule(db, client_id, employee_id)
+    schedule_map = {e.weekday: _schedule_entry_dict(e) for e in entries}
+    # Return all 7 weekdays; days without a rule default to None
+    result = []
+    for wd in WEEKDAYS:
+        if wd in schedule_map:
+            result.append(schedule_map[wd])
+        else:
+            result.append({"weekday": wd, "expected_location_type": None, "notes": None})
+    return {"employee_id": employee_id, "schedule": result}
+
+
+def set_employee_schedule(db: Session, client_id: str, employee_id: str,
+                           data: Dict, actor: str = "") -> Dict:
+    employee_name = data.get("employee_name", "")
+    employee_code = data.get("employee_code", "")
+    entries = data.get("schedule", [])
+
+    # Delete existing entries first
+    repo.delete_employee_schedule(db, client_id, employee_id)
+
+    for entry in entries:
+        weekday = entry.get("weekday", "")
+        location = entry.get("expected_location_type", "")
+        if weekday not in WEEKDAYS:
+            continue
+        if location not in LOCATION_TYPES:
+            continue
+        repo.upsert_schedule_entry(
+            db, client_id, employee_id, weekday, location,
+            employee_name=employee_name, employee_code=employee_code,
+            notes=entry.get("notes", ""), actor=actor,
+        )
+
+    repo.log_activity(db, client_id, "schedule", employee_id, ACT_SCHEDULE_SET,
+                      actor=actor, employee_id=employee_id,
+                      new_value=f"{len(entries)} days configured")
+    db.commit()
+    return get_employee_schedule(db, client_id, employee_id)
+
+
+def get_today_location_for_employee(db: Session, client_id: str,
+                                     employee_id: str) -> Optional[str]:
+    """Return expected location_type for today based on the employee's schedule."""
+    today_weekday = WEEKDAY_MAP.get(date.today().weekday())
+    if not today_weekday:
+        return None
+    entry = repo.get_schedule_for_weekday(db, client_id, employee_id, today_weekday)
+    return entry.expected_location_type if entry else None
+
+
+# ── WFH Today ─────────────────────────────────────────────────────────────────
+
+def wfh_today(db: Session, client_id: str) -> Dict:
+    today   = date.today()
+    records = repo.get_wfh_today(db, client_id, today)
+    return {
+        "date":  today.isoformat(),
+        "count": len(records),
+        "employees": [
+            {
+                "employee_id":   r.employee_id,
+                "employee_name": r.employee_name,
+                "employee_code": r.employee_code,
+                "check_in_time": _dt_str(r.check_in_time),
+                "check_out_time": _dt_str(r.check_out_time),
+            }
+            for r in records
+        ],
     }
 
 
@@ -289,7 +385,6 @@ def dashboard(db: Session, client_id: str) -> Dict:
 def create_shift(db: Session, client_id: str, data: Dict, actor: str = "") -> Dict:
     data["client_id"]  = client_id
     data["created_by"] = actor
-    # Convert time strings
     if "start_time" in data and isinstance(data["start_time"], str):
         data["start_time"] = _parse_time(data["start_time"])
     if "end_time" in data and isinstance(data["end_time"], str):
@@ -346,7 +441,6 @@ def create_assignment(db: Session, client_id: str, data: Dict, actor: str = "") 
         raise HTTPException(404, "Shift not found.")
     data["client_id"]  = client_id
     data["created_by"] = actor
-    # Convert dates
     for k in ("effective_from", "effective_to"):
         if k in data and isinstance(data[k], str) and data[k]:
             from datetime import date as dt_date
@@ -375,7 +469,7 @@ def delete_assignment(db: Session, asgn_id: str, client_id: str, actor: str = ""
 # ── Check-In ──────────────────────────────────────────────────────────────────
 
 def check_in(db: Session, client_id: str, data: Dict, actor: str = "") -> Dict:
-    today = date.today()
+    today  = date.today()
     emp_id = data["employee_id"]
 
     existing = repo.get_record_by_employee_date(db, client_id, emp_id, today)
@@ -393,16 +487,27 @@ def check_in(db: Session, client_id: str, data: Dict, actor: str = "") -> Dict:
             shift_name = asgn.shift.shift_name if asgn.shift else None
             shift_obj  = asgn.shift
     else:
-        shift_obj = repo.get_shift(db, shift_id, client_id)
+        shift_obj  = repo.get_shift(db, shift_id, client_id)
         shift_name = shift_obj.shift_name if shift_obj else None
 
+    # Determine location_type: use supplied, default to Office
+    location_type      = data.get("location_type") or "Office"
+    work_mode_snapshot = data.get("work_mode_snapshot")
+    device_info        = data.get("device_info")
+
     now = datetime.utcnow()
+    # Choose activity action
+    act_action = ACT_WFH_CHECKIN if location_type == LOC_WFH else ACT_CHECKIN
+
     if existing:
         existing.check_in_time  = now
         existing.shift_id       = shift_id
         existing.shift_name     = shift_name
         existing.source         = data.get("source", "Web Check-In")
         existing.work_mode      = data.get("work_mode")
+        existing.location_type  = location_type
+        existing.work_mode_snapshot = work_mode_snapshot
+        existing.device_info    = device_info
         existing.checkin_latitude  = data.get("latitude")
         existing.checkin_longitude = data.get("longitude")
         existing.checkin_ip        = data.get("ip_address")
@@ -410,28 +515,32 @@ def check_in(db: Session, client_id: str, data: Dict, actor: str = "") -> Dict:
         record = existing
     else:
         record_data = {
-            "client_id":      client_id,
-            "employee_id":    emp_id,
-            "employee_name":  data.get("employee_name"),
-            "employee_code":  data.get("employee_code"),
-            "branch_id":      data.get("branch_id"),
-            "branch_name":    data.get("branch_name"),
-            "shift_id":       shift_id,
-            "shift_name":     shift_name,
-            "attendance_date": today,
-            "check_in_time":  now,
-            "source":         data.get("source", "Web Check-In"),
-            "work_mode":      data.get("work_mode"),
-            "status":         ATT_PRESENT,
+            "client_id":        client_id,
+            "employee_id":      emp_id,
+            "employee_name":    data.get("employee_name"),
+            "employee_code":    data.get("employee_code"),
+            "branch_id":        data.get("branch_id"),
+            "branch_name":      data.get("branch_name"),
+            "shift_id":         shift_id,
+            "shift_name":       shift_name,
+            "attendance_date":  today,
+            "check_in_time":    now,
+            "source":           data.get("source", "Web Check-In"),
+            "work_mode":        data.get("work_mode"),
+            "location_type":    location_type,
+            "work_mode_snapshot": work_mode_snapshot,
+            "device_info":      device_info,
+            "status":           ATT_PRESENT,
             "checkin_latitude":  data.get("latitude"),
             "checkin_longitude": data.get("longitude"),
             "checkin_ip":        data.get("ip_address"),
-            "created_by":     actor,
+            "created_by":       actor,
         }
         record = repo.create_record(db, record_data)
 
-    repo.log_activity(db, client_id, "record", record.id, ACT_CHECKIN, actor=actor,
-                      employee_id=emp_id, new_value=now.isoformat())
+    repo.log_activity(db, client_id, "record", record.id, act_action, actor=actor,
+                      employee_id=emp_id,
+                      new_value=f"{now.isoformat()} ({location_type})")
     db.commit()
     return _record_dict(record)
 
@@ -459,7 +568,6 @@ def check_out(db: Session, client_id: str, data: Dict, actor: str = "") -> Dict:
     record.checkout_longitude = data.get("longitude")
     record.checkout_ip        = data.get("ip_address")
 
-    # Compute hours
     shift_obj = repo.get_shift(db, record.shift_id, client_id) if record.shift_id else None
     brk_mins  = shift_obj.break_duration_mins if shift_obj else 0
     hours     = _compute_hours(record.check_in_time, now, brk_mins or 0)
@@ -467,18 +575,15 @@ def check_out(db: Session, client_id: str, data: Dict, actor: str = "") -> Dict:
     record.break_hours       = hours["break"]
     record.productive_hours  = hours["productive"]
 
-    # OT
     ot_threshold = DEFAULT_OT_THRESHOLD_HOURS
     if shift_obj and shift_obj.min_working_hours:
         ot_threshold = shift_obj.min_working_hours + 1.0
     ot = round(max(hours["productive"] - ot_threshold, 0), 2)
     record.overtime_hours = ot
 
-    # Status
     record.status = _determine_status(record.check_in_time, shift_obj, hours["productive"])
     db.flush()
 
-    # Auto-create OT record if significant
     if ot >= 0.5:
         ot_type = "Weekday"
         wd = today.weekday()
@@ -496,7 +601,8 @@ def check_out(db: Session, client_id: str, data: Dict, actor: str = "") -> Dict:
             "created_by":     actor,
         })
 
-    repo.log_activity(db, client_id, "record", record.id, ACT_CHECKOUT, actor=actor,
+    act_action = ACT_CHECKOUT
+    repo.log_activity(db, client_id, "record", record.id, act_action, actor=actor,
                       employee_id=emp_id, new_value=now.isoformat())
     db.commit()
     return _record_dict(record)
@@ -521,7 +627,6 @@ def update_record(db: Session, record_id: str, client_id: str, data: Dict, actor
     if not obj:
         raise HTTPException(404, "Attendance record not found.")
     repo.update_record(db, obj, {k: v for k, v in data.items() if v is not None})
-    # Recompute hours if times changed
     if obj.check_in_time and obj.check_out_time:
         shift_obj = repo.get_shift(db, obj.shift_id, client_id) if obj.shift_id else None
         brk_mins  = shift_obj.break_duration_mins if shift_obj else 0
@@ -557,25 +662,22 @@ def create_manual_record(db: Session, client_id: str, data: Dict, actor: str = "
         data.setdefault("total_hours", hours["total"])
         data.setdefault("break_hours", hours["break"])
         data.setdefault("productive_hours", hours["productive"])
-        data.setdefault("overtime_hours", round(max(hours["productive"] - DEFAULT_OT_THRESHOLD_HOURS, 0), 2))
+        data.setdefault("status", ATT_PRESENT)
     obj = repo.create_record(db, data)
-    repo.log_activity(db, client_id, "record", obj.id, "Manual Record Created", actor=actor,
-                      employee_id=emp_id)
+    repo.log_activity(db, client_id, "record", obj.id, ACT_RECORD_UPDATED, actor=actor,
+                      employee_id=emp_id, new_value="Manual Entry")
     db.commit()
     return _record_dict(obj)
 
 
-# ── Regularization ────────────────────────────────────────────────────────────
+# ── Regularizations ───────────────────────────────────────────────────────────
 
 def create_regularization(db: Session, client_id: str, data: Dict, actor: str = "") -> Dict:
     data["client_id"]  = client_id
     data["created_by"] = actor
-    if isinstance(data.get("attendance_date"), str):
-        data["attendance_date"] = date.fromisoformat(data["attendance_date"])
     obj = repo.create_regularization(db, data)
-    repo.log_activity(db, client_id, "record", obj.record_id or obj.id,
-                      ACT_REGULARIZATION_REQ, actor=actor, employee_id=obj.employee_id,
-                      new_value=obj.reason)
+    repo.log_activity(db, client_id, "regularization", obj.id, ACT_REGULARIZATION_REQ,
+                      actor=actor, employee_id=obj.employee_id)
     db.commit()
     return _reg_dict(obj)
 
@@ -585,21 +687,19 @@ def list_regularizations(db: Session, client_id: str, **kwargs) -> Dict:
     return {"total": result["total"], "items": [_reg_dict(r) for r in result["items"]]}
 
 
-def review_regularization(db: Session, reg_id: str, client_id: str, data: Dict, actor: str = "") -> Dict:
+def review_regularization(db: Session, reg_id: str, client_id: str,
+                           data: Dict, actor: str = "") -> Dict:
     obj = repo.get_regularization(db, reg_id, client_id)
     if not obj:
-        raise HTTPException(404, "Regularization request not found.")
-    if obj.status != "Pending":
-        raise HTTPException(400, f"Regularization is already {obj.status}.")
-
-    obj.status      = data["status"]
-    obj.reviewed_by = actor
-    obj.reviewed_at = datetime.utcnow()
+        raise HTTPException(404, "Regularization not found.")
+    status = data.get("status", "")
+    if status not in ("Approved", "Rejected"):
+        raise HTTPException(400, "Status must be Approved or Rejected.")
+    obj.status       = status
+    obj.reviewed_by  = actor
+    obj.reviewed_at  = datetime.utcnow()
     obj.review_notes = data.get("review_notes")
-    db.flush()
-
-    # If approved, update the attendance record
-    if obj.status == "Approved" and obj.record_id:
+    if status == "Approved" and obj.record_id:
         record = repo.get_record(db, obj.record_id, client_id)
         if record:
             if obj.requested_checkin:
@@ -607,20 +707,17 @@ def review_regularization(db: Session, reg_id: str, client_id: str, data: Dict, 
             if obj.requested_checkout:
                 record.check_out_time = obj.requested_checkout
             record.is_regularized = True
-            # Recompute
             if record.check_in_time and record.check_out_time:
                 shift_obj = repo.get_shift(db, record.shift_id, client_id) if record.shift_id else None
-                brk_mins = shift_obj.break_duration_mins if shift_obj else 0
+                brk_mins  = shift_obj.break_duration_mins if shift_obj else 0
                 hours = _compute_hours(record.check_in_time, record.check_out_time, brk_mins or 0)
                 record.total_hours      = hours["total"]
                 record.break_hours      = hours["break"]
                 record.productive_hours = hours["productive"]
-                record.status           = _determine_status(record.check_in_time, shift_obj, hours["productive"])
-            db.flush()
-
-    action = ACT_REGULARIZATION_APP if obj.status == "Approved" else ACT_REGULARIZATION_REJ
-    repo.log_activity(db, client_id, "record", obj.record_id or obj.id, action,
-                      actor=actor, employee_id=obj.employee_id, new_value=obj.status)
+                record.status = _determine_status(record.check_in_time, shift_obj, hours["productive"])
+    action = ACT_REGULARIZATION_APP if status == "Approved" else ACT_REGULARIZATION_REJ
+    repo.log_activity(db, client_id, "regularization", obj.id, action,
+                      actor=actor, employee_id=obj.employee_id)
     db.commit()
     return _reg_dict(obj)
 
@@ -630,12 +727,9 @@ def review_regularization(db: Session, reg_id: str, client_id: str, data: Dict, 
 def create_overtime(db: Session, client_id: str, data: Dict, actor: str = "") -> Dict:
     data["client_id"]  = client_id
     data["created_by"] = actor
-    if isinstance(data.get("attendance_date"), str):
-        data["attendance_date"] = date.fromisoformat(data["attendance_date"])
     obj = repo.create_overtime(db, data)
-    repo.log_activity(db, client_id, "record", obj.record_id or obj.id,
-                      ACT_OVERTIME_RECORDED, actor=actor, employee_id=obj.employee_id,
-                      new_value=f"{obj.overtime_hours}h {obj.overtime_type}")
+    repo.log_activity(db, client_id, "overtime", obj.id, ACT_OVERTIME_RECORDED,
+                      actor=actor, employee_id=obj.employee_id)
     db.commit()
     return _ot_dict(obj)
 
@@ -645,18 +739,18 @@ def list_overtime(db: Session, client_id: str, **kwargs) -> Dict:
     return {"total": result["total"], "items": [_ot_dict(o) for o in result["items"]]}
 
 
-def review_overtime(db: Session, ot_id: str, client_id: str, data: Dict, actor: str = "") -> Dict:
+def review_overtime(db: Session, ot_id: str, client_id: str,
+                    data: Dict, actor: str = "") -> Dict:
     obj = repo.get_overtime(db, ot_id, client_id)
     if not obj:
         raise HTTPException(404, "Overtime record not found.")
-    obj.approval_status = data["approval_status"]
-    if obj.approval_status == "Approved":
-        obj.approved_by = actor
-        obj.approved_at = datetime.utcnow()
-    obj.notes = data.get("notes") or obj.notes
-    db.flush()
-    repo.log_activity(db, client_id, "record", obj.id, "Overtime Reviewed",
-                      actor=actor, employee_id=obj.employee_id, new_value=obj.approval_status)
+    status = data.get("approval_status", "")
+    if status not in ("Approved", "Rejected"):
+        raise HTTPException(400, "approval_status must be Approved or Rejected.")
+    obj.approval_status = status
+    obj.approved_by     = actor
+    obj.approved_at     = datetime.utcnow()
+    obj.notes           = data.get("notes") or obj.notes
     db.commit()
     return _ot_dict(obj)
 
@@ -667,8 +761,8 @@ def create_policy(db: Session, client_id: str, data: Dict, actor: str = "") -> D
     data["client_id"]  = client_id
     data["created_by"] = actor
     obj = repo.create_policy(db, data)
-    repo.log_activity(db, client_id, "policy", obj.id, ACT_POLICY_UPDATED, actor=actor,
-                      new_value=obj.policy_name)
+    repo.log_activity(db, client_id, "policy", obj.id, ACT_POLICY_UPDATED,
+                      actor=actor, new_value=obj.policy_name)
     db.commit()
     return _policy_dict(obj)
 
@@ -684,7 +778,8 @@ def get_policy(db: Session, policy_id: str, client_id: str) -> Dict:
     return _policy_dict(obj)
 
 
-def update_policy(db: Session, policy_id: str, client_id: str, data: Dict, actor: str = "") -> Dict:
+def update_policy(db: Session, policy_id: str, client_id: str,
+                  data: Dict, actor: str = "") -> Dict:
     obj = repo.get_policy(db, policy_id, client_id)
     if not obj:
         raise HTTPException(404, "Policy not found.")
@@ -703,14 +798,14 @@ def delete_policy(db: Session, policy_id: str, client_id: str, actor: str = ""):
     db.commit()
 
 
-# ── Devices (Future — skeleton) ───────────────────────────────────────────────
+# ── Devices ───────────────────────────────────────────────────────────────────
 
 def create_device(db: Session, client_id: str, data: Dict, actor: str = "") -> Dict:
     data["client_id"]  = client_id
     data["created_by"] = actor
     obj = repo.create_device(db, data)
-    repo.log_activity(db, client_id, "device", obj.id, ACT_DEVICE_REGISTERED,
-                      actor=actor, new_value=obj.device_name)
+    repo.log_activity(db, client_id, "device", obj.id, ACT_DEVICE_REGISTERED, actor=actor,
+                      new_value=obj.device_name)
     db.commit()
     return _device_dict(obj)
 
@@ -723,12 +818,11 @@ def get_device(db: Session, device_id: str, client_id: str) -> Dict:
     obj = repo.get_device(db, device_id, client_id)
     if not obj:
         raise HTTPException(404, "Device not found.")
-    d = _device_dict(obj)
-    d["sync_logs"] = [_sync_log_dict(l) for l in repo.list_sync_logs(db, client_id, device_id, limit=10)]
-    return d
+    return _device_dict(obj)
 
 
-def update_device(db: Session, device_id: str, client_id: str, data: Dict, actor: str = "") -> Dict:
+def update_device(db: Session, device_id: str, client_id: str,
+                  data: Dict, actor: str = "") -> Dict:
     obj = repo.get_device(db, device_id, client_id)
     if not obj:
         raise HTTPException(404, "Device not found.")
@@ -745,18 +839,67 @@ def delete_device(db: Session, device_id: str, client_id: str, actor: str = ""):
     db.commit()
 
 
+def trigger_sync(db: Session, device_id: str, client_id: str, actor: str = "") -> Dict:
+    obj = repo.get_device(db, device_id, client_id)
+    if not obj:
+        raise HTTPException(404, "Device not found.")
+    log = repo.create_sync_log(db, {
+        "client_id":       client_id,
+        "device_id":       device_id,
+        "triggered_by":    actor,
+        "status":          "Success",
+        "records_fetched": 0,
+        "records_saved":   0,
+    })
+    obj.last_sync_at = datetime.utcnow()
+    db.commit()
+    return _sync_log_dict(log)
+
+
+def list_sync_logs(db: Session, device_id: str, client_id: str) -> List[Dict]:
+    return [_sync_log_dict(l) for l in repo.list_sync_logs(db, client_id, device_id)]
+
+
+# ── Activities ────────────────────────────────────────────────────────────────
+
+def list_activities(db: Session, client_id: str, **kwargs) -> List[Dict]:
+    return [_activity_dict(a) for a in repo.list_activities(db, client_id, **kwargs)]
+
+
 # ── Calendar ──────────────────────────────────────────────────────────────────
 
-def get_calendar(db: Session, client_id: str, employee_id: str,
-                 year: int, month: int) -> List[Dict]:
+def calendar(db: Session, client_id: str, employee_id: str, year: int, month: int) -> List[Dict]:
     from calendar import monthrange
     _, last_day = monthrange(year, month)
-    from_date = date(year, month, 1)
-    to_date   = date(year, month, last_day)
-    records   = repo.get_calendar_records(db, client_id, employee_id, from_date, to_date)
-    by_date   = {r.attendance_date.isoformat(): _record_dict(r) for r in records}
-    result    = []
-    for d in range(1, last_day + 1):
-        ds = date(year, month, d).isoformat()
-        result.append(by_date.get(ds) or {"attendance_date": ds, "status": None})
+    from_date   = date(year, month, 1)
+    to_date     = date(year, month, last_day)
+    records     = repo.get_calendar_records(db, client_id, employee_id, from_date, to_date)
+    rec_map     = {r.attendance_date: r for r in records}
+
+    result = []
+    for day in range(1, last_day + 1):
+        d = date(year, month, day)
+        r = rec_map.get(d)
+        if r:
+            result.append({
+                "attendance_date": _date_str(r.attendance_date),
+                "status":          r.status,
+                "location_type":   r.location_type,
+                "work_mode":       r.work_mode,
+                "check_in_time":   _dt_str(r.check_in_time),
+                "check_out_time":  _dt_str(r.check_out_time),
+                "productive_hours": r.productive_hours,
+                "shift_name":      r.shift_name,
+            })
+        else:
+            result.append({
+                "attendance_date": d.isoformat(),
+                "status":          None,
+                "location_type":   None,
+                "work_mode":       None,
+                "check_in_time":   None,
+                "check_out_time":  None,
+                "productive_hours": None,
+                "shift_name":      None,
+            })
     return result

@@ -10,6 +10,7 @@ Tables:
   attendance_devices            — biometric device registry (future)
   attendance_sync_logs          — biometric sync audit logs (future)
   attendance_activities         — module-wide activity/audit trail
+  employee_work_schedules       — hybrid/WFH per-weekday schedule per employee
 """
 from __future__ import annotations
 
@@ -49,7 +50,7 @@ class AttendanceShift(ClientBase):
     branch_name    = Column(String(200), nullable=True)
     start_time     = Column(Time,        nullable=False)
     end_time       = Column(Time,        nullable=False)
-    is_cross_day   = Column(Boolean,     nullable=False, default=False)   # end < start
+    is_cross_day   = Column(Boolean,     nullable=False, default=False)
     break_duration_mins  = Column(Integer, nullable=True, default=0)
     grace_period_mins    = Column(Integer, nullable=True, default=15)
     min_working_hours    = Column(Float,   nullable=True, default=8.0)
@@ -79,7 +80,7 @@ class AttendanceShiftAssignment(ClientBase):
     id              = Column(String(36),  primary_key=True, default=_uuid)
     client_id       = Column(String(36),  nullable=False, index=True)
     shift_id        = Column(String(36),  ForeignKey("attendance_shifts.id"), nullable=False)
-    scope           = Column(String(20),  nullable=False)   # Employee/Department/Branch/Company
+    scope           = Column(String(20),  nullable=False)
     scope_id        = Column(String(36),  nullable=True)
     scope_name      = Column(String(200), nullable=True)
     employee_id     = Column(String(36),  nullable=True, index=True)
@@ -120,13 +121,17 @@ class AttendanceRecord(ClientBase):
     check_out_time   = Column(DateTime,    nullable=True)
     source           = Column(String(50),  nullable=True, default="Manual Entry")
     work_mode        = Column(String(30),  nullable=True)
+    # WFH: distinct from work_mode — the actual location used for THIS day
+    location_type    = Column(String(30),  nullable=True)   # Office/Work From Home/Client Site/Remote
+    work_mode_snapshot = Column(String(30), nullable=True)  # employee work_mode at time of check-in
+    device_info      = Column(Text,        nullable=True)   # JSON: browser/device context
     status           = Column(String(30),  nullable=False, default="Present")
-    # Computed fields (stored for payroll/reports)
+    # Computed fields
     total_hours      = Column(Float,       nullable=True)
     break_hours      = Column(Float,       nullable=True, default=0.0)
     productive_hours = Column(Float,       nullable=True)
     overtime_hours   = Column(Float,       nullable=True, default=0.0)
-    # Geolocation (future)
+    # Geolocation
     checkin_latitude   = Column(Float,     nullable=True)
     checkin_longitude  = Column(Float,     nullable=True)
     checkin_ip         = Column(String(45),nullable=True)
@@ -215,7 +220,7 @@ class AttendancePolicy(ClientBase):
     id                   = Column(String(36),  primary_key=True, default=_uuid)
     client_id            = Column(String(36),  nullable=False, index=True)
     policy_name          = Column(String(200), nullable=False)
-    scope                = Column(String(20),  nullable=True)   # Company/Branch/Department
+    scope                = Column(String(20),  nullable=True)
     scope_id             = Column(String(36),  nullable=True)
     scope_name           = Column(String(200), nullable=True)
     grace_period_mins    = Column(Integer,     nullable=True, default=15)
@@ -226,6 +231,11 @@ class AttendancePolicy(ClientBase):
     allow_regularization = Column(Boolean,     nullable=False, default=True)
     max_regularization_per_month = Column(Integer, nullable=True, default=3)
     work_days            = Column(String(100), nullable=True, default="Mon,Tue,Wed,Thu,Fri")
+    # WFH policy fields
+    wfh_allowed          = Column(Boolean,     nullable=False, default=True)
+    max_wfh_days_per_month = Column(Integer,   nullable=True, default=10)
+    require_wfh_approval = Column(Boolean,     nullable=False, default=False)
+    allow_hybrid_override = Column(Boolean,    nullable=False, default=True)
     description          = Column(Text,        nullable=True)
     is_active            = Column(Boolean,     nullable=False, default=True)
     is_deleted           = Column(Boolean,     nullable=False, default=False)
@@ -233,6 +243,32 @@ class AttendancePolicy(ClientBase):
     created_at           = Column(DateTime,    nullable=False, default=_now)
     updated_at           = Column(DateTime,    nullable=False, default=_now, onupdate=_now)
     created_by           = Column(String(200), nullable=True)
+
+
+# ── Employee Work Schedule (Hybrid/WFH per-weekday) ──────────────────────────
+
+class EmployeeWorkSchedule(ClientBase):
+    """Per-weekday expected location for a specific employee.
+    Used by hybrid employees to define which days are office vs WFH.
+    """
+    __tablename__ = "employee_work_schedules"
+
+    id                    = Column(String(36),  primary_key=True, default=_uuid)
+    client_id             = Column(String(36),  nullable=False, index=True)
+    employee_id           = Column(String(36),  nullable=False, index=True)
+    employee_name         = Column(String(200), nullable=True)
+    employee_code         = Column(String(50),  nullable=True)
+    weekday               = Column(String(20),  nullable=False)  # Monday..Sunday
+    expected_location_type = Column(String(30), nullable=False)  # Office/Work From Home/etc.
+    notes                 = Column(Text,        nullable=True)
+    created_at            = Column(DateTime,    nullable=False, default=_now)
+    updated_at            = Column(DateTime,    nullable=False, default=_now, onupdate=_now)
+    created_by            = Column(String(200), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("client_id", "employee_id", "weekday",
+                         name="uq_emp_schedule_weekday"),
+    )
 
 
 # ── Biometric Device Registry (Future) ────────────────────────────────────────
@@ -292,7 +328,7 @@ class AttendanceActivity(ClientBase):
 
     id           = Column(String(36),  primary_key=True, default=_uuid)
     client_id    = Column(String(36),  nullable=False, index=True)
-    entity_type  = Column(String(30),  nullable=True)   # record / shift / policy / device
+    entity_type  = Column(String(30),  nullable=True)
     entity_id    = Column(String(36),  nullable=True, index=True)
     employee_id  = Column(String(36),  nullable=True, index=True)
     action       = Column(String(100), nullable=False)

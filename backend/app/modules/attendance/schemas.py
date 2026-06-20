@@ -1,9 +1,9 @@
 """Pydantic schemas for the Attendance Management module."""
 from __future__ import annotations
 
-from datetime import date, datetime, time
+from datetime import date, datetime
 from typing import List, Optional
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 
 
 # ── Shift ─────────────────────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ class ShiftUpdate(BaseModel):
 
 class ShiftAssignCreate(BaseModel):
     shift_id:       str
-    scope:          str   # Employee / Department / Branch / Company
+    scope:          str
     scope_id:       Optional[str] = None
     scope_name:     Optional[str] = None
     employee_id:    Optional[str] = None
@@ -64,62 +64,67 @@ class ShiftAssignUpdate(BaseModel):
 # ── Attendance Record ─────────────────────────────────────────────────────────
 
 class AttendanceCreate(BaseModel):
-    employee_id:      str
-    employee_name:    Optional[str] = None
-    employee_code:    Optional[str] = None
-    department_id:    Optional[str] = None
-    department_name:  Optional[str] = None
-    branch_id:        Optional[str] = None
-    branch_name:      Optional[str] = None
-    shift_id:         Optional[str] = None
-    shift_name:       Optional[str] = None
-    attendance_date:  date
-    check_in_time:    Optional[datetime] = None
-    check_out_time:   Optional[datetime] = None
-    source:           Optional[str] = "Manual Entry"
-    work_mode:        Optional[str] = None
-    status:           Optional[str] = "Present"
-    notes:            Optional[str] = None
-    # Geo
+    employee_id:       str
+    employee_name:     Optional[str] = None
+    employee_code:     Optional[str] = None
+    department_id:     Optional[str] = None
+    department_name:   Optional[str] = None
+    branch_id:         Optional[str] = None
+    branch_name:       Optional[str] = None
+    shift_id:          Optional[str] = None
+    shift_name:        Optional[str] = None
+    attendance_date:   date
+    check_in_time:     Optional[datetime] = None
+    check_out_time:    Optional[datetime] = None
+    source:            Optional[str] = "Manual Entry"
+    work_mode:         Optional[str] = None
+    location_type:     Optional[str] = None
+    work_mode_snapshot: Optional[str] = None
+    status:            Optional[str] = "Present"
+    notes:             Optional[str] = None
     checkin_latitude:  Optional[float] = None
     checkin_longitude: Optional[float] = None
     checkin_ip:        Optional[str] = None
 
 
 class CheckInRequest(BaseModel):
-    employee_id:       str
-    employee_name:     Optional[str] = None
-    employee_code:     Optional[str] = None
-    shift_id:          Optional[str] = None
-    source:            Optional[str] = "Web Check-In"
-    work_mode:         Optional[str] = None
-    branch_id:         Optional[str] = None
-    branch_name:       Optional[str] = None
-    latitude:          Optional[float] = None
-    longitude:         Optional[float] = None
-    ip_address:        Optional[str] = None
-    notes:             Optional[str] = None
+    employee_id:        str
+    employee_name:      Optional[str] = None
+    employee_code:      Optional[str] = None
+    shift_id:           Optional[str] = None
+    source:             Optional[str] = "Web Check-In"
+    work_mode:          Optional[str] = None
+    location_type:      Optional[str] = None   # Office / Work From Home / Client Site / Remote
+    work_mode_snapshot: Optional[str] = None   # employee's configured work_mode at time of check-in
+    device_info:        Optional[str] = None   # JSON string: browser/device details
+    branch_id:          Optional[str] = None
+    branch_name:        Optional[str] = None
+    latitude:           Optional[float] = None
+    longitude:          Optional[float] = None
+    ip_address:         Optional[str] = None
+    notes:              Optional[str] = None
 
 
 class CheckOutRequest(BaseModel):
-    record_id:         Optional[str] = None    # if known
-    employee_id:       str
-    source:            Optional[str] = "Web Check-In"
-    latitude:          Optional[float] = None
-    longitude:         Optional[float] = None
-    ip_address:        Optional[str] = None
-    notes:             Optional[str] = None
+    record_id:   Optional[str] = None
+    employee_id: str
+    source:      Optional[str] = "Web Check-In"
+    latitude:    Optional[float] = None
+    longitude:   Optional[float] = None
+    ip_address:  Optional[str] = None
+    notes:       Optional[str] = None
 
 
 class AttendanceUpdate(BaseModel):
-    check_in_time:   Optional[datetime] = None
-    check_out_time:  Optional[datetime] = None
-    status:          Optional[str] = None
-    shift_id:        Optional[str] = None
-    shift_name:      Optional[str] = None
-    source:          Optional[str] = None
-    work_mode:       Optional[str] = None
-    notes:           Optional[str] = None
+    check_in_time:     Optional[datetime] = None
+    check_out_time:    Optional[datetime] = None
+    status:            Optional[str] = None
+    shift_id:          Optional[str] = None
+    shift_name:        Optional[str] = None
+    source:            Optional[str] = None
+    work_mode:         Optional[str] = None
+    location_type:     Optional[str] = None
+    notes:             Optional[str] = None
 
 
 # ── Regularization ────────────────────────────────────────────────────────────
@@ -136,7 +141,7 @@ class RegularizationCreate(BaseModel):
 
 
 class RegularizationReview(BaseModel):
-    status:        str    # Approved / Rejected
+    status:        str
     review_notes:  Optional[str] = None
 
 
@@ -154,40 +159,62 @@ class OvertimeCreate(BaseModel):
 
 
 class OvertimeReview(BaseModel):
-    approval_status: str   # Approved / Rejected
+    approval_status: str
     notes:           Optional[str] = None
 
 
 # ── Policy ────────────────────────────────────────────────────────────────────
 
 class PolicyCreate(BaseModel):
-    policy_name:              str
-    scope:                    Optional[str] = None
-    scope_id:                 Optional[str] = None
-    scope_name:               Optional[str] = None
-    grace_period_mins:        Optional[int] = 15
-    min_working_hours:        Optional[float] = 8.0
-    half_day_hours:           Optional[float] = 4.0
-    late_mark_after_mins:     Optional[int] = 30
-    ot_threshold_hours:       Optional[float] = 9.0
-    allow_regularization:     Optional[bool] = True
+    policy_name:               str
+    scope:                     Optional[str] = None
+    scope_id:                  Optional[str] = None
+    scope_name:                Optional[str] = None
+    grace_period_mins:         Optional[int] = 15
+    min_working_hours:         Optional[float] = 8.0
+    half_day_hours:            Optional[float] = 4.0
+    late_mark_after_mins:      Optional[int] = 30
+    ot_threshold_hours:        Optional[float] = 9.0
+    allow_regularization:      Optional[bool] = True
     max_regularization_per_month: Optional[int] = 3
-    work_days:                Optional[str] = "Mon,Tue,Wed,Thu,Fri"
-    description:              Optional[str] = None
+    work_days:                 Optional[str] = "Mon,Tue,Wed,Thu,Fri"
+    wfh_allowed:               Optional[bool] = True
+    max_wfh_days_per_month:    Optional[int] = 10
+    require_wfh_approval:      Optional[bool] = False
+    allow_hybrid_override:     Optional[bool] = True
+    description:               Optional[str] = None
 
 
 class PolicyUpdate(BaseModel):
-    policy_name:              Optional[str] = None
-    grace_period_mins:        Optional[int] = None
-    min_working_hours:        Optional[float] = None
-    half_day_hours:           Optional[float] = None
-    late_mark_after_mins:     Optional[int] = None
-    ot_threshold_hours:       Optional[float] = None
-    allow_regularization:     Optional[bool] = None
+    policy_name:               Optional[str] = None
+    grace_period_mins:         Optional[int] = None
+    min_working_hours:         Optional[float] = None
+    half_day_hours:            Optional[float] = None
+    late_mark_after_mins:      Optional[int] = None
+    ot_threshold_hours:        Optional[float] = None
+    allow_regularization:      Optional[bool] = None
     max_regularization_per_month: Optional[int] = None
-    work_days:                Optional[str] = None
-    description:              Optional[str] = None
-    is_active:                Optional[bool] = None
+    work_days:                 Optional[str] = None
+    wfh_allowed:               Optional[bool] = None
+    max_wfh_days_per_month:    Optional[int] = None
+    require_wfh_approval:      Optional[bool] = None
+    allow_hybrid_override:     Optional[bool] = None
+    description:               Optional[str] = None
+    is_active:                 Optional[bool] = None
+
+
+# ── Employee Work Schedule ────────────────────────────────────────────────────
+
+class EmployeeScheduleEntry(BaseModel):
+    weekday:               str   # Monday..Sunday
+    expected_location_type: str  # Office / Work From Home / Client Site / Remote
+    notes:                 Optional[str] = None
+
+
+class EmployeeScheduleSet(BaseModel):
+    employee_name:  Optional[str] = None
+    employee_code:  Optional[str] = None
+    schedule:       List[EmployeeScheduleEntry]
 
 
 # ── Biometric Device ──────────────────────────────────────────────────────────

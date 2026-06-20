@@ -817,6 +817,13 @@ export const portalAttendanceApi = {
 
   // Activities
   activities: (sd, tk, p)            => axios.get(_aturl(sd, "/activities"),             _athp(sd, tk, p)),
+
+  // WFH Today
+  wfhToday: (sd, tk)                 => axios.get(_aturl(sd, "/wfh/today"),              _ath(sd, tk)),
+
+  // Employee work schedules (hybrid/WFH per-weekday)
+  getEmployeeSchedule: (sd, tk, empId)      => axios.get(_aturl(sd, `/employees/${empId}/schedule`),      _ath(sd, tk)),
+  setEmployeeSchedule: (sd, tk, empId, data) => axios.put(_aturl(sd, `/employees/${empId}/schedule`), data, _ath(sd, tk)),
 };
 
 // ── Currency Management (superadmin — global platform settings) ───────────────

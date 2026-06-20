@@ -12,6 +12,7 @@ from backend.app.modules.attendance.models import (
     AttendanceShift, AttendanceShiftAssignment, AttendanceRecord,
     AttendanceRegularization, AttendanceOvertime, AttendancePolicy,
     AttendanceDevice, AttendanceSyncLog, AttendanceActivity,
+    EmployeeWorkSchedule,
 )
 
 
@@ -151,7 +152,8 @@ def get_record_by_employee_date(db: Session, client_id: str, employee_id: str,
 
 def list_records(db: Session, client_id: str, *, page: int = 1, page_size: int = 30,
                  employee_id: str = "", department_id: str = "", branch_id: str = "",
-                 status: str = "", from_date: Optional[date] = None,
+                 status: str = "", location_type: str = "",
+                 from_date: Optional[date] = None,
                  to_date: Optional[date] = None, search: str = "") -> Dict:
     q = db.query(AttendanceRecord).filter(
         AttendanceRecord.client_id == client_id,
@@ -165,6 +167,8 @@ def list_records(db: Session, client_id: str, *, page: int = 1, page_size: int =
         q = q.filter(AttendanceRecord.branch_id == branch_id)
     if status:
         q = q.filter(AttendanceRecord.status == status)
+    if location_type:
+        q = q.filter(AttendanceRecord.location_type == location_type)
     if from_date:
         q = q.filter(AttendanceRecord.attendance_date >= from_date)
     if to_date:
@@ -313,6 +317,63 @@ def delete_policy(db: Session, obj: AttendancePolicy):
     db.flush()
 
 
+# ── Employee Work Schedules ───────────────────────────────────────────────────
+
+def get_employee_schedule(db: Session, client_id: str,
+                           employee_id: str) -> List[EmployeeWorkSchedule]:
+    return db.query(EmployeeWorkSchedule).filter(
+        EmployeeWorkSchedule.client_id == client_id,
+        EmployeeWorkSchedule.employee_id == employee_id,
+    ).order_by(EmployeeWorkSchedule.weekday).all()
+
+
+def get_schedule_for_weekday(db: Session, client_id: str, employee_id: str,
+                              weekday: str) -> Optional[EmployeeWorkSchedule]:
+    return db.query(EmployeeWorkSchedule).filter(
+        EmployeeWorkSchedule.client_id == client_id,
+        EmployeeWorkSchedule.employee_id == employee_id,
+        EmployeeWorkSchedule.weekday == weekday,
+    ).first()
+
+
+def upsert_schedule_entry(db: Session, client_id: str, employee_id: str,
+                           weekday: str, location_type: str,
+                           employee_name: str = "", employee_code: str = "",
+                           notes: str = "", actor: str = "") -> EmployeeWorkSchedule:
+    existing = get_schedule_for_weekday(db, client_id, employee_id, weekday)
+    if existing:
+        existing.expected_location_type = location_type
+        existing.notes = notes or existing.notes
+        if employee_name:
+            existing.employee_name = employee_name
+        if employee_code:
+            existing.employee_code = employee_code
+        db.flush()
+        return existing
+    obj = EmployeeWorkSchedule(
+        id=str(uuid.uuid4()),
+        client_id=client_id,
+        employee_id=employee_id,
+        employee_name=employee_name or None,
+        employee_code=employee_code or None,
+        weekday=weekday,
+        expected_location_type=location_type,
+        notes=notes or None,
+        created_by=actor or None,
+    )
+    db.add(obj)
+    db.flush()
+    return obj
+
+
+def delete_employee_schedule(db: Session, client_id: str, employee_id: str):
+    db.query(EmployeeWorkSchedule).filter(
+        EmployeeWorkSchedule.client_id == client_id,
+        EmployeeWorkSchedule.employee_id == employee_id,
+    ).delete(synchronize_session=False)
+    db.flush()
+
+
 # ── Devices ───────────────────────────────────────────────────────────────────
 
 def create_device(db: Session, data: Dict) -> AttendanceDevice:
@@ -409,6 +470,19 @@ def count_records_by_status(db: Session, client_id: str, for_date: date) -> Dict
     return {r.status: r.cnt for r in rows}
 
 
+def count_records_by_location(db: Session, client_id: str, for_date: date) -> Dict:
+    rows = db.query(
+        AttendanceRecord.location_type,
+        func.count(AttendanceRecord.id).label("cnt"),
+    ).filter(
+        AttendanceRecord.client_id == client_id,
+        AttendanceRecord.attendance_date == for_date,
+        AttendanceRecord.is_deleted.is_(False),
+        AttendanceRecord.location_type.isnot(None),
+    ).group_by(AttendanceRecord.location_type).all()
+    return {r.location_type: r.cnt for r in rows}
+
+
 def count_pending_regularizations(db: Session, client_id: str) -> int:
     return db.query(func.count(AttendanceRegularization.id)).filter(
         AttendanceRegularization.client_id == client_id,
@@ -422,6 +496,28 @@ def count_pending_overtime(db: Session, client_id: str) -> int:
         AttendanceOvertime.client_id == client_id,
         AttendanceOvertime.approval_status == "Pending",
         AttendanceOvertime.is_deleted.is_(False),
+    ).scalar() or 0
+
+
+def get_wfh_today(db: Session, client_id: str, for_date: date) -> List[AttendanceRecord]:
+    return db.query(AttendanceRecord).filter(
+        AttendanceRecord.client_id == client_id,
+        AttendanceRecord.attendance_date == for_date,
+        AttendanceRecord.location_type == "Work From Home",
+        AttendanceRecord.is_deleted.is_(False),
+    ).order_by(AttendanceRecord.employee_name).all()
+
+
+def count_wfh_month(db: Session, client_id: str, employee_id: str,
+                    year: int, month: int) -> int:
+    from sqlalchemy import extract
+    return db.query(func.count(AttendanceRecord.id)).filter(
+        AttendanceRecord.client_id == client_id,
+        AttendanceRecord.employee_id == employee_id,
+        AttendanceRecord.location_type == "Work From Home",
+        AttendanceRecord.is_deleted.is_(False),
+        extract("year",  AttendanceRecord.attendance_date) == year,
+        extract("month", AttendanceRecord.attendance_date) == month,
     ).scalar() or 0
 
 

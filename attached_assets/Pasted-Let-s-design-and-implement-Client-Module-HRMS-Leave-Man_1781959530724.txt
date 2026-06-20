@@ -1,0 +1,680 @@
+Let's design and implement Client Module → HRMS → Leave Management for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Completed Modules:
+
+* Organization Management
+* Employee Management
+* Employee Documents
+* Recruitment
+* Interview Management
+* Employee Onboarding
+* Attendance Management
+* Work From Home Support
+
+Leave Management must integrate tightly with:
+
+* Employees
+* Attendance
+* Payroll
+* Workflow Engine
+* Notifications
+* Holiday Calendar
+
+Module Hierarchy:
+
+HRMS
+└── Leave Management
+
+Module Code:
+
+LEAVE
+
+Purpose:
+
+Manage employee leave policies, balances, approvals, holidays and payroll impact across multiple companies, branches and work locations.
+
+---
+
+# Leave Workflow
+
+Employee
+↓
+Apply Leave
+↓
+Approval Workflow
+↓
+Attendance Updated
+↓
+Payroll Updated
+
+Alternative Flow:
+
+Employee
+↓
+Cancel Leave
+↓
+Attendance Recalculated
+↓
+Payroll Recalculated
+
+---
+
+# Module Structure
+
+Leave Management
+
+├── Leave Types
+├── Leave Policies
+├── Holiday Calendars
+├── Weekly Off Rules
+├── Leave Balances
+├── Leave Requests
+├── Leave Approvals
+├── Comp Off Management
+├── Leave Encashment
+├── Carry Forward Rules
+├── Leave Calendar
+└── Leave Reports
+
+---
+
+# Leave Types
+
+Support configurable leave types.
+
+Examples:
+
+* Casual Leave
+* Sick Leave
+* Earned Leave
+* Annual Leave
+* Maternity Leave
+* Paternity Leave
+* Bereavement Leave
+* Comp Off
+* Loss Of Pay
+* Study Leave
+* Marriage Leave
+
+Optional:
+
+* Work From Home
+
+WFH must be configurable.
+
+Clients can choose:
+
+* Attendance Location Type
+* Leave Type
+
+Do not hardcode WFH as a leave type.
+
+Fields:
+
+* Leave Code *
+* Leave Name *
+* Description
+* Color Code
+* Paid Leave
+* Requires Approval
+* Requires Documents
+* Allow Half Day
+* Allow Negative Balance
+* Encashment Allowed
+* Carry Forward Allowed
+
+Status:
+
+* Active
+* Inactive
+
+---
+
+# Leave Policies
+
+Purpose:
+
+Define leave rules.
+
+Assign policies by:
+
+* Company
+* Branch
+* Department
+* Employee Category
+
+Employee Categories:
+
+* Permanent
+* Contract
+* Consultant
+* Intern
+* Trainee
+
+Fields:
+
+* Policy Name
+* Effective From
+* Effective To
+
+Rules:
+
+* Accrual Frequency
+* Maximum Balance
+* Maximum Consecutive Days
+* Minimum Notice Period
+* Maximum Applications Per Month
+* Probation Restrictions
+
+Accrual Frequency:
+
+* Monthly
+* Quarterly
+* Yearly
+
+---
+
+# Leave Allocation Rules
+
+Support:
+
+* Fixed Allocation
+* Accrual Based
+* Pro-Rated Allocation
+
+Examples:
+
+Casual Leave:
+
+12 Days Per Year
+
+Earned Leave:
+
+1.5 Days Per Month
+
+Maternity Leave:
+
+180 Days
+
+Track:
+
+* Opening Balance
+* Earned
+* Used
+* Encashed
+* Carried Forward
+* Closing Balance
+
+---
+
+# Holiday Calendars
+
+Support multiple calendars.
+
+Assign by:
+
+* Company
+* Branch
+* Country
+* State
+
+Examples:
+
+* India National Holidays
+* Maharashtra Holidays
+* Dubai Holidays
+
+Fields:
+
+* Holiday Name
+* Holiday Date
+* Holiday Type
+
+Holiday Types:
+
+* National
+* Regional
+* Company Holiday
+
+Support recurring holidays.
+
+---
+
+# Weekly Off Rules
+
+Support:
+
+* Sunday Only
+* Saturday + Sunday
+* Alternate Saturday
+* Rotational Weekly Off
+
+Assign by:
+
+* Company
+* Branch
+* Department
+
+---
+
+# Leave Requests
+
+Fields:
+
+* Employee *
+* Leave Type *
+* Start Date *
+* End Date *
+* Half Day Option
+* Reason
+* Attachment
+
+Auto-calculate:
+
+* Leave Days
+
+Exclude:
+
+* Holidays
+* Weekly Offs
+
+Support:
+
+* Single Day Leave
+* Multiple Day Leave
+* Half Day Leave
+
+Status:
+
+* Draft
+* Pending Approval
+* Approved
+* Rejected
+* Cancelled
+
+---
+
+# Approval Workflow
+
+Integrate with Workflow Engine.
+
+Support multi-level approvals.
+
+Example:
+
+Employee
+↓
+Reporting Manager
+↓
+HR
+↓
+Approved
+
+Approval Levels:
+
+* Manager
+* Department Head
+* HR
+* Admin
+
+Track:
+
+* Approved By
+* Approval Date
+* Comments
+
+---
+
+# Comp Off Management
+
+Allow employees to earn compensatory off.
+
+Sources:
+
+* Weekend Work
+* Holiday Work
+
+Workflow:
+
+Employee Works Extra
+↓
+Manager Approves
+↓
+Comp Off Credited
+
+Fields:
+
+* Earned Date
+* Expiry Date
+* Balance
+
+---
+
+# Leave Encashment
+
+Support:
+
+* Manual Encashment
+* Policy-Based Encashment
+
+Fields:
+
+* Encashment Date
+* Days Encashed
+* Amount
+
+Integrate with Payroll.
+
+---
+
+# Carry Forward Rules
+
+Support:
+
+* Maximum Carry Forward Days
+* Expiry Rules
+
+Examples:
+
+Carry Forward:
+
+Maximum 10 Days
+
+Expiry:
+
+31 March
+
+---
+
+# Leave Calendar
+
+Provide:
+
+* Month View
+* Team View
+* Department View
+
+Display:
+
+* Approved Leaves
+* Holidays
+* Weekly Offs
+* WFH (Optional)
+
+Filters:
+
+* Company
+* Branch
+* Department
+* Employee
+
+---
+
+# Attendance Integration
+
+Approved leave must automatically update attendance.
+
+Examples:
+
+Attendance Status:
+
+* On Leave
+* Half Day Leave
+
+Cancelled leave must recalculate attendance.
+
+Employees on approved leave cannot check in.
+
+---
+
+# Payroll Integration
+
+Provide:
+
+* Paid Leave Days
+* Unpaid Leave Days
+* Loss Of Pay Days
+* Encashment Amount
+* Comp Off Usage
+
+Expose APIs for payroll calculations.
+
+---
+
+# Dashboard Widgets
+
+* Employees On Leave Today
+* Pending Approvals
+* Upcoming Holidays
+* Leave Balance Alerts
+* Comp Off Expiring Soon
+
+---
+
+# Employee Leave Profile
+
+Tabs:
+
+* Balances
+* Requests
+* Approvals
+* Calendar
+* Activities
+
+Display:
+
+* Leave Balance Summary
+* Upcoming Leaves
+* Team Calendar
+
+---
+
+# Notifications
+
+Send notifications for:
+
+* Leave Applied
+* Leave Approved
+* Leave Rejected
+* Leave Cancelled
+* Comp Off Credited
+
+Channels:
+
+* Email
+* SMS
+* Push Notification
+
+Use Notification Settings module.
+
+---
+
+# Database Design
+
+Design tables:
+
+leave_types
+
+leave_policies
+
+leave_policy_rules
+
+holiday_calendars
+
+holidays
+
+weekly_off_rules
+
+leave_balances
+
+leave_requests
+
+leave_approvals
+
+comp_offs
+
+leave_encashments
+
+leave_activities
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+* Relationships
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+* Enums
+
+Use SQLAlchemy 2.0 standards.
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_090_leave_types
+
+2026_091_leave_policies
+
+2026_092_holiday_calendars
+
+2026_093_leave_balances
+
+2026_094_leave_requests
+
+2026_095_leave_approvals
+
+2026_096_comp_offs
+
+2026_097_leave_encashments
+
+2026_098_leave_activities
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Leave Types
+
+* Create Leave Type
+* Update Leave Type
+* List Leave Types
+
+Leave Requests
+
+* Apply Leave
+* Approve Leave
+* Reject Leave
+* Cancel Leave
+
+Balances
+
+* Get Leave Balance
+* Get Leave History
+
+Calendar
+
+* Get Team Calendar
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Leave Repository
+* Policy Repository
+* Holiday Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Leave Service
+* Policy Service
+* Approval Service
+* Balance Service
+
+Include:
+
+* Leave Calculation Logic
+* Balance Validation
+* Attendance Synchronization
+* Payroll Synchronization
+
+---
+
+# Validation Rules
+
+* End Date >= Start Date
+* Sufficient Balance Required
+* Leave Cannot Overlap Existing Approved Leave
+* Half Day Only For Single Day Leave
+* Employee Cannot Apply During Blocked Period
+
+---
+
+# Activity Logging
+
+Track:
+
+* Leave Applied
+* Leave Approved
+* Leave Rejected
+* Leave Cancelled
+* Balance Adjusted
+* Comp Off Credited
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Seed Data
+
+Create default leave types:
+
+* Casual Leave
+* Sick Leave
+* Earned Leave
+* Loss Of Pay
+* Comp Off
+
+Create sample:
+
+* Holiday Calendars
+* Leave Policies
+* Leave Balances
+
+Generate production-ready specifications suitable for direct implementation in Office Repo using FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, React and TailwindCSS.

@@ -119,6 +119,15 @@ _COLUMN_MIGRATIONS = [
     # Employee — branch assignment + work mode
     ("employees", "branch_id", "VARCHAR(36)"),
     ("employees", "work_mode", "VARCHAR(50)"),
+    # AttendanceRecord — WFH / location columns
+    ("attendance_records", "location_type",      "VARCHAR(50) DEFAULT 'Office'"),
+    ("attendance_records", "work_mode_snapshot", "VARCHAR(100)"),
+    ("attendance_records", "device_info",        "TEXT"),
+    # AttendancePolicy — WFH settings
+    ("attendance_policies", "wfh_allowed",              "BOOLEAN DEFAULT TRUE"),
+    ("attendance_policies", "max_wfh_days_per_month",   "INTEGER DEFAULT 10"),
+    ("attendance_policies", "require_wfh_approval",     "BOOLEAN DEFAULT FALSE"),
+    ("attendance_policies", "allow_hybrid_override",    "BOOLEAN DEFAULT TRUE"),
 ]
 
 
