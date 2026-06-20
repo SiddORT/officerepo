@@ -2,23 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { portalRecruitmentApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
-
-const inp = { padding: "8px 10px", background: "var(--c-bg,var(--c-surface))", border: "1px solid var(--c-border)", borderRadius: 6, fontSize: 13, color: "var(--c-text)", boxSizing: "border-box" };
-const hdr = { padding: "8px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: "1px solid var(--c-border)", background: "var(--c-surface-alt,var(--c-surface))", whiteSpace: "nowrap" };
-const cell = { padding: "10px 12px", borderBottom: "1px solid var(--c-border)", fontSize: 13, verticalAlign: "middle" };
-
-const STATUS_COLORS = {
-  "Draft":     { bg: "rgba(156,163,175,0.15)", color: "#9ca3af" },
-  "Submitted": { bg: "rgba(99,102,241,0.12)",  color: "#818cf8" },
-  "Approved":  { bg: "rgba(34,197,94,0.12)",   color: "#22c55e" },
-  "Rejected":  { bg: "rgba(239,68,68,0.12)",   color: "#ef4444" },
-  "Closed":    { bg: "rgba(156,163,175,0.1)",  color: "#6b7280" },
-};
-
-function StatusBadge({ status }) {
-  const s = STATUS_COLORS[status] || STATUS_COLORS["Draft"];
-  return <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: s.bg, color: s.color }}>{status}</span>;
-}
+import PageHeader from "../shared/PageHeader";
+import Badge from "../shared/Badge";
+import Pagination from "../shared/Pagination";
 
 const PAGE_SIZE = 20;
 
@@ -50,58 +36,49 @@ export default function RequisitionList() {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Job Requisitions</h2>
-          <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--c-muted)" }}>{total} total</p>
-        </div>
-        <button onClick={() => navigate(`/portal/${subdomain}/recruitment/requisitions/new`)} style={{ padding: "8px 16px", borderRadius: 7, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", border: "none", cursor: "pointer" }}>+ New Requisition</button>
-      </div>
+      <PageHeader
+        title="Job Requisitions"
+        subtitle={`${total} total`}
+        actions={<button onClick={() => navigate(`/portal/${subdomain}/recruitment/requisitions/new`)} className="btn-primary">+ New Requisition</button>}
+      />
+
       <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search by number, department, designation…" style={{ ...inp, flex: 1, minWidth: 200 }} />
-        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} style={{ ...inp, minWidth: 140 }}>
+        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search by number, department, designation…" className="input-field" style={{ flex: 1, minWidth: 200 }} />
+        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className="input-field" style={{ minWidth: 140 }}>
           <option value="">All Statuses</option>
           {statuses.map(s => <option key={s}>{s}</option>)}
         </select>
       </div>
-      <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+
+      <div className="portal-table-wrap">
+        <table className="portal-table">
           <thead><tr>
-            <th style={hdr}>Req #</th><th style={hdr}>Department</th>
-            <th style={hdr}>Designation</th><th style={hdr}>Positions</th>
-            <th style={hdr}>Type</th><th style={hdr}>Target Date</th>
-            <th style={hdr}>Status</th><th style={{ ...hdr, textAlign: "right" }}>Actions</th>
+            <th>Req #</th><th>Department</th><th>Designation</th>
+            <th>Positions</th><th>Type</th><th>Target Date</th>
+            <th>Status</th><th>Actions</th>
           </tr></thead>
           <tbody>
-            {loading ? <tr><td colSpan={8} style={{ ...cell, textAlign: "center", color: "var(--c-muted)", padding: 32 }}>Loading…</td></tr>
-            : rows.length === 0 ? <tr><td colSpan={8} style={{ ...cell, textAlign: "center", color: "var(--c-muted)", padding: 40 }}>No requisitions found.</td></tr>
-            : rows.map(r => (
-              <tr key={r.id} onClick={() => navigate(`/portal/${subdomain}/recruitment/requisitions/${r.id}`)} style={{ cursor: "pointer" }}
-                onMouseEnter={e => e.currentTarget.style.background = "var(--c-surface-alt,rgba(255,255,255,0.03))"}
-                onMouseLeave={e => e.currentTarget.style.background = ""}>
-                <td style={{ ...cell, fontFamily: "monospace", fontSize: 12, fontWeight: 600, color: "var(--c-accent)" }}>{r.requisition_number}</td>
-                <td style={cell}>{r.department_name || "—"}</td>
-                <td style={cell}>{r.designation_name || "—"}</td>
-                <td style={{ ...cell, textAlign: "center" }}>{r.number_of_positions}</td>
-                <td style={{ ...cell, fontSize: 12 }}>{r.employment_type || "—"}</td>
-                <td style={{ ...cell, fontSize: 12 }}>{r.target_joining_date || "—"}</td>
-                <td style={cell}><StatusBadge status={r.status} /></td>
-                <td style={{ ...cell, textAlign: "right" }} onClick={e => e.stopPropagation()}>
-                  <button onClick={() => navigate(`/portal/${subdomain}/recruitment/requisitions/${r.id}`)} style={{ background: "none", border: "none", color: "var(--c-accent)", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>View</button>
-                </td>
-              </tr>
-            ))}
+            {loading
+              ? <tr><td colSpan={8} style={{ textAlign: "center", padding: 40 }} className="t-muted">Loading…</td></tr>
+              : rows.length === 0
+              ? <tr><td colSpan={8} style={{ textAlign: "center", padding: 48 }} className="t-muted">No requisitions found.</td></tr>
+              : rows.map(r => (
+                <tr key={r.id} onClick={() => navigate(`/portal/${subdomain}/recruitment/requisitions/${r.id}`)}>
+                  <td><span className="t-accent" style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700 }}>{r.requisition_number}</span></td>
+                  <td>{r.department_name || "—"}</td>
+                  <td>{r.designation_name || "—"}</td>
+                  <td style={{ textAlign: "center" }}>{r.number_of_positions}</td>
+                  <td><span className="t-muted" style={{ fontSize: 12 }}>{r.employment_type || "—"}</span></td>
+                  <td><span className="t-muted" style={{ fontSize: 12 }}>{r.target_joining_date || "—"}</span></td>
+                  <td><Badge status={r.status} /></td>
+                  <td style={{ textAlign: "right" }} onClick={e => e.stopPropagation()}>
+                    <button onClick={() => navigate(`/portal/${subdomain}/recruitment/requisitions/${r.id}`)} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>View →</button>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
-        {total > PAGE_SIZE && (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderTop: "1px solid var(--c-border)" }}>
-            <span style={{ fontSize: 12, color: "var(--c-muted)" }}>Page {page} of {totalPages}</span>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", background: "none", color: "var(--c-text)", cursor: page <= 1 ? "not-allowed" : "pointer", opacity: page <= 1 ? 0.4 : 1 }}>←</button>
-              <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", background: "none", color: "var(--c-text)", cursor: page >= totalPages ? "not-allowed" : "pointer", opacity: page >= totalPages ? 0.4 : 1 }}>→</button>
-            </div>
-          </div>
-        )}
+        <Pagination page={page} totalPages={totalPages} onPage={setPage} total={total} pageSize={PAGE_SIZE} />
       </div>
     </div>
   );

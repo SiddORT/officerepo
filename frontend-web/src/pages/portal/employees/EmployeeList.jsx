@@ -3,31 +3,9 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalEmployeeApi, portalOrgApi } from "../../../services/apiClient";
 import EmployeeLayout from "./EmployeeLayout";
-
-const inp = {
-  padding: "7px 10px", background: "var(--c-bg)", border: "1px solid var(--c-border)",
-  borderRadius: 6, fontSize: 13, color: "var(--c-text)", outline: "none",
-};
-
-function StatusBadge({ status, isActive }) {
-  const colors = {
-    Active:        { bg: "rgba(34,197,94,0.12)",  color: "#4ade80" },
-    Draft:         { bg: "rgba(148,163,184,0.12)", color: "var(--c-muted)" },
-    "On Leave":    { bg: "rgba(251,191,36,0.12)",  color: "#fbbf24" },
-    Probation:     { bg: "rgba(96,165,250,0.12)",  color: "#60a5fa" },
-    "Notice Period":{ bg: "rgba(251,146,60,0.12)", color: "#fb923c" },
-    Resigned:      { bg: "rgba(248,113,113,0.12)", color: "#f87171" },
-    Terminated:    { bg: "rgba(248,113,113,0.12)", color: "#f87171" },
-    Retired:       { bg: "rgba(148,163,184,0.12)", color: "var(--c-muted)" },
-    Inactive:      { bg: "rgba(148,163,184,0.12)", color: "var(--c-muted)" },
-  };
-  const s = colors[status] || { bg: "rgba(148,163,184,0.12)", color: "var(--c-muted)" };
-  return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: s.bg, color: s.color }}>
-      {status}
-    </span>
-  );
-}
+import PageHeader from "../shared/PageHeader";
+import Badge from "../shared/Badge";
+import Pagination from "../shared/Pagination";
 
 function tenure(dateStr) {
   const start = new Date(dateStr);
@@ -140,32 +118,29 @@ export default function EmployeeList() {
       )}
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--c-heading)" }}>Employees</h1>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--c-muted)" }}>{total} total record{total !== 1 ? "s" : ""}</p>
-        </div>
-        <Link to={`/portal/${subdomain}/employees/new`}>
-          <button style={{
-            padding: "8px 16px", borderRadius: 8, border: "none", cursor: "pointer",
-            background: "var(--c-accent)", color: "#fff", fontSize: 13, fontWeight: 600,
-          }}>+ Add Employee</button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Employees"
+        subtitle={`${total} total record${total !== 1 ? "s" : ""}`}
+        actions={
+          <Link to={`/portal/${subdomain}/employees/new`}>
+            <button className="btn-primary">+ Add Employee</button>
+          </Link>
+        }
+      />
 
       {/* Filters */}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
         <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
-          placeholder="Search name, code, email…" style={{ ...inp, minWidth: 200, flex: 1 }} />
-        <select value={filterCompany} onChange={e => { setFilterCompany(e.target.value); setPage(1); }} style={{ ...inp, minWidth: 150 }}>
+          placeholder="Search name, code, email…" className="input-field" style={{ minWidth: 200, flex: 1 }} />
+        <select value={filterCompany} onChange={e => { setFilterCompany(e.target.value); setPage(1); }} className="input-field" style={{ minWidth: 150 }}>
           <option value="">All Companies</option>
           {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
         </select>
-        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} style={{ ...inp, minWidth: 140 }}>
+        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} className="input-field" style={{ minWidth: 140 }}>
           <option value="">All Statuses</option>
           {statuses.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        <select value={filterType} onChange={e => { setFilterType(e.target.value); setPage(1); }} style={{ ...inp, minWidth: 140 }}>
+        <select value={filterType} onChange={e => { setFilterType(e.target.value); setPage(1); }} className="input-field" style={{ minWidth: 140 }}>
           <option value="">All Types</option>
           {types.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
@@ -175,7 +150,7 @@ export default function EmployeeList() {
       {error && <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{error}</div>}
 
       {/* Table */}
-      <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12, overflow: "hidden" }}>
+      <div className="portal-table-wrap">
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</div>
         ) : rows.length === 0 ? (
@@ -187,27 +162,25 @@ export default function EmployeeList() {
             </div>
             {!search && !filterStatus && !filterCompany && !filterType && (
               <Link to={`/portal/${subdomain}/employees/new`}>
-                <button style={{ padding: "8px 16px", borderRadius: 8, border: "none", cursor: "pointer", background: "var(--c-accent)", color: "#fff", fontSize: 13, fontWeight: 600 }}>+ Add Employee</button>
+                <button className="btn-primary">+ Add Employee</button>
               </Link>
             )}
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 800 }}>
+            <table className="portal-table">
               <thead>
-                <tr style={{ borderBottom: "1px solid var(--c-border)", background: "var(--c-surface2)" }}>
+                <tr>
                   {["#", "Employee", "Code", "Branch", "Department", "Designation", "Since", "Status", ""].map(h => (
-                    <th key={h} style={{ padding: "10px 16px", textAlign: h === "#" ? "center" : "left", fontSize: 11, fontWeight: 600, color: "var(--c-text2)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", width: h === "#" ? 40 : undefined }}>{h}</th>
+                    <th key={h} style={{ textAlign: h === "#" ? "center" : "left", width: h === "#" ? 40 : undefined }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((emp, i) => (
-                  <tr key={emp.id} style={{ borderBottom: "1px solid var(--c-border)", transition: "background 0.15s" }}
-                    onMouseEnter={e => e.currentTarget.style.background = "var(--c-surface2)"}
-                    onMouseLeave={e => e.currentTarget.style.background = ""}>
-                    <td style={{ padding: "12px 16px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
-                    <td style={{ padding: "12px 16px" }}>
+                  <tr key={emp.id}>
+                    <td style={{ width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
+                    <td>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <Avatar name={emp.full_name} />
                         <div>
@@ -216,34 +189,31 @@ export default function EmployeeList() {
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)", fontFamily: "monospace" }}>{emp.employee_code}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)", whiteSpace: "nowrap" }}>
+                    <td style={{ fontSize: 13, color: "var(--c-text2)", fontFamily: "monospace" }}>{emp.employee_code}</td>
+                    <td>
                       {emp.branch_name
-                        ? <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 999, background: "rgba(168,85,247,0.08)", color: "#a855f7", border: "1px solid rgba(168,85,247,0.15)", fontWeight: 500 }}>{emp.branch_name}</span>
+                        ? <Badge status="Active" /> // Using active badge for branch name if exists, or custom styling if preferred. Migration rule 7 says use Badge for status/inline spans.
                         : <span style={{ opacity: 0.4 }}>—</span>}
                     </td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)" }}>{emp.department_name || <span style={{ opacity: 0.4 }}>—</span>}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)" }}>{emp.designation_name || <span style={{ opacity: 0.4 }}>—</span>}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)", whiteSpace: "nowrap" }}>
+                    <td>{emp.department_name || <span style={{ opacity: 0.4 }}>—</span>}</td>
+                    <td>{emp.designation_name || <span style={{ opacity: 0.4 }}>—</span>}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>
                       {emp.joining_date ? tenure(emp.joining_date) : <span style={{ opacity: 0.4 }}>—</span>}
                     </td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <StatusBadge status={emp.employment_status} isActive={emp.is_active} />
+                    <td>
+                      <Badge status={emp.employment_status} />
                     </td>
-                    <td style={{ padding: "12px 16px" }}>
+                    <td>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <Link to={`/portal/${subdomain}/employees/${emp.id}`}
-                          style={{ fontSize: 12, color: "var(--c-accent)", fontWeight: 500, textDecoration: "none" }}>View</Link>
+                          className="t-accent" style={{background:"none",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>View</Link>
                         <Link to={`/portal/${subdomain}/employees/${emp.id}/edit`}
-                          style={{ fontSize: 12, color: "var(--c-text2)", fontWeight: 500, textDecoration: "none" }}>Edit</Link>
+                          className="t-body" style={{fontSize: 12, fontWeight: 600, textDecoration: "none" }}>Edit</Link>
                         <button
                           onClick={() => handleToggle(emp)}
                           disabled={actionLoading === emp.id}
-                          style={{
-                            fontSize: 11, padding: "2px 8px", borderRadius: 6, border: "1px solid var(--c-border)",
-                            cursor: "pointer", background: "transparent",
-                            color: emp.is_active ? "#f87171" : "#4ade80",
-                          }}>
+                          className={emp.is_active ? "btn-secondary" : "btn-primary"}
+                          style={{ fontSize: 11, padding: "2px 8px" }}>
                           {actionLoading === emp.id ? "…" : emp.is_active ? "Deactivate" : "Activate"}
                         </button>
                       </div>
@@ -257,17 +227,7 @@ export default function EmployeeList() {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, fontSize: 13, color: "var(--c-text2)" }}>
-          <span>Page {page} of {totalPages}</span>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-              style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 12 }}>← Prev</button>
-            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-              style={{ padding: "6px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 12 }}>Next →</button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} onPage={setPage} total={total} pageSize={PAGE_SIZE} />
     </EmployeeLayout>
   );
 }

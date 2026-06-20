@@ -3,38 +3,9 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
-
-// ── Shared styles ─────────────────────────────────────────────────────────────
-const inputStyle = {
-  width: "100%", padding: "8px 10px",
-  background: "var(--c-bg)", border: "1px solid var(--c-border)",
-  borderRadius: 6, fontSize: 13, color: "var(--c-text)", boxSizing: "border-box",
-};
-const Label = ({ children }) => (
-  <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--c-text2)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-    {children}
-  </label>
-);
-
-function StatusBadge({ active }) {
-  const s = active
-    ? { bg: "rgba(34,197,94,0.1)", color: "#4ade80" }
-    : { bg: "rgba(100,116,139,0.15)", color: "var(--c-muted)" };
-  return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: s.bg, color: s.color }}>
-      {active ? "Active" : "Inactive"}
-    </span>
-  );
-}
-
-function EmpCountBadge({ total, active }) {
-  if (total == null) return null;
-  return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: "rgba(0,174,236,0.1)", color: "var(--c-accent)", border: "1px solid rgba(0,174,236,0.2)" }}>
-      👥 {active ?? total} / {total}
-    </span>
-  );
-}
+import PageHeader from "../shared/PageHeader";
+import Badge from "../shared/Badge";
+import Pagination from "../shared/Pagination";
 
 // ── Dept Create / Edit Modal ──────────────────────────────────────────────────
 function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) {
@@ -95,9 +66,9 @@ function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) 
     <div
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ width: "100%", maxWidth: 540, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12, boxShadow: "0 20px 60px rgba(0,0,0,0.4)", overflow: "hidden", maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
+      <div className="portal-form-card" style={{ width: "100%", maxWidth: 540, maxHeight: "90vh" }}>
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--c-border)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 10, borderBottom: "1px solid var(--c-border)" }}>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)" }}>{isEdit ? "Edit Department" : "Add Department"}</div>
             <div style={{ fontSize: 12, color: "var(--c-muted)", marginTop: 1 }}>Functional unit within a company</div>
@@ -106,7 +77,7 @@ function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) 
         </div>
 
         {/* Body */}
-        <div style={{ padding: 20, display: "grid", gap: 14, overflowY: "auto" }}>
+        <div style={{ display: "grid", gap: 14, overflowY: "auto", padding: "10px 0" }}>
           {error && (
             <div style={{ padding: "9px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 7, fontSize: 13, color: "#f87171" }}>
               {error}
@@ -114,9 +85,9 @@ function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) 
           )}
 
           <div>
-            <Label>Company *</Label>
+            <label className="portal-form-label">Company *</label>
             <select value={form.company_id} onChange={e => { set("company_id", e.target.value); set("parent_id", ""); }}
-              disabled={isEdit} style={{ ...inputStyle, cursor: isEdit ? "not-allowed" : "pointer" }}>
+              disabled={isEdit} className="input-field" style={{ cursor: isEdit ? "not-allowed" : "pointer" }}>
               <option value="">Select a company</option>
               {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
             </select>
@@ -124,30 +95,30 @@ function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) 
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <Label>Code *</Label>
+              <label className="portal-form-label">Code *</label>
               <input value={form.department_code} onChange={e => set("department_code", e.target.value.toUpperCase())}
-                placeholder="e.g. HR" disabled={isEdit} style={{ ...inputStyle, fontFamily: "monospace", cursor: isEdit ? "not-allowed" : "text" }} />
+                placeholder="e.g. HR" disabled={isEdit} className="input-field" style={{ fontFamily: "monospace", cursor: isEdit ? "not-allowed" : "text" }} />
             </div>
             <div>
-              <Label>Department Name *</Label>
+              <label className="portal-form-label">Department Name *</label>
               <input value={form.department_name} onChange={e => set("department_name", e.target.value)}
-                placeholder="Human Resources" style={inputStyle} />
+                placeholder="Human Resources" className="input-field" />
             </div>
           </div>
 
           <div>
-            <Label>Parent Department</Label>
+            <label className="portal-form-label">Parent Department</label>
             <select value={form.parent_id} onChange={e => set("parent_id", e.target.value)}
-              style={{ ...inputStyle, cursor: "pointer" }}>
+              className="input-field" style={{ cursor: "pointer" }}>
               <option value="">None (top-level)</option>
               {siblings.map(d => <option key={d.id} value={d.id}>{d.department_name}</option>)}
             </select>
           </div>
 
           <div>
-            <Label>Department Head</Label>
+            <label className="portal-form-label">Department Head</label>
             <select value={form.head_employee_id} onChange={e => set("head_employee_id", e.target.value)}
-              style={{ ...inputStyle, cursor: "pointer" }}>
+              className="input-field" style={{ cursor: "pointer" }}>
               <option value="">None</option>
               {employees.map(e => <option key={e.id} value={e.id}>{e.full_name} ({e.employee_code})</option>)}
             </select>
@@ -156,34 +127,32 @@ function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) 
           {form.head_employee_id && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
-                <Label>Effective From</Label>
+                <label className="portal-form-label">Effective From</label>
                 <input type="date" value={form.head_effective_from} onChange={e => set("head_effective_from", e.target.value)}
-                  style={inputStyle} />
+                  className="input-field" />
               </div>
               <div>
-                <Label>Effective To</Label>
+                <label className="portal-form-label">Effective To</label>
                 <input type="date" value={form.head_effective_to} onChange={e => set("head_effective_to", e.target.value)}
-                  style={inputStyle} />
+                  className="input-field" />
               </div>
             </div>
           )}
 
           <div>
-            <Label>Description</Label>
+            <label className="portal-form-label">Description</label>
             <textarea value={form.description} onChange={e => set("description", e.target.value)}
               rows={3} placeholder="Brief description…"
-              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5 }} />
+              className="input-field" style={{ resize: "vertical", lineHeight: 1.5 }} />
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{ display: "flex", gap: 10, padding: "14px 20px", borderTop: "1px solid var(--c-border)", background: "var(--c-surface2)" }}>
-          <button onClick={handleSubmit} disabled={saving}
-            style={{ flex: 1, padding: "9px 0", borderRadius: 7, fontWeight: 600, fontSize: 13, background: saving ? "var(--c-muted)" : "var(--c-accent)", color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer" }}>
+        <div style={{ display: "flex", gap: 10, paddingTop: 14, borderTop: "1px solid var(--c-border)" }}>
+          <button onClick={handleSubmit} disabled={saving} className="btn-primary" style={{ flex: 1 }}>
             {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Department"}
           </button>
-          <button onClick={onClose} disabled={saving}
-            style={{ flex: 1, padding: "9px 0", borderRadius: 7, fontWeight: 500, fontSize: 13, background: "transparent", color: "var(--c-text2)", border: "1px solid var(--c-border)", cursor: "pointer" }}>
+          <button onClick={onClose} disabled={saving} className="btn-secondary" style={{ flex: 1 }}>
             Cancel
           </button>
         </div>
@@ -291,47 +260,45 @@ export default function DepartmentList() {
       )}
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--c-text)" }}>Departments</h2>
-          <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--c-muted)" }}>Functional units within a company — {total} total</p>
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {selectedCompany && (
-            <Link to={`/portal/${subdomain}/org/departments/hierarchy/${selectedCompany}`}
-              style={{ padding: "8px 14px", borderRadius: 7, fontWeight: 500, fontSize: 13, background: "var(--c-surface)", color: "var(--c-text)", textDecoration: "none", border: "1px solid var(--c-border)", whiteSpace: "nowrap" }}>
-              View Tree
-            </Link>
-          )}
-          {selectedCompany && rows.length === 0 && !loading && (
-            <button onClick={handleSeed} disabled={seeding}
-              style={{ padding: "8px 14px", borderRadius: 7, fontWeight: 500, fontSize: 13, background: "var(--c-surface)", color: seeding ? "var(--c-muted)" : "var(--c-text)", border: "1px solid var(--c-border)", cursor: seeding ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
-              {seeding ? "Seeding…" : "✦ Seed Sample Data"}
-            </button>
-          )}
-          {selectedCompany && (
-            <button onClick={() => setModal({ editDept: null })}
-              style={{ padding: "8px 16px", borderRadius: 7, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>
-              + Add Department
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Departments"
+        subtitle={`Functional units within a company — ${total} total`}
+        actions={
+          <>
+            {selectedCompany && (
+              <Link to={`/portal/${subdomain}/org/departments/hierarchy/${selectedCompany}`} className="btn-secondary">
+                View Tree
+              </Link>
+            )}
+            {selectedCompany && rows.length === 0 && !loading && (
+              <button onClick={handleSeed} disabled={seeding} className="btn-secondary">
+                {seeding ? "Seeding…" : "✦ Seed Sample Data"}
+              </button>
+            )}
+            {selectedCompany && (
+              <button onClick={() => setModal({ editDept: null })} className="btn-primary">
+                + Add Department
+              </button>
+            )}
+          </>
+        }
+      />
 
       {/* Filters */}
       <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
         <input
           value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search departments…"
-          style={{ flex: 1, minWidth: 180, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}
+          className="input-field"
+          style={{ flex: 1, minWidth: 180 }}
         />
         <select value={selectedCompany} onChange={e => { setSelectedCompany(e.target.value); setPage(1); }}
-          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}>
+          className="input-field" style={{ width: "auto" }}>
           {companies.length === 0 && <option value="">No companies</option>}
           {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
         </select>
         <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}>
+          className="input-field" style={{ width: "auto" }}>
           <option value="">All statuses</option>
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>
@@ -339,11 +306,11 @@ export default function DepartmentList() {
       </div>
 
       {/* Table */}
-      <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, overflow: "hidden" }}>
+      <div className="portal-table-wrap">
         {companies.length === 0 ? (
           <div style={{ padding: 60, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>
             No companies found.{" "}
-            <Link to={`/portal/${subdomain}/org/companies/new`} style={{ color: "var(--c-accent)", fontWeight: 500 }}>Add a company first.</Link>
+            <Link to={`/portal/${subdomain}/org/companies/new`} className="t-accent" style={{ fontWeight: 500 }}>Add a company first.</Link>
           </div>
         ) : loading ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</div>
@@ -351,22 +318,20 @@ export default function DepartmentList() {
           <div style={{ padding: 60, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>
             <div style={{ marginBottom: 12 }}>No departments in <strong>{companyName}</strong>.</div>
             <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-              <button onClick={() => setModal({ editDept: null })}
-                style={{ color: "var(--c-accent)", fontWeight: 500, background: "none", border: "1px solid var(--c-accent)", cursor: "pointer", padding: "6px 14px", borderRadius: 6, fontSize: 13 }}>
+              <button onClick={() => setModal({ editDept: null })} className="btn-secondary" style={{ color: "var(--c-accent)", borderColor: "var(--c-accent)" }}>
                 Add one manually
               </button>
-              <button onClick={handleSeed} disabled={seeding}
-                style={{ color: "var(--c-text)", fontWeight: 500, background: "none", border: "1px solid var(--c-border)", cursor: "pointer", padding: "6px 14px", borderRadius: 6, fontSize: 13 }}>
+              <button onClick={handleSeed} disabled={seeding} className="btn-secondary">
                 {seeding ? "Seeding…" : "✦ Seed sample data"}
               </button>
             </div>
           </div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table className="portal-table">
             <thead>
-              <tr style={{ background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
+              <tr>
                 {["#", "Code", "Department", "Head", "Employees", "Parent", "Status", ""].map(h => (
-                  <th key={h} style={{ padding: "10px 14px", textAlign: h === "#" ? "center" : "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", width: h === "#" ? 40 : undefined }}>{h}</th>
+                  <th key={h} style={{ textAlign: h === "#" ? "center" : "left", width: h === "#" ? 40 : undefined }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -375,42 +340,44 @@ export default function DepartmentList() {
                 const parent = rows.find(r => r.id === d.parent_id);
                 const head = d.head_employee;
                 return (
-                  <tr key={d.id} style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--c-border)" : "none" }}>
-                    <td style={{ padding: "12px 14px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
-                    <td style={{ padding: "12px 14px" }}>
+                  <tr key={d.id}>
+                    <td style={{ width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
+                    <td>
                       <span style={{ fontFamily: "monospace", fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }}>
                         {d.department_code}
                       </span>
                     </td>
-                    <td style={{ padding: "12px 14px" }}>
+                    <td>
                       <button
                         onClick={() => navigate(`/portal/${subdomain}/org/departments/${d.id}`)}
-                        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-accent)", textDecoration: "underline", textDecorationStyle: "dotted" }}>{d.department_name}</div>
+                        className="t-accent"
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, textAlign: "left", fontWeight: 600, textDecoration: "underline", textDecorationStyle: "dotted" }}>
+                        {d.department_name}
                       </button>
-                      {d.description && <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 1 }}>{d.description.length > 55 ? d.description.slice(0, 55) + "…" : d.description}</div>}
+                      {d.description && <div className="t-muted" style={{ fontSize: 11, marginTop: 1 }}>{d.description.length > 55 ? d.description.slice(0, 55) + "…" : d.description}</div>}
                     </td>
-                    <td style={{ padding: "12px 14px" }}>
+                    <td>
                       {head ? (
                         <span style={{ fontSize: 12, fontWeight: 500, color: "var(--c-text)", display: "flex", alignItems: "center", gap: 4 }}>
-                          <span style={{ fontSize: 14 }}>👤</span>
+                          <span>👤</span>
                           <span>{head.full_name}</span>
                         </span>
                       ) : (
                         <span style={{ fontSize: 11, color: "var(--c-muted)", opacity: 0.55 }}>—</span>
                       )}
                     </td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <EmpCountBadge total={d.total_employees} active={d.active_employees} />
+                    <td>
+                      {d.total_employees != null && (
+                        <span className="badge-info">👥 {d.active_employees ?? d.total_employees} / {d.total_employees}</span>
+                      )}
                     </td>
-                    <td style={{ padding: "12px 14px", fontSize: 12, color: "var(--c-muted)" }}>
+                    <td className="t-muted" style={{ fontSize: 12 }}>
                       {parent ? parent.department_name : <span style={{ opacity: 0.5 }}>—</span>}
                     </td>
-                    <td style={{ padding: "12px 14px" }}><StatusBadge active={d.is_active} /></td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <div style={{ display: "flex", gap: 10 }}>
-                        <button onClick={() => setModal({ editDept: d })}
-                          style={{ fontSize: 12, color: "var(--c-accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                    <td><Badge status={d.is_active ? "Active" : "Inactive"} /></td>
+                    <td>
+                      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                        <button onClick={() => setModal({ editDept: d })} className="t-accent" style={{ fontSize: 12, fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                           Edit
                         </button>
                         <button onClick={() => toggleStatus(d)} disabled={acting === d.id}
@@ -427,17 +394,7 @@ export default function DepartmentList() {
         )}
       </div>
 
-      {Math.ceil(total / PAGE_SIZE) > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, fontSize: 12, color: "var(--c-muted)" }}>
-          <span>{total} total · page {page} of {Math.ceil(total / PAGE_SIZE)}</span>
-          <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", opacity: page === 1 ? 0.4 : 1 }}>← Prev</button>
-            <button onClick={() => setPage(p => Math.min(Math.ceil(total / PAGE_SIZE), p + 1))} disabled={page === Math.ceil(total / PAGE_SIZE)}
-              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", opacity: page === Math.ceil(total / PAGE_SIZE) ? 0.4 : 1 }}>Next →</button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={Math.ceil(total / PAGE_SIZE)} onPage={setPage} total={total} pageSize={PAGE_SIZE} />
     </OrgLayout>
   );
 }

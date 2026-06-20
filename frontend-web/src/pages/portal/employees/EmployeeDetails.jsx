@@ -4,42 +4,25 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalEmployeeApi } from "../../../services/apiClient";
 import EmployeeLayout from "./EmployeeLayout";
+import PageHeader from "../shared/PageHeader";
+import Badge from "../shared/Badge";
+import Toggle from "../../../components/ui/Toggle";
+import Modal from "../../../components/ui/Modal";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
-const inp = {
-  width: "100%", padding: "8px 10px", background: "var(--c-bg)", border: "1px solid var(--c-border)",
-  borderRadius: 6, fontSize: 13, color: "var(--c-text)", boxSizing: "border-box", outline: "none",
-};
-const Label = ({ children }) => (
-  <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--c-text2)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>{children}</label>
-);
 const Val = ({ children }) => (
-  <div style={{ fontSize: 13, color: children ? "var(--c-text)" : "var(--c-muted)", paddingTop: 1 }}>{children || "—"}</div>
-);
-const Card = ({ children, style = {} }) => (
-  <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12, overflow: "hidden", ...style }}>{children}</div>
-);
-const CardHeader = ({ icon, title }) => (
-  <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--c-border)", background: "var(--c-surface2)", display: "flex", alignItems: "center", gap: 10 }}>
-    <span style={{ fontSize: 15 }}>{icon}</span>
-    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)" }}>{title}</span>
-  </div>
-);
-const Grid2 = ({ children }) => (
-  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>{children}</div>
-);
-const Grid3 = ({ children }) => (
-  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 16 }}>{children}</div>
+  <div className={children ? "t-body" : "t-muted"} style={{ fontSize: 13, paddingTop: 1 }}>{children || "—"}</div>
 );
 const Divider = ({ label }) => (
   <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "4px 0" }}>
     <div style={{ flex: 1, height: 1, background: "var(--c-border)" }} />
-    <span style={{ fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</span>
+    <span className="t-muted" style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</span>
     <div style={{ flex: 1, height: 1, background: "var(--c-border)" }} />
   </div>
 );
 
 // ── Country codes ─────────────────────────────────────────────────────────────
+
 const COUNTRY_CODES = [
   { code: "+91", label: "🇮🇳 +91" }, { code: "+1", label: "🇺🇸 +1" },
   { code: "+44", label: "🇬🇧 +44" }, { code: "+971", label: "🇦🇪 +971" },
@@ -60,40 +43,16 @@ function PhoneInput({ countryCode, number, onCountryChange, onNumberChange, plac
   return (
     <div style={{ display: "flex" }}>
       <select value={countryCode || "+91"} onChange={e => onCountryChange(e.target.value)}
-        style={{ ...inp, width: 100, borderRadius: "6px 0 0 6px", borderRight: "none", flexShrink: 0, fontSize: 12, paddingLeft: 6, paddingRight: 2 }}>
+        className="input-field"
+        style={{ width: 100, borderRadius: "6px 0 0 6px", borderRight: "none", flexShrink: 0, fontSize: 12, paddingLeft: 6, paddingRight: 2 }}>
         {COUNTRY_CODES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
       </select>
       <input value={number || ""} onChange={e => onNumberChange(e.target.value)}
         placeholder={placeholder || "9876543210"}
-        style={{ ...inp, borderRadius: "0 6px 6px 0", flex: 1 }} />
+        className="input-field"
+        style={{ borderRadius: "0 6px 6px 0", flex: 1 }} />
     </div>
   );
-}
-
-function Toggle({ value, onChange, label }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <button type="button" onClick={() => onChange(!value)}
-        style={{ width: 40, height: 22, borderRadius: 999, border: "none", cursor: "pointer", padding: 2, background: value ? "var(--c-accent)" : "var(--c-border)", flexShrink: 0 }}>
-        <span style={{ display: "block", width: 18, height: 18, borderRadius: "50%", background: "#fff", transform: value ? "translateX(18px)" : "translateX(0)", transition: "transform 0.2s" }} />
-      </button>
-      <span style={{ fontSize: 13, color: "var(--c-text)" }}>{label}</span>
-    </div>
-  );
-}
-
-function StatusBadge({ status }) {
-  const colors = {
-    Active: { bg: "rgba(34,197,94,0.12)", color: "#4ade80" },
-    Draft:  { bg: "rgba(148,163,184,0.12)", color: "var(--c-muted)" },
-    "On Leave": { bg: "rgba(251,191,36,0.12)", color: "#fbbf24" },
-    Probation: { bg: "rgba(96,165,250,0.12)", color: "#60a5fa" },
-    "Notice Period": { bg: "rgba(251,146,60,0.12)", color: "#fb923c" },
-    Resigned: { bg: "rgba(248,113,113,0.12)", color: "#f87171" },
-    Terminated: { bg: "rgba(248,113,113,0.12)", color: "#f87171" },
-  };
-  const s = colors[status] || { bg: "rgba(148,163,184,0.12)", color: "var(--c-muted)" };
-  return <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: 999, background: s.bg, color: s.color }}>{status}</span>;
 }
 
 function tenureDetail(dateStr) {
@@ -134,20 +93,24 @@ const emptyPrev = () => ({ company_name: "", designation: "", department: "", em
 const emptyContact = () => ({ contact_name: "", relationship: "", mobile_country_code: "+91", mobile_number: "", alternate_country_code: "+91", alternate_number: "", address: "" });
 const emptyFamily = () => ({ member_name: "", relationship: "", date_of_birth: "", gender: "", occupation: "", phone_country_code: "+91", phone: "", is_dependent: false, is_nominee: false, nomination_percentage: "", remarks: "" });
 
-// ── Modal Overlay ─────────────────────────────────────────────────────────────
-function Modal({ title, onClose, children, width = 560 }) {
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 14, width: "100%", maxWidth: width, maxHeight: "90vh", overflow: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.5)" }}>
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--c-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontWeight: 700, color: "var(--c-text)", fontSize: 14 }}>{title}</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-muted)", fontSize: 18, lineHeight: 1 }}>×</button>
-        </div>
-        <div style={{ padding: 20 }}>{children}</div>
-      </div>
-    </div>
-  );
-}
+const Label = ({ children, required }) => (
+  <label className={`portal-form-label ${required ? "portal-form-label-req" : ""}`}>{children}</label>
+);
+const Card = ({ children, style = {} }) => (
+  <div className="portal-form-card" style={style}>{children}</div>
+);
+const CardHeader = ({ icon, title }) => (
+  <div className="portal-form-title" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+    <span style={{ fontSize: 15 }}>{icon}</span>
+    <span>{title}</span>
+  </div>
+);
+const Grid2 = ({ children }) => (
+  <div className="portal-form-row" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>{children}</div>
+);
+const Grid3 = ({ children }) => (
+  <div className="portal-form-row" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>{children}</div>
+);
 
 // ── Education Modal ────────────────────────────────────────────────────────────
 function EduModal({ subdomain, token, empId, editRow, onClose, onSaved }) {
@@ -170,35 +133,34 @@ function EduModal({ subdomain, token, empId, editRow, onClose, onSaved }) {
   };
 
   return (
-    <Modal title={editRow ? "Edit Education" : "Add Education"} onClose={onClose}>
+    <Modal open title={editRow ? "Edit Education" : "Add Education"} onClose={onClose}>
       {err && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{err}</div>}
       <div style={{ display: "grid", gap: 12 }}>
         <Grid2>
-          <div><Label>Qualification</Label><input value={form.qualification || ""} onChange={e => set("qualification", e.target.value)} style={inp} placeholder="Bachelor's / Master's / PhD" /></div>
-          <div><Label>Degree</Label><input value={form.degree || ""} onChange={e => set("degree", e.target.value)} style={inp} placeholder="B.Tech / MBA / M.Sc" /></div>
+          <div><Label>Qualification</Label><input value={form.qualification || ""} onChange={e => set("qualification", e.target.value)} className="input-field" placeholder="Bachelor's / Master's / PhD" /></div>
+          <div><Label>Degree</Label><input value={form.degree || ""} onChange={e => set("degree", e.target.value)} className="input-field" placeholder="B.Tech / MBA / M.Sc" /></div>
         </Grid2>
-        <div><Label>Specialization</Label><input value={form.specialization || ""} onChange={e => set("specialization", e.target.value)} style={inp} placeholder="Computer Science / Finance" /></div>
+        <div><Label>Specialization</Label><input value={form.specialization || ""} onChange={e => set("specialization", e.target.value)} className="input-field" placeholder="Computer Science / Finance" /></div>
         <Grid2>
-          <div><Label>Institution</Label><input value={form.institution_name || ""} onChange={e => set("institution_name", e.target.value)} style={inp} placeholder="IIT Bombay" /></div>
-          <div><Label>University</Label><input value={form.university || ""} onChange={e => set("university", e.target.value)} style={inp} placeholder="University of Mumbai" /></div>
+          <div><Label>Institution</Label><input value={form.institution_name || ""} onChange={e => set("institution_name", e.target.value)} className="input-field" placeholder="IIT Bombay" /></div>
+          <div><Label>University</Label><input value={form.university || ""} onChange={e => set("university", e.target.value)} className="input-field" placeholder="University of Mumbai" /></div>
         </Grid2>
         <Grid3>
-          <div><Label>Start Year</Label><input type="number" min="1970" max="2030" value={form.start_year || ""} onChange={e => set("start_year", e.target.value)} style={inp} placeholder="2018" /></div>
-          <div><Label>End Year</Label><input type="number" min="1970" max="2030" value={form.end_year || ""} onChange={e => set("end_year", e.target.value)} style={inp} placeholder="2022" /></div>
-          <div><Label>Country</Label><input value={form.country || ""} onChange={e => set("country", e.target.value)} style={inp} placeholder="India" /></div>
+          <div><Label>Start Year</Label><input type="number" min="1970" max="2030" value={form.start_year || ""} onChange={e => set("start_year", e.target.value)} className="input-field" placeholder="2018" /></div>
+          <div><Label>End Year</Label><input type="number" min="1970" max="2030" value={form.end_year || ""} onChange={e => set("end_year", e.target.value)} className="input-field" placeholder="2022" /></div>
+          <div><Label>Country</Label><input value={form.country || ""} onChange={e => set("country", e.target.value)} className="input-field" placeholder="India" /></div>
         </Grid3>
         <Grid2>
-          <div><Label>Percentage (%)</Label><input type="number" step="0.01" value={form.percentage || ""} onChange={e => set("percentage", e.target.value)} style={inp} placeholder="78.5" /></div>
-          <div><Label>CGPA</Label><input type="number" step="0.01" value={form.cgpa || ""} onChange={e => set("cgpa", e.target.value)} style={inp} placeholder="8.2" /></div>
+          <div><Label>Percentage (%)</Label><input type="number" step="0.01" value={form.percentage || ""} onChange={e => set("percentage", e.target.value)} className="input-field" placeholder="78.5" /></div>
+          <div><Label>CGPA</Label><input type="number" step="0.01" value={form.cgpa || ""} onChange={e => set("cgpa", e.target.value)} className="input-field" placeholder="8.2" /></div>
         </Grid2>
-        <div><Label>Remarks</Label><input value={form.remarks || ""} onChange={e => set("remarks", e.target.value)} style={inp} placeholder="Distinction / Honours / etc." /></div>
+        <div><Label>Remarks</Label><input value={form.remarks || ""} onChange={e => set("remarks", e.target.value)} className="input-field" placeholder="Distinction / Honours / etc." /></div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <input type="checkbox" id="edu-completed" checked={form.is_completed} onChange={e => set("is_completed", e.target.checked)} />
-          <label htmlFor="edu-completed" style={{ fontSize: 13, color: "var(--c-text)", cursor: "pointer" }}>Completed</label>
+          <Toggle value={form.is_completed} onChange={v => set("is_completed", v)} label="Completed" />
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-          <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid var(--c-border)", background: "transparent", color: "var(--c-text)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
-          <button onClick={handleSave} disabled={saving} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "var(--c-accent)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={onClose} className="btn-secondary">Cancel</button>
+          <button onClick={handleSave} disabled={saving} className="btn-primary">
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
@@ -227,31 +189,31 @@ function PrevEmpModal({ subdomain, token, empId, editRow, onClose, onSaved }) {
   };
 
   return (
-    <Modal title={editRow ? "Edit Employment History" : "Add Employment History"} onClose={onClose}>
+    <Modal open title={editRow ? "Edit Employment History" : "Add Employment History"} onClose={onClose}>
       {err && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{err}</div>}
       <div style={{ display: "grid", gap: 12 }}>
         <Grid2>
-          <div><Label>Company Name</Label><input value={form.company_name || ""} onChange={e => set("company_name", e.target.value)} style={inp} placeholder="Infosys Ltd." /></div>
-          <div><Label>Designation</Label><input value={form.designation || ""} onChange={e => set("designation", e.target.value)} style={inp} placeholder="Senior Developer" /></div>
+          <div><Label>Company Name</Label><input value={form.company_name || ""} onChange={e => set("company_name", e.target.value)} className="input-field" placeholder="Infosys Ltd." /></div>
+          <div><Label>Designation</Label><input value={form.designation || ""} onChange={e => set("designation", e.target.value)} className="input-field" placeholder="Senior Developer" /></div>
         </Grid2>
         <Grid2>
-          <div><Label>Department</Label><input value={form.department || ""} onChange={e => set("department", e.target.value)} style={inp} placeholder="Engineering" /></div>
-          <div><Label>Employment Type</Label><input value={form.employment_type || ""} onChange={e => set("employment_type", e.target.value)} style={inp} placeholder="Full Time" /></div>
+          <div><Label>Department</Label><input value={form.department || ""} onChange={e => set("department", e.target.value)} className="input-field" placeholder="Engineering" /></div>
+          <div><Label>Employment Type</Label><input value={form.employment_type || ""} onChange={e => set("employment_type", e.target.value)} className="input-field" placeholder="Full Time" /></div>
         </Grid2>
         <Grid3>
-          <div><Label>Start Date</Label><input type="date" value={form.start_date || ""} onChange={e => set("start_date", e.target.value)} style={inp} /></div>
-          <div><Label>End Date</Label><input type="date" value={form.end_date || ""} onChange={e => set("end_date", e.target.value)} style={inp} /></div>
-          <div><Label>Last CTC (₹)</Label><input type="number" value={form.last_salary || ""} onChange={e => set("last_salary", e.target.value)} style={inp} placeholder="800000" /></div>
+          <div><Label>Start Date</Label><input type="date" value={form.start_date || ""} onChange={e => set("start_date", e.target.value)} className="input-field" /></div>
+          <div><Label>End Date</Label><input type="date" value={form.end_date || ""} onChange={e => set("end_date", e.target.value)} className="input-field" /></div>
+          <div><Label>Last CTC (₹)</Label><input type="number" value={form.last_salary || ""} onChange={e => set("last_salary", e.target.value)} className="input-field" placeholder="800000" /></div>
         </Grid3>
         <Grid2>
-          <div><Label>Reporting Manager</Label><input value={form.reporting_manager_name || ""} onChange={e => set("reporting_manager_name", e.target.value)} style={inp} placeholder="Suresh Gupta" /></div>
-          <div><Label>Manager Contact</Label><input value={form.reporting_manager_contact || ""} onChange={e => set("reporting_manager_contact", e.target.value)} style={inp} placeholder="+91 9876543210" /></div>
+          <div><Label>Reporting Manager</Label><input value={form.reporting_manager_name || ""} onChange={e => set("reporting_manager_name", e.target.value)} className="input-field" placeholder="Suresh Gupta" /></div>
+          <div><Label>Manager Contact</Label><input value={form.reporting_manager_contact || ""} onChange={e => set("reporting_manager_contact", e.target.value)} className="input-field" placeholder="+91 9876543210" /></div>
         </Grid2>
-        <div><Label>Reason for Leaving</Label><input value={form.reason_for_leaving || ""} onChange={e => set("reason_for_leaving", e.target.value)} style={inp} placeholder="Better opportunity" /></div>
-        <div><Label>Remarks</Label><input value={form.remarks || ""} onChange={e => set("remarks", e.target.value)} style={inp} /></div>
+        <div><Label>Reason for Leaving</Label><input value={form.reason_for_leaving || ""} onChange={e => set("reason_for_leaving", e.target.value)} className="input-field" placeholder="Better opportunity" /></div>
+        <div><Label>Remarks</Label><input value={form.remarks || ""} onChange={e => set("remarks", e.target.value)} className="input-field" /></div>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-          <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid var(--c-border)", background: "transparent", color: "var(--c-text)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
-          <button onClick={handleSave} disabled={saving} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "var(--c-accent)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={onClose} className="btn-secondary">Cancel</button>
+          <button onClick={handleSave} disabled={saving} className="btn-primary">
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
@@ -293,17 +255,17 @@ function FamilyModal({ subdomain, token, empId, editRow, familyRelationships, on
   const todayStr = new Date().toISOString().split("T")[0];
 
   return (
-    <Modal title={editRow ? "Edit Family Member" : "Add Family Member"} onClose={onClose}>
+    <Modal open title={editRow ? "Edit Family Member" : "Add Family Member"} onClose={onClose}>
       {err && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{err}</div>}
       <div style={{ display: "grid", gap: 12 }}>
         <Grid2>
           <div>
             <Label>Name *</Label>
-            <input value={form.member_name} onChange={e => set("member_name", e.target.value)} style={inp} placeholder="Sunita Sharma" />
+            <input value={form.member_name} onChange={e => set("member_name", e.target.value)} className="input-field" placeholder="Sunita Sharma" />
           </div>
           <div>
             <Label>Relationship</Label>
-            <select value={form.relationship || ""} onChange={e => set("relationship", e.target.value)} style={inp}>
+            <select value={form.relationship || ""} onChange={e => set("relationship", e.target.value)} className="input-field">
               <option value="">Select…</option>
               {(familyRelationships || []).map(r => <option key={r} value={r}>{r}</option>)}
             </select>
@@ -312,18 +274,18 @@ function FamilyModal({ subdomain, token, empId, editRow, familyRelationships, on
         <Grid3>
           <div>
             <Label>Date of Birth</Label>
-            <input type="date" value={form.date_of_birth || ""} onChange={e => set("date_of_birth", e.target.value)} max={todayStr} style={inp} />
+            <input type="date" value={form.date_of_birth || ""} onChange={e => set("date_of_birth", e.target.value)} max={todayStr} className="input-field" />
           </div>
           <div>
             <Label>Gender</Label>
-            <select value={form.gender || ""} onChange={e => set("gender", e.target.value)} style={inp}>
+            <select value={form.gender || ""} onChange={e => set("gender", e.target.value)} className="input-field">
               <option value="">Select…</option>
               {["Male", "Female", "Other"].map(g => <option key={g} value={g}>{g}</option>)}
             </select>
           </div>
           <div>
             <Label>Occupation</Label>
-            <input value={form.occupation || ""} onChange={e => set("occupation", e.target.value)} style={inp} placeholder="Teacher / Student" />
+            <input value={form.occupation || ""} onChange={e => set("occupation", e.target.value)} className="input-field" placeholder="Teacher / Student" />
           </div>
         </Grid3>
         <div>
@@ -337,28 +299,22 @@ function FamilyModal({ subdomain, token, empId, editRow, familyRelationships, on
           />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input type="checkbox" id="is-dep" checked={form.is_dependent} onChange={e => set("is_dependent", e.target.checked)} />
-            <label htmlFor="is-dep" style={{ fontSize: 13, color: "var(--c-text)", cursor: "pointer" }}>Is Dependent</label>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input type="checkbox" id="is-nom" checked={form.is_nominee} onChange={e => set("is_nominee", e.target.checked)} />
-            <label htmlFor="is-nom" style={{ fontSize: 13, color: "var(--c-text)", cursor: "pointer" }}>Insurance Nominee</label>
-          </div>
+          <Toggle value={form.is_dependent} onChange={v => set("is_dependent", v)} label="Is Dependent" />
+          <Toggle value={form.is_nominee} onChange={v => set("is_nominee", v)} label="Insurance Nominee" />
         </div>
         {form.is_nominee && (
           <div style={{ maxWidth: 220 }}>
             <Label>Nomination % </Label>
-            <input type="number" min="0" max="100" value={form.nomination_percentage || ""} onChange={e => set("nomination_percentage", e.target.value)} style={inp} placeholder="100" />
+            <input type="number" min="0" max="100" value={form.nomination_percentage || ""} onChange={e => set("nomination_percentage", e.target.value)} className="input-field" placeholder="100" />
           </div>
         )}
         <div>
           <Label>Remarks</Label>
-          <input value={form.remarks || ""} onChange={e => set("remarks", e.target.value)} style={inp} />
+          <input value={form.remarks || ""} onChange={e => set("remarks", e.target.value)} className="input-field" />
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-          <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid var(--c-border)", background: "transparent", color: "var(--c-text)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
-          <button onClick={handleSave} disabled={saving} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "var(--c-accent)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={onClose} className="btn-secondary">Cancel</button>
+          <button onClick={handleSave} disabled={saving} className="btn-primary">
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
@@ -397,17 +353,17 @@ function ContactModal({ subdomain, token, empId, editRow, relationships, onClose
   };
 
   return (
-    <Modal title={editRow ? "Edit Emergency Contact" : "Add Emergency Contact"} onClose={onClose}>
+    <Modal open title={editRow ? "Edit Emergency Contact" : "Add Emergency Contact"} onClose={onClose}>
       {err && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{err}</div>}
       <div style={{ display: "grid", gap: 12 }}>
         <Grid2>
           <div>
             <Label>Contact Name *</Label>
-            <input value={form.contact_name} onChange={e => set("contact_name", e.target.value)} style={inp} placeholder="Sunita Sharma" />
+            <input value={form.contact_name} onChange={e => set("contact_name", e.target.value)} className="input-field" placeholder="Sunita Sharma" />
           </div>
           <div>
             <Label>Relationship</Label>
-            <select value={form.relationship || ""} onChange={e => set("relationship", e.target.value)} style={inp}>
+            <select value={form.relationship || ""} onChange={e => set("relationship", e.target.value)} className="input-field">
               <option value="">Select…</option>
               {(relationships || []).map(r => <option key={r} value={r}>{r}</option>)}
             </select>
@@ -435,11 +391,11 @@ function ContactModal({ subdomain, token, empId, editRow, relationships, onClose
         </div>
         <div>
           <Label>Address</Label>
-          <input value={form.address || ""} onChange={e => set("address", e.target.value)} style={inp} placeholder="Full address" />
+          <input value={form.address || ""} onChange={e => set("address", e.target.value)} className="input-field" placeholder="Full address" />
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-          <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid var(--c-border)", background: "transparent", color: "var(--c-text)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
-          <button onClick={handleSave} disabled={saving} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "var(--c-accent)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={onClose} className="btn-secondary">Cancel</button>
+          <button onClick={handleSave} disabled={saving} className="btn-primary">
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
@@ -448,625 +404,391 @@ function ContactModal({ subdomain, token, empId, editRow, relationships, onClose
   );
 }
 
-const emptyBankForm = () => ({
-  account_holder_name: "", bank_name: "", branch_name: "", account_number: "", account_type: "",
-  ifsc_code: "", swift_code: "", upi_id: "",
-  salary_credit_date: "", salary_cycle: "",
-  pf_account_number: "", pf_uan_number: "", esi_number: "",
-  gratuity_applicable: false, tds_applicable: false, tds_percentage: "", pan_linked_to_account: false,
-});
-
 export default function EmployeeDetails() {
   const { subdomain, empId } = useParams();
   const { token } = usePortalAuth();
+  const navigate = useNavigate();
 
+  const [doc, setDoc] = useState(null);
   const [tab, setTab] = useState("overview");
-  const [emp, setEmp] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [education, setEducation]     = useState([]);
-  const [history, setHistory]         = useState([]);
-  const [historyMeta, setHistoryMeta] = useState({});
-  const [family, setFamily]           = useState([]);
-  const [contacts, setContacts]       = useState([]);
-  const [bankDetails, setBankDetails] = useState(null);
-  const [govIds, setGovIds]           = useState(null);
-  const [activities, setActivities]   = useState([]);
-  const [options, setOptions]         = useState({});
+  const [options, setOptions] = useState({});
+  const [edu, setEdu] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [family, setFamily] = useState([]);
+  const [contacts, setContacts] = useState([]);
 
-  const [eduModal, setEduModal]         = useState(null);
-  const [prevModal, setPrevModal]       = useState(null);
-  const [familyModal, setFamilyModal]   = useState(null);
-  const [contactModal, setContactModal] = useState(null);
+  const [showEdu, setShowEdu] = useState(false);
+  const [showPrev, setShowPrev] = useState(false);
+  const [showFamily, setShowFamily] = useState(false);
+  const [showContact, setShowContact] = useState(false);
+  const [editRow, setEditRow] = useState(null);
 
-  const [toast, setToast]         = useState(null);
-  const [bankForm, setBankForm]   = useState(null);
-  const [govForm, setGovForm]     = useState(null);
-  const [bankSaving, setBankSaving] = useState(false);
-  const [govSaving, setGovSaving]   = useState(false);
-
-  const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
-
-  const loadEmp = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
       const r = await portalEmployeeApi.get(subdomain, token, empId);
-      setEmp(r.data.data);
-    } catch { setError("Employee not found."); }
+      setDoc(r.data.data);
+    } catch (e) { setError("Failed to load employee."); }
     finally { setLoading(false); }
   }, [subdomain, token, empId]);
 
-  useEffect(() => {
-    loadEmp();
-    portalEmployeeApi.options(subdomain, token).then(r => setOptions(r.data.data || {})).catch(() => {});
-  }, [loadEmp, subdomain, token]);
+  const loadExtra = useCallback(() => {
+    portalEmployeeApi.options(subdomain, token).then(r => setOptions(r.data.data || {}));
+    portalEmployeeApi.listEducation(subdomain, token, empId).then(r => setEdu(r.data.data?.items || []));
+    portalEmployeeApi.listHistory(subdomain, token, empId).then(r => setHistory(r.data.data?.items || []));
+    portalEmployeeApi.listFamilyMembers(subdomain, token, empId).then(r => setFamily(r.data.data?.items || []));
+    portalEmployeeApi.listContacts(subdomain, token, empId).then(r => setContacts(r.data.data?.items || []));
+  }, [subdomain, token, empId]);
 
-  const loadTabData = useCallback(async () => {
-    if (!emp) return;
-    if (tab === "education") {
-      portalEmployeeApi.listEducation(subdomain, token, empId).then(r => setEducation(r.data.data || [])).catch(() => {});
-    } else if (tab === "experience") {
-      portalEmployeeApi.listHistory(subdomain, token, empId).then(r => {
-        const d = r.data.data || {};
-        setHistory(d.records || []);
-        setHistoryMeta(d.experience_summary || {});
-      }).catch(() => {});
-    } else if (tab === "family") {
-      portalEmployeeApi.listFamilyMembers(subdomain, token, empId).then(r => setFamily(r.data.data || [])).catch(() => {});
-    } else if (tab === "contacts") {
-      portalEmployeeApi.listContacts(subdomain, token, empId).then(r => setContacts(r.data.data || [])).catch(() => {});
-    } else if (tab === "bank") {
-      portalEmployeeApi.getBankDetails(subdomain, token, empId).then(r => {
-        const d = r.data.data;
-        setBankDetails(d);
-        setBankForm(d ? {
-          account_holder_name: d.account_holder_name || "", bank_name: d.bank_name || "",
-          branch_name: d.branch_name || "", account_number: d.account_number || "",
-          account_type: d.account_type || "", ifsc_code: d.ifsc_code || "",
-          swift_code: d.swift_code || "", upi_id: d.upi_id || "",
-          salary_credit_date: d.salary_credit_date || "", salary_cycle: d.salary_cycle || "",
-          pf_account_number: d.pf_account_number || "", pf_uan_number: d.pf_uan_number || "",
-          esi_number: d.esi_number || "",
-          gratuity_applicable: d.gratuity_applicable || false,
-          tds_applicable: d.tds_applicable || false,
-          tds_percentage: d.tds_percentage || "", pan_linked_to_account: d.pan_linked_to_account || false,
-        } : emptyBankForm());
-      }).catch(() => {});
-      portalEmployeeApi.getGovIds(subdomain, token, empId).then(r => {
-        const d = r.data.data;
-        setGovIds(d);
-        setGovForm(d ? { pan_number: d.pan_number || "", aadhar_number: d.aadhar_number || "", passport_number: d.passport_number || "", driving_license_number: d.driving_license_number || "", voter_id_number: d.voter_id_number || "" } : { pan_number: "", aadhar_number: "", passport_number: "", driving_license_number: "", voter_id_number: "" });
-      }).catch(() => {});
-    } else if (tab === "activity") {
-      portalEmployeeApi.listActivities(subdomain, token, empId).then(r => setActivities(r.data.data || [])).catch(() => {});
-    }
-  }, [tab, emp, subdomain, token, empId]);
+  useEffect(() => { load(); loadExtra(); }, [load, loadExtra]);
 
-  useEffect(() => { loadTabData(); }, [loadTabData]);
-
-  const handleDelete = async (type, id) => {
-    if (!window.confirm("Remove this record?")) return;
-    try {
-      if (type === "edu") {
-        await portalEmployeeApi.deleteEducation(subdomain, token, empId, id);
-        setEducation(e => e.filter(r => r.id !== id));
-        showToast("Education record removed.");
-      } else if (type === "hist") {
-        await portalEmployeeApi.deleteHistory(subdomain, token, empId, id);
-        setHistory(e => e.filter(r => r.id !== id));
-        showToast("Employment history removed.");
-      } else if (type === "family") {
-        await portalEmployeeApi.deleteFamilyMember(subdomain, token, empId, id);
-        setFamily(e => e.filter(r => r.id !== id));
-        showToast("Family member removed.");
-      } else if (type === "contact") {
-        await portalEmployeeApi.deleteContact(subdomain, token, empId, id);
-        setContacts(e => e.filter(r => r.id !== id));
-        showToast("Emergency contact removed.");
-      }
-    } catch (e) { showToast(e?.response?.data?.detail || "Delete failed.", false); }
-  };
-
-  const handleSaveBank = async () => {
-    setBankSaving(true);
-    try {
-      const payload = { ...bankForm };
-      Object.keys(payload).forEach(k => { if (payload[k] === "") payload[k] = null; });
-      payload.gratuity_applicable = bankForm.gratuity_applicable;
-      payload.tds_applicable = bankForm.tds_applicable;
-      payload.pan_linked_to_account = bankForm.pan_linked_to_account;
-      await portalEmployeeApi.upsertBankDetails(subdomain, token, empId, payload);
-      portalEmployeeApi.getBankDetails(subdomain, token, empId).then(r => setBankDetails(r.data.data)).catch(() => {});
-      showToast("Bank details saved.");
-    } catch (e) { showToast(e?.response?.data?.detail || "Save failed.", false); }
-    finally { setBankSaving(false); }
-  };
-
-  const handleSaveGov = async () => {
-    setGovSaving(true);
-    try {
-      await portalEmployeeApi.upsertGovIds(subdomain, token, empId, govForm);
-      portalEmployeeApi.getGovIds(subdomain, token, empId).then(r => setGovIds(r.data.data)).catch(() => {});
-      showToast("Government IDs saved.");
-    } catch (e) { showToast(e?.response?.data?.detail || "Save failed.", false); }
-    finally { setGovSaving(false); }
-  };
-
-  const handleToggle = async () => {
-    try {
-      if (emp.is_active) {
-        await portalEmployeeApi.deactivate(subdomain, token, empId);
-        showToast("Employee deactivated.");
-      } else {
-        await portalEmployeeApi.activate(subdomain, token, empId);
-        showToast("Employee activated.");
-      }
-      loadEmp();
-    } catch (e) { showToast(e?.response?.data?.detail || "Action failed.", false); }
-  };
-
-  if (loading) return <EmployeeLayout><div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</div></EmployeeLayout>;
-  if (error || !emp) return <EmployeeLayout><div style={{ padding: 40, textAlign: "center", color: "#f87171", fontSize: 13 }}>{error || "Employee not found."}</div></EmployeeLayout>;
-
-  const fmt = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
-  const relationships       = options.relationships || [];
-  const familyRelationships = options.family_relationships || [];
-  const accountTypes        = options.account_types || [];
-  const salaryCycles        = options.salary_cycles || [];
-  const bSet = (k, v) => setBankForm(f => ({ ...f, [k]: v }));
+  if (loading) return <EmployeeLayout><div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)" }}>Loading…</div></EmployeeLayout>;
+  if (!doc) return <EmployeeLayout><div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)" }}>{error || "Not found"}</div></EmployeeLayout>;
 
   return (
-    <EmployeeLayout title={emp.full_name}>
-      {toast && (
-        <div style={{ position: "fixed", top: 16, right: 16, zIndex: 9999, padding: "10px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600, boxShadow: "0 4px 20px rgba(0,0,0,0.3)", background: toast.ok ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)", color: toast.ok ? "#4ade80" : "#f87171", border: `1px solid ${toast.ok ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}` }}>{toast.msg}</div>
-      )}
-
-      {/* Modals */}
-      {eduModal !== null && (
-        <EduModal subdomain={subdomain} token={token} empId={empId}
-          editRow={eduModal === "new" ? null : eduModal}
-          onClose={() => setEduModal(null)}
-          onSaved={() => { setEduModal(null); portalEmployeeApi.listEducation(subdomain, token, empId).then(r => setEducation(r.data.data || [])); showToast("Education saved."); }} />
-      )}
-      {prevModal !== null && (
-        <PrevEmpModal subdomain={subdomain} token={token} empId={empId}
-          editRow={prevModal === "new" ? null : prevModal}
-          onClose={() => setPrevModal(null)}
-          onSaved={() => { setPrevModal(null); portalEmployeeApi.listHistory(subdomain, token, empId).then(r => { setHistory(r.data.data?.records || []); setHistoryMeta(r.data.data?.experience_summary || {}); }); showToast("Employment history saved."); }} />
-      )}
-      {familyModal !== null && (
-        <FamilyModal subdomain={subdomain} token={token} empId={empId}
-          editRow={familyModal === "new" ? null : familyModal}
-          familyRelationships={familyRelationships}
-          onClose={() => setFamilyModal(null)}
-          onSaved={() => { setFamilyModal(null); portalEmployeeApi.listFamilyMembers(subdomain, token, empId).then(r => setFamily(r.data.data || [])); showToast("Family member saved."); }} />
-      )}
-      {contactModal !== null && (
-        <ContactModal subdomain={subdomain} token={token} empId={empId}
-          editRow={contactModal === "new" ? null : contactModal}
-          relationships={relationships}
-          onClose={() => setContactModal(null)}
-          onSaved={() => { setContactModal(null); portalEmployeeApi.listContacts(subdomain, token, empId).then(r => setContacts(r.data.data || [])); showToast("Contact saved."); }} />
-      )}
-
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
-        <Avatar name={emp.full_name} size={60} />
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--c-heading)" }}>{emp.full_name}</h1>
-            <StatusBadge status={emp.employment_status} />
-            {!emp.is_active && <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 999, background: "rgba(239,68,68,0.12)", color: "#f87171", fontWeight: 600 }}>Inactive</span>}
-          </div>
-          <div style={{ fontSize: 13, color: "var(--c-muted)", marginTop: 4 }}>
-            <span style={{ fontFamily: "monospace", color: "var(--c-accent)", marginRight: 12 }}>{emp.employee_code}</span>
-            {emp.official_email}
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-            {emp.designation_name && (
-              <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 999, background: "rgba(0,174,236,0.1)", color: "var(--c-accent)", border: "1px solid rgba(0,174,236,0.2)", fontWeight: 500 }}>
-                💼 {emp.designation_name}
-              </span>
-            )}
-            {emp.department_name && (
-              <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 999, background: "rgba(100,116,139,0.12)", color: "var(--c-text2)", border: "1px solid var(--c-border)", fontWeight: 500 }}>
-                🏢 {emp.department_name}
-              </span>
-            )}
-            {emp.joining_date && (
-              <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 999, background: "rgba(34,197,94,0.08)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.2)", fontWeight: 500 }}>
-                📅 Since {new Date(emp.joining_date).toLocaleDateString("en-IN", { month: "short", year: "numeric" })} · {tenureDetail(emp.joining_date)}
-              </span>
-            )}
-            {emp.branch_name && (
-              <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 999, background: "rgba(168,85,247,0.1)", color: "#a855f7", border: "1px solid rgba(168,85,247,0.2)", fontWeight: 500 }}>
-                📍 {emp.branch_name}
-              </span>
-            )}
-            {emp.work_mode && (
-              <span style={{ fontSize: 12, padding: "3px 10px", borderRadius: 999, background: "rgba(251,146,60,0.1)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.2)", fontWeight: 500 }}>
-                🖥 {emp.work_mode}
-              </span>
-            )}
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+    <EmployeeLayout title={doc.full_name}>
+      <PageHeader
+        title={doc.full_name}
+        subtitle={`${doc.employee_code || "No Code"} · ${doc.designation_name || "No Designation"}`}
+        breadcrumbs={[
+          { label: "Employees", path: `/portal/${subdomain}/employees` },
+          { label: "Details" }
+        ]}
+        actions={
           <Link to={`/portal/${subdomain}/employees/${empId}/edit`}>
-            <button style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid var(--c-border)", cursor: "pointer", background: "transparent", color: "var(--c-text)", fontSize: 13 }}>Edit</button>
+            <button className="btn-primary">Edit Profile</button>
           </Link>
-          <button onClick={handleToggle} style={{ padding: "8px 16px", borderRadius: 8, border: "none", cursor: "pointer", background: emp.is_active ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.15)", color: emp.is_active ? "#f87171" : "#4ade80", fontSize: 13, fontWeight: 600 }}>
-            {emp.is_active ? "Deactivate" : "Activate"}
-          </button>
-          <Link to={`/portal/${subdomain}/employees`}>
-            <button style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--c-border)", cursor: "pointer", background: "transparent", color: "var(--c-text2)", fontSize: 13 }}>← Back</button>
-          </Link>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Tab bar */}
-      <div style={{ display: "flex", gap: 0, marginBottom: 20, overflowX: "auto", borderBottom: "1px solid var(--c-border)" }}>
+      {/* Main Info Card */}
+      <Card style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+          <Avatar name={doc.full_name} size={72} />
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>{doc.full_name}</h2>
+              <Badge status={doc.employment_status} />
+              {doc.is_active ? <Badge status="Active" /> : <Badge status="Inactive" />}
+            </div>
+            <div style={{ marginTop: 6, display: "flex", gap: 16, flexWrap: "wrap" }}>
+              <div className="t-body" style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 5 }}>📧 {doc.official_email}</div>
+              <div className="t-body" style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 5 }}>📱 {doc.mobile_country_code} {doc.mobile_number}</div>
+              <div className="t-body" style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 5 }}>🏢 {doc.company_name}</div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 4, marginBottom: 20, overflowX: "auto", paddingBottom: 2 }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             style={{
-              padding: "9px 14px", border: "none", cursor: "pointer", background: "transparent",
+              padding: "8px 16px", borderRadius: 8, border: "none", cursor: "pointer", whiteSpace: "nowrap",
+              background: tab === t.id ? "var(--c-surface2)" : "transparent",
               color: tab === t.id ? "var(--c-accent)" : "var(--c-text2)",
-              fontSize: 13, fontWeight: tab === t.id ? 700 : 400,
-              borderBottom: tab === t.id ? "2px solid var(--c-accent)" : "2px solid transparent",
-              whiteSpace: "nowrap", transition: "color 0.15s", flexShrink: 0,
+              fontSize: 13, fontWeight: tab === t.id ? 700 : 500, transition: "all 0.15s",
+              display: "flex", alignItems: "center", gap: 6,
             }}>
-            <span style={{ marginRight: 5 }}>{t.icon}</span>{t.label}
+            <span>{t.icon}</span> {t.label}
           </button>
         ))}
       </div>
 
-      {/* ── Overview ──────────────────────────────────────────────────────── */}
-      {tab === "overview" && (
-        <div style={{ display: "grid", gap: 16 }}>
-          <Card>
-            <CardHeader icon="🪪" title="Personal Information" />
-            <div style={{ padding: 20 }}>
-              <Grid3>
-                <div><Label>Gender</Label><Val>{emp.gender}</Val></div>
-                <div><Label>Date of Birth</Label><Val>{fmt(emp.date_of_birth)}</Val></div>
-                <div><Label>Marital Status</Label><Val>{emp.marital_status}</Val></div>
-                <div><Label>Blood Group</Label><Val>{emp.blood_group}</Val></div>
-                <div><Label>Nationality</Label><Val>{emp.nationality}</Val></div>
-              </Grid3>
-            </div>
-          </Card>
-          <Card>
-            <CardHeader icon="📧" title="Contact" />
-            <div style={{ padding: 20 }}>
-              <Grid2>
-                <div><Label>Official Email</Label><Val>{emp.official_email}</Val></div>
-                <div><Label>Personal Email</Label><Val>{emp.personal_email}</Val></div>
-                <div>
-                  <Label>Mobile</Label>
-                  <Val>{emp.mobile_number ? `${emp.mobile_country_code || ""} ${emp.mobile_number}`.trim() : null}</Val>
-                </div>
-                <div>
-                  <Label>Alternate Mobile</Label>
-                  <Val>{emp.alternate_mobile ? `${emp.alternate_mobile_country_code || ""} ${emp.alternate_mobile}`.trim() : null}</Val>
-                </div>
-                <div><Label>Landline</Label><Val>{emp.landline_number}</Val></div>
-              </Grid2>
-            </div>
-          </Card>
-          <Card>
-            <CardHeader icon="🏠" title="Address" />
-            <div style={{ padding: 20 }}>
-              <Grid2>
-                <div>
-                  <Label>Current Address</Label>
-                  <Val>{[emp.current_address_line_1, emp.current_address_line_2, emp.current_city, emp.current_state, emp.current_country, emp.current_postal_code].filter(Boolean).join(", ")}</Val>
-                </div>
-                <div>
-                  <Label>Permanent Address</Label>
-                  <Val>{emp.permanent_same_as_current ? "Same as current" : [emp.permanent_address_line_1, emp.permanent_address_line_2, emp.permanent_city, emp.permanent_state, emp.permanent_country, emp.permanent_postal_code].filter(Boolean).join(", ")}</Val>
-                </div>
-              </Grid2>
-            </div>
-          </Card>
-          {(emp.resume_url || emp.resume_filename) && (
+      {/* Tab Content */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        {tab === "overview" && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
             <Card>
-              <CardHeader icon="📎" title="Resume" />
-              <div style={{ padding: 20, display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ fontSize: 24 }}>📄</div>
-                <div>
-                  <div style={{ fontSize: 13, color: "var(--c-text)", fontWeight: 600 }}>{emp.resume_filename || "Resume"}</div>
-                  {emp.resume_url && <a href={emp.resume_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: "var(--c-accent)" }}>Open →</a>}
-                </div>
-              </div>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* ── Employment ────────────────────────────────────────────────────── */}
-      {tab === "employment" && (
-        <Card>
-          <CardHeader icon="💼" title="Employment Details" />
-          <div style={{ padding: 20 }}>
-            <Grid3>
-              <div><Label>Category</Label><Val>{emp.employee_category}</Val></div>
-              <div><Label>Type</Label><Val>{emp.employment_type}</Val></div>
-              <div><Label>Status</Label><Val>{emp.employment_status}</Val></div>
-              <div><Label>Joining Date</Label><Val>{fmt(emp.joining_date)}</Val></div>
-              <div><Label>Confirmation Date</Label><Val>{fmt(emp.confirmation_date)}</Val></div>
-              <div><Label>Relieving Date</Label><Val>{fmt(emp.relieving_date)}</Val></div>
-            </Grid3>
-          </div>
-        </Card>
-      )}
-
-      {/* ── Education ─────────────────────────────────────────────────────── */}
-      {tab === "education" && (
-        <div style={{ display: "grid", gap: 16 }}>
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button onClick={() => setEduModal("new")} style={{ padding: "8px 16px", borderRadius: 8, border: "none", cursor: "pointer", background: "var(--c-accent)", color: "#fff", fontSize: 13, fontWeight: 600 }}>+ Add Education</button>
-          </div>
-          {education.length === 0 ? (
-            <Card><div style={{ padding: 40, textAlign: "center" }}><div style={{ fontSize: 32, marginBottom: 8 }}>🎓</div><div style={{ fontSize: 13, color: "var(--c-muted)" }}>No education records added yet.</div></div></Card>
-          ) : education.map(e => (
-            <Card key={e.id}>
-              <div style={{ padding: 20 }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)" }}>{e.degree || e.qualification || "Degree"} {e.specialization ? `— ${e.specialization}` : ""}</div>
-                    <div style={{ fontSize: 12, color: "var(--c-muted)", marginTop: 2 }}>{e.institution_name || e.university || ""} {e.end_year ? `· ${e.end_year}` : ""}</div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => setEduModal(e)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "transparent", color: "var(--c-text2)" }}>Edit</button>
-                    <button onClick={() => handleDelete("edu", e.id)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer", background: "transparent", color: "#f87171" }}>Remove</button>
-                  </div>
-                </div>
+              <CardHeader icon="👤" title="Personal Details" />
+              <div style={{ padding: 20, display: "grid", gap: 16 }}>
                 <Grid3>
-                  {e.percentage && <div><Label>Percentage</Label><Val>{e.percentage}%</Val></div>}
-                  {e.cgpa && <div><Label>CGPA</Label><Val>{e.cgpa}</Val></div>}
-                  <div><Label>Completed</Label><Val>{e.is_completed ? "Yes" : "In Progress"}</Val></div>
-                  {e.country && <div><Label>Country</Label><Val>{e.country}</Val></div>}
+                  <div><Label>Gender</Label><Val>{doc.gender}</Val></div>
+                  <div><Label>Date of Birth</Label><Val>{doc.date_of_birth}</Val></div>
+                  <div><Label>Marital Status</Label><Val>{doc.marital_status}</Val></div>
+                </Grid3>
+                <Grid3>
+                  <div><Label>Blood Group</Label><Val>{doc.blood_group}</Val></div>
+                  <div><Label>Nationality</Label><Val>{doc.nationality}</Val></div>
+                  <div><Label>Personal Email</Label><Val>{doc.personal_email}</Val></div>
                 </Grid3>
               </div>
             </Card>
-          ))}
-        </div>
-      )}
 
-      {/* ── Experience ────────────────────────────────────────────────────── */}
-      {tab === "experience" && (
-        <div style={{ display: "grid", gap: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            {historyMeta.total_years > 0 && (
-              <span style={{ fontSize: 13, color: "var(--c-muted)" }}>Total experience: <strong style={{ color: "var(--c-text)" }}>{historyMeta.total_years} yrs</strong></span>
-            )}
-            <button onClick={() => setPrevModal("new")} style={{ padding: "8px 16px", borderRadius: 8, border: "none", cursor: "pointer", background: "var(--c-accent)", color: "#fff", fontSize: 13, fontWeight: 600, marginLeft: "auto" }}>+ Add History</button>
-          </div>
-          {history.length === 0 ? (
-            <Card><div style={{ padding: 40, textAlign: "center" }}><div style={{ fontSize: 32, marginBottom: 8 }}>🏢</div><div style={{ fontSize: 13, color: "var(--c-muted)" }}>No employment history. Click "Add History" to add one.</div></div></Card>
-          ) : history.map(h => (
-            <Card key={h.id}>
-              <div style={{ padding: 20 }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)" }}>{h.designation || "Role"} — {h.company_name || "Company"}</div>
-                    <div style={{ fontSize: 12, color: "var(--c-muted)", marginTop: 2 }}>
-                      {[h.start_date && fmt(h.start_date), h.end_date && fmt(h.end_date)].filter(Boolean).join(" → ")}
-                      {h.duration_years ? ` (${h.duration_years} yrs)` : ""}
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => setPrevModal(h)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "transparent", color: "var(--c-text2)" }}>Edit</button>
-                    <button onClick={() => handleDelete("hist", h.id)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer", background: "transparent", color: "#f87171" }}>Remove</button>
-                  </div>
-                </div>
-                <Grid3>
-                  <div><Label>Department</Label><Val>{h.department}</Val></div>
-                  <div><Label>Type</Label><Val>{h.employment_type}</Val></div>
-                  <div><Label>Last CTC</Label><Val>{h.last_salary ? `₹${Number(h.last_salary).toLocaleString("en-IN")}` : null}</Val></div>
-                  {h.reporting_manager_name && <div><Label>Reporting Manager</Label><Val>{h.reporting_manager_name}</Val></div>}
-                  {h.reason_for_leaving && <div><Label>Reason for Leaving</Label><Val>{h.reason_for_leaving}</Val></div>}
-                </Grid3>
+            <Card>
+              <CardHeader icon="📍" title="Current Address" />
+              <div style={{ padding: 20, display: "grid", gap: 16 }}>
+                <div><Label>Address Line 1</Label><Val>{doc.current_address_line_1}</Val></div>
+                <div><Label>Address Line 2</Label><Val>{doc.current_address_line_2}</Val></div>
+                <Grid2>
+                  <div><Label>City</Label><Val>{doc.current_city}</Val></div>
+                  <div><Label>State</Label><Val>{doc.current_state}</Val></div>
+                </Grid2>
+                <Grid2>
+                  <div><Label>Country</Label><Val>{doc.current_country}</Val></div>
+                  <div><Label>Postal Code</Label><Val>{doc.current_postal_code}</Val></div>
+                </Grid2>
               </div>
             </Card>
-          ))}
-        </div>
-      )}
 
-      {/* ── Family ────────────────────────────────────────────────────────── */}
-      {tab === "family" && (
-        <div style={{ display: "grid", gap: 16 }}>
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button onClick={() => setFamilyModal("new")} style={{ padding: "8px 16px", borderRadius: 8, border: "none", cursor: "pointer", background: "var(--c-accent)", color: "#fff", fontSize: 13, fontWeight: 600 }}>+ Add Member</button>
-          </div>
-          {family.length === 0 ? (
-            <Card><div style={{ padding: 40, textAlign: "center" }}><div style={{ fontSize: 32, marginBottom: 8 }}>👨‍👩‍👧</div><div style={{ fontSize: 13, color: "var(--c-muted)" }}>No family members added yet.</div></div></Card>
-          ) : family.map(m => (
-            <Card key={m.id}>
-              <div style={{ padding: 20 }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)" }}>{m.member_name}</div>
-                    <div style={{ fontSize: 12, color: "var(--c-muted)", marginTop: 2 }}>
-                      {[m.relationship, m.gender].filter(Boolean).join(" · ")}
-                      {m.is_nominee && <span style={{ marginLeft: 8, fontSize: 11, padding: "1px 6px", borderRadius: 999, background: "rgba(251,191,36,0.15)", color: "#fbbf24" }}>Nominee {m.nomination_percentage ? `${m.nomination_percentage}%` : ""}</span>}
-                      {m.is_dependent && <span style={{ marginLeft: 6, fontSize: 11, padding: "1px 6px", borderRadius: 999, background: "rgba(96,165,250,0.12)", color: "#60a5fa" }}>Dependent</span>}
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => setFamilyModal(m)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "transparent", color: "var(--c-text2)" }}>Edit</button>
-                    <button onClick={() => handleDelete("family", m.id)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer", background: "transparent", color: "#f87171" }}>Remove</button>
-                  </div>
-                </div>
-                <Grid3>
-                  {m.date_of_birth && <div><Label>Date of Birth</Label><Val>{fmt(m.date_of_birth)}</Val></div>}
-                  {m.occupation && <div><Label>Occupation</Label><Val>{m.occupation}</Val></div>}
-                  {m.phone && <div><Label>Phone</Label><Val>{`${m.phone_country_code || ""} ${m.phone}`.trim()}</Val></div>}
-                </Grid3>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* ── Emergency Contacts ────────────────────────────────────────────── */}
-      {tab === "contacts" && (
-        <div style={{ display: "grid", gap: 16 }}>
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button onClick={() => setContactModal("new")} style={{ padding: "8px 16px", borderRadius: 8, border: "none", cursor: "pointer", background: "var(--c-accent)", color: "#fff", fontSize: 13, fontWeight: 600 }}>+ Add Contact</button>
-          </div>
-          {contacts.length === 0 ? (
-            <Card><div style={{ padding: 40, textAlign: "center" }}><div style={{ fontSize: 32, marginBottom: 8 }}>🆘</div><div style={{ fontSize: 13, color: "var(--c-muted)" }}>No emergency contacts added yet.</div></div></Card>
-          ) : contacts.map(c => (
-            <Card key={c.id}>
-              <div style={{ padding: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)" }}>{c.contact_name}</div>
-                    <div style={{ fontSize: 12, color: "var(--c-muted)", marginTop: 2 }}>
-                      {[c.relationship, `${c.mobile_country_code || ""} ${c.mobile_number}`.trim()].filter(Boolean).join(" · ")}
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => setContactModal(c)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "transparent", color: "var(--c-text2)" }}>Edit</button>
-                    <button onClick={() => handleDelete("contact", c.id)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer", background: "transparent", color: "#f87171" }}>Remove</button>
-                  </div>
-                </div>
-                {c.alternate_number && <div style={{ marginTop: 8 }}><Label>Alternate</Label><Val>{`${c.alternate_country_code || ""} ${c.alternate_number}`.trim()}</Val></div>}
-                {c.address && <div style={{ marginTop: 8 }}><Label>Address</Label><Val>{c.address}</Val></div>}
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* ── Bank & IDs ────────────────────────────────────────────────────── */}
-      {tab === "bank" && (
-        <div style={{ display: "grid", gap: 16 }}>
-          <Card>
-            <CardHeader icon="🏦" title="Bank Account" />
-            <div style={{ padding: 20, display: "grid", gap: 14 }}>
-              {bankForm && (
-                <>
-                  <Grid2>
-                    <div><Label>Account Holder Name</Label><input value={bankForm.account_holder_name || ""} onChange={e => bSet("account_holder_name", e.target.value)} style={inp} placeholder="Rajan Kumar Sharma" /></div>
-                    <div><Label>Account Type</Label>
-                      <select value={bankForm.account_type || ""} onChange={e => bSet("account_type", e.target.value)} style={inp}>
-                        <option value="">Select…</option>
-                        {accountTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
-                  </Grid2>
-                  <Grid2>
-                    <div><Label>Bank Name</Label><input value={bankForm.bank_name || ""} onChange={e => bSet("bank_name", e.target.value)} style={inp} placeholder="HDFC Bank" /></div>
-                    <div><Label>Branch Name</Label><input value={bankForm.branch_name || ""} onChange={e => bSet("branch_name", e.target.value)} style={inp} placeholder="Andheri West" /></div>
-                  </Grid2>
-                  <div><Label>Account Number</Label><input value={bankForm.account_number || ""} onChange={e => bSet("account_number", e.target.value)} style={inp} placeholder="XXXXXXXXXXXXXXXX" /></div>
-                  <Grid3>
-                    <div><Label>IFSC Code</Label><input value={bankForm.ifsc_code || ""} onChange={e => bSet("ifsc_code", e.target.value.toUpperCase())} style={inp} placeholder="HDFC0001234" /></div>
-                    <div><Label>SWIFT Code</Label><input value={bankForm.swift_code || ""} onChange={e => bSet("swift_code", e.target.value.toUpperCase())} style={inp} placeholder="HDFCINBBXXX" /></div>
-                    <div><Label>UPI ID</Label><input value={bankForm.upi_id || ""} onChange={e => bSet("upi_id", e.target.value)} style={inp} placeholder="rajan@okhdfc" /></div>
-                  </Grid3>
-
-                  <Divider label="Salary" />
-                  <Grid3>
-                    <div>
-                      <Label>Salary Cycle</Label>
-                      <select value={bankForm.salary_cycle || ""} onChange={e => bSet("salary_cycle", e.target.value)} style={inp}>
-                        <option value="">Select…</option>
-                        {salaryCycles.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <Label>Credit Date (Day of Month)</Label>
-                      <input type="number" min={1} max={31} value={bankForm.salary_credit_date || ""} onChange={e => bSet("salary_credit_date", e.target.value)} style={inp} placeholder="1–31" />
-                    </div>
-                  </Grid3>
-
-                  <Divider label="PF / ESI / Gratuity" />
-                  <Grid3>
-                    <div><Label>PF Account Number</Label><input value={bankForm.pf_account_number || ""} onChange={e => bSet("pf_account_number", e.target.value)} style={inp} placeholder="MH/BOM/..." /></div>
-                    <div><Label>PF UAN Number</Label><input value={bankForm.pf_uan_number || ""} onChange={e => bSet("pf_uan_number", e.target.value)} style={inp} placeholder="100XXXXXXXXX" /></div>
-                    <div><Label>ESI Number</Label><input value={bankForm.esi_number || ""} onChange={e => bSet("esi_number", e.target.value)} style={inp} placeholder="31-XX-..." /></div>
-                  </Grid3>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <input type="checkbox" id="gratuity-chk" checked={bankForm.gratuity_applicable || false} onChange={e => bSet("gratuity_applicable", e.target.checked)} />
-                    <label htmlFor="gratuity-chk" style={{ fontSize: 13, color: "var(--c-text)", cursor: "pointer" }}>Gratuity Applicable</label>
-                  </div>
-
-                  <Divider label="TDS" />
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <input type="checkbox" id="tds-chk" checked={bankForm.tds_applicable || false} onChange={e => bSet("tds_applicable", e.target.checked)} />
-                    <label htmlFor="tds-chk" style={{ fontSize: 13, color: "var(--c-text)", cursor: "pointer" }}>TDS Applicable</label>
-                  </div>
-                  {bankForm.tds_applicable && (
+            <Card>
+              <CardHeader icon="🏠" title="Permanent Address" />
+              <div style={{ padding: 20, display: "grid", gap: 16 }}>
+                {doc.permanent_same_as_current ? (
+                  <div style={{ padding: 12, borderRadius: 8, background: "var(--c-surface2)", fontSize: 13, textAlign: "center" }}>Same as current address</div>
+                ) : (
+                  <>
+                    <div><Label>Address Line 1</Label><Val>{doc.permanent_address_line_1}</Val></div>
+                    <div><Label>Address Line 2</Label><Val>{doc.permanent_address_line_2}</Val></div>
                     <Grid2>
-                      <div>
-                        <Label>TDS Percentage (%)</Label>
-                        <input type="number" step="0.01" min="0" max="100" value={bankForm.tds_percentage || ""} onChange={e => bSet("tds_percentage", e.target.value)} style={inp} placeholder="10.00" />
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 20 }}>
-                        <input type="checkbox" id="pan-link-chk" checked={bankForm.pan_linked_to_account || false} onChange={e => bSet("pan_linked_to_account", e.target.checked)} />
-                        <label htmlFor="pan-link-chk" style={{ fontSize: 13, color: "var(--c-text)", cursor: "pointer" }}>PAN Linked to Account</label>
-                      </div>
+                      <div><Label>City</Label><Val>{doc.permanent_city}</Val></div>
+                      <div><Label>State</Label><Val>{doc.permanent_state}</Val></div>
                     </Grid2>
-                  )}
+                    <Grid2>
+                      <div><Label>Country</Label><Val>{doc.permanent_country}</Val></div>
+                      <div><Label>Postal Code</Label><Val>{doc.permanent_postal_code}</Val></div>
+                    </Grid2>
+                  </>
+                )}
+              </div>
+            </Card>
+          </div>
+        )}
 
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
-                    <button onClick={handleSaveBank} disabled={bankSaving} style={{ padding: "8px 20px", borderRadius: 8, border: "none", cursor: "pointer", background: bankSaving ? "var(--c-border)" : "var(--c-accent)", color: bankSaving ? "var(--c-muted)" : "#fff", fontSize: 13, fontWeight: 600 }}>
-                      {bankSaving ? "Saving…" : "Save Bank Details"}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </Card>
+        {tab === "employment" && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 20 }}>
+            <Card>
+              <CardHeader icon="🏢" title="Organizational Units" />
+              <div style={{ padding: 20, display: "grid", gap: 16 }}>
+                <Grid2>
+                  <div><Label>Company</Label><Val>{doc.company_name}</Val></div>
+                  <div><Label>Branch</Label><Val>{doc.branch_name}</Val></div>
+                </Grid2>
+                <Grid2>
+                  <div><Label>Department</Label><Val>{doc.department_name}</Val></div>
+                  <div><Label>Designation</Label><Val>{doc.designation_name}</Val></div>
+                </Grid2>
+              </div>
+            </Card>
+            <Card>
+              <CardHeader icon="📅" title="Service Details" />
+              <div style={{ padding: 20, display: "grid", gap: 16 }}>
+                <Grid2>
+                  <div><Label>Category</Label><Val>{doc.employee_category}</Val></div>
+                  <div><Label>Type</Label><Val>{doc.employment_type}</Val></div>
+                </Grid2>
+                <Grid2>
+                  <div><Label>Joining Date</Label><Val>{doc.joining_date}</Val></div>
+                  <div><Label>Service Tenure</Label><Val>{doc.joining_date ? tenureDetail(doc.joining_date) : "—"}</Val></div>
+                </Grid2>
+                <Grid2>
+                  <div><Label>Confirmation Date</Label><Val>{doc.confirmation_date}</Val></div>
+                  <div><Label>Relieving Date</Label><Val>{doc.relieving_date}</Val></div>
+                </Grid2>
+                <Grid2>
+                  <div><Label>Work Mode</Label><Val>{doc.work_mode}</Val></div>
+                </Grid2>
+              </div>
+            </Card>
+          </div>
+        )}
 
+        {tab === "education" && (
           <Card>
-            <CardHeader icon="🪪" title="Government IDs" />
-            <div style={{ padding: 20, display: "grid", gap: 14 }}>
-              <div style={{ fontSize: 11, color: "var(--c-muted)", background: "var(--c-surface2)", padding: "8px 12px", borderRadius: 6, border: "1px solid var(--c-border)" }}>
-                ⚠️ Saved IDs are masked for security. Enter new values to update.
+            <CardHeader icon="🎓" title="Education Qualifications" />
+            <div style={{ padding: 0 }}>
+              <div style={{ overflowX: "auto" }}>
+                <table className="portal-table">
+                  <thead>
+                    <tr>
+                      <th>Degree / Qualification</th>
+                      <th>Institution / University</th>
+                      <th>Year</th>
+                      <th>Score</th>
+                      <th>Status</th>
+                      <th style={{ textAlign: "right" }}>
+                        <button onClick={() => { setEditRow(null); setShowEdu(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>+ Add New</button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {edu.length === 0 ? (
+                      <tr><td colSpan={6} style={{ textAlign: "center", color: "var(--c-muted)", padding: 32 }}>No education records added.</td></tr>
+                    ) : edu.map(r => (
+                      <tr key={r.id}>
+                        <td>
+                          <div style={{ fontWeight: 600 }}>{r.degree}</div>
+                          <div style={{ fontSize: 11, color: "var(--c-muted)" }}>{r.qualification} · {r.specialization}</div>
+                        </td>
+                        <td>
+                          <div>{r.institution_name}</div>
+                          <div style={{ fontSize: 11, color: "var(--c-muted)" }}>{r.university}, {r.country}</div>
+                        </td>
+                        <td>{r.start_year} — {r.end_year || "Present"}</td>
+                        <td>
+                          {r.percentage && <div>{r.percentage}%</div>}
+                          {r.cgpa && <div style={{ fontSize: 11, color: "var(--c-muted)" }}>{r.cgpa} CGPA</div>}
+                        </td>
+                        <td>{r.is_completed ? <Badge status="Active" /> : <Badge status="Pending" />}</td>
+                        <td style={{ textAlign: "right" }}>
+                          <button onClick={() => { setEditRow(r); setShowEdu(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Edit</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              {govForm && (
-                <>
-                  <Grid3>
-                    <div><Label>PAN Number</Label><input value={govForm.pan_number || ""} onChange={e => setGovForm(f => ({ ...f, pan_number: e.target.value.toUpperCase() }))} style={inp} placeholder="ABCDE1234F" maxLength={10} /></div>
-                    <div><Label>Aadhaar Number</Label><input value={govForm.aadhar_number || ""} onChange={e => setGovForm(f => ({ ...f, aadhar_number: e.target.value }))} style={inp} placeholder="XXXX XXXX XXXX" maxLength={14} /></div>
-                    <div><Label>Passport Number</Label><input value={govForm.passport_number || ""} onChange={e => setGovForm(f => ({ ...f, passport_number: e.target.value.toUpperCase() }))} style={inp} placeholder="A1234567" /></div>
-                  </Grid3>
-                  <Grid2>
-                    <div><Label>Driving License</Label><input value={govForm.driving_license_number || ""} onChange={e => setGovForm(f => ({ ...f, driving_license_number: e.target.value.toUpperCase() }))} style={inp} placeholder="MH0120220001234" /></div>
-                    <div><Label>Voter ID</Label><input value={govForm.voter_id_number || ""} onChange={e => setGovForm(f => ({ ...f, voter_id_number: e.target.value.toUpperCase() }))} style={inp} placeholder="ABC1234567" /></div>
-                  </Grid2>
-                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                    <button onClick={handleSaveGov} disabled={govSaving} style={{ padding: "8px 16px", borderRadius: 8, border: "none", cursor: "pointer", background: govSaving ? "var(--c-border)" : "var(--c-accent)", color: govSaving ? "var(--c-muted)" : "#fff", fontSize: 13, fontWeight: 600 }}>
-                      {govSaving ? "Saving…" : "Save Government IDs"}
-                    </button>
-                  </div>
-                </>
-              )}
             </div>
           </Card>
-        </div>
-      )}
+        )}
 
-      {/* ── Activity ──────────────────────────────────────────────────────── */}
-      {tab === "activity" && (
-        <div style={{ display: "grid", gap: 10 }}>
-          {activities.length === 0 ? (
-            <Card><div style={{ padding: 40, textAlign: "center" }}><div style={{ fontSize: 32, marginBottom: 8 }}>📋</div><div style={{ fontSize: 13, color: "var(--c-muted)" }}>No activity recorded yet.</div></div></Card>
-          ) : activities.map(a => (
-            <div key={a.id} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "12px 0", borderBottom: "1px solid var(--c-border)" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--c-accent)", marginTop: 5, flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, color: "var(--c-text)", fontWeight: 500 }}>{a.action.replace(/_/g, " ")}</div>
-                {a.notes && <div style={{ fontSize: 12, color: "var(--c-muted)", marginTop: 2 }}>{a.notes}</div>}
-                <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 4 }}>{new Date(a.created_at).toLocaleString("en-IN")}</div>
+        {tab === "experience" && (
+          <Card>
+            <CardHeader icon="🏢" title="Employment History" />
+            <div style={{ padding: 0 }}>
+              <div style={{ overflowX: "auto" }}>
+                <table className="portal-table">
+                  <thead>
+                    <tr>
+                      <th>Company & Role</th>
+                      <th>Duration</th>
+                      <th>Manager</th>
+                      <th>Reason for Leaving</th>
+                      <th style={{ textAlign: "right" }}>
+                        <button onClick={() => { setEditRow(null); setShowPrev(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>+ Add History</button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.length === 0 ? (
+                      <tr><td colSpan={5} style={{ textAlign: "center", color: "var(--c-muted)", padding: 32 }}>No employment history added.</td></tr>
+                    ) : history.map(r => (
+                      <tr key={r.id}>
+                        <td>
+                          <div style={{ fontWeight: 600 }}>{r.company_name}</div>
+                          <div style={{ fontSize: 11, color: "var(--c-muted)" }}>{r.designation} · {r.department}</div>
+                        </td>
+                        <td>
+                          <div>{r.start_date} — {r.end_date || "Present"}</div>
+                          <div style={{ fontSize: 11, color: "var(--c-muted)" }}>{r.employment_type}</div>
+                        </td>
+                        <td>
+                          <div>{r.reporting_manager_name}</div>
+                          <div style={{ fontSize: 11, color: "var(--c-muted)" }}>{r.reporting_manager_contact}</div>
+                        </td>
+                        <td>{r.reason_for_leaving}</td>
+                        <td style={{ textAlign: "right" }}>
+                          <button onClick={() => { setEditRow(r); setShowPrev(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Edit</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          </Card>
+        )}
+
+        {tab === "family" && (
+          <Card>
+            <CardHeader icon="👨‍👩‍👧" title="Family Members" />
+            <div style={{ padding: 0 }}>
+              <div style={{ overflowX: "auto" }}>
+                <table className="portal-table">
+                  <thead>
+                    <tr>
+                      <th>Member Name</th>
+                      <th>Relationship</th>
+                      <th>Details</th>
+                      <th>Benefits</th>
+                      <th style={{ textAlign: "right" }}>
+                        <button onClick={() => { setEditRow(null); setShowFamily(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>+ Add Member</button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {family.length === 0 ? (
+                      <tr><td colSpan={5} style={{ textAlign: "center", color: "var(--c-muted)", padding: 32 }}>No family members added.</td></tr>
+                    ) : family.map(r => (
+                      <tr key={r.id}>
+                        <td>
+                          <div style={{ fontWeight: 600 }}>{r.member_name}</div>
+                          <div style={{ fontSize: 11, color: "var(--c-muted)" }}>{r.gender} · {r.date_of_birth}</div>
+                        </td>
+                        <td>{r.relationship}</td>
+                        <td>
+                          <div>{r.occupation}</div>
+                          <div style={{ fontSize: 11, color: "var(--c-muted)" }}>{r.phone_country_code} {r.phone}</div>
+                        </td>
+                        <td style={{ verticalAlign: "middle" }}>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            {r.is_dependent && <Badge status="Active" />}
+                            {r.is_nominee && <Badge status="Purple" />}
+                          </div>
+                          {r.is_nominee && r.nomination_percentage && <div style={{ fontSize: 10, color: "var(--c-muted)", marginTop: 2 }}>{r.nomination_percentage}% share</div>}
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          <button onClick={() => { setEditRow(r); setShowFamily(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Edit</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {tab === "contacts" && (
+          <Card>
+            <CardHeader icon="🆘" title="Emergency Contacts" />
+            <div style={{ padding: 0 }}>
+              <div style={{ overflowX: "auto" }}>
+                <table className="portal-table">
+                  <thead>
+                    <tr>
+                      <th>Contact Name</th>
+                      <th>Relationship</th>
+                      <th>Phone Numbers</th>
+                      <th>Address</th>
+                      <th style={{ textAlign: "right" }}>
+                        <button onClick={() => { setEditRow(null); setShowContact(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>+ Add Contact</button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contacts.length === 0 ? (
+                      <tr><td colSpan={5} style={{ textAlign: "center", color: "var(--c-muted)", padding: 32 }}>No emergency contacts added.</td></tr>
+                    ) : contacts.map(r => (
+                      <tr key={r.id}>
+                        <td style={{ fontWeight: 600 }}>{r.contact_name}</td>
+                        <td>{r.relationship}</td>
+                        <td>
+                          <div>{r.mobile_country_code} {r.mobile_number}</div>
+                          {r.alternate_number && <div style={{ fontSize: 11, color: "var(--c-muted)" }}>{r.alternate_country_code} {r.alternate_number} (Alt)</div>}
+                        </td>
+                        <td style={{ maxWidth: 200, fontSize: 12 }}>{r.address}</td>
+                        <td style={{ textAlign: "right" }}>
+                          <button onClick={() => { setEditRow(r); setShowContact(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Edit</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
+
+      {/* Modals */}
+      {showEdu && <EduModal subdomain={subdomain} token={token} empId={empId} editRow={editRow} onClose={() => setShowEdu(false)} onSaved={() => { setShowEdu(false); loadExtra(); }} />}
+      {showPrev && <PrevEmpModal subdomain={subdomain} token={token} empId={empId} editRow={editRow} onClose={() => setShowPrev(false)} onSaved={() => { setShowPrev(false); loadExtra(); }} />}
+      {showFamily && <FamilyModal subdomain={subdomain} token={token} empId={empId} editRow={editRow} familyRelationships={options.family_relationships} onClose={() => setShowFamily(false)} onSaved={() => { setShowFamily(false); loadExtra(); }} />}
+      {showContact && <ContactModal subdomain={subdomain} token={token} empId={empId} editRow={editRow} relationships={options.family_relationships} onClose={() => setShowContact(false)} onSaved={() => { setShowContact(false); loadExtra(); }} />}
     </EmployeeLayout>
   );
 }

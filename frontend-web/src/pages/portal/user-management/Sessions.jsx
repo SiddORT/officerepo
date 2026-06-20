@@ -3,6 +3,9 @@ import { useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalUserMgmtApi } from "../../../services/apiClient";
 import UserManagementLayout from "./UserManagementLayout";
+import PageHeader from "../shared/PageHeader";
+import Badge from "../shared/Badge";
+import Pagination from "../shared/Pagination";
 
 export default function Sessions() {
   const { subdomain } = useParams();
@@ -59,29 +62,25 @@ export default function Sessions() {
         </div>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--c-text)" }}>User Sessions</h2>
-          <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--c-muted)" }}>
-            {activeOnly ? `${activeSessions.length} active sessions` : `${total} total sessions`}
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => { setActiveOnly(a => !a); setPage(1); }}
-            style={{ padding: "7px 14px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
-              background: activeOnly ? "var(--c-accent)" : "var(--c-surface)",
-              color: activeOnly ? "#fff" : "var(--c-muted)",
-              border: `1px solid ${activeOnly ? "var(--c-accent)" : "var(--c-border)"}` }}>
-            {activeOnly ? "Active Only" : "All Sessions"}
-          </button>
-          <button onClick={handleLogoutAll}
-            style={{ padding: "7px 14px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer", background: "transparent", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)" }}>
-            Logout All Mine
-          </button>
-        </div>
-      </div>
+      <PageHeader 
+        title="User Sessions" 
+        subtitle={activeOnly ? `${activeSessions.length} active sessions` : `${total} total sessions`}
+        actions={
+          <>
+            <button onClick={() => { setActiveOnly(a => !a); setPage(1); }}
+              className={activeOnly ? "btn-primary" : "btn-secondary"}
+              style={{ padding: "7px 14px", fontSize: 12 }}>
+              {activeOnly ? "Active Only" : "All Sessions"}
+            </button>
+            <button onClick={handleLogoutAll}
+              className="btn-secondary" style={{ color: "#f87171" }}>
+              Logout All Mine
+            </button>
+          </>
+        }
+      />
 
-      <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, overflow: "hidden" }}>
+      <div className="portal-table-wrap">
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</div>
         ) : sessions.length === 0 ? (
@@ -89,35 +88,31 @@ export default function Sessions() {
             {activeOnly ? "No active sessions." : "No sessions recorded."}
           </div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table className="portal-table">
             <thead>
-              <tr style={{ background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
+              <tr>
                 {["#", "User", "Status", "Device", "Browser", "IP", "Login Time", "Last Active", ""].map(h => (
-                  <th key={h} style={{ padding: "9px 14px", textAlign: h === "#" ? "center" : "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap", width: h === "#" ? 40 : undefined }}>{h}</th>
+                  <th key={h} style={{ textAlign: h === "#" ? "center" : "left", width: h === "#" ? 40 : undefined }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {sessions.map((s, i) => (
-                <tr key={s.id} style={{ borderBottom: i < sessions.length - 1 ? "1px solid var(--c-border)" : "none", opacity: s.is_active ? 1 : 0.6 }}>
-                  <td style={{ padding: "10px 14px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
-                  <td style={{ padding: "10px 14px", fontSize: 13, color: "var(--c-text)", whiteSpace: "nowrap" }}>{s.user_name || "—"}</td>
-                  <td style={{ padding: "10px 14px" }}>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
-                      background: s.is_active ? "rgba(34,197,94,0.1)" : "rgba(100,116,139,0.15)",
-                      color: s.is_active ? "#4ade80" : "var(--c-muted)" }}>
-                      {s.is_active ? "Active" : "Ended"}
-                    </span>
+                <tr key={s.id} style={{ opacity: s.is_active ? 1 : 0.6 }}>
+                  <td style={{ width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
+                  <td style={{ fontSize: 13, color: "var(--c-text)", whiteSpace: "nowrap" }}>{s.user_name || "—"}</td>
+                  <td>
+                    <Badge status={s.is_active ? "Active" : "Closed"} />
                   </td>
-                  <td style={{ padding: "10px 14px", fontSize: 12, color: "var(--c-muted)" }}>{s.device_info || "—"}</td>
-                  <td style={{ padding: "10px 14px", fontSize: 12, color: "var(--c-muted)" }}>{s.browser_info || "—"}</td>
-                  <td style={{ padding: "10px 14px", fontSize: 12, color: "var(--c-muted)", fontFamily: "monospace" }}>{s.ip_address || "—"}</td>
-                  <td style={{ padding: "10px 14px", fontSize: 12, color: "var(--c-muted)", whiteSpace: "nowrap" }}>{new Date(s.login_at).toLocaleString()}</td>
-                  <td style={{ padding: "10px 14px", fontSize: 12, color: "var(--c-muted)", whiteSpace: "nowrap" }}>{new Date(s.last_activity_at).toLocaleString()}</td>
-                  <td style={{ padding: "10px 14px" }}>
+                  <td style={{ fontSize: 12, color: "var(--c-muted)" }}>{s.device_info || "—"}</td>
+                  <td style={{ fontSize: 12, color: "var(--c-muted)" }}>{s.browser_info || "—"}</td>
+                  <td style={{ fontSize: 12, color: "var(--c-muted)", fontFamily: "monospace" }}>{s.ip_address || "—"}</td>
+                  <td style={{ fontSize: 12, color: "var(--c-muted)", whiteSpace: "nowrap" }}>{new Date(s.login_at).toLocaleString()}</td>
+                  <td style={{ fontSize: 12, color: "var(--c-muted)", whiteSpace: "nowrap" }}>{new Date(s.last_activity_at).toLocaleString()}</td>
+                  <td>
                     {s.is_active && (
                       <button onClick={() => handleLogout(s.id)}
-                        style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
+                        className="t-accent" style={{ color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 600, fontSize: 12 }}>
                         Terminate
                       </button>
                     )}
@@ -129,17 +124,7 @@ export default function Sessions() {
         )}
       </div>
 
-      {totalPages > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, fontSize: 12, color: "var(--c-muted)" }}>
-          <span>Page {page} of {totalPages}</span>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-              style={{ padding: "4px 10px", borderRadius: 5, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", cursor: "pointer", opacity: page === 1 ? 0.5 : 1 }}>←</button>
-            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-              style={{ padding: "4px 10px", borderRadius: 5, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", cursor: "pointer", opacity: page === totalPages ? 0.5 : 1 }}>→</button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} onPage={setPage} total={total} pageSize={PAGE_SIZE} />
     </UserManagementLayout>
   );
 }

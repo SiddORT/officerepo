@@ -3,18 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalUserMgmtApi } from "../../../services/apiClient";
 import UserManagementLayout from "./UserManagementLayout";
-
-const inputStyle = {
-  width: "100%", padding: "8px 10px",
-  background: "var(--c-bg)", border: "1px solid var(--c-border)",
-  borderRadius: 6, fontSize: 13, color: "var(--c-text)", boxSizing: "border-box",
-};
-
-const Label = ({ children }) => (
-  <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--c-text2)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-    {children}
-  </label>
-);
+import PageHeader from "../shared/PageHeader";
 
 export default function RoleForm({ editMode = false }) {
   const { subdomain, roleId } = useParams();
@@ -141,14 +130,10 @@ export default function RoleForm({ editMode = false }) {
   return (
     <UserManagementLayout title={editMode ? "Edit Role" : "Create Role"}>
       <div style={{ maxWidth: 680 }}>
-        <div style={{ marginBottom: 20 }}>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--c-text)" }}>
-            {editMode ? "Edit Role" : "Create Role"}
-          </h2>
-          <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--c-muted)" }}>
-            {editMode ? "Update role details and permissions." : "Define a new role and assign permissions."}
-          </p>
-        </div>
+        <PageHeader 
+          title={editMode ? "Edit Role" : "Create Role"} 
+          subtitle={editMode ? "Update role details and permissions." : "Define a new role and assign permissions."} 
+        />
 
         {error && (
           <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#f87171" }}>{error}</div>
@@ -160,18 +145,18 @@ export default function RoleForm({ editMode = false }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
             {/* ── Role details ─────────────────────────────────────────── */}
-            <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, padding: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-heading)", marginBottom: 16 }}>Role Details</div>
-              <div style={{ display: "grid", gap: 16 }}>
+            <div className="portal-form-card">
+              <div className="portal-form-title">Role Details</div>
+              <div className="portal-form-row">
                 <div>
-                  <Label>Role Name *</Label>
-                  <input style={{ ...inputStyle, opacity: isSystemRole ? 0.6 : 1 }}
+                  <label className="portal-form-label portal-form-label-req">Role Name</label>
+                  <input className="input-field" style={{ opacity: isSystemRole ? 0.6 : 1 }}
                     value={form.name} onChange={e => set("name", e.target.value)}
                     placeholder="e.g. Team Lead" disabled={isSystemRole} />
                 </div>
                 <div>
-                  <Label>Description</Label>
-                  <textarea style={{ ...inputStyle, resize: "vertical", minHeight: 72, opacity: isSystemRole ? 0.6 : 1 }}
+                  <label className="portal-form-label">Description</label>
+                  <textarea className="input-field" style={{ resize: "vertical", minHeight: 72, opacity: isSystemRole ? 0.6 : 1 }}
                     value={form.description} onChange={e => set("description", e.target.value)}
                     placeholder="Describe what this role can do…" disabled={isSystemRole} />
                 </div>
@@ -184,11 +169,11 @@ export default function RoleForm({ editMode = false }) {
             </div>
 
             {/* ── Permissions ───────────────────────────────────────────── */}
-            <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, padding: 20 }}>
+            <div className="portal-form-card">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-heading)" }}>Permissions</div>
-                  <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 2 }}>
+                  <div className="portal-form-title" style={{ border: "none", padding: 0 }}>Permissions</div>
+                  <div className="t-muted" style={{ fontSize: 11, marginTop: 2 }}>
                     {checkedIds.size} of {allPerms.length} selected
                   </div>
                 </div>
@@ -199,7 +184,7 @@ export default function RoleForm({ editMode = false }) {
                       if (allChecked) setCheckedIds(new Set());
                       else setCheckedIds(new Set(allPerms.map(p => p.id)));
                     }}
-                    style={{ fontSize: 11, padding: "4px 10px", borderRadius: 5, border: "1px solid var(--c-border)", background: "var(--c-surface2)", color: "var(--c-text2)", cursor: "pointer" }}>
+                    className="btn-secondary" style={{ padding: "4px 10px", fontSize: 11 }}>
                     {allChecked ? "Deselect all" : "Select all"}
                   </button>
                 )}
@@ -238,7 +223,7 @@ export default function RoleForm({ editMode = false }) {
                               )}
                             </button>
                           )}
-                          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--c-text2)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                          <span className="portal-form-label" style={{ marginBottom: 0 }}>
                             {group.module_label}
                           </span>
                         </div>
@@ -274,10 +259,10 @@ export default function RoleForm({ editMode = false }) {
                                   )}
                                 </div>
                                 <div>
-                                  <div style={{ fontSize: 12, fontWeight: 500, color: checked ? "var(--c-accent)" : "var(--c-text)", lineHeight: 1.3 }}>
+                                  <div className="t-accent" style={{ fontSize: 12, fontWeight: 600, color: checked ? "var(--c-accent)" : "var(--c-text)", lineHeight: 1.3 }}>
                                     {perm.description || perm.name}
                                   </div>
-                                  <div style={{ fontSize: 10, color: "var(--c-muted)", marginTop: 1, fontFamily: "monospace" }}>
+                                  <div className="t-muted" style={{ fontSize: 10, marginTop: 1, fontFamily: "monospace" }}>
                                     {perm.name}
                                   </div>
                                 </div>
@@ -297,7 +282,7 @@ export default function RoleForm({ editMode = false }) {
                   <button
                     onClick={handleSavePermsOnly}
                     disabled={permsSaving}
-                    style={{ padding: "7px 16px", borderRadius: 6, fontWeight: 600, fontSize: 12, background: "var(--c-accent)", color: "#fff", border: "none", cursor: permsSaving ? "not-allowed" : "pointer", opacity: permsSaving ? 0.7 : 1 }}>
+                    className="btn-primary" style={{ fontSize: 12 }}>
                     {permsSaving ? "Saving…" : "Save Permissions"}
                   </button>
                   {permsMsg && (
@@ -309,12 +294,10 @@ export default function RoleForm({ editMode = false }) {
 
             {/* ── Action buttons ──────────────────────────────────────── */}
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={handleSubmit} disabled={saving}
-                style={{ flex: 1, padding: "9px 0", borderRadius: 6, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}>
+              <button onClick={handleSubmit} disabled={saving} className="btn-primary" style={{ flex: 1 }}>
                 {saving ? "Saving…" : editMode ? "Save Changes" : "Create Role"}
               </button>
-              <button onClick={() => navigate(-1)} disabled={saving}
-                style={{ flex: 1, padding: "9px 0", borderRadius: 6, fontWeight: 500, fontSize: 13, background: "transparent", color: "var(--c-text2)", border: "1px solid var(--c-border)", cursor: "pointer" }}>
+              <button onClick={() => navigate(-1)} disabled={saving} className="btn-secondary" style={{ flex: 1 }}>
                 Cancel
               </button>
             </div>

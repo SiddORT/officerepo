@@ -3,31 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { portalAssetApi, portalOrgApi, portalEmployeeApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import AssetLayout from "./AssetLayout";
-
-const inp = {
-  padding: "8px 10px", background: "var(--c-bg,var(--c-surface))",
-  border: "1px solid var(--c-border)", borderRadius: 6,
-  fontSize: 13, color: "var(--c-text)", width: "100%", boxSizing: "border-box",
-};
-
-const Label = ({ children, req }) => (
-  <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--c-text2,var(--c-muted))", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-    {children}{req && <span style={{ color: "#f87171", marginLeft: 2 }}>*</span>}
-  </label>
-);
-
-const Card = ({ title, children }) => (
-  <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
-    <div style={{ paddingBottom: 8, borderBottom: "1px solid var(--c-border)" }}>
-      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>{title}</div>
-    </div>
-    {children}
-  </div>
-);
-
-const Row2 = ({ children }) => (
-  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>{children}</div>
-);
+import PageHeader from "../shared/PageHeader";
 
 const BLANK = {
   asset_name: "", category_id: "", category_name: "", sub_category_id: "", sub_category_name: "",
@@ -140,26 +116,22 @@ export default function AssetInventoryForm({ editMode = false }) {
   return (
     <AssetLayout title={editMode ? "Edit Asset" : "Add Asset"}>
       <div style={{ width: "100%" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <div>
-            <button onClick={back} style={{ background: "none", border: "none", color: "var(--c-muted)", fontSize: 12, cursor: "pointer", padding: 0, marginBottom: 4, display: "block" }}>
-              ← {editMode ? "Back to Asset" : "Asset Inventory"}
-            </button>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--c-text)" }}>
-              {editMode ? "Edit Asset" : "Add Asset to Inventory"}
-            </h2>
-          </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button type="button" onClick={back}
-              style={{ padding: "8px 20px", borderRadius: 8, fontWeight: 500, fontSize: 13, background: "transparent", color: "var(--c-text2,var(--c-muted))", border: "1px solid var(--c-border)", cursor: "pointer" }}>
-              Cancel
-            </button>
-            <button form="inv-form" type="submit" disabled={saving}
-              style={{ padding: "8px 24px", borderRadius: 8, fontWeight: 600, fontSize: 13, background: saving ? "var(--c-muted)" : "var(--c-accent)", color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer" }}>
-              {saving ? "Saving…" : editMode ? "Save Changes" : "Create Asset"}
-            </button>
-          </div>
-        </div>
+        <PageHeader
+          title={editMode ? "Edit Asset" : "Add Asset to Inventory"}
+          breadcrumbs={[
+            { label: editMode ? "Back to Asset" : "Asset Inventory", path: editMode ? `/portal/${subdomain}/assets/inventory/${assetId}` : `/portal/${subdomain}/assets/inventory` }
+          ]}
+          actions={
+            <>
+              <button type="button" onClick={back} className="btn-secondary">
+                Cancel
+              </button>
+              <button form="inv-form" type="submit" disabled={saving} className="btn-primary">
+                {saving ? "Saving…" : editMode ? "Save Changes" : "Create Asset"}
+              </button>
+            </>
+          }
+        />
 
         {error && <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
@@ -169,180 +141,188 @@ export default function AssetInventoryForm({ editMode = false }) {
             {/* LEFT */}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-              <Card title="Basic Information">
-                <div><Label req>Asset Name</Label><input value={form.asset_name} onChange={set("asset_name")} style={inp} placeholder="Dell Latitude 5440" /></div>
-                <Row2>
+              <div className="portal-form-card">
+                <div className="portal-form-title">Basic Information</div>
+                <div><label className="portal-form-label portal-form-label-req">Asset Name</label><input value={form.asset_name} onChange={set("asset_name")} className="input-field" placeholder="Dell Latitude 5440" /></div>
+                <div className="portal-form-row">
                   <div>
-                    <Label req>Category</Label>
-                    <select value={form.category_id} onChange={e => setForm(f => ({ ...f, category_id: e.target.value, category_name: categories.find(c => c.id === e.target.value)?.category_name || "", sub_category_id: "", sub_category_name: "" }))} style={inp}>
+                    <label className="portal-form-label portal-form-label-req">Category</label>
+                    <select value={form.category_id} onChange={e => setForm(f => ({ ...f, category_id: e.target.value, category_name: categories.find(c => c.id === e.target.value)?.category_name || "", sub_category_id: "", sub_category_name: "" }))} className="input-field">
                       <option value="">Select category…</option>
                       {categories.map(c => <option key={c.id} value={c.id}>{c.icon ? `${c.icon} ` : ""}{c.category_name}</option>)}
                     </select>
                   </div>
                   <div>
-                    <Label>Sub-Category</Label>
-                    <select value={form.sub_category_id} onChange={e => setForm(f => ({ ...f, sub_category_id: e.target.value, sub_category_name: filteredSCs.find(s => s.id === e.target.value)?.sub_category_name || "" }))} style={inp}>
+                    <label className="portal-form-label">Sub-Category</label>
+                    <select value={form.sub_category_id} onChange={e => setForm(f => ({ ...f, sub_category_id: e.target.value, sub_category_name: filteredSCs.find(s => s.id === e.target.value)?.sub_category_name || "" }))} className="input-field">
                       <option value="">Select sub-category…</option>
                       {filteredSCs.map(s => <option key={s.id} value={s.id}>{s.sub_category_name}</option>)}
                     </select>
                   </div>
-                </Row2>
-                <Row2>
+                </div>
+                <div className="portal-form-row">
                   <div>
-                    <Label>Status</Label>
-                    <select value={form.status} onChange={set("status")} style={inp}>
+                    <label className="portal-form-label">Status</label>
+                    <select value={form.status} onChange={set("status")} className="input-field">
                       {statuses.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
-                  <div><Label>Work Location</Label>
-                    <select value={form.work_location_type} onChange={set("work_location_type")} style={inp}>
+                  <div><label className="portal-form-label">Work Location</label>
+                    <select value={form.work_location_type} onChange={set("work_location_type")} className="input-field">
                       <option value="">Select…</option>
                       {workLocations.map(w => <option key={w} value={w}>{w}</option>)}
                     </select>
                   </div>
-                </Row2>
-              </Card>
+                </div>
+              </div>
 
-              <Card title="Asset Details">
-                <Row2>
-                  <div><Label>Brand</Label><input value={form.brand} onChange={set("brand")} style={inp} placeholder="Dell" /></div>
-                  <div><Label>Manufacturer</Label><input value={form.manufacturer} onChange={set("manufacturer")} style={inp} placeholder="Dell Technologies" /></div>
-                </Row2>
-                <Row2>
-                  <div><Label>Model Number</Label><input value={form.model_number} onChange={set("model_number")} style={inp} placeholder="Latitude 5440" /></div>
-                  <div><Label>Part Number</Label><input value={form.part_number} onChange={set("part_number")} style={inp} placeholder="5440-PART-001" /></div>
-                </Row2>
-                <Row2>
-                  <div><Label>Serial Number</Label><input value={form.serial_number} onChange={set("serial_number")} style={inp} placeholder="SN123456789" /></div>
-                  <div><Label>Barcode Number</Label><input value={form.barcode_number} onChange={set("barcode_number")} style={inp} placeholder="BC-00001" /></div>
-                </Row2>
-              </Card>
+              <div className="portal-form-card">
+                <div className="portal-form-title">Asset Details</div>
+                <div className="portal-form-row">
+                  <div><label className="portal-form-label">Brand</label><input value={form.brand} onChange={set("brand")} className="input-field" placeholder="Dell" /></div>
+                  <div><label className="portal-form-label">Manufacturer</label><input value={form.manufacturer} onChange={set("manufacturer")} className="input-field" placeholder="Dell Technologies" /></div>
+                </div>
+                <div className="portal-form-row">
+                  <div><label className="portal-form-label">Model Number</label><input value={form.model_number} onChange={set("model_number")} className="input-field" placeholder="Latitude 5440" /></div>
+                  <div><label className="portal-form-label">Part Number</label><input value={form.part_number} onChange={set("part_number")} className="input-field" placeholder="5440-PART-001" /></div>
+                </div>
+                <div className="portal-form-row">
+                  <div><label className="portal-form-label">Serial Number</label><input value={form.serial_number} onChange={set("serial_number")} className="input-field" placeholder="SN123456789" /></div>
+                  <div><label className="portal-form-label">Barcode Number</label><input value={form.barcode_number} onChange={set("barcode_number")} className="input-field" placeholder="BC-00001" /></div>
+                </div>
+              </div>
 
-              <Card title="Organization Mapping">
-                <Row2>
+              <div className="portal-form-card">
+                <div className="portal-form-title">Organization Mapping</div>
+                <div className="portal-form-row">
                   <div>
-                    <Label>Company</Label>
-                    <select value={form.company_id} onChange={e => setForm(f => ({ ...f, company_id: e.target.value, company_name: companies.find(c => c.id === e.target.value)?.company_name || "", branch_id: "", branch_name: "" }))} style={inp}>
+                    <label className="portal-form-label">Company</label>
+                    <select value={form.company_id} onChange={e => setForm(f => ({ ...f, company_id: e.target.value, company_name: companies.find(c => c.id === e.target.value)?.company_name || "", branch_id: "", branch_name: "" }))} className="input-field">
                       <option value="">Select company…</option>
                       {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
                     </select>
                   </div>
                   <div>
-                    <Label>Branch</Label>
-                    <select value={form.branch_id} onChange={e => setForm(f => ({ ...f, branch_id: e.target.value, branch_name: filteredBranches.find(b => b.id === e.target.value)?.branch_name || "" }))} style={inp}>
+                    <label className="portal-form-label">Branch</label>
+                    <select value={form.branch_id} onChange={e => setForm(f => ({ ...f, branch_id: e.target.value, branch_name: filteredBranches.find(b => b.id === e.target.value)?.branch_name || "" }))} className="input-field">
                       <option value="">Select branch…</option>
                       {filteredBranches.map(b => <option key={b.id} value={b.id}>{b.branch_name}</option>)}
                     </select>
                   </div>
-                </Row2>
+                </div>
                 <div>
-                  <Label>Department</Label>
-                  <select value={form.department_id} onChange={e => setForm(f => ({ ...f, department_id: e.target.value, department_name: departments.find(d => d.id === e.target.value)?.department_name || "" }))} style={inp}>
+                  <label className="portal-form-label">Department</label>
+                  <select value={form.department_id} onChange={e => setForm(f => ({ ...f, department_id: e.target.value, department_name: departments.find(d => d.id === e.target.value)?.department_name || "" }))} className="input-field">
                     <option value="">Select department…</option>
                     {departments.map(d => <option key={d.id} value={d.id}>{d.department_name}</option>)}
                   </select>
                 </div>
-              </Card>
+              </div>
 
-              <Card title="Purchase Information">
-                <Row2>
-                  <div><Label>Purchase Date</Label><input type="date" value={form.purchase_date} onChange={set("purchase_date")} style={inp} /></div>
+              <div className="portal-form-card">
+                <div className="portal-form-title">Purchase Information</div>
+                <div className="portal-form-row">
+                  <div><label className="portal-form-label">Purchase Date</label><input type="date" value={form.purchase_date} onChange={set("purchase_date")} className="input-field" /></div>
                   <div>
-                    <Label>Currency</Label>
-                    <select value={form.currency} onChange={set("currency")} style={inp}>
+                    <label className="portal-form-label">Currency</label>
+                    <select value={form.currency} onChange={set("currency")} className="input-field">
                       {currencies.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
-                </Row2>
-                <Row2>
-                  <div><Label>Purchase Cost</Label><input type="number" value={form.purchase_cost} onChange={set("purchase_cost")} style={inp} min={0} placeholder="0.00" /></div>
-                  <div><Label>Vendor Name</Label><input value={form.vendor_name} onChange={set("vendor_name")} style={inp} placeholder="Vendor Co." /></div>
-                </Row2>
-                <Row2>
-                  <div><Label>Invoice Number</Label><input value={form.invoice_number} onChange={set("invoice_number")} style={inp} /></div>
-                  <div><Label>PO Number</Label><input value={form.purchase_order_number} onChange={set("purchase_order_number")} style={inp} /></div>
-                </Row2>
-                <div><Label>Vendor Contact</Label><input value={form.vendor_contact} onChange={set("vendor_contact")} style={inp} /></div>
-              </Card>
+                </div>
+                <div className="portal-form-row">
+                  <div><label className="portal-form-label">Purchase Cost</label><input type="number" value={form.purchase_cost} onChange={set("purchase_cost")} className="input-field" min={0} placeholder="0.00" /></div>
+                  <div><label className="portal-form-label">Vendor Name</label><input value={form.vendor_name} onChange={set("vendor_name")} className="input-field" placeholder="Vendor Co." /></div>
+                </div>
+                <div className="portal-form-row">
+                  <div><label className="portal-form-label">Invoice Number</label><input value={form.invoice_number} onChange={set("invoice_number")} className="input-field" /></div>
+                  <div><label className="portal-form-label">PO Number</label><input value={form.purchase_order_number} onChange={set("purchase_order_number")} className="input-field" /></div>
+                </div>
+                <div><label className="portal-form-label">Vendor Contact</label><input value={form.vendor_contact} onChange={set("vendor_contact")} className="input-field" /></div>
+              </div>
             </div>
 
             {/* RIGHT */}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-              <Card title="Warranty Information">
+              <div className="portal-form-card">
+                <div className="portal-form-title">Warranty Information</div>
                 <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13 }}>
                   <input type="checkbox" checked={form.warranty_available} onChange={setBool("warranty_available")} style={{ accentColor: "var(--c-accent)" }} />
                   <span style={{ fontWeight: 600 }}>Warranty Available</span>
                 </label>
                 {form.warranty_available && <>
-                  <Row2>
-                    <div><Label>Start Date</Label><input type="date" value={form.warranty_start_date} onChange={set("warranty_start_date")} style={inp} /></div>
-                    <div><Label>End Date</Label><input type="date" value={form.warranty_end_date} onChange={set("warranty_end_date")} style={inp} /></div>
-                  </Row2>
-                  <Row2>
-                    <div><Label>Provider</Label><input value={form.warranty_provider} onChange={set("warranty_provider")} style={inp} /></div>
-                    <div><Label>Reference #</Label><input value={form.warranty_reference_number} onChange={set("warranty_reference_number")} style={inp} /></div>
-                  </Row2>
+                  <div className="portal-form-row">
+                    <div><label className="portal-form-label">Start Date</label><input type="date" value={form.warranty_start_date} onChange={set("warranty_start_date")} className="input-field" /></div>
+                    <div><label className="portal-form-label">End Date</label><input type="date" value={form.warranty_end_date} onChange={set("warranty_end_date")} className="input-field" /></div>
+                  </div>
+                  <div className="portal-form-row">
+                    <div><label className="portal-form-label">Provider</label><input value={form.warranty_provider} onChange={set("warranty_provider")} className="input-field" /></div>
+                    <div><label className="portal-form-label">Reference #</label><input value={form.warranty_reference_number} onChange={set("warranty_reference_number")} className="input-field" /></div>
+                  </div>
                 </>}
-              </Card>
+              </div>
 
-              <Card title="AMC Information">
+              <div className="portal-form-card">
+                <div className="portal-form-title">AMC Information</div>
                 <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13 }}>
                   <input type="checkbox" checked={form.amc_applicable} onChange={setBool("amc_applicable")} style={{ accentColor: "var(--c-accent)" }} />
                   <span style={{ fontWeight: 600 }}>AMC Applicable</span>
                 </label>
                 {form.amc_applicable && <>
-                  <Row2>
-                    <div><Label>Start Date</Label><input type="date" value={form.amc_start_date} onChange={set("amc_start_date")} style={inp} /></div>
-                    <div><Label>End Date</Label><input type="date" value={form.amc_end_date} onChange={set("amc_end_date")} style={inp} /></div>
-                  </Row2>
-                  <Row2>
-                    <div><Label>Vendor</Label><input value={form.amc_vendor} onChange={set("amc_vendor")} style={inp} /></div>
-                    <div><Label>Cost</Label><input type="number" value={form.amc_cost} onChange={set("amc_cost")} style={inp} min={0} /></div>
-                  </Row2>
+                  <div className="portal-form-row">
+                    <div><label className="portal-form-label">Start Date</label><input type="date" value={form.amc_start_date} onChange={set("amc_start_date")} className="input-field" /></div>
+                    <div><label className="portal-form-label">End Date</label><input type="date" value={form.amc_end_date} onChange={set("amc_end_date")} className="input-field" /></div>
+                  </div>
+                  <div className="portal-form-row">
+                    <div><label className="portal-form-label">Vendor</label><input value={form.amc_vendor} onChange={set("amc_vendor")} className="input-field" /></div>
+                    <div><label className="portal-form-label">Cost</label><input type="number" value={form.amc_cost} onChange={set("amc_cost")} className="input-field" min={0} /></div>
+                  </div>
                 </>}
-              </Card>
+              </div>
 
-              <Card title="Insurance Information">
+              <div className="portal-form-card">
+                <div className="portal-form-title">Insurance Information</div>
                 <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13 }}>
                   <input type="checkbox" checked={form.insurance_available} onChange={setBool("insurance_available")} style={{ accentColor: "var(--c-accent)" }} />
                   <span style={{ fontWeight: 600 }}>Insurance Available</span>
                 </label>
                 {form.insurance_available && <>
-                  <Row2>
-                    <div><Label>Provider</Label><input value={form.insurance_provider} onChange={set("insurance_provider")} style={inp} /></div>
-                    <div><Label>Policy Number</Label><input value={form.policy_number} onChange={set("policy_number")} style={inp} /></div>
-                  </Row2>
-                  <Row2>
-                    <div><Label>Coverage Amount</Label><input type="number" value={form.coverage_amount} onChange={set("coverage_amount")} style={inp} min={0} /></div>
+                  <div className="portal-form-row">
+                    <div><label className="portal-form-label">Provider</label><input value={form.insurance_provider} onChange={set("insurance_provider")} className="input-field" /></div>
+                    <div><label className="portal-form-label">Policy Number</label><input value={form.policy_number} onChange={set("policy_number")} className="input-field" /></div>
+                  </div>
+                  <div className="portal-form-row">
+                    <div><label className="portal-form-label">Coverage Amount</label><input type="number" value={form.coverage_amount} onChange={set("coverage_amount")} className="input-field" min={0} /></div>
                     <div />
-                  </Row2>
-                  <Row2>
-                    <div><Label>Start Date</Label><input type="date" value={form.insurance_start_date} onChange={set("insurance_start_date")} style={inp} /></div>
-                    <div><Label>End Date</Label><input type="date" value={form.insurance_end_date} onChange={set("insurance_end_date")} style={inp} /></div>
-                  </Row2>
+                  </div>
+                  <div className="portal-form-row">
+                    <div><label className="portal-form-label">Start Date</label><input type="date" value={form.insurance_start_date} onChange={set("insurance_start_date")} className="input-field" /></div>
+                    <div><label className="portal-form-label">End Date</label><input type="date" value={form.insurance_end_date} onChange={set("insurance_end_date")} className="input-field" /></div>
+                  </div>
                 </>}
-              </Card>
+              </div>
 
-              <Card title="Maintenance Information">
+              <div className="portal-form-card">
+                <div className="portal-form-title">Maintenance Information</div>
                 <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 13 }}>
                   <input type="checkbox" checked={form.maintenance_required} onChange={setBool("maintenance_required")} style={{ accentColor: "var(--c-accent)" }} />
                   <span style={{ fontWeight: 600 }}>Maintenance Required</span>
                 </label>
                 {form.maintenance_required && <>
                   <div>
-                    <Label>Frequency</Label>
-                    <select value={form.maintenance_frequency} onChange={set("maintenance_frequency")} style={inp}>
+                    <label className="portal-form-label">Frequency</label>
+                    <select value={form.maintenance_frequency} onChange={set("maintenance_frequency")} className="input-field">
                       <option value="">Select…</option>
                       {maintenanceFreqs.map(f => <option key={f} value={f}>{f}</option>)}
                     </select>
                   </div>
-                  <Row2>
-                    <div><Label>Last Maintenance</Label><input type="date" value={form.last_maintenance_date} onChange={set("last_maintenance_date")} style={inp} /></div>
-                    <div><Label>Next Maintenance</Label><input type="date" value={form.next_maintenance_date} onChange={set("next_maintenance_date")} style={inp} /></div>
-                  </Row2>
+                  <div className="portal-form-row">
+                    <div><label className="portal-form-label">Last Maintenance</label><input type="date" value={form.last_maintenance_date} onChange={set("last_maintenance_date")} className="input-field" /></div>
+                    <div><label className="portal-form-label">Next Maintenance</label><input type="date" value={form.next_maintenance_date} onChange={set("next_maintenance_date")} className="input-field" /></div>
+                  </div>
                 </>}
-              </Card>
+              </div>
 
             </div>
           </div>

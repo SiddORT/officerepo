@@ -3,17 +3,13 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalUserMgmtApi } from "../../../services/apiClient";
 import UserManagementLayout from "./UserManagementLayout";
-
-const STATUS_COLORS = {
-  Active:   { bg: "rgba(34,197,94,0.1)", color: "#4ade80" },
-  Inactive: { bg: "rgba(100,116,139,0.15)", color: "var(--c-muted)" },
-  Invited:  { bg: "rgba(251,191,36,0.12)", color: "#fbbf24" },
-};
+import PageHeader from "../shared/PageHeader";
+import Badge from "../shared/Badge";
 
 function InfoRow({ label, value }) {
   return (
     <div style={{ display: "flex", gap: 12, padding: "8px 0", borderBottom: "1px solid var(--c-border)" }}>
-      <div style={{ width: 140, fontSize: 12, color: "var(--c-muted)", fontWeight: 500, flexShrink: 0 }}>{label}</div>
+      <div className="portal-form-label" style={{ width: 140, flexShrink: 0 }}>{label}</div>
       <div style={{ fontSize: 13, color: "var(--c-text)", wordBreak: "break-word" }}>{value || "—"}</div>
     </div>
   );
@@ -74,7 +70,6 @@ export default function UserDetails() {
 
   const name = user.display_name || `${user.first_name} ${user.last_name || ""}`.trim();
   const initials = name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
-  const sc = STATUS_COLORS[user.status] || { bg: "rgba(100,116,139,0.1)", color: "var(--c-muted)" };
 
   return (
     <UserManagementLayout title={name}>
@@ -85,34 +80,34 @@ export default function UserDetails() {
       )}
 
       {/* Header card */}
-      <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, padding: 20, marginBottom: 16 }}>
+      <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
           <div style={{ width: 56, height: 56, borderRadius: "50%", background: "linear-gradient(135deg,#00aeec,#ff7a1a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
             {initials}
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--c-text)" }}>{name}</div>
-            <div style={{ fontSize: 13, color: "var(--c-muted)", marginTop: 2 }}>{user.email}</div>
+            <div className="t-heading" style={{ fontSize: 17, fontWeight: 700 }}>{name}</div>
+            <div className="t-muted" style={{ fontSize: 13, marginTop: 2 }}>{user.email}</div>
             <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: sc.bg, color: sc.color }}>{user.status}</span>
+              <Badge status={user.status} />
               {user.roles?.map(r => (
-                <span key={r.id} style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "rgba(0,174,236,0.1)", color: "var(--c-accent)" }}>{r.name}</span>
+                <span key={r.id} className="badge-info">{r.name}</span>
               ))}
             </div>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Link to={`/portal/${subdomain}/user-management/users/${userId}/edit`}
-              style={{ padding: "7px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, background: "var(--c-accent)", color: "#fff", textDecoration: "none" }}>
+              className="btn-primary" style={{ textDecoration: "none" }}>
               Edit
             </Link>
             {user.status === "Active"
               ? <button onClick={() => doAction("deactivate")} disabled={!!actionBusy}
-                  style={{ padding: "7px 14px", borderRadius: 6, fontSize: 13, fontWeight: 500, background: "transparent", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer" }}>
+                  className="btn-secondary" style={{ color: "#f87171" }}>
                   {actionBusy === "deactivate" ? "…" : "Deactivate"}
                 </button>
               : user.status === "Inactive"
               ? <button onClick={() => doAction("activate")} disabled={!!actionBusy}
-                  style={{ padding: "7px 14px", borderRadius: 6, fontSize: 13, fontWeight: 500, background: "transparent", color: "#4ade80", border: "1px solid rgba(34,197,94,0.3)", cursor: "pointer" }}>
+                  className="btn-secondary" style={{ color: "#4ade80" }}>
                   {actionBusy === "activate" ? "…" : "Activate"}
                 </button>
               : null
@@ -123,8 +118,8 @@ export default function UserDetails() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 16, alignItems: "start" }}>
         {/* Info */}
-        <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, padding: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)", marginBottom: 12 }}>User Information</div>
+        <div className="portal-form-card">
+          <div className="portal-form-title">User Information</div>
           <InfoRow label="First Name" value={user.first_name} />
           <InfoRow label="Last Name" value={user.last_name} />
           <InfoRow label="Display Name" value={user.display_name} />
@@ -138,19 +133,18 @@ export default function UserDetails() {
 
         {/* Actions */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, padding: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text)", marginBottom: 12 }}>Actions</div>
+          <div className="portal-form-card">
+            <div className="portal-form-title">Actions</div>
 
             <button onClick={() => setShowReset(r => !r)}
-              style={{ width: "100%", padding: "8px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, background: "transparent", color: "var(--c-text2)", border: "1px solid var(--c-border)", cursor: "pointer", marginBottom: 8, textAlign: "left" }}>
+              className="btn-secondary" style={{ width: "100%", textAlign: "left", marginBottom: 8 }}>
               🔑 Reset Password
             </button>
 
             {showReset && (
               <div style={{ marginBottom: 10 }}>
                 <div style={{ position: "relative", marginBottom: 6 }}>
-                  <input type={showResetPw ? "text" : "password"} placeholder="New password (min 8)" value={resetPw} onChange={e => setResetPw(e.target.value)}
-                    style={{ width: "100%", padding: "7px 36px 7px 10px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-bg)", color: "var(--c-text)", fontSize: 12, boxSizing: "border-box" }} />
+                  <input type={showResetPw ? "text" : "password"} className="input-field" placeholder="New password (min 8)" value={resetPw} onChange={e => setResetPw(e.target.value)} />
                   <button type="button" onClick={() => setShowResetPw(s => !s)}
                     aria-label={showResetPw ? "Hide password" : "Show password"}
                     style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: showResetPw ? "var(--c-accent)" : "var(--c-muted)", padding: 2, display: "flex", alignItems: "center" }}>
@@ -167,14 +161,14 @@ export default function UserDetails() {
                   </button>
                 </div>
                 <button onClick={doReset} disabled={actionBusy === "reset"}
-                  style={{ width: "100%", padding: "7px 0", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "#f59e0b", color: "#fff", border: "none", cursor: "pointer" }}>
+                  className="btn-primary" style={{ width: "100%", background: "#f59e0b" }}>
                   {actionBusy === "reset" ? "Saving…" : "Set Password"}
                 </button>
               </div>
             )}
 
             <button onClick={() => doAction("forceLogout")} disabled={!!actionBusy}
-              style={{ width: "100%", padding: "8px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500, background: "transparent", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)", cursor: "pointer", textAlign: "left" }}>
+              className="btn-secondary" style={{ width: "100%", color: "#f87171", textAlign: "left" }}>
               {actionBusy === "forceLogout" ? "…" : "⊘ Force Logout All Sessions"}
             </button>
           </div>

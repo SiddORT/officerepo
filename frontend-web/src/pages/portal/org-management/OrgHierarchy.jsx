@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
+import PageHeader from "../shared/PageHeader";
+import Badge from "../shared/Badge";
 
 function DeptNode({ node, depth = 0 }) {
   const [open, setOpen] = useState(true);
@@ -31,12 +33,12 @@ function DeptNode({ node, depth = 0 }) {
 
         <span style={{ fontSize: 13, fontWeight: 500, color: "var(--c-text)", flex: 1 }}>{node.department_name}</span>
         {node.head_employee && (
-          <span style={{ fontSize: 11, color: "var(--c-muted)", display: "flex", alignItems: "center", gap: 3 }}>
+          <span className="t-muted" style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 3 }}>
             👤 <span>{node.head_employee.full_name}</span>
           </span>
         )}
         {node.total_employees != null && (
-          <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 3, background: "rgba(0,174,236,0.1)", color: "var(--c-accent)", border: "1px solid rgba(0,174,236,0.2)" }}>
+          <span className="badge-info">
             {node.active_employees ?? node.total_employees}/{node.total_employees}
           </span>
         )}
@@ -44,7 +46,7 @@ function DeptNode({ node, depth = 0 }) {
           {node.department_code}
         </span>
         {!node.is_active && (
-          <span style={{ fontSize: 10, padding: "1px 5px", borderRadius: 3, background: "rgba(100,116,139,0.1)", color: "var(--c-muted)" }}>Inactive</span>
+          <Badge status="Inactive" />
         )}
       </div>
 
@@ -77,25 +79,22 @@ export default function OrgHierarchy() {
   const sectionHeader = (title, count) => (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
       <span style={{ fontSize: 12, fontWeight: 700, color: "var(--c-text)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{title}</span>
-      <span style={{ fontSize: 11, color: "var(--c-muted)" }}>{count} total</span>
+      <span className="t-muted" style={{ fontSize: 11 }}>{count} total</span>
     </div>
   );
 
   return (
     <OrgLayout title="Org Hierarchy">
       <div style={{ maxWidth: 800 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--c-text)" }}>
-              {data?.company?.company_name || "Organization Hierarchy"}
-            </h2>
-            <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--c-muted)" }}>Department tree and designations</p>
-          </div>
-          <button onClick={() => navigate(-1)}
-            style={{ padding: "6px 14px", borderRadius: 6, fontSize: 13, background: "var(--c-surface)", border: "1px solid var(--c-border)", color: "var(--c-text)", cursor: "pointer" }}>
-            ← Back
-          </button>
-        </div>
+        <PageHeader
+          title={data?.company?.company_name || "Organization Hierarchy"}
+          subtitle="Department tree and designations"
+          actions={
+            <button onClick={() => navigate(-1)} className="btn-secondary">
+              ← Back
+            </button>
+          }
+        />
 
         {loading && <div style={{ padding: 60, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</div>}
         {error && <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 13, color: "#f87171" }}>{error}</div>}
@@ -103,7 +102,7 @@ export default function OrgHierarchy() {
         {data && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {/* Department Tree */}
-            <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, overflow: "hidden" }}>
+            <div className="portal-table-wrap">
               {sectionHeader("Departments", data.department_tree?.length ?? 0)}
               <div style={{ padding: 14 }}>
                 {!data.department_tree || data.department_tree.length === 0 ? (
@@ -115,37 +114,33 @@ export default function OrgHierarchy() {
             </div>
 
             {/* Designations */}
-            <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, overflow: "hidden" }}>
+            <div className="portal-table-wrap">
               {sectionHeader("Designations", data.designations?.length ?? 0)}
               {!data.designations || data.designations.length === 0 ? (
                 <div style={{ padding: 30, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>No designations yet.</div>
               ) : (
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <table className="portal-table">
                   <thead>
-                    <tr style={{ background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
+                    <tr>
                       {["Code", "Designation", "Level", "Status"].map(h => (
-                        <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                        <th key={h}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {data.designations.map((d, i) => (
-                      <tr key={d.id} style={{ borderBottom: i < data.designations.length - 1 ? "1px solid var(--c-border)" : "none" }}>
-                        <td style={{ padding: "10px 14px" }}>
+                      <tr key={d.id}>
+                        <td>
                           <span style={{ fontFamily: "monospace", fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }}>{d.designation_code}</span>
                         </td>
-                        <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>{d.designation_name}</td>
-                        <td style={{ padding: "10px 14px" }}>
+                        <td style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>{d.designation_name}</td>
+                        <td>
                           {d.level != null
                             ? <span style={{ fontFamily: "monospace", fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "var(--c-surface2)", color: "var(--c-accent)", border: "1px solid var(--c-border)" }}>L{d.level}</span>
-                            : <span style={{ fontSize: 12, color: "var(--c-muted)", opacity: 0.5 }}>—</span>}
+                            : <span className="t-muted" style={{ fontSize: 12, opacity: 0.5 }}>—</span>}
                         </td>
-                        <td style={{ padding: "10px 14px" }}>
-                          <span style={{
-                            fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
-                            background: d.is_active ? "rgba(34,197,94,0.1)" : "rgba(100,116,139,0.15)",
-                            color: d.is_active ? "#4ade80" : "var(--c-muted)",
-                          }}>{d.is_active ? "Active" : "Inactive"}</span>
+                        <td>
+                          <Badge status={d.is_active ? "Active" : "Inactive"} />
                         </td>
                       </tr>
                     ))}

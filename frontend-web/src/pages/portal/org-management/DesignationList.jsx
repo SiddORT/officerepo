@@ -3,60 +3,26 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
-
-// ── Shared styles ─────────────────────────────────────────────────────────────
-const inputStyle = {
-  width: "100%", padding: "8px 10px",
-  background: "var(--c-bg)", border: "1px solid var(--c-border)",
-  borderRadius: 6, fontSize: 13, color: "var(--c-text)", boxSizing: "border-box",
-};
-const Label = ({ children }) => (
-  <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--c-text2)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-    {children}
-  </label>
-);
+import PageHeader from "../shared/PageHeader";
+import Badge from "../shared/Badge";
+import Pagination from "../shared/Pagination";
 
 // ── Level badge ───────────────────────────────────────────────────────────────
-const LEVEL_COLORS = [
-  null,
-  { bg: "rgba(245,158,11,0.15)", color: "#f59e0b" },
-  { bg: "rgba(249,115,22,0.15)", color: "#f97316" },
-  { bg: "rgba(168,85,247,0.15)", color: "#a855f7" },
-  { bg: "rgba(59,130,246,0.15)", color: "#3b82f6" },
-  { bg: "rgba(6,182,212,0.15)",  color: "#06b6d4" },
-  { bg: "rgba(34,197,94,0.15)",  color: "#22c55e" },
-  { bg: "rgba(100,116,139,0.15)",color: "#94a3b8" },
-  { bg: "rgba(100,116,139,0.12)",color: "#94a3b8" },
-  { bg: "rgba(100,116,139,0.10)",color: "#94a3b8" },
-  { bg: "rgba(100,116,139,0.08)",color: "#94a3b8" },
-];
 const LEVEL_LABELS = { 1:"Executive",2:"Director",3:"Head of Dept",4:"Manager",5:"Team Lead",6:"Senior",7:"Employee" };
 
 function LevelBadge({ level }) {
-  if (level == null) return <span style={{ color: "var(--c-muted)", fontSize: 12 }}>—</span>;
-  const s = LEVEL_COLORS[level] || LEVEL_COLORS[7];
+  if (level == null) return <span className="t-muted" style={{ fontSize: 12 }}>—</span>;
   return (
-    <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 999, background: s.bg, color: s.color, border: `1px solid ${s.color}40`, whiteSpace: "nowrap" }}>
+    <span className="badge-purple">
       L{level}{LEVEL_LABELS[level] ? ` · ${LEVEL_LABELS[level]}` : ""}
     </span>
   );
 }
 
-function StatusBadge({ active }) {
-  const s = active
-    ? { bg: "rgba(34,197,94,0.1)", color: "#4ade80" }
-    : { bg: "rgba(100,116,139,0.15)", color: "var(--c-muted)" };
-  return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: s.bg, color: s.color }}>
-      {active ? "Active" : "Inactive"}
-    </span>
-  );
-}
-
 function EmpCountBadge({ count }) {
-  if (!count) return <span style={{ fontSize: 12, color: "var(--c-muted)", opacity: 0.5 }}>0</span>;
+  if (!count) return <span className="t-muted" style={{ fontSize: 12, opacity: 0.5 }}>0</span>;
   return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: "rgba(0,174,236,0.1)", color: "var(--c-accent)" }}>
+    <span className="badge-info">
       {count} emp
     </span>
   );
@@ -112,8 +78,8 @@ function DesigModal({ subdomain, token, companies, allDepartments, editDesig, on
     <div
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ width: "100%", maxWidth: 520, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12, boxShadow: "0 20px 60px rgba(0,0,0,0.4)", overflow: "hidden" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--c-border)" }}>
+      <div className="portal-form-card" style={{ width: "100%", maxWidth: 520, maxHeight: "90vh", overflow: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 10, borderBottom: "1px solid var(--c-border)" }}>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-text)" }}>{isEdit ? "Edit Designation" : "Add Designation"}</div>
             <div style={{ fontSize: 12, color: "var(--c-muted)", marginTop: 1 }}>Job title or role within the organization</div>
@@ -121,7 +87,7 @@ function DesigModal({ subdomain, token, companies, allDepartments, editDesig, on
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-muted)", fontSize: 18, lineHeight: 1, padding: 4 }}>✕</button>
         </div>
 
-        <div style={{ padding: 20, display: "grid", gap: 14 }}>
+        <div style={{ padding: "14px 0", display: "grid", gap: 14 }}>
           {error && (
             <div style={{ padding: "9px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 7, fontSize: 13, color: "#f87171" }}>
               {error}
@@ -129,17 +95,17 @@ function DesigModal({ subdomain, token, companies, allDepartments, editDesig, on
           )}
 
           <div>
-            <Label>Company *</Label>
+            <label className="portal-form-label">Company *</label>
             <select value={form.company_id} onChange={e => { set("company_id", e.target.value); set("department_id", ""); }}
-              disabled={isEdit} style={{ ...inputStyle, cursor: isEdit ? "not-allowed" : "pointer" }}>
+              disabled={isEdit} className="input-field" style={{ cursor: isEdit ? "not-allowed" : "pointer" }}>
               <option value="">Select a company</option>
               {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
             </select>
           </div>
 
           <div>
-            <Label>Department</Label>
-            <select value={form.department_id} onChange={e => set("department_id", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+            <label className="portal-form-label">Department</label>
+            <select value={form.department_id} onChange={e => set("department_id", e.target.value)} className="input-field" style={{ cursor: "pointer" }}>
               <option value="">All departments (cross-department)</option>
               {departments.map(d => <option key={d.id} value={d.id}>{d.department_name}</option>)}
             </select>
@@ -147,20 +113,20 @@ function DesigModal({ subdomain, token, companies, allDepartments, editDesig, on
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <Label>Code *</Label>
+              <label className="portal-form-label">Code *</label>
               <input value={form.designation_code} onChange={e => set("designation_code", e.target.value.toUpperCase())}
-                placeholder="MGR" style={{ ...inputStyle, fontFamily: "monospace" }} />
+                placeholder="MGR" className="input-field" style={{ fontFamily: "monospace" }} />
             </div>
             <div>
-              <Label>Designation Name *</Label>
+              <label className="portal-form-label">Designation Name *</label>
               <input value={form.designation_name} onChange={e => set("designation_name", e.target.value)}
-                placeholder="Manager" style={inputStyle} />
+                placeholder="Manager" className="input-field" />
             </div>
           </div>
 
           <div>
-            <Label>Seniority Level</Label>
-            <select value={form.level} onChange={e => set("level", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+            <label className="portal-form-label">Seniority Level</label>
+            <select value={form.level} onChange={e => set("level", e.target.value)} className="input-field" style={{ cursor: "pointer" }}>
               <option value="">— Not set —</option>
               <option value="1">Level 1 — Executive / CEO</option>
               <option value="2">Level 2 — Director</option>
@@ -176,20 +142,18 @@ function DesigModal({ subdomain, token, companies, allDepartments, editDesig, on
           </div>
 
           <div>
-            <Label>Description</Label>
+            <label className="portal-form-label">Description</label>
             <textarea value={form.description} onChange={e => set("description", e.target.value)}
               rows={3} placeholder="Brief description of this role…"
-              style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5 }} />
+              className="input-field" style={{ resize: "vertical", lineHeight: 1.5 }} />
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, padding: "14px 20px", borderTop: "1px solid var(--c-border)", background: "var(--c-surface2)" }}>
-          <button onClick={handleSubmit} disabled={saving}
-            style={{ flex: 1, padding: "9px 0", borderRadius: 7, fontWeight: 600, fontSize: 13, background: saving ? "var(--c-muted)" : "var(--c-accent)", color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer" }}>
+        <div style={{ display: "flex", gap: 10, paddingTop: 14, borderTop: "1px solid var(--c-border)" }}>
+          <button onClick={handleSubmit} disabled={saving} className="btn-primary" style={{ flex: 1 }}>
             {saving ? "Saving…" : isEdit ? "Save Changes" : "Create Designation"}
           </button>
-          <button onClick={onClose} disabled={saving}
-            style={{ flex: 1, padding: "9px 0", borderRadius: 7, fontWeight: 500, fontSize: 13, background: "transparent", color: "var(--c-text2)", border: "1px solid var(--c-border)", cursor: "pointer" }}>
+          <button onClick={onClose} disabled={saving} className="btn-secondary" style={{ flex: 1 }}>
             Cancel
           </button>
         </div>
@@ -304,45 +268,44 @@ export default function DesignationList() {
       )}
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--c-text)" }}>Designations</h2>
-          <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--c-muted)" }}>Job titles and seniority levels — {total} total</p>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          {selectedCompany && rows.length === 0 && !loading && (
-            <button onClick={handleSeed} disabled={seeding}
-              style={{ padding: "8px 14px", borderRadius: 7, fontWeight: 500, fontSize: 12, background: "rgba(0,174,236,0.08)", color: "var(--c-accent)", border: "1px solid rgba(0,174,236,0.2)", cursor: seeding ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
-              {seeding ? "Seeding…" : "🌱 Seed Sample Data"}
-            </button>
-          )}
-          {selectedCompany && (
-            <button onClick={() => setModal({ editDesig: null })}
-              style={{ padding: "8px 16px", borderRadius: 7, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>
-              + Add Designation
-            </button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Designations"
+        subtitle={`Job titles and seniority levels — ${total} total`}
+        actions={
+          <>
+            {selectedCompany && rows.length === 0 && !loading && (
+              <button onClick={handleSeed} disabled={seeding} className="btn-secondary">
+                {seeding ? "Seeding…" : "🌱 Seed Sample Data"}
+              </button>
+            )}
+            {selectedCompany && (
+              <button onClick={() => setModal({ editDesig: null })} className="btn-primary">
+                + Add Designation
+              </button>
+            )}
+          </>
+        }
+      />
 
       {/* Filters */}
       <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
         <input
           value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search designations…"
-          style={{ flex: 1, minWidth: 180, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}
+          className="input-field"
+          style={{ flex: 1, minWidth: 180 }}
         />
         <select value={selectedCompany} onChange={e => { setSelectedCompany(e.target.value); setPage(1); }}
-          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}>
+          className="input-field" style={{ width: "auto" }}>
           {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
         </select>
         <select value={selectedDept} onChange={e => { setSelectedDept(e.target.value); setPage(1); }}
-          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}>
+          className="input-field" style={{ width: "auto" }}>
           <option value="">All departments</option>
           {departments.map(d => <option key={d.id} value={d.id}>{d.department_name}</option>)}
         </select>
         <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}>
+          className="input-field" style={{ width: "auto" }}>
           <option value="">All statuses</option>
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>
@@ -350,30 +313,30 @@ export default function DesignationList() {
       </div>
 
       {/* Table */}
-      <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, overflow: "hidden" }}>
+      <div className="portal-table-wrap">
         {companies.length === 0 ? (
           <div style={{ padding: 60, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>
-            <Link to={`/portal/${subdomain}/org/companies/new`} style={{ color: "var(--c-accent)", fontWeight: 500 }}>Add a company first.</Link>
+            <Link to={`/portal/${subdomain}/org/companies/new`} className="t-accent" style={{ fontWeight: 500 }}>Add a company first.</Link>
           </div>
         ) : loading ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</div>
         ) : rows.length === 0 ? (
           <div style={{ padding: 60, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>
             No designations found.{" "}
-            <button onClick={() => setModal({ editDesig: null })} style={{ color: "var(--c-accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: "inherit" }}>
+            <button onClick={() => setModal({ editDesig: null })} className="t-accent" style={{ fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: "inherit" }}>
               Add one
             </button>
             {" "}or{" "}
-            <button onClick={handleSeed} disabled={seeding} style={{ color: "var(--c-accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: "inherit" }}>
+            <button onClick={handleSeed} disabled={seeding} className="t-accent" style={{ fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0, fontSize: "inherit" }}>
               {seeding ? "seeding…" : "seed sample data"}
             </button>.
           </div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table className="portal-table">
             <thead>
-              <tr style={{ background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
+              <tr>
                 {["#", "Code", "Designation", "Department", "Level", "Employees", "Status", ""].map(h => (
-                  <th key={h} style={{ padding: "10px 14px", textAlign: h === "#" ? "center" : "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", width: h === "#" ? 40 : undefined }}>{h}</th>
+                  <th key={h} style={{ textAlign: h === "#" ? "center" : "left", width: h === "#" ? 40 : undefined }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -381,36 +344,36 @@ export default function DesignationList() {
               {rows.map((d, i) => {
                 const dept = departments.find(x => x.id === d.department_id);
                 return (
-                  <tr key={d.id} style={{ borderBottom: i < rows.length - 1 ? "1px solid var(--c-border)" : "none" }}>
-                    <td style={{ padding: "12px 14px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
-                    <td style={{ padding: "12px 14px" }}>
+                  <tr key={d.id}>
+                    <td style={{ width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
+                    <td>
                       <span style={{ fontFamily: "monospace", fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)" }}>
                         {d.designation_code}
                       </span>
                     </td>
-                    <td style={{ padding: "12px 14px" }}>
+                    <td>
                       <Link to={`/portal/${subdomain}/org/designations/${d.id}`}
-                        style={{ fontSize: 13, fontWeight: 600, color: "var(--c-accent)", textDecoration: "none" }}>
+                        className="t-accent" style={{ fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
                         {d.designation_name}
                       </Link>
-                      {d.description && <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 1 }}>{d.description}</div>}
+                      {d.description && <div className="t-muted" style={{ fontSize: 11, marginTop: 1 }}>{d.description}</div>}
                     </td>
-                    <td style={{ padding: "12px 14px" }}>
+                    <td>
                       {dept
                         ? <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 4, background: "rgba(100,116,139,0.1)", color: "var(--c-text2)", border: "1px solid var(--c-border)" }}>{dept.department_name}</span>
-                        : <span style={{ opacity: 0.4, fontSize: 12 }}>—</span>}
+                        : <span className="t-muted" style={{ opacity: 0.4, fontSize: 12 }}>—</span>}
                     </td>
-                    <td style={{ padding: "12px 14px" }}>
+                    <td>
                       <LevelBadge level={d.level} />
                     </td>
-                    <td style={{ padding: "12px 14px" }}>
+                    <td>
                       <EmpCountBadge count={d.total_employees} />
                     </td>
-                    <td style={{ padding: "12px 14px" }}><StatusBadge active={d.is_active} /></td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <div style={{ display: "flex", gap: 10 }}>
+                    <td><Badge status={d.is_active ? "Active" : "Inactive"} /></td>
+                    <td>
+                      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                         <button onClick={() => setModal({ editDesig: d })}
-                          style={{ fontSize: 12, color: "var(--c-accent)", fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                          className="t-accent" style={{ fontSize: 12, fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                           Edit
                         </button>
                         <button onClick={() => toggleStatus(d)} disabled={acting === d.id}
@@ -427,17 +390,7 @@ export default function DesignationList() {
         )}
       </div>
 
-      {Math.ceil(total / PAGE_SIZE) > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, fontSize: 12, color: "var(--c-muted)" }}>
-          <span>{total} total · page {page} of {Math.ceil(total / PAGE_SIZE)}</span>
-          <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", opacity: page === 1 ? 0.4 : 1 }}>← Prev</button>
-            <button onClick={() => setPage(p => Math.min(Math.ceil(total / PAGE_SIZE), p + 1))} disabled={page === Math.ceil(total / PAGE_SIZE)}
-              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", cursor: "pointer", background: "var(--c-surface)", color: "var(--c-text)", opacity: page === Math.ceil(total / PAGE_SIZE) ? 0.4 : 1 }}>Next →</button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={Math.ceil(total / PAGE_SIZE)} onPage={setPage} total={total} pageSize={PAGE_SIZE} />
     </OrgLayout>
   );
 }

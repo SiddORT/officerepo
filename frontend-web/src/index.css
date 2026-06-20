@@ -151,6 +151,43 @@ html.theme-light {
   .t-table-header { background-color: var(--c-surface2); border-bottom: 1px solid var(--c-border); }
   .t-table-row:hover { background-color: var(--c-hover); }
   .t-table-divider { border-color: var(--c-border); }
+
+  /* Extra badge variants */
+  .badge-info    { background-color: rgba(99,102,241,0.12); color: #818cf8; border: 1px solid rgba(99,102,241,0.25); @apply text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap; }
+  .badge-purple  { background-color: rgba(168,85,247,0.12); color: #a855f7; border: 1px solid rgba(168,85,247,0.25); @apply text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap; }
+  .badge-neutral { background-color: var(--c-surface2); color: var(--c-text2); border: 1px solid var(--c-border); @apply text-xs px-2 py-0.5 rounded-full font-medium whitespace-nowrap; }
+  .badge-active, .badge-inactive, .badge-warning, .badge-danger { @apply whitespace-nowrap; }
+
+  /* Portal nav base item */
+  .portal-nav-item { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 8px; font-size: 13px; text-decoration: none; transition: all 0.12s; font-weight: 400; }
+
+  /* Portal page header — gradient left-bar title */
+  .portal-page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; gap: 12px; flex-wrap: wrap; }
+  .portal-page-title  { font-size: 20px; font-weight: 800; color: var(--c-text); line-height: 1.2; padding-left: 13px; position: relative; }
+  .portal-page-title::before { content: ''; position: absolute; left: 0; top: 1px; bottom: 1px; width: 3px; border-radius: 2px; background: linear-gradient(180deg, #00aeec, #ff7a1a); }
+  .portal-page-subtitle { font-size: 12px; color: var(--c-muted); margin-top: 4px; padding-left: 13px; }
+
+  /* Portal stat card */
+  .portal-stat-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 12px; padding: 18px 20px; box-shadow: var(--c-shadow); position: relative; overflow: hidden; cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s, transform 0.1s; }
+  .portal-stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #00aeec, #ff7a1a); }
+  .portal-stat-card:hover { box-shadow: var(--c-shadow-lg); border-color: rgba(0,174,236,0.3); transform: translateY(-1px); }
+
+  /* Portal table */
+  .portal-table-wrap { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 10px; overflow: hidden; box-shadow: var(--c-shadow); }
+  .portal-table { width: 100%; border-collapse: collapse; }
+  .portal-table th { padding: 9px 14px; text-align: left; font-size: 11px; font-weight: 700; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; background: var(--c-surface2); border-bottom: 1px solid var(--c-border); }
+  .portal-table th:last-child { text-align: right; }
+  .portal-table td { padding: 11px 14px; border-bottom: 1px solid var(--c-border); font-size: 13px; vertical-align: middle; }
+  .portal-table tbody tr { transition: background 0.1s; }
+  .portal-table tbody tr:hover { background: var(--c-hover); cursor: pointer; }
+  .portal-table tbody tr:last-child td { border-bottom: none; }
+
+  /* Portal form card */
+  .portal-form-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--c-shadow); }
+  .portal-form-title { font-size: 13px; font-weight: 700; color: var(--c-text); padding-bottom: 10px; border-bottom: 1px solid var(--c-border); }
+  .portal-form-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .portal-form-label { display: block; font-size: 11px; font-weight: 600; color: var(--c-text2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .portal-form-label-req::after { content: ' *'; color: #f87171; }
 }
 
 /* ── Tailwind utility overrides — map Tailwind grays to CSS vars ──────── */

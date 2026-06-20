@@ -3,61 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
-
-// ─── Design tokens ────────────────────────────────────────────────────────────
-const inp = {
-  width: "100%", padding: "8px 10px",
-  background: "var(--c-bg)", border: "1px solid var(--c-border)",
-  borderRadius: 6, fontSize: 13, color: "var(--c-text)", boxSizing: "border-box",
-  outline: "none",
-};
-const Label = ({ children, required }) => (
-  <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--c-text2)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-    {children}{required && <span style={{ color: "#f87171", marginLeft: 3 }}>*</span>}
-  </label>
-);
-const Grid2 = ({ children }) => (
-  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>{children}</div>
-);
-const Hint = ({ children }) => (
-  <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 4 }}>{children}</div>
-);
-
-// ─── Section card with icon + title ──────────────────────────────────────────
-function Section({ icon, title, subtitle, children }) {
-  return (
-    <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12, overflow: "hidden", marginBottom: 16 }}>
-      <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--c-border)", background: "var(--c-surface2)", display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 16 }}>{icon}</span>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)" }}>{title}</div>
-          {subtitle && <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 1 }}>{subtitle}</div>}
-        </div>
-      </div>
-      <div style={{ padding: 20, display: "grid", gap: 14 }}>{children}</div>
-    </div>
-  );
-}
-
-// ─── Toggle switch ────────────────────────────────────────────────────────────
-function Toggle({ value, onChange, label }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <button type="button" onClick={() => onChange(!value)}
-        style={{
-          width: 40, height: 22, borderRadius: 999, border: "none", cursor: "pointer", padding: 2,
-          background: value ? "var(--c-accent)" : "var(--c-border)",
-          transition: "background 0.2s", flexShrink: 0, position: "relative",
-        }}>
-        <span style={{
-          display: "block", width: 18, height: 18, borderRadius: "50%", background: "#fff",
-          transform: value ? "translateX(18px)" : "translateX(0)", transition: "transform 0.2s",
-        }} />
-      </button>
-      <span style={{ fontSize: 13, color: "var(--c-text)" }}>{label}</span>
-    </div>
-  );
-}
+import PageHeader from "../shared/PageHeader";
 
 // ─── Document types ───────────────────────────────────────────────────────────
 const DOC_TYPES = [
@@ -196,23 +142,26 @@ export default function CompanyForm({ editMode }) {
     const El      = as === "textarea" ? "textarea" : as === "select" ? "select" : "input";
     return (
       <div style={full ? { gridColumn: "1 / -1" } : {}}>
-        {label && <Label required={required}>{label}</Label>}
+        {label && <label className={`portal-form-label ${required ? "portal-form-label-req" : ""}`}>{label}</label>}
         {El === "textarea" ? (
           <textarea value={value} rows={rows || 3} onChange={e => setter(k, e.target.value)} placeholder={placeholder}
-            style={{ ...inp, resize: "vertical", lineHeight: 1.5, ...(errMsg ? { borderColor: "#f87171" } : {}) }} />
+            className="input-field"
+            style={{ resize: "vertical", lineHeight: 1.5, ...(errMsg ? { borderColor: "#f87171" } : {}) }} />
         ) : El === "select" ? (
           <select value={value} onChange={e => setter(k, e.target.value)}
-            style={{ ...inp, cursor: "pointer", ...(errMsg ? { borderColor: "#f87171" } : {}) }}>
+            className="input-field"
+            style={{ cursor: "pointer", ...(errMsg ? { borderColor: "#f87171" } : {}) }}>
             <option value="">{placeholder || "Select…"}</option>
             {options.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
         ) : (
           <input type={type} value={value} onChange={e => setter(k, mono ? e.target.value.toUpperCase() : e.target.value)}
             placeholder={placeholder}
-            style={{ ...inp, ...(mono ? { fontFamily: "monospace" } : {}), ...(errMsg ? { borderColor: "#f87171" } : {}) }} />
+            className="input-field"
+            style={{ ...(mono ? { fontFamily: "monospace" } : {}), ...(errMsg ? { borderColor: "#f87171" } : {}) }} />
         )}
         {errMsg && <div style={{ fontSize: 11, color: "#f87171", marginTop: 3 }}>{errMsg}</div>}
-        {note && !errMsg && <Hint>{note}</Hint>}
+        {note && !errMsg && <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 4 }}>{note}</div>}
       </div>
     );
   };
@@ -241,20 +190,15 @@ export default function CompanyForm({ editMode }) {
     <OrgLayout title={editMode ? "Edit Company" : "Add Company"}>
       <div>
         {/* Page header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--c-text)" }}>
-              {editMode ? "Edit Company" : "Add Company"}
-            </h2>
-            <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--c-muted)" }}>
-              {editMode ? "Update company details" : "Register a new legal entity"}
-            </p>
-          </div>
-          <button onClick={() => navigate(-1)}
-            style={{ fontSize: 12, color: "var(--c-muted)", background: "none", border: "none", cursor: "pointer" }}>
-            ← Back
-          </button>
-        </div>
+        <PageHeader
+          title={editMode ? "Edit Company" : "Add Company"}
+          subtitle={editMode ? "Update company details" : "Register a new legal entity"}
+          actions={
+            <button onClick={() => navigate(-1)} className="btn-secondary">
+              ← Back
+            </button>
+          }
+        />
 
         {error && (
           <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#f87171" }}>
@@ -263,8 +207,9 @@ export default function CompanyForm({ editMode }) {
         )}
 
         {/* ── S1: General Information ── */}
-        <Section icon="🏢" title="General Information" subtitle="Core identity of the company">
-          <Grid2>
+        <div className="portal-form-card" style={{ marginBottom: 16 }}>
+          <div className="portal-form-title">🏢 General Information — Core identity of the company</div>
+          <div className="portal-form-row">
             <F k="company_code" label="Company Code" required placeholder="ACME" mono note="Auto-uppercased unique short code" />
             <F k="company_name" label="Company Name" required placeholder="Acme Pvt Ltd" />
             <F k="legal_name" label="Legal / Registered Name" required placeholder="Acme Private Limited" />
@@ -273,54 +218,68 @@ export default function CompanyForm({ editMode }) {
             <F k="industry" label="Industry" placeholder="e.g. Information Technology" />
             <F k="sub_industry" label="Sub-Industry" placeholder="e.g. SaaS" />
             <F k="date_of_incorporation" label="Date of Incorporation" type="date" />
-          </Grid2>
+          </div>
           <F k="company_description" label="Company Description" placeholder="Brief overview of what the company does…" as="textarea" rows={3} full />
-        </Section>
+        </div>
 
         {/* ── S9: Status (top position for quick access) ── */}
-        <Section icon="🔖" title="Status" subtitle="Lifecycle status of this company record">
+        <div className="portal-form-card" style={{ marginBottom: 16 }}>
+          <div className="portal-form-title">🔖 Status — Lifecycle status of this company record</div>
           <div style={{ maxWidth: 260 }}>
             <F k="status" label="Status" as="select" options={STATUSES} placeholder="Select status" />
           </div>
-        </Section>
+        </div>
 
         {/* ── S2: Registration & Compliance ── */}
-        <Section icon="📋" title="Registration & Compliance" subtitle="Company registration and compliance identifiers">
-          <Grid2>
+        <div className="portal-form-card" style={{ marginBottom: 16 }}>
+          <div className="portal-form-title">📋 Registration & Compliance — Company registration and compliance identifiers</div>
+          <div className="portal-form-row">
             <F k="registration_number" label="Registration Number" placeholder="CIN / Reg. No." />
             <F k="cin_number" label="CIN Number" placeholder="U12345MH2020PTC123456" mono />
             <F k="pan_number" label="PAN Number" placeholder="ABCDE1234F" mono />
             <F k="tan_number" label="TAN Number" placeholder="MUMO12345A" mono />
-          </Grid2>
+          </div>
           <div style={{ paddingTop: 6 }}>
-            <Toggle value={extra.msme_registered} onChange={v => setX("msme_registered", v)} label="MSME Registered" />
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button type="button" onClick={() => setX("msme_registered", !extra.msme_registered)}
+                className={extra.msme_registered ? "btn-primary" : "btn-secondary"}
+                style={{ padding: "4px 12px", height: "auto" }}>
+                {extra.msme_registered ? "MSME Registered" : "Not MSME Registered"}
+              </button>
+            </div>
           </div>
           {extra.msme_registered && (
             <div style={{ maxWidth: 320, paddingTop: 4 }}>
               <F k="msme_number" label="MSME Number" placeholder="UDYAM-XX-00-0000000" mono />
             </div>
           )}
-        </Section>
+        </div>
 
         {/* ── S3: Tax Information ── */}
-        <Section icon="🧾" title="Tax Information" subtitle="GST and other tax registrations">
+        <div className="portal-form-card" style={{ marginBottom: 16 }}>
+          <div className="portal-form-title">🧾 Tax Information — GST and other tax registrations</div>
           <div>
-            <Toggle value={extra.gst_registered} onChange={v => setX("gst_registered", v)} label="GST Registered" />
+            <button type="button" onClick={() => setX("gst_registered", !extra.gst_registered)}
+              className={extra.gst_registered ? "btn-primary" : "btn-secondary"}
+              style={{ padding: "4px 12px", height: "auto" }}>
+              {extra.gst_registered ? "GST Registered" : "Not GST Registered"}
+            </button>
           </div>
           {extra.gst_registered && (
-            <Grid2>
+            <div className="portal-form-row">
               <F k="tax_number" label="GST Number" placeholder="22AAAAA0000A1Z5" mono />
               <F k="gst_registration_date" label="GST Registration Date" type="date" />
-            </Grid2>
+            </div>
           )}
           <div style={{ maxWidth: 320 }}>
             <F k="tax_identification_number" label="Tax Identification Number (TIN)" placeholder="TIN number" mono />
           </div>
-        </Section>
+        </div>
 
         {/* ── S4: Contact Information ── */}
-        <Section icon="📞" title="Contact Information" subtitle="Primary and department-specific contacts">
-          <Grid2>
+        <div className="portal-form-card" style={{ marginBottom: 16 }}>
+          <div className="portal-form-title">📞 Contact Information — Primary and department-specific contacts</div>
+          <div className="portal-form-row">
             <F k="primary_contact_person" label="Primary Contact Person" placeholder="Full name" />
             <F k="phone" label="Phone" placeholder="+91 98765 43210" />
             <F k="email" label="Primary Email" placeholder="contact@acme.com" type="email" />
@@ -328,46 +287,53 @@ export default function CompanyForm({ editMode }) {
             <F k="support_email" label="Support Email" placeholder="support@acme.com" type="email" />
             <F k="hr_email" label="HR Email" placeholder="hr@acme.com" type="email" />
             <F k="accounts_email" label="Accounts Email" placeholder="accounts@acme.com" type="email" />
-          </Grid2>
-        </Section>
+          </div>
+        </div>
 
         {/* ── S5: Registered Address ── */}
-        <Section icon="📍" title="Registered Address" subtitle="Official registered address as per government records">
-          <div style={{ display: "grid", gap: 14 }}>
+        <div className="portal-form-card" style={{ marginBottom: 16 }}>
+          <div className="portal-form-title">📍 Registered Address — Official registered address as per government records</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <F k="address_line_1" label="Address Line 1" placeholder="Street / Plot / Building" full />
             <F k="address_line_2" label="Address Line 2" placeholder="Area / Landmark / Floor" full />
-            <Grid2>
+            <div className="portal-form-row">
               <F k="city" label="City" placeholder="Mumbai" />
               <F k="state" label="State" placeholder="Maharashtra" />
               <F k="country" label="Country" placeholder="India" />
               <F k="postal_code" label="Postal Code" placeholder="400001" />
-            </Grid2>
+            </div>
           </div>
-        </Section>
+        </div>
 
         {/* ── S6: Office Address ── */}
-        <Section icon="🏬" title="Office Address" subtitle="Primary operating / work location">
+        <div className="portal-form-card" style={{ marginBottom: 16 }}>
+          <div className="portal-form-title">🏬 Office Address — Primary operating / work location</div>
           <div>
-            <Toggle value={extra.office_same} onChange={v => setX("office_same", v)} label="Same as Registered Address" />
+            <button type="button" onClick={() => setX("office_same", !extra.office_same)}
+              className={extra.office_same ? "btn-primary" : "btn-secondary"}
+              style={{ padding: "4px 12px", height: "auto" }}>
+              {extra.office_same ? "Same as Registered" : "Different Address"}
+            </button>
           </div>
           {!extra.office_same && (
-            <div style={{ display: "grid", gap: 14 }}>
-              <Grid2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div className="portal-form-row">
                 <F k="off_address_line_1" label="Address Line 1" placeholder="Street / Plot / Building" />
                 <F k="off_address_line_2" label="Address Line 2" placeholder="Area / Landmark / Floor" />
-              </Grid2>
-              <Grid2>
+              </div>
+              <div className="portal-form-row">
                 <F k="off_city" label="City" placeholder="Mumbai" />
                 <F k="off_state" label="State" placeholder="Maharashtra" />
                 <F k="off_country" label="Country" placeholder="India" />
                 <F k="off_postal_code" label="Postal Code" placeholder="400001" />
-              </Grid2>
+              </div>
             </div>
           )}
-        </Section>
+        </div>
 
         {/* ── S7: Branding ── */}
-        <Section icon="🎨" title="Branding" subtitle="Company logo and visual identity">
+        <div className="portal-form-card" style={{ marginBottom: 16 }}>
+          <div className="portal-form-title">🎨 Branding — Company logo and visual identity</div>
           <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}>
             {/* Preview */}
             <div
@@ -387,46 +353,46 @@ export default function CompanyForm({ editMode }) {
                 Upload a JPG, PNG, or WEBP image.<br />Recommended: 400×400 px, max 2 MB.
               </div>
               <input ref={logoInputRef} type="file" accept=".jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={handleLogoChange} />
-              <button type="button" onClick={() => logoInputRef.current?.click()}
-                style={{ padding: "7px 14px", borderRadius: 6, fontSize: 12, fontWeight: 600, background: "var(--c-accent)", color: "#fff", border: "none", cursor: "pointer" }}>
+              <button type="button" onClick={() => logoInputRef.current?.click()} className="btn-primary">
                 {logoPreview ? "Change Logo" : "Upload Logo"}
               </button>
               {logoPreview && (
                 <button type="button" onClick={() => { setLogoPreview(null); logoInputRef.current.value = ""; }}
-                  style={{ marginLeft: 8, padding: "7px 14px", borderRadius: 6, fontSize: 12, background: "transparent", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer" }}>
+                  className="btn-secondary" style={{ marginLeft: 8, color: "#f87171", borderColor: "rgba(239,68,68,0.3)" }}>
                   Remove
                 </button>
               )}
             </div>
           </div>
-        </Section>
+        </div>
 
         {/* ── S8: Company Documents ── */}
-        <Section icon="📁" title="Company Documents" subtitle="Registration certificates, licenses, and compliance documents">
+        <div className="portal-form-card" style={{ marginBottom: 16 }}>
+          <div className="portal-form-title">📁 Company Documents — Registration certificates, licenses, and compliance documents</div>
           {/* Documents table */}
           {docs.length > 0 && (
-            <div style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 8, overflow: "hidden", marginBottom: 4 }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <div className="portal-table-wrap" style={{ marginBottom: 4 }}>
+              <table className="portal-table">
                 <thead>
-                  <tr style={{ background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
+                  <tr>
                     {["Type", "Doc. Number", "Issue Date", "Expiry Date", "File", ""].map(h => (
-                      <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+                      <th key={h}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {docs.map((d, i) => (
-                    <tr key={d.id} style={{ borderBottom: i < docs.length - 1 ? "1px solid var(--c-border)" : "none" }}>
-                      <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--c-text)", fontWeight: 500 }}>{d.doc_type}</td>
-                      <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--c-muted)", fontFamily: "monospace" }}>{d.doc_number || "—"}</td>
-                      <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--c-muted)" }}>{d.issue_date || "—"}</td>
-                      <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--c-muted)" }}>{d.expiry_date || "—"}</td>
-                      <td style={{ padding: "10px 12px", fontSize: 12, color: "var(--c-muted)" }}>
+                    <tr key={d.id}>
+                      <td style={{ fontSize: 12, color: "var(--c-text)", fontWeight: 500 }}>{d.doc_type}</td>
+                      <td style={{ fontSize: 12, color: "var(--c-muted)", fontFamily: "monospace" }}>{d.doc_number || "—"}</td>
+                      <td style={{ fontSize: 12, color: "var(--c-muted)" }}>{d.issue_date || "—"}</td>
+                      <td style={{ fontSize: 12, color: "var(--c-muted)" }}>{d.expiry_date || "—"}</td>
+                      <td style={{ fontSize: 12, color: "var(--c-muted)" }}>
                         {d.fileName
-                          ? <span style={{ color: "var(--c-accent)" }}>📎 {d.fileName.length > 20 ? d.fileName.slice(0, 20) + "…" : d.fileName}</span>
+                          ? <span className="t-accent">📎 {d.fileName.length > 20 ? d.fileName.slice(0, 20) + "…" : d.fileName}</span>
                           : "—"}
                       </td>
-                      <td style={{ padding: "10px 12px" }}>
+                      <td>
                         <button onClick={() => removeDoc(d.id)}
                           style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
                           Remove
@@ -442,66 +408,63 @@ export default function CompanyForm({ editMode }) {
           {/* Add document form */}
           {addingDoc ? (
             <div style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 8, padding: 16, display: "grid", gap: 12 }}>
-              <Grid2>
+              <div className="portal-form-row">
                 <div>
-                  <Label required>Document Type</Label>
+                  <label className="portal-form-label portal-form-label-req">Document Type</label>
                   <select value={newDoc.doc_type} onChange={e => setDocField("doc_type", e.target.value)}
-                    style={{ ...inp, cursor: "pointer" }}>
+                    className="input-field" style={{ cursor: "pointer" }}>
                     <option value="">Select type…</option>
                     {DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
-                  <Label>Document Number</Label>
+                  <label className="portal-form-label">Document Number</label>
                   <input value={newDoc.doc_number} onChange={e => setDocField("doc_number", e.target.value)}
-                    placeholder="e.g. U12345MH2020" style={{ ...inp, fontFamily: "monospace" }} />
+                    placeholder="Reg. No / ID" className="input-field" style={{ fontFamily: "monospace" }} />
+                </div>
+              </div>
+              <div className="portal-form-row">
+                <div>
+                  <label className="portal-form-label">Issue Date</label>
+                  <input type="date" value={newDoc.issue_date} onChange={e => setDocField("issue_date", e.target.value)}
+                    className="input-field" />
                 </div>
                 <div>
-                  <Label>Issue Date</Label>
-                  <input type="date" value={newDoc.issue_date} onChange={e => setDocField("issue_date", e.target.value)} style={inp} />
+                  <label className="portal-form-label">Expiry Date</label>
+                  <input type="date" value={newDoc.expiry_date} onChange={e => setDocField("expiry_date", e.target.value)}
+                    className="input-field" />
                 </div>
-                <div>
-                  <Label>Expiry Date</Label>
-                  <input type="date" value={newDoc.expiry_date} onChange={e => setDocField("expiry_date", e.target.value)} style={inp} />
-                </div>
-              </Grid2>
-              <div>
-                <Label>Remarks</Label>
-                <input value={newDoc.remarks} onChange={e => setDocField("remarks", e.target.value)}
-                  placeholder="Optional notes about this document…" style={inp} />
               </div>
               <div>
-                <Label>File</Label>
-                <input type="file" onChange={handleDocFile}
-                  style={{ fontSize: 12, color: "var(--c-text)", cursor: "pointer" }} />
+                <label className="portal-form-label">Attachment</label>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <button type="button" onClick={() => document.getElementById("doc-file").click()}
+                    className="btn-secondary" style={{ padding: "6px 12px" }}>
+                    {newDoc.fileName ? "Change File" : "Choose File"}
+                  </button>
+                  <span style={{ fontSize: 12, color: "var(--c-muted)" }}>{newDoc.fileName || "No file chosen"}</span>
+                  <input id="doc-file" type="file" style={{ display: "none" }} onChange={handleDocFile} />
+                </div>
               </div>
-              <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
-                <button onClick={addDoc} disabled={!newDoc.doc_type}
-                  style={{ padding: "7px 16px", borderRadius: 6, fontWeight: 600, fontSize: 12, background: newDoc.doc_type ? "var(--c-accent)" : "var(--c-muted)", color: "#fff", border: "none", cursor: newDoc.doc_type ? "pointer" : "not-allowed" }}>
-                  Add Document
-                </button>
-                <button onClick={() => { setAddingDoc(false); setNewDoc(EMPTY_DOC); }}
-                  style={{ padding: "7px 14px", borderRadius: 6, fontSize: 12, background: "transparent", color: "var(--c-text2)", border: "1px solid var(--c-border)", cursor: "pointer" }}>
-                  Cancel
-                </button>
+              <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                <button type="button" onClick={addDoc} className="btn-primary" style={{ padding: "6px 16px" }}>Add Document</button>
+                <button type="button" onClick={() => setAddingDoc(false)} className="btn-secondary" style={{ padding: "6px 16px" }}>Cancel</button>
               </div>
             </div>
           ) : (
-            <button onClick={() => setAddingDoc(true)}
-              style={{ padding: "8px 16px", borderRadius: 7, fontSize: 12, fontWeight: 600, background: "transparent", color: "var(--c-accent)", border: "1px solid var(--c-accent)", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <button type="button" onClick={() => setAddingDoc(true)}
+              className="btn-secondary" style={{ width: "fit-content", padding: "7px 14px" }}>
               + Add Document
             </button>
           )}
-        </Section>
+        </div>
 
-        {/* ── Actions ── */}
-        <div style={{ display: "flex", gap: 10, paddingBottom: 32 }}>
-          <button onClick={handleSubmit} disabled={saving}
-            style={{ padding: "10px 26px", borderRadius: 8, fontWeight: 700, fontSize: 13, background: saving ? "var(--c-muted)" : "var(--c-accent)", color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer" }}>
-            {saving ? "Saving…" : editMode ? "Save Changes" : "Create Company"}
+        {/* ── Form Actions ── */}
+        <div style={{ display: "flex", gap: 12, marginTop: 24, paddingBottom: 40 }}>
+          <button onClick={handleSubmit} disabled={saving} className="btn-primary" style={{ padding: "10px 30px" }}>
+            {saving ? "Saving…" : editMode ? "Update Company" : "Register Company"}
           </button>
-          <button onClick={() => navigate(-1)}
-            style={{ padding: "10px 20px", borderRadius: 8, fontWeight: 500, fontSize: 13, background: "var(--c-surface)", color: "var(--c-text)", border: "1px solid var(--c-border)", cursor: "pointer" }}>
+          <button onClick={() => navigate(-1)} disabled={saving} className="btn-secondary" style={{ padding: "10px 30px" }}>
             Cancel
           </button>
         </div>

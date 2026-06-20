@@ -3,18 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
-
-const inputStyle = {
-  width: "100%", padding: "8px 10px",
-  background: "var(--c-bg)", border: "1px solid var(--c-border)",
-  borderRadius: 6, fontSize: 13, color: "var(--c-text)", boxSizing: "border-box",
-};
-
-const Label = ({ children }) => (
-  <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--c-text2)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-    {children}
-  </label>
-);
+import PageHeader from "../shared/PageHeader";
 
 export default function DepartmentForm({ editMode }) {
   const { subdomain, deptId } = useParams();
@@ -83,13 +72,15 @@ export default function DepartmentForm({ editMode }) {
   return (
     <OrgLayout title={editMode ? "Edit Department" : "Add Department"}>
       <div style={{ maxWidth: 560 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--c-text)" }}>{editMode ? "Edit Department" : "Add Department"}</h2>
-            <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--c-muted)" }}>Functional unit within a company</p>
-          </div>
-          <button onClick={() => navigate(-1)} style={{ fontSize: 12, color: "var(--c-muted)", background: "none", border: "none", cursor: "pointer" }}>← Back</button>
-        </div>
+        <PageHeader
+          title={editMode ? "Edit Department" : "Add Department"}
+          subtitle="Functional unit within a company"
+          actions={
+            <button onClick={() => navigate(-1)} className="btn-secondary">
+              ← Back
+            </button>
+          }
+        />
 
         {error && (
           <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#f87171" }}>
@@ -97,54 +88,54 @@ export default function DepartmentForm({ editMode }) {
           </div>
         )}
 
-        <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, padding: 20 }}>
-          <div style={{ display: "grid", gap: 14 }}>
+        <div className="portal-form-card">
+          <div className="portal-form-row" style={{ gridTemplateColumns: "1fr" }}>
             <div>
-              <Label>Company *</Label>
+              <label className="portal-form-label">Company *</label>
               <select value={form.company_id} onChange={e => set("company_id", e.target.value)} disabled={editMode}
-                style={{ ...inputStyle, cursor: editMode ? "not-allowed" : "pointer" }}>
+                className="input-field" style={{ cursor: editMode ? "not-allowed" : "pointer" }}>
                 <option value="">Select a company</option>
                 {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
               </select>
             </div>
+          </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <div>
-                <Label>Code *</Label>
-                <input value={form.department_code} onChange={e => set("department_code", e.target.value.toUpperCase())}
-                  placeholder="e.g. HR" style={{ ...inputStyle, fontFamily: "monospace" }} />
-              </div>
-              <div>
-                <Label>Department Name *</Label>
-                <input value={form.department_name} onChange={e => set("department_name", e.target.value)}
-                  placeholder="Human Resources" style={inputStyle} />
-              </div>
-            </div>
-
+          <div className="portal-form-row">
             <div>
-              <Label>Parent Department</Label>
-              <select value={form.parent_id} onChange={e => set("parent_id", e.target.value)} style={{ ...inputStyle, cursor: "pointer" }}>
+              <label className="portal-form-label">Code *</label>
+              <input value={form.department_code} onChange={e => set("department_code", e.target.value.toUpperCase())}
+                placeholder="e.g. HR" className="input-field" style={{ fontFamily: "monospace" }} />
+            </div>
+            <div>
+              <label className="portal-form-label">Department Name *</label>
+              <input value={form.department_name} onChange={e => set("department_name", e.target.value)}
+                placeholder="Human Resources" className="input-field" />
+            </div>
+          </div>
+
+          <div className="portal-form-row" style={{ gridTemplateColumns: "1fr" }}>
+            <div>
+              <label className="portal-form-label">Parent Department</label>
+              <select value={form.parent_id} onChange={e => set("parent_id", e.target.value)} className="input-field" style={{ cursor: "pointer" }}>
                 <option value="">None (top-level)</option>
                 {siblings.map(d => <option key={d.id} value={d.id}>{d.department_name}</option>)}
               </select>
             </div>
 
             <div>
-              <Label>Description</Label>
+              <label className="portal-form-label">Description</label>
               <textarea value={form.description} onChange={e => set("description", e.target.value)}
                 rows={3} placeholder="Brief description…"
-                style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5 }} />
+                className="input-field" style={{ resize: "vertical", lineHeight: 1.5 }} />
             </div>
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-          <button onClick={handleSubmit} disabled={saving}
-            style={{ padding: "9px 22px", borderRadius: 7, fontWeight: 600, fontSize: 13, background: saving ? "var(--c-muted)" : "var(--c-accent)", color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer" }}>
+          <button onClick={handleSubmit} disabled={saving} className="btn-primary">
             {saving ? "Saving…" : editMode ? "Save Changes" : "Create Department"}
           </button>
-          <button onClick={() => navigate(-1)}
-            style={{ padding: "9px 18px", borderRadius: 7, fontWeight: 500, fontSize: 13, background: "var(--c-surface)", color: "var(--c-text)", border: "1px solid var(--c-border)", cursor: "pointer" }}>
+          <button onClick={() => navigate(-1)} className="btn-secondary">
             Cancel
           </button>
         </div>

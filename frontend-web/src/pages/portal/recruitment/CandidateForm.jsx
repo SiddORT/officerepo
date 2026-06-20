@@ -2,11 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { portalRecruitmentApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
-
-const inp = { padding: "8px 10px", background: "var(--c-bg,var(--c-surface))", border: "1px solid var(--c-border)", borderRadius: 6, fontSize: 13, color: "var(--c-text)", width: "100%", boxSizing: "border-box" };
-const Label = ({ children, req }) => <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--c-text2,var(--c-muted))", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>{children}{req && <span style={{ color: "#f87171", marginLeft: 2 }}>*</span>}</label>;
-const Card = ({ title, children }) => <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>{title && <div style={{ fontSize: 13, fontWeight: 700, paddingBottom: 10, borderBottom: "1px solid var(--c-border)" }}>{title}</div>}{children}</div>;
-const Row = ({ children }) => <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14 }}>{children}</div>;
+import PageHeader from "../shared/PageHeader";
 
 const BLANK = { first_name: "", last_name: "", email: "", mobile_number: "", date_of_birth: "", gender: "", total_experience: "", relevant_experience: "", current_company: "", current_designation: "", current_salary: "", expected_salary: "", notice_period: "", source: "", applied_position_id: "", assigned_recruiter: "" };
 
@@ -56,68 +52,75 @@ export default function CandidateForm({ editMode = false }) {
 
   return (
     <div style={{ maxWidth: 800 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 20, fontSize: 12, color: "var(--c-muted)" }}>
-        <span onClick={() => navigate(`/portal/${subdomain}/recruitment/candidates`)} style={{ cursor: "pointer", color: "var(--c-accent)" }}>Candidates</span>
-        <span>/</span><span>{editMode ? "Edit" : "Add New"}</span>
-      </div>
-      <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700 }}>{editMode ? "Edit Candidate" : "Add Candidate"}</h2>
-      {error && <div style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: 13 }}>{error}</div>}
+      <PageHeader
+        title={editMode ? "Edit Candidate" : "Add Candidate"}
+        breadcrumbs={[{ label: "Candidates", path: `/portal/${subdomain}/recruitment/candidates` }, { label: editMode ? "Edit" : "Add New" }]}
+      />
+      {error && <div style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: 13, border: "1px solid rgba(239,68,68,0.25)" }}>{error}</div>}
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <Card title="Basic Information">
-          <Row>
-            <div><Label req>First Name</Label><input value={form.first_name} onChange={f("first_name")} placeholder="First name" style={inp} /></div>
-            <div><Label req>Last Name</Label><input value={form.last_name} onChange={f("last_name")} placeholder="Last name" style={inp} /></div>
-          </Row>
-          <Row>
-            <div><Label req>Email</Label><input type="email" value={form.email} onChange={f("email")} placeholder="work@email.com" style={inp} /></div>
-            <div><Label req>Mobile Number</Label><input value={form.mobile_number} onChange={f("mobile_number")} placeholder="+91 XXXXX XXXXX" style={inp} /></div>
-          </Row>
-          <Row>
-            <div><Label>Date of Birth</Label><input type="date" value={form.date_of_birth} onChange={f("date_of_birth")} style={inp} /></div>
-            <div><Label>Gender</Label>
-              <select value={form.gender} onChange={f("gender")} style={inp}>
+        <div className="portal-form-card">
+          <div className="portal-form-title">Basic Information</div>
+          <div className="portal-form-row">
+            <div><label className="portal-form-label portal-form-label-req">First Name</label><input value={form.first_name} onChange={f("first_name")} placeholder="First name" className="input-field" /></div>
+            <div><label className="portal-form-label portal-form-label-req">Last Name</label><input value={form.last_name} onChange={f("last_name")} placeholder="Last name" className="input-field" /></div>
+          </div>
+          <div className="portal-form-row">
+            <div><label className="portal-form-label portal-form-label-req">Email</label><input type="email" value={form.email} onChange={f("email")} placeholder="work@email.com" className="input-field" /></div>
+            <div><label className="portal-form-label portal-form-label-req">Mobile Number</label><input value={form.mobile_number} onChange={f("mobile_number")} placeholder="+91 XXXXX XXXXX" className="input-field" /></div>
+          </div>
+          <div className="portal-form-row">
+            <div><label className="portal-form-label">Date of Birth</label><input type="date" value={form.date_of_birth} onChange={f("date_of_birth")} className="input-field" /></div>
+            <div>
+              <label className="portal-form-label">Gender</label>
+              <select value={form.gender} onChange={f("gender")} className="input-field">
                 <option value="">Select…</option>
                 {(meta.genders || []).map(g => <option key={g}>{g}</option>)}
               </select>
             </div>
-          </Row>
-        </Card>
-        <Card title="Professional Information">
-          <Row>
-            <div><Label>Total Experience</Label><input value={form.total_experience} onChange={f("total_experience")} placeholder="e.g. 3 years" style={inp} /></div>
-            <div><Label>Relevant Experience</Label><input value={form.relevant_experience} onChange={f("relevant_experience")} placeholder="e.g. 2 years" style={inp} /></div>
-            <div><Label>Notice Period</Label><input value={form.notice_period} onChange={f("notice_period")} placeholder="e.g. 30 days" style={inp} /></div>
-          </Row>
-          <Row>
-            <div><Label>Current Company</Label><input value={form.current_company} onChange={f("current_company")} placeholder="Company name" style={inp} /></div>
-            <div><Label>Current Designation</Label><input value={form.current_designation} onChange={f("current_designation")} placeholder="Job title" style={inp} /></div>
-          </Row>
-          <Row>
-            <div><Label>Current Salary (₹/yr)</Label><input type="number" value={form.current_salary} onChange={f("current_salary")} placeholder="0" style={inp} /></div>
-            <div><Label>Expected Salary (₹/yr)</Label><input type="number" value={form.expected_salary} onChange={f("expected_salary")} placeholder="0" style={inp} /></div>
-          </Row>
-        </Card>
-        <Card title="Application Information">
-          <Row>
-            <div><Label>Source</Label>
-              <select value={form.source} onChange={f("source")} style={inp}>
+          </div>
+        </div>
+
+        <div className="portal-form-card">
+          <div className="portal-form-title">Professional Information</div>
+          <div className="portal-form-row">
+            <div><label className="portal-form-label">Total Experience</label><input value={form.total_experience} onChange={f("total_experience")} placeholder="e.g. 3 years" className="input-field" /></div>
+            <div><label className="portal-form-label">Relevant Experience</label><input value={form.relevant_experience} onChange={f("relevant_experience")} placeholder="e.g. 2 years" className="input-field" /></div>
+            <div><label className="portal-form-label">Notice Period</label><input value={form.notice_period} onChange={f("notice_period")} placeholder="e.g. 30 days" className="input-field" /></div>
+          </div>
+          <div className="portal-form-row">
+            <div><label className="portal-form-label">Current Company</label><input value={form.current_company} onChange={f("current_company")} placeholder="Company name" className="input-field" /></div>
+            <div><label className="portal-form-label">Current Designation</label><input value={form.current_designation} onChange={f("current_designation")} placeholder="Job title" className="input-field" /></div>
+          </div>
+          <div className="portal-form-row">
+            <div><label className="portal-form-label">Current Salary (₹/yr)</label><input type="number" value={form.current_salary} onChange={f("current_salary")} placeholder="0" className="input-field" /></div>
+            <div><label className="portal-form-label">Expected Salary (₹/yr)</label><input type="number" value={form.expected_salary} onChange={f("expected_salary")} placeholder="0" className="input-field" /></div>
+          </div>
+        </div>
+
+        <div className="portal-form-card">
+          <div className="portal-form-title">Application Information</div>
+          <div className="portal-form-row">
+            <div>
+              <label className="portal-form-label">Source</label>
+              <select value={form.source} onChange={f("source")} className="input-field">
                 <option value="">Select source…</option>
                 {(meta.candidate_sources || []).map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
-            <div><Label>Applied Position</Label>
-              <select value={form.applied_position_id} onChange={f("applied_position_id")} style={inp}>
+            <div>
+              <label className="portal-form-label">Applied Position</label>
+              <select value={form.applied_position_id} onChange={f("applied_position_id")} className="input-field">
                 <option value="">Select opening…</option>
                 {openings.map(o => <option key={o.id} value={o.id}>{o.job_title} ({o.opening_number})</option>)}
               </select>
             </div>
-            <div><Label>Assigned Recruiter</Label><input value={form.assigned_recruiter} onChange={f("assigned_recruiter")} placeholder="Recruiter name" style={inp} /></div>
-          </Row>
-        </Card>
+            <div><label className="portal-form-label">Assigned Recruiter</label><input value={form.assigned_recruiter} onChange={f("assigned_recruiter")} placeholder="Recruiter name" className="input-field" /></div>
+          </div>
+        </div>
       </div>
-      <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-        <button onClick={() => navigate(`/portal/${subdomain}/recruitment/candidates`)} style={{ padding: "9px 20px", borderRadius: 7, border: "1px solid var(--c-border)", background: "none", color: "var(--c-text)", cursor: "pointer", fontSize: 13 }}>Cancel</button>
-        <button onClick={submit} disabled={saving} style={{ padding: "9px 24px", borderRadius: 7, background: "var(--c-accent)", color: "#fff", border: "none", cursor: saving ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 600, opacity: saving ? 0.7 : 1 }}>{saving ? "Saving…" : editMode ? "Save Changes" : "Add Candidate"}</button>
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        <button onClick={submit} disabled={saving} className="btn-primary">{saving ? "Saving…" : editMode ? "Save Changes" : "Add Candidate"}</button>
+        <button onClick={() => navigate(-1)} className="btn-secondary">Cancel</button>
       </div>
     </div>
   );

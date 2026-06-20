@@ -3,22 +3,9 @@ import { Link, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalUserMgmtApi } from "../../../services/apiClient";
 import UserManagementLayout from "./UserManagementLayout";
-
-const STATUS_COLORS = {
-  Active:      { bg: "rgba(34,197,94,0.1)",  color: "#4ade80" },
-  Inactive:    { bg: "rgba(100,116,139,0.15)", color: "var(--c-muted)" },
-  Invited:     { bg: "rgba(251,191,36,0.12)", color: "#fbbf24" },
-  Placeholder: { bg: "rgba(100,116,139,0.1)", color: "var(--c-muted)" },
-};
-
-function StatusBadge({ status }) {
-  const s = STATUS_COLORS[status] || STATUS_COLORS.Placeholder;
-  return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: s.bg, color: s.color }}>
-      {status}
-    </span>
-  );
-}
+import PageHeader from "../shared/PageHeader";
+import Badge from "../shared/Badge";
+import Pagination from "../shared/Pagination";
 
 function Avatar({ name, size = 32 }) {
   const initials = (name || "?").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
@@ -153,28 +140,26 @@ export default function UserList() {
       )}
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "var(--c-text)" }}>Users</h2>
-          <p style={{ margin: "3px 0 0", fontSize: 12, color: "var(--c-muted)" }}>
-            Manage workspace members — {total} total
-          </p>
-        </div>
-        <Link to={`/portal/${subdomain}/user-management/users/new`}
-          style={{ padding: "8px 16px", borderRadius: 7, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", textDecoration: "none", whiteSpace: "nowrap" }}>
-          + Invite User
-        </Link>
-      </div>
+      <PageHeader 
+        title="Users" 
+        subtitle={`Manage workspace members — ${total} total`} 
+        actions={
+          <Link to={`/portal/${subdomain}/user-management/users/new`} className="btn-primary" style={{ textDecoration: "none" }}>
+            + Invite User
+          </Link>
+        } 
+      />
 
       {/* Filters */}
       <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
         <input
+          className="input-field"
           value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search users…"
-          style={{ flex: 1, minWidth: 180, padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}
+          style={{ flex: 1, minWidth: 180 }}
         />
-        <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-          style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", fontSize: 13 }}>
+        <select className="input-field" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+          style={{ width: "auto" }}>
           <option value="">All statuses</option>
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>
@@ -189,17 +174,17 @@ export default function UserList() {
       )}
 
       {/* Table */}
-      <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10, overflow: "hidden" }}>
+      <div className="portal-table-wrap">
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</div>
         ) : users.length === 0 ? (
           <div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>No users found.</div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table className="portal-table">
             <thead>
-              <tr style={{ background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
+              <tr>
                 {["#", "User", "Email", "Roles", "Status", "Last Login", "Actions"].map(h => (
-                  <th key={h} style={{ padding: "10px 14px", textAlign: h === "#" ? "center" : "left", fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", width: h === "#" ? 40 : undefined }}>{h}</th>
+                  <th key={h} style={{ textAlign: h === "#" ? "center" : "left", width: h === "#" ? 40 : undefined }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -210,9 +195,9 @@ export default function UserList() {
                 const isActive = u.status === "Active";
                 const isInactive = u.status === "Inactive";
                 return (
-                  <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? "1px solid var(--c-border)" : "none" }}>
-                    <td style={{ padding: "12px 14px", width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
-                    <td style={{ padding: "12px 14px" }}>
+                  <tr key={u.id}>
+                    <td style={{ width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
+                    <td>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                         <Avatar name={displayName} size={32} />
                         <div>
@@ -223,41 +208,41 @@ export default function UserList() {
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: "12px 14px", fontSize: 13, color: "var(--c-text2)" }}>{u.email || "—"}</td>
-                    <td style={{ padding: "12px 14px" }}>
+                    <td style={{ fontSize: 13, color: "var(--c-text2)" }}>{u.email || "—"}</td>
+                    <td>
                       <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                         {u.roles?.length > 0
                           ? u.roles.slice(0, 2).map(r => (
-                            <span key={r.id} style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, background: "rgba(0,174,236,0.1)", color: "var(--c-accent)" }}>{r.name}</span>
+                            <span key={r.id} className="badge-info" style={{ fontSize: 10 }}>{r.name}</span>
                           ))
                           : <span style={{ fontSize: 11, color: "var(--c-muted)" }}>No roles</span>
                         }
                         {u.roles?.length > 2 && <span style={{ fontSize: 11, color: "var(--c-muted)" }}>+{u.roles.length - 2}</span>}
                       </div>
                     </td>
-                    <td style={{ padding: "12px 14px" }}><StatusBadge status={u.status} /></td>
-                    <td style={{ padding: "12px 14px", fontSize: 12, color: "var(--c-muted)" }}>
+                    <td><Badge status={u.status} /></td>
+                    <td style={{ fontSize: 12, color: "var(--c-muted)" }}>
                       {u.last_login ? new Date(u.last_login).toLocaleDateString() : "Never"}
                     </td>
-                    <td style={{ padding: "12px 14px" }}>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                    <td>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", justifyContent: "flex-end" }}>
                         <Link to={`/portal/${subdomain}/user-management/users/${u.id}`}
-                          style={{ fontSize: 12, color: "var(--c-accent)", textDecoration: "none", fontWeight: 500 }}>
+                          className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, textDecoration: "none" }}>
                           View
                         </Link>
                         <Link to={`/portal/${subdomain}/user-management/users/${u.id}/edit`}
-                          style={{ fontSize: 12, color: "var(--c-muted)", textDecoration: "none", fontWeight: 500 }}>
+                          className="t-muted" style={{ fontSize: 12, textDecoration: "none", fontWeight: 600 }}>
                           Edit
                         </Link>
                         {isActive && (
                           <button onClick={() => handleStatusChange(u.id, "deactivate")}
-                            style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500, padding: 0 }}>
+                            className="t-accent" style={{ color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 600, padding: 0, fontSize: 12 }}>
                             Deactivate
                           </button>
                         )}
                         {isInactive && (
                           <button onClick={() => handleStatusChange(u.id, "activate")}
-                            style={{ fontSize: 12, color: "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 500, padding: 0 }}>
+                            className="t-accent" style={{ color: "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 600, padding: 0, fontSize: 12 }}>
                             Activate
                           </button>
                         )}
@@ -266,12 +251,12 @@ export default function UserList() {
                             <button
                               onClick={() => handleResendInvite(u.id, displayName)}
                               disabled={resendingId === u.id}
-                              style={{ fontSize: 12, color: "#fbbf24", background: "none", border: "none", cursor: resendingId === u.id ? "not-allowed" : "pointer", fontWeight: 500, padding: 0, opacity: resendingId === u.id ? 0.6 : 1 }}>
+                              className="t-accent" style={{ color: "#fbbf24", background: "none", border: "none", cursor: resendingId === u.id ? "not-allowed" : "pointer", fontWeight: 600, padding: 0, opacity: resendingId === u.id ? 0.6 : 1, fontSize: 12 }}>
                               {resendingId === u.id ? "…" : "Resend"}
                             </button>
                             <button
                               onClick={() => handleRemoveUser(u.id, displayName)}
-                              style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500, padding: 0 }}>
+                              className="t-accent" style={{ color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 600, padding: 0, fontSize: 12 }}>
                               Remove
                             </button>
                           </>
@@ -287,21 +272,7 @@ export default function UserList() {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, fontSize: 12, color: "var(--c-muted)" }}>
-          <span>{total} total · page {page} of {totalPages}</span>
-          <div style={{ display: "flex", gap: 6 }}>
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.4 : 1 }}>
-              ← Prev
-            </button>
-            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-surface)", color: "var(--c-text)", cursor: page === totalPages ? "not-allowed" : "pointer", opacity: page === totalPages ? 0.4 : 1 }}>
-              Next →
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} onPage={setPage} total={total} pageSize={PAGE_SIZE} />
     </UserManagementLayout>
   );
 }

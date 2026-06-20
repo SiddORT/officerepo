@@ -184,8 +184,9 @@ export default function PortalLayout({ children, title }) {
     display: "flex", alignItems: "center", gap: 10,
     padding: collapsed ? "8px" : "7px 8px",
     borderRadius: 8, fontSize: 13, textDecoration: "none", transition: "all 0.12s",
-    color: isActive ? "var(--c-accent)" : "var(--c-muted)",
-    background: isActive ? "rgba(0,174,236,0.08)" : "transparent",
+    color: isActive ? "#ffffff" : "var(--c-muted)",
+    background: isActive ? "linear-gradient(135deg, #00aeec, #ff7a1a)" : "transparent",
+    boxShadow: isActive ? "0 2px 14px rgba(0,174,236,0.30), 0 1px 4px rgba(255,122,26,0.18)" : "none",
     fontWeight: isActive ? 600 : 400,
     justifyContent: collapsed ? "center" : "flex-start",
   });
@@ -195,8 +196,9 @@ export default function PortalLayout({ children, title }) {
     padding: "5px 8px 5px 28px",
     borderRadius: 6, fontSize: 12, textDecoration: "none", transition: "all 0.12s",
     color: isActive ? "var(--c-accent)" : "var(--c-muted)",
-    background: isActive ? "rgba(0,174,236,0.06)" : "transparent",
-    fontWeight: isActive ? 600 : 400,
+    background: isActive ? "var(--c-accent-dim)" : "transparent",
+    fontWeight: isActive ? 700 : 400,
+    borderLeft: isActive ? "2px solid var(--c-accent)" : "2px solid transparent",
   });
 
   return (
@@ -208,7 +210,9 @@ export default function PortalLayout({ children, title }) {
         transition: "width 0.2s",
         borderRight: "1px solid var(--c-border)",
         background: "var(--c-surface)",
+        position: "relative",
       }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, #00aeec, #ff7a1a)", zIndex: 1 }} />
         {/* Logo / workspace name */}
         <div style={{
           display: "flex", alignItems: "center", gap: 10,
@@ -381,7 +385,8 @@ export default function PortalLayout({ children, title }) {
         <header style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "0 20px", height: 56, flexShrink: 0,
-          borderBottom: "1px solid var(--c-border)", background: "var(--c-surface)",
+          boxShadow: "inset 0 -1px 0 var(--c-border), 0 2px 8px rgba(0,0,0,0.06)",
+          background: "var(--c-surface)",
         }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-heading)" }}>{title || "Dashboard"}</div>
 

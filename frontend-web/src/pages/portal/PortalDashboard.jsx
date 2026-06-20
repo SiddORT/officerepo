@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../contexts/PortalAuthContext";
 import { portalUserMgmtApi } from "../../services/apiClient";
+import StatCard from "./shared/StatCard";
 
-// ── Module cards config ───────────────────────────────────────────────────────
 const MODULE_CARDS = [
   {
     key: "user-management",
@@ -13,9 +13,9 @@ const MODULE_CARDS = [
     path: "user-management/users",
     color: "#00aeec",
     links: [
-      { label: "Users",       path: "user-management/users"      },
-      { label: "Roles",       path: "user-management/roles"      },
-      { label: "Sessions",    path: "user-management/sessions"   },
+      { label: "Users",    path: "user-management/users"    },
+      { label: "Roles",    path: "user-management/roles"    },
+      { label: "Sessions", path: "user-management/sessions" },
     ],
   },
   {
@@ -45,47 +45,22 @@ const MODULE_CARDS = [
   },
 ];
 
-function StatCard({ icon, label, value, color = "var(--c-accent)" }) {
-  return (
-    <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14 }}>
-      <div style={{ width: 42, height: 42, borderRadius: 10, background: `${color}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>{icon}</div>
-      <div>
-        <div style={{ fontSize: 22, fontWeight: 700, color: "var(--c-heading)", lineHeight: 1 }}>{value}</div>
-        <div style={{ fontSize: 12, color: "var(--c-muted)", marginTop: 3 }}>{label}</div>
-      </div>
-    </div>
-  );
-}
-
 export default function PortalDashboard() {
   const { subdomain } = useParams();
   const { user, token } = usePortalAuth();
   const workspaceName = subdomain.charAt(0).toUpperCase() + subdomain.slice(1);
-
   const [stats, setStats] = useState({ users: "—", active: "—", roles: "—", sessions: "—" });
 
   useEffect(() => {
     if (!token || !subdomain) return;
     portalUserMgmtApi.listUsers(subdomain, token, { page: 1, page_size: 1 })
-      .then(r => {
-        const d = r.data?.data;
-        setStats(s => ({ ...s, users: d?.total ?? "—" }));
-      }).catch(() => {});
+      .then(r => setStats(s => ({ ...s, users: r.data?.data?.total ?? "—" }))).catch(() => {});
     portalUserMgmtApi.listUsers(subdomain, token, { page: 1, page_size: 1, status: "Active" })
-      .then(r => {
-        const d = r.data?.data;
-        setStats(s => ({ ...s, active: d?.total ?? "—" }));
-      }).catch(() => {});
+      .then(r => setStats(s => ({ ...s, active: r.data?.data?.total ?? "—" }))).catch(() => {});
     portalUserMgmtApi.listRoles(subdomain, token)
-      .then(r => {
-        const d = r.data?.data;
-        setStats(s => ({ ...s, roles: Array.isArray(d) ? d.length : "—" }));
-      }).catch(() => {});
+      .then(r => { const d = r.data?.data; setStats(s => ({ ...s, roles: Array.isArray(d) ? d.length : "—" })); }).catch(() => {});
     portalUserMgmtApi.listSessions(subdomain, token, { page: 1, page_size: 1, active_only: true })
-      .then(r => {
-        const d = r.data?.data;
-        setStats(s => ({ ...s, sessions: d?.total ?? "—" }));
-      }).catch(() => {});
+      .then(r => setStats(s => ({ ...s, sessions: r.data?.data?.total ?? "—" }))).catch(() => {});
   }, [token, subdomain]);
 
   return (
@@ -103,10 +78,10 @@ export default function PortalDashboard() {
             </svg>
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: "var(--c-heading)" }}>
+            <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700 }} className="t-heading">
               Welcome back, {user?.name?.split(" ")[0] || "Admin"} 👋
             </h1>
-            <p style={{ margin: "3px 0 0", fontSize: 13, color: "var(--c-muted)" }}>
+            <p style={{ margin: "3px 0 0", fontSize: 13 }} className="t-muted">
               {workspaceName} Workspace · Office Repo
             </p>
           </div>
@@ -123,26 +98,25 @@ export default function PortalDashboard() {
 
       {/* Module cards */}
       <div>
-        <div style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 14 }}>Modules</div>
+        <div style={{ fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 14 }} className="t-muted">Modules</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
           {MODULE_CARDS.map(m => (
-            <div key={m.key} style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 14, overflow: "hidden", transition: "border-color 0.15s" }}>
-              {/* Card top */}
+            <div key={m.key} className="card" style={{ padding: 0, borderRadius: 14, overflow: "hidden", transition: "box-shadow 0.15s, transform 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 24px rgba(0,0,0,0.14)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
               <Link to={`/portal/${subdomain}/${m.path}`} style={{ display: "block", padding: "20px 20px 14px", textDecoration: "none" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: `${m.color}18`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
                     {m.icon}
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "var(--c-text)" }}>{m.label}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }} className="t-heading">{m.label}</div>
                 </div>
-                <div style={{ fontSize: 12, color: "var(--c-muted)", lineHeight: 1.5 }}>{m.description}</div>
+                <div style={{ fontSize: 12, lineHeight: 1.5 }} className="t-muted">{m.description}</div>
               </Link>
-
-              {/* Quick links */}
               <div style={{ borderTop: "1px solid var(--c-border)", padding: "10px 20px", display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {m.links.map(lnk => (
                   <Link key={lnk.path} to={`/portal/${subdomain}/${lnk.path}`}
-                    style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 999, background: "var(--c-surface2)", color: "var(--c-text2)", textDecoration: "none", border: "1px solid var(--c-border)", whiteSpace: "nowrap" }}>
+                    style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 999, background: "var(--c-surface2)", textDecoration: "none", border: "1px solid var(--c-border)", whiteSpace: "nowrap" }} className="t-body">
                     {lnk.label} →
                   </Link>
                 ))}
@@ -152,9 +126,8 @@ export default function PortalDashboard() {
         </div>
       </div>
 
-      {/* Dev notice */}
       {!import.meta.env.VITE_BASE_DOMAIN && (
-        <div style={{ borderRadius: 10, padding: "10px 16px", fontSize: 12, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.18)", color: "var(--c-muted)" }}>
+        <div style={{ borderRadius: 10, padding: "10px 16px", fontSize: 12, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.18)" }} className="t-muted">
           <span style={{ color: "#818cf8", fontWeight: 600 }}>Dev mode</span> — running at{" "}
           <code style={{ fontFamily: "monospace" }}>{window.location.origin}/portal/{subdomain}</code>.{" "}
           Set <code style={{ fontFamily: "monospace" }}>VITE_BASE_DOMAIN=officerepo.com</code> in production.
