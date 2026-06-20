@@ -7,6 +7,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
+from typing import Generator
+
 from backend.app.core.security import decode_access_token
 from backend.app.database.client_db import build_client_db_url, make_client_session, provision_portal_schema
 from backend.shared.response import ApiResponse
@@ -36,16 +38,33 @@ def _portal_jwt(request: Request) -> dict:
     return payload
 
 
-def _client_db_dep(request: Request, subdomain: str) -> Session:
-    url = build_client_db_url(subdomain)
-    if not url:
-        raise HTTPException(status_code=404, detail="Client not found")
-    provision_portal_schema(url)
-    db = make_client_session(url)
+def _client_db_dep(
+    portal_user: dict = Depends(_portal_jwt),
+) -> Generator[Session, None, None]:
+    from backend.app.modules.client_management import repository as client_repo
+    from backend.app.database.platform import get_platform_db
+    from backend.app.modules.client_management.constants import DB_STATUS_ACTIVE
+
+    platform_db_gen = get_platform_db()
+    platform_db = next(platform_db_gen)
     try:
-        yield db
+        client_id = portal_user.get("client_id", "")
+        conn = client_repo.get_db_connection(platform_db, client_id)
+        if not conn or conn.db_status != DB_STATUS_ACTIVE:
+            raise HTTPException(503, "Client database not available.")
+        url = build_client_db_url(conn)
+        provision_portal_schema(url)
+        session = make_client_session(url)
+        try:
+            yield session
+        finally:
+            session.close()
     finally:
-        db.close()
+        try:
+            next(platform_db_gen)
+        except StopIteration:
+            pass
+        platform_db.close()
 
 
 def _client_id(payload: dict) -> str:

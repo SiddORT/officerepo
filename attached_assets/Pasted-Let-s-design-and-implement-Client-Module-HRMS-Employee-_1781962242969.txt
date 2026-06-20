@@ -1,0 +1,675 @@
+Let's design and implement Client Module → HRMS → Employee Loan Management for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Completed Modules:
+
+* Organization Management
+* Employee Management
+* Employee Documents
+* Recruitment
+* Interview Management
+* Employee Onboarding
+* Attendance Management
+* Leave Management
+* Payroll Management
+* Asset Inventory
+
+Employee Loan Management must integrate tightly with:
+
+* Employees
+* Payroll Management
+* Workflow Engine
+* Notifications
+* Final Settlement
+* Employee Self Service
+
+Module Hierarchy:
+
+HRMS
+└── Employee Loan Management
+
+Module Code:
+
+EMPLOYEE_LOANS
+
+Purpose:
+
+Manage employee loans, salary advances, approvals, disbursements, repayment schedules and payroll deductions.
+
+The module must support multiple loan products, flexible repayment options and automated payroll integration.
+
+---
+
+# Loan Workflow
+
+Employee
+↓
+Apply For Loan
+↓
+Approval Workflow
+↓
+Disbursement
+↓
+Repayment Schedule Creation
+↓
+Payroll EMI Deductions
+↓
+Loan Closure
+
+Alternative Flows:
+
+* Loan Rejected
+* Loan Cancelled
+* Early Closure
+* Loan Restructuring
+
+---
+
+# Module Structure
+
+Employee Loan Management
+
+├── Loan Types
+├── Loan Policies
+├── Loan Applications
+├── Loan Approvals
+├── Loan Disbursements
+├── Repayment Schedules
+├── Payroll Deductions
+├── Loan Closure
+├── Loan Reports
+└── Loan Activities
+
+---
+
+# Loan Types
+
+Support configurable loan categories.
+
+Examples:
+
+* Salary Advance
+* Emergency Loan
+* Medical Loan
+* Education Loan
+* Housing Loan
+* Vehicle Loan
+* Personal Loan
+* Equipment Loan
+
+Fields:
+
+* Loan Type Code *
+* Loan Type Name *
+* Description
+* Interest Applicable
+* Active Status
+
+---
+
+# Loan Policies
+
+Assign policies by:
+
+* Company
+* Branch
+* Department
+* Employee Category
+* Designation
+
+Employee Categories:
+
+* Permanent
+* Contract
+* Consultant
+* Intern
+* Trainee
+
+Fields:
+
+* Policy Name *
+* Loan Type *
+* Effective From
+* Effective To
+
+Rules:
+
+* Minimum Service Period
+* Minimum Amount
+* Maximum Amount
+* Maximum Active Loans
+* Maximum Tenure
+* Interest Rate
+* Processing Fee
+* Require Guarantor
+* Require Documents
+
+Support:
+
+* Interest-Free Loans
+* Flat Interest
+* Reducing Balance Interest
+
+---
+
+# Loan Applications
+
+Fields:
+
+* Application Number *
+* Employee *
+* Loan Type *
+* Requested Amount *
+* Requested Tenure *
+* Purpose
+* Preferred EMI Start Date
+
+Attachments:
+
+* Supporting Documents
+
+Examples:
+
+* Medical Bills
+* Quotations
+* Admission Letter
+
+Status:
+
+* Draft
+* Submitted
+* Under Review
+* Approved
+* Rejected
+* Cancelled
+* Disbursed
+* Closed
+
+---
+
+# Approval Workflow
+
+Integrate with Workflow Engine.
+
+Example:
+
+Employee
+↓
+Reporting Manager
+↓
+HR
+↓
+Finance
+↓
+Approved
+
+Approval levels must be configurable.
+
+Track:
+
+* Approved By
+* Approval Date
+* Comments
+
+---
+
+# Loan Eligibility
+
+Automatically validate:
+
+* Employee Status
+* Probation Status
+* Minimum Service Period
+* Existing Active Loans
+* Outstanding Balance
+* Maximum Eligibility Amount
+
+Display eligibility summary.
+
+Example:
+
+Eligible Amount:
+
+₹200,000
+
+Maximum Tenure:
+
+24 Months
+
+---
+
+# Repayment Calculation
+
+Support repayment methods:
+
+* Equal Monthly Installments (EMI)
+* Fixed Principal
+* Bullet Payment
+
+Interest Types:
+
+* Interest Free
+* Flat Interest
+* Reducing Balance
+
+Automatically calculate:
+
+* EMI Amount
+* Principal Amount
+* Interest Amount
+* Outstanding Balance
+
+Support:
+
+* Manual Adjustments
+* Additional Payments
+* Partial Prepayments
+
+---
+
+# Repayment Schedule
+
+Generate automatically after approval.
+
+Fields:
+
+* Installment Number
+* Due Date
+* Principal
+* Interest
+* EMI Amount
+* Outstanding Balance
+
+Status:
+
+* Pending
+* Deducted
+* Skipped
+* Paid
+* Waived
+
+Support:
+
+* Rescheduling
+* Restructuring
+
+---
+
+# Loan Disbursement
+
+Fields:
+
+* Disbursement Date
+* Disbursed Amount
+* Payment Method
+* Transaction Reference
+
+Payment Methods:
+
+* Bank Transfer
+* Cash
+* Cheque
+
+Rules:
+
+Loan status changes to:
+
+Disbursed
+
+Repayment schedule becomes active.
+
+---
+
+# Payroll Integration
+
+Integrate with Payroll Management.
+
+Automatically fetch:
+
+* Active EMIs
+* Outstanding Amount
+
+Deduct EMI during payroll processing.
+
+Payroll Flow:
+
+Gross Salary
+− Taxes
+− Loan EMI
+= Net Salary
+
+After payroll approval:
+
+* Mark installment as paid
+* Update outstanding balance
+
+Prevent duplicate deductions.
+
+---
+
+# Loan Closure
+
+Closure Types:
+
+* Regular Closure
+* Early Closure
+* Settlement
+* Write-Off
+
+Rules:
+
+Regular Closure:
+
+Outstanding Balance = 0
+
+Early Closure:
+
+Allow remaining amount payment.
+
+Automatically:
+
+* Stop payroll deductions
+* Update employee profile
+
+---
+
+# Final Settlement Integration
+
+Integrate with Exit Management.
+
+During employee exit:
+
+Calculate:
+
+* Outstanding Loan Amount
+
+Options:
+
+* Recover From Final Settlement
+* Waive Balance
+
+Employee cannot complete exit process until loan is resolved.
+
+---
+
+# Dashboard Widgets
+
+* Active Loans
+* Pending Approvals
+* Total Outstanding Amount
+* EMI Due This Month
+* Loans Closing Soon
+
+---
+
+# Employee Loan Profile
+
+Tabs:
+
+* Overview
+* Applications
+* Repayment Schedule
+* Deductions
+* Documents
+* Activities
+
+Display:
+
+* Outstanding Balance
+* Next EMI Date
+* Total Paid
+* Remaining Tenure
+
+---
+
+# Reports
+
+Generate:
+
+* Loan Register
+* Outstanding Balance Report
+* EMI Deduction Report
+* Loan Closure Report
+
+Filters:
+
+* Company
+* Branch
+* Department
+* Loan Type
+* Employee
+* Status
+
+Support:
+
+* PDF Export
+* Excel Export
+
+---
+
+# Notifications
+
+Send notifications for:
+
+* Loan Application Submitted
+* Loan Approved
+* Loan Rejected
+* Loan Disbursed
+* EMI Deducted
+* Loan Closed
+
+Channels:
+
+* Email
+* SMS
+* Push Notification
+
+Use Notification Settings module.
+
+---
+
+# Employee Self Service Integration
+
+Employees can:
+
+* View Eligibility
+* Apply For Loan
+* Upload Documents
+* Track Status
+* View Repayment Schedule
+* Request Early Closure
+
+---
+
+# Database Design
+
+Design tables:
+
+loan_types
+
+loan_policies
+
+loan_applications
+
+loan_approvals
+
+loan_disbursements
+
+loan_repayment_schedules
+
+loan_payroll_deductions
+
+loan_closures
+
+loan_activities
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+* Relationships
+
+Do not duplicate:
+
+employees
+
+payroll_runs
+
+workflow_approvals
+
+Use relationships only.
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+* Enums
+
+Use SQLAlchemy 2.0 standards.
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_110_loan_types
+
+2026_111_loan_policies
+
+2026_112_loan_applications
+
+2026_113_loan_disbursements
+
+2026_114_loan_repayment_schedules
+
+2026_115_loan_payroll_deductions
+
+2026_116_loan_closures
+
+2026_117_loan_activities
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Loan Types
+
+* Create Loan Type
+* Update Loan Type
+* List Loan Types
+
+Loan Applications
+
+* Apply For Loan
+* Approve Loan
+* Reject Loan
+* Cancel Loan
+
+Repayments
+
+* Get Repayment Schedule
+* Process Early Closure
+
+Reports
+
+* Get Outstanding Loans
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Loan Repository
+* Repayment Repository
+* Disbursement Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Loan Service
+* Eligibility Service
+* Repayment Service
+* Payroll Deduction Service
+
+Include:
+
+* EMI Calculation Logic
+* Eligibility Validation
+* Outstanding Balance Updates
+* Payroll Integration Logic
+* Final Settlement Logic
+
+---
+
+# Validation Rules
+
+* Employee Must Be Active
+* Employee Must Meet Minimum Service Period
+* Requested Amount Within Policy Limits
+* One Active Application Per Loan Type
+* EMI Start Date After Disbursement Date
+
+Prevent duplicate payroll deductions.
+
+---
+
+# Activity Logging
+
+Track:
+
+* Loan Applied
+* Loan Approved
+* Loan Rejected
+* Loan Disbursed
+* EMI Deducted
+* Loan Closed
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Seed Data
+
+Create sample:
+
+* Loan Types
+* Loan Policies
+* Loan Applications
+
+Use existing:
+
+* Employees
+* Payroll Data
+
+Generate sample repayment schedules.
+
+Generate production-ready specifications suitable for direct implementation in Office Repo using FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, React and TailwindCSS.

@@ -53,6 +53,17 @@ import LeaveBalances       from "./leave/LeaveBalances";
 import LeaveCalendar       from "./leave/LeaveCalendar";
 import CompOffList         from "./leave/CompOffList";
 
+// Payroll Management pages
+import PayrollDashboard        from "./payroll/PayrollDashboard";
+import SalaryComponentList     from "./payroll/SalaryComponentList";
+import SalaryStructureList     from "./payroll/SalaryStructureList";
+import EmployeeCompensationList from "./payroll/EmployeeCompensationList";
+import PayrollCycleList        from "./payroll/PayrollCycleList";
+import PayrollRunList          from "./payroll/PayrollRunList";
+import PayrollRunDetails       from "./payroll/PayrollRunDetails";
+import PayslipList             from "./payroll/PayslipList";
+import StatutoryList           from "./payroll/StatutoryList";
+
 // Attendance Management pages
 import AttendanceDashboard  from "./attendance/AttendanceDashboard";
 import AttendanceList       from "./attendance/AttendanceList";
@@ -289,7 +300,15 @@ function PortalRoutes() {
       <Route path="/hrms/leave/calendar"         element={<Protected><PortalLayout title="Leave Calendar"><LeaveCalendar /></PortalLayout></Protected>} />
       <Route path="/hrms/leave/comp-offs"        element={<Protected><PortalLayout title="Comp Off Management"><CompOffList /></PortalLayout></Protected>} />
       <Route path="/hrms/leave"                  element={<Protected><PortalLayout title="Leave Management"><LeaveDashboard /></PortalLayout></Protected>} />
-      <Route path="/hrms/payroll"     element={<CS module="HRMS" submodule="Payroll Management" />} />
+      <Route path="/hrms/payroll/runs/:runId"     element={<Protected><PortalLayout title="Payroll Run Details"><PayrollRunDetails /></PortalLayout></Protected>} />
+      <Route path="/hrms/payroll/runs"            element={<Protected><PortalLayout title="Payroll Runs"><PayrollRunList /></PortalLayout></Protected>} />
+      <Route path="/hrms/payroll/payslips"        element={<Protected><PortalLayout title="Payslips"><PayslipList /></PortalLayout></Protected>} />
+      <Route path="/hrms/payroll/compensations"   element={<Protected><PortalLayout title="Employee Compensation"><EmployeeCompensationList /></PortalLayout></Protected>} />
+      <Route path="/hrms/payroll/components"      element={<Protected><PortalLayout title="Salary Components"><SalaryComponentList /></PortalLayout></Protected>} />
+      <Route path="/hrms/payroll/structures"      element={<Protected><PortalLayout title="Salary Structures"><SalaryStructureList /></PortalLayout></Protected>} />
+      <Route path="/hrms/payroll/cycles"          element={<Protected><PortalLayout title="Payroll Cycles"><PayrollCycleList /></PortalLayout></Protected>} />
+      <Route path="/hrms/payroll/statutory"       element={<Protected><PortalLayout title="Statutory Compliance"><StatutoryList /></PortalLayout></Protected>} />
+      <Route path="/hrms/payroll"                 element={<Protected><PortalLayout title="Payroll Management"><PayrollDashboard /></PortalLayout></Protected>} />
       <Route path="/hrms/loans"       element={<CS module="HRMS" submodule="Employee Loan Management" />} />
       <Route path="/hrms/expenses"    element={<CS module="HRMS" submodule="Expense & Reimbursements" />} />
       <Route path="/hrms/ess"         element={<CS module="HRMS" submodule="Employee Self Service" />} />

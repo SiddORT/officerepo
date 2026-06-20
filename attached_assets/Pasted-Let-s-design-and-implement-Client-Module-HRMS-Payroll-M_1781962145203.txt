@@ -1,0 +1,661 @@
+Let's design and implement Client Module → HRMS → Payroll Management for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Completed Modules:
+
+* Organization Management
+* Employee Management
+* Employee Documents
+* Recruitment
+* Interview Management
+* Employee Onboarding
+* Attendance Management
+* Leave Management
+* Asset Inventory
+
+Payroll Management must integrate tightly with:
+
+* Employees
+* Attendance
+* Leave Management
+* Employee Loans
+* Expense & Reimbursements
+* Finance & Procurement
+* Workflow Engine
+* Notifications
+
+Module Hierarchy:
+
+HRMS
+└── Payroll Management
+
+Module Code:
+
+PAYROLL
+
+Purpose:
+
+Automate salary processing, statutory compliance, deductions, reimbursements, loans and payslip generation for employees across multiple companies, branches and countries.
+
+Payroll must be configurable and extensible.
+
+Do not hardcode country-specific logic.
+
+Design for future multi-country support.
+
+---
+
+# Payroll Workflow
+
+Employee
+↓
+Attendance Calculation
+↓
+Leave Calculation
+↓
+Overtime Calculation
+↓
+Reimbursements
+↓
+Loan Deductions
+↓
+Salary Processing
+↓
+Approvals
+↓
+Payslip Generation
+↓
+Payroll Disbursement
+
+---
+
+# Module Structure
+
+Payroll Management
+
+├── Salary Components
+├── Salary Structures
+├── Employee Compensation
+├── Payroll Cycles
+├── Payroll Processing
+├── Payroll Approvals
+├── Payslips
+├── Statutory Compliance
+├── Reimbursements
+├── Loan Deductions
+├── Final Settlement
+├── Payroll Reports
+└── Payroll Activities
+
+---
+
+# Salary Components
+
+Support configurable earning and deduction components.
+
+Earnings:
+
+* Basic Salary
+* HRA
+* Conveyance Allowance
+* Special Allowance
+* Bonus
+* Incentives
+* Overtime
+
+Deductions:
+
+* Tax
+* Provident Fund
+* Insurance
+* Professional Tax
+* Loan EMI
+* Other Deductions
+
+Component Types:
+
+* Earning
+* Deduction
+* Employer Contribution
+
+Calculation Methods:
+
+* Fixed Amount
+* Percentage
+* Formula Based
+
+Fields:
+
+* Component Code *
+* Component Name *
+* Component Type *
+* Taxable
+* Pro-Rata Applicable
+* Active Status
+
+---
+
+# Salary Structures
+
+Purpose:
+
+Create reusable compensation templates.
+
+Examples:
+
+* Software Engineer Grade A
+* Sales Executive
+* Intern
+* Contractor
+
+Fields:
+
+* Structure Name
+* Company
+* Currency
+* Effective From
+* Effective To
+
+Add components with:
+
+* Amount
+* Percentage
+* Formula
+
+Assign structures by:
+
+* Designation
+* Department
+* Employee Category
+
+---
+
+# Employee Compensation
+
+Assign salary structure to employees.
+
+Fields:
+
+* Employee *
+* Salary Structure *
+* CTC
+* Monthly Gross Salary
+* Effective From
+* Effective To
+
+Track history.
+
+Support salary revisions.
+
+---
+
+# Payroll Cycles
+
+Support:
+
+* Monthly
+* Bi-Weekly
+* Weekly
+
+Fields:
+
+* Cycle Name
+* Payroll Frequency
+* Processing Date
+* Salary Date
+* Cut-Off Date
+
+Assign by:
+
+* Company
+* Branch
+
+---
+
+# Payroll Processing
+
+Automatically calculate:
+
+* Total Working Days
+* Present Days
+* Paid Leave Days
+* Unpaid Leave Days
+* Overtime Hours
+* Loss Of Pay Days
+
+Integrate with:
+
+attendance_records
+
+leave_requests
+
+comp_offs
+
+Calculate:
+
+Gross Salary
+− Deductions
+
+* Reimbursements
+  − Loan EMI
+  = Net Salary
+
+Statuses:
+
+* Draft
+* Processed
+* Approved
+* Locked
+* Paid
+
+---
+
+# Payroll Approvals
+
+Integrate with Workflow Engine.
+
+Example:
+
+HR
+↓
+Finance
+↓
+Payroll Approved
+
+Track:
+
+* Approved By
+* Approval Date
+* Comments
+
+---
+
+# Payslips
+
+Generate downloadable payslips.
+
+Formats:
+
+* PDF
+
+Fields:
+
+* Employee Details
+* Earnings
+* Deductions
+* Net Pay
+* Tax Summary
+
+Support:
+
+* Bulk Generation
+* Bulk Download
+* Email Delivery
+
+---
+
+# Statutory Compliance
+
+Design configurable framework.
+
+Do not hardcode country rules.
+
+Examples:
+
+India:
+
+* PF
+* ESI
+* Professional Tax
+* TDS
+
+Future:
+
+* Country-Specific Compliance Engines
+
+Fields:
+
+* Compliance Type
+* Employer Contribution
+* Employee Contribution
+
+Support effective dates.
+
+---
+
+# Reimbursements Integration
+
+Integrate with:
+
+HRMS → Expense & Reimbursements
+
+Examples:
+
+* Travel Expense
+* Food Expense
+* Internet Reimbursement
+
+Only approved reimbursements should be included.
+
+---
+
+# Loan Deductions Integration
+
+Integrate with:
+
+HRMS → Employee Loan Management
+
+Automatically fetch:
+
+* EMI Amount
+* Outstanding Balance
+
+Deduct from payroll.
+
+Update loan balance after payroll approval.
+
+---
+
+# Final Settlement
+
+Support employee exit processing.
+
+Calculate:
+
+* Pending Salary
+* Leave Encashment
+* Loan Recovery
+* Asset Recovery
+* Notice Recovery
+
+Integrate with:
+
+* Exit Management
+* Asset Inventory
+* Leave Management
+
+Employee cannot be marked as exited until settlement is complete.
+
+---
+
+# Payroll Calendar
+
+Display:
+
+* Payroll Cycles
+* Processing Dates
+* Salary Dates
+
+Provide:
+
+* Monthly View
+* Annual View
+
+---
+
+# Dashboard Widgets
+
+* Payroll Pending
+* Payroll Processed
+* Upcoming Salary Date
+* Total Payroll Cost
+* Overtime Cost
+* Reimbursement Amount
+* Loan Recovery Amount
+
+---
+
+# Employee Payroll Profile
+
+Tabs:
+
+* Compensation
+* Payslips
+* Reimbursements
+* Loans
+* Tax Documents
+* Activities
+
+---
+
+# Reports
+
+Generate:
+
+* Salary Register
+* Payroll Summary
+* Cost Center Report
+* Overtime Report
+* Deduction Report
+* Compliance Report
+
+Filters:
+
+* Company
+* Branch
+* Department
+* Designation
+* Payroll Cycle
+
+Support:
+
+* PDF Export
+* Excel Export
+
+---
+
+# Notifications
+
+Send notifications for:
+
+* Payroll Processed
+* Payslip Generated
+* Salary Credited
+
+Channels:
+
+* Email
+* Push Notification
+
+Use Notification Settings module.
+
+---
+
+# Database Design
+
+Design tables:
+
+salary_components
+
+salary_structures
+
+salary_structure_components
+
+employee_compensation
+
+payroll_cycles
+
+payroll_runs
+
+payroll_run_details
+
+payslips
+
+statutory_components
+
+payroll_activities
+
+Do not duplicate:
+
+attendance_records
+
+leave_requests
+
+employee_loans
+
+expense_claims
+
+Use relationships only.
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+* Relationships
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+* Enums
+
+Use SQLAlchemy 2.0 standards.
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_100_salary_components
+
+2026_101_salary_structures
+
+2026_102_employee_compensation
+
+2026_103_payroll_cycles
+
+2026_104_payroll_runs
+
+2026_105_payslips
+
+2026_106_statutory_components
+
+2026_107_payroll_activities
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Salary Components
+
+* Create Component
+* Update Component
+* List Components
+
+Salary Structures
+
+* Create Structure
+* Assign Structure
+
+Payroll
+
+* Run Payroll
+* Approve Payroll
+* Lock Payroll
+
+Payslips
+
+* Generate Payslip
+* Download Payslip
+
+Reports
+
+* Get Payroll Summary
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Compensation Repository
+* Payroll Repository
+* Payslip Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Payroll Service
+* Compensation Service
+* Payslip Service
+* Compliance Service
+
+Include:
+
+* Attendance Calculation Logic
+* Leave Calculation Logic
+* Loan Deduction Logic
+* Reimbursement Logic
+* Net Pay Calculation
+* Final Settlement Logic
+
+---
+
+# Validation Rules
+
+* One Active Compensation Structure Per Employee
+* Payroll Cannot Be Modified After Lock
+* Salary Date >= Processing Date
+* Duplicate Payroll Runs Not Allowed
+
+---
+
+# Activity Logging
+
+Track:
+
+* Salary Structure Assigned
+* Payroll Processed
+* Payroll Approved
+* Payslip Generated
+* Salary Revision
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Seed Data
+
+Create sample:
+
+* Salary Components
+* Salary Structures
+* Payroll Cycles
+
+Use existing:
+
+* Employees
+* Attendance
+* Leave Records
+
+Generate sample payroll data.
+
+Generate production-ready specifications suitable for direct implementation in Office Repo using FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, React and TailwindCSS.

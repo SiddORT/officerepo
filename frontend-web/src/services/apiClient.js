@@ -892,6 +892,61 @@ export const portalLeaveApi = {
     axios.get(_lvurl(sd, "/payroll-summary"), _lvhp(sd, tk, { employee_id: empId, year, month })),
 };
 
+// ── Payroll Management (portal) ───────────────────────────────────────────────
+const _prurl = (sd, path) => `/api/v1/portal/${sd}/hrms/payroll${path}`;
+const _prh   = (sd, tk)       => ({ headers: { Authorization: `Bearer ${tk}` } });
+const _prhp  = (sd, tk, p)    => ({ headers: { Authorization: `Bearer ${tk}` }, params: p });
+
+export const portalPayrollApi = {
+  meta:      (sd, tk)      => axios.get(_prurl(sd, "/meta/options"),    _prh(sd, tk)),
+  dashboard: (sd, tk)      => axios.get(_prurl(sd, "/dashboard"),       _prh(sd, tk)),
+
+  // Salary Components
+  listComponents:   (sd, tk, p)       => axios.get(_prurl(sd, "/components"),           _prhp(sd, tk, p)),
+  createComponent:  (sd, tk, d)       => axios.post(_prurl(sd, "/components"),    d,    _prh(sd, tk)),
+  updateComponent:  (sd, tk, id, d)   => axios.patch(_prurl(sd, `/components/${id}`), d, _prh(sd, tk)),
+  deleteComponent:  (sd, tk, id)      => axios.delete(_prurl(sd, `/components/${id}`),  _prh(sd, tk)),
+
+  // Salary Structures
+  listStructures:   (sd, tk, p)       => axios.get(_prurl(sd, "/structures"),           _prhp(sd, tk, p)),
+  getStructure:     (sd, tk, id)      => axios.get(_prurl(sd, `/structures/${id}`),     _prh(sd, tk)),
+  createStructure:  (sd, tk, d)       => axios.post(_prurl(sd, "/structures"),    d,    _prh(sd, tk)),
+  updateStructure:  (sd, tk, id, d)   => axios.patch(_prurl(sd, `/structures/${id}`), d, _prh(sd, tk)),
+  deleteStructure:  (sd, tk, id)      => axios.delete(_prurl(sd, `/structures/${id}`),  _prh(sd, tk)),
+
+  // Employee Compensation
+  listCompensations:  (sd, tk, p)     => axios.get(_prurl(sd, "/compensations"),            _prhp(sd, tk, p)),
+  createCompensation: (sd, tk, d)     => axios.post(_prurl(sd, "/compensations"),   d,      _prh(sd, tk)),
+  updateCompensation: (sd, tk, id, d) => axios.patch(_prurl(sd, `/compensations/${id}`), d, _prh(sd, tk)),
+  deleteCompensation: (sd, tk, id)    => axios.delete(_prurl(sd, `/compensations/${id}`),   _prh(sd, tk)),
+
+  // Payroll Cycles
+  listCycles:   (sd, tk, p)     => axios.get(_prurl(sd, "/cycles"),           _prhp(sd, tk, p)),
+  createCycle:  (sd, tk, d)     => axios.post(_prurl(sd, "/cycles"),    d,    _prh(sd, tk)),
+  updateCycle:  (sd, tk, id, d) => axios.patch(_prurl(sd, `/cycles/${id}`), d, _prh(sd, tk)),
+  deleteCycle:  (sd, tk, id)    => axios.delete(_prurl(sd, `/cycles/${id}`),  _prh(sd, tk)),
+
+  // Payroll Runs
+  listRuns:        (sd, tk, p)     => axios.get(_prurl(sd, "/runs"),                    _prhp(sd, tk, p)),
+  getRunDetail:    (sd, tk, id)    => axios.get(_prurl(sd, `/runs/${id}`),              _prh(sd, tk)),
+  createRun:       (sd, tk, d)     => axios.post(_prurl(sd, "/runs"),           d,      _prh(sd, tk)),
+  processRun:      (sd, tk, id, d) => axios.post(_prurl(sd, `/runs/${id}/process`), d,  _prh(sd, tk)),
+  approveRun:      (sd, tk, id, d) => axios.post(_prurl(sd, `/runs/${id}/approve`), d,  _prh(sd, tk)),
+  lockRun:         (sd, tk, id)    => axios.post(_prurl(sd, `/runs/${id}/lock`),    {},  _prh(sd, tk)),
+  markPaid:        (sd, tk, id)    => axios.post(_prurl(sd, `/runs/${id}/mark-paid`), {}, _prh(sd, tk)),
+  generatePayslips:(sd, tk, id)    => axios.post(_prurl(sd, `/runs/${id}/generate-payslips`), {}, _prh(sd, tk)),
+
+  // Payslips
+  listPayslips: (sd, tk, p)    => axios.get(_prurl(sd, "/payslips"),        _prhp(sd, tk, p)),
+  getPayslip:   (sd, tk, id)   => axios.get(_prurl(sd, `/payslips/${id}`),  _prh(sd, tk)),
+
+  // Statutory
+  listStatutory:   (sd, tk, p)     => axios.get(_prurl(sd, "/statutory"),           _prhp(sd, tk, p)),
+  createStatutory: (sd, tk, d)     => axios.post(_prurl(sd, "/statutory"),   d,     _prh(sd, tk)),
+  updateStatutory: (sd, tk, id, d) => axios.patch(_prurl(sd, `/statutory/${id}`), d, _prh(sd, tk)),
+  deleteStatutory: (sd, tk, id)    => axios.delete(_prurl(sd, `/statutory/${id}`),  _prh(sd, tk)),
+};
+
 // ── Currency Management (superadmin — global platform settings) ───────────────
 const CURRENCIES = "/superadmin/currencies";
 
