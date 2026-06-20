@@ -148,13 +148,14 @@ def _run_migrations() -> None:
         _ctx = MigrationContext.configure(_conn)
         current_heads = _ctx.get_current_heads()
 
-    # Multiple heads in the DB means the migration history has diverged; upgrade head merges them.
+    # Multiple heads in the DB means the migration history has diverged; upgrade heads (plural)
+    # applies all pending migrations across every branch before the merge point.
     if len(current_heads) > 1:
         _startup_log.warning(
-            "Alembic: multiple heads detected (%s); running upgrade head to converge.",
+            "Alembic: multiple heads detected (%s); running upgrade heads to converge.",
             ", ".join(current_heads),
         )
-        alembic_command.upgrade(cfg, "head")
+        alembic_command.upgrade(cfg, "heads")
         _startup_log.info("Alembic migrations: converged to HEAD.")
         return
 

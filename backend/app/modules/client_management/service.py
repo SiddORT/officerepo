@@ -647,30 +647,66 @@ def list_modules(db: Session, client_id: str) -> list:
     return [module_to_dict(x) for x in repo.list_modules(db, client_id)]
 
 
+def _toggle_one_module(db: Session, client_id: str, module_name: str, is_enabled: bool, *, actor) -> ClientModule:
+    """Toggle a single module row without committing. Writes journal + audit entries."""
+    module = repo.get_module(db, client_id, module_name)
+    if not module:
+        module = ClientModule(client_id=client_id, module_name=module_name)
+        repo.add(db, module)
+    module.is_enabled = is_enabled
+    module.enabled_at = datetime.utcnow() if is_enabled else None
+    module.updated_at = datetime.utcnow()
+    if is_enabled:
+        _journal(db, client_id, c.ACT_MODULE_ENABLED, remarks=module_name)
+        record_audit(db, c.AUDIT_MODULE_ENABLED, c.AUDIT_ENTITY, client_id, actor=actor,
+                     metadata={"module": module_name})
+    else:
+        _journal(db, client_id, c.ACT_MODULE_DISABLED, remarks=module_name)
+        record_audit(db, c.AUDIT_MODULE_DISABLED, c.AUDIT_ENTITY, client_id, actor=actor,
+                     metadata={"module": module_name})
+    return module
+
+
 def toggle_module(db: Session, client_id: str, payload: ModuleToggleRequest, *, actor) -> dict:
     _require_client(db, client_id)
-    module = repo.get_module(db, client_id, payload.module_name)
-    if not module:
-        module = ClientModule(client_id=client_id, module_name=payload.module_name)
-        repo.add(db, module)
-    module.is_enabled = payload.is_enabled
-    module.enabled_at = datetime.utcnow() if payload.is_enabled else None
-    module.updated_at = datetime.utcnow()
-    if payload.is_enabled:
-        _journal(db, client_id, c.ACT_MODULE_ENABLED, remarks=payload.module_name)
-        record_audit(db, c.AUDIT_MODULE_ENABLED, c.AUDIT_ENTITY, client_id, actor=actor,
-                     metadata={"module": payload.module_name})
-    else:
-        _journal(db, client_id, c.ACT_MODULE_DISABLED, remarks=payload.module_name)
-        record_audit(db, c.AUDIT_MODULE_DISABLED, c.AUDIT_ENTITY, client_id, actor=actor,
-                     metadata={"module": payload.module_name})
-    db.commit()
-    db.refresh(module)
+    module_name = payload.module_name
+    is_enabled = payload.is_enabled
 
-    # When enabling a module, ensure its tables exist on the client DB (idempotent).
-    # We pass force=True so the cache never hides a missing table after a fresh enable.
-    # On disable we never touch the schema — data is always preserved.
-    if payload.is_enabled:
+    # Build the full list of modules to toggle (primary + any cascades).
+    to_toggle: list[tuple[str, bool]] = [(module_name, is_enabled)]
+
+    if module_name in c.PARENT_MODULE_CHILDREN:
+        # Toggling a parent → cascade to all children.
+        for child in c.PARENT_MODULE_CHILDREN[module_name]:
+            to_toggle.append((child, is_enabled))
+
+    elif module_name in c.CHILD_PARENT_MAP:
+        parent_name = c.CHILD_PARENT_MAP[module_name]
+        if is_enabled:
+            # Enabling a child → ensure the parent is also enabled.
+            parent_mod = repo.get_module(db, client_id, parent_name)
+            if not parent_mod or not parent_mod.is_enabled:
+                to_toggle.append((parent_name, True))
+        else:
+            # Disabling a child → if all siblings are now off, also disable the parent.
+            siblings = [ch for ch in c.PARENT_MODULE_CHILDREN[parent_name] if ch != module_name]
+            existing = {m.module_name: m.is_enabled for m in repo.list_modules(db, client_id)}
+            if not any(existing.get(s, False) for s in siblings):
+                to_toggle.append((parent_name, False))
+
+    # Apply all toggles.
+    primary_mod = None
+    for name, val in to_toggle:
+        mod = _toggle_one_module(db, client_id, name, val, actor=actor)
+        if name == module_name:
+            primary_mod = mod
+
+    db.commit()
+    if primary_mod:
+        db.refresh(primary_mod)
+
+    # When enabling a module, provision client DB tables if the DB is active.
+    if is_enabled:
         try:
             from backend.app.database.client_db import build_client_db_url, provision_portal_schema
             conn = repo.get_db_connection(db, client_id)
@@ -679,7 +715,35 @@ def toggle_module(db: Session, client_id: str, payload: ModuleToggleRequest, *, 
         except Exception:
             pass  # never block the enable action
 
-    return module_to_dict(module)
+    return module_to_dict(primary_mod) if primary_mod else {}
+
+
+def list_modules_nested(db: Session, client_id: str) -> list:
+    """Return top-level modules with their children and enabled status."""
+    _require_client(db, client_id)
+    # Self-heal: ensure all module rows exist (same as list_modules).
+    existing = {m.module_name: m.is_enabled for m in repo.list_modules(db, client_id)}
+    created = False
+    for name in c.CLIENT_MODULES:
+        if name not in existing:
+            repo.add(db, ClientModule(client_id=client_id, module_name=name, is_enabled=False))
+            existing[name] = False
+            created = True
+    if created:
+        db.commit()
+
+    result = []
+    for parent_name in c.TOP_LEVEL_MODULES:
+        children_names = c.PARENT_MODULE_CHILDREN.get(parent_name, [])
+        result.append({
+            "module_name": parent_name,
+            "is_enabled": existing.get(parent_name, False),
+            "children": [
+                {"module_name": ch, "is_enabled": existing.get(ch, False)}
+                for ch in children_names
+            ],
+        })
+    return result
 
 
 # ════════════════════════════════════════════════════════════════════════════

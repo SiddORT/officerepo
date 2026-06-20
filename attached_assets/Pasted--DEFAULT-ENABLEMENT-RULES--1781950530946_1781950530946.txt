@@ -1,0 +1,128 @@
+--------------------------------------------------
+DEFAULT ENABLEMENT RULES
+--------------------------------------------------
+
+For the initial release, simplify module activation.
+
+When a parent module is enabled:
+
+- All child modules should automatically be enabled by default.
+- The parent toggle acts as "Enable Entire Module Suite".
+
+Example:
+
+Enable HRMS
+
+Automatically enable:
+
+☑ Recruitment
+☑ Interview Management
+☑ Employee Onboarding
+☑ Attendance Management
+☑ Leave Management
+☑ Payroll Management
+☑ Employee Loan Management
+☑ Expense & Reimbursements
+
+Example:
+
+Enable Organization Management
+
+Automatically enable:
+
+☑ Companies
+☑ Branches
+☑ Departments
+☑ Designations
+☑ Employees
+☑ Employee Documents
+
+Example:
+
+Enable Asset Management
+
+Automatically enable:
+
+☑ Asset Inventory
+☑ Asset Maintenance
+☑ Asset Audits
+☑ Asset Requests
+
+--------------------------------------------------
+SUBMODULE MODAL ENHANCEMENTS
+--------------------------------------------------
+
+Add a "Select All" control at the top of each modal.
+
+Example:
+
+[☑ Select All]
+
+Recruitment                     ☑
+Interview Management            ☑
+Employee Onboarding             ☑
+Attendance Management           ☑
+Leave Management                ☑
+Payroll Management              ☑
+Employee Loan Management        ☑
+Expense & Reimbursements        ☑
+
+Behavior:
+
+- Clicking "Select All" enables all submodules.
+- Clicking again disables all submodules.
+- If some submodules are enabled, show an indeterminate state.
+
+Example:
+
+[-] Select All
+
+--------------------------------------------------
+PARENT AND CHILD SYNC RULES
+--------------------------------------------------
+
+Enable Parent:
+
+→ Automatically enable all child modules.
+
+Disable Parent:
+
+→ Automatically disable all child modules.
+
+Disable all child modules manually:
+
+→ Automatically disable parent module.
+
+Enable at least one child module:
+
+→ Parent remains enabled.
+
+--------------------------------------------------
+INITIAL CLIENT SETUP
+--------------------------------------------------
+
+For now, when a new client is created and a parent module is enabled:
+
+- All submodules under that parent should be enabled by default.
+
+This reduces onboarding complexity.
+
+Granular enablement can be adjusted later through the modal.
+
+--------------------------------------------------
+FUTURE PHASE
+--------------------------------------------------
+
+In future releases:
+
+- Allow templates such as:
+
+HRMS Lite
+HRMS Complete
+
+Asset Basic
+Asset Enterprise
+
+Do not implement templates now.
+
+Only design the activation logic to support it later.

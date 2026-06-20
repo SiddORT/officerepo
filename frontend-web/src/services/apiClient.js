@@ -252,6 +252,7 @@ export const clientsApi = {
   saveSubscription: (id, data) => apiClient.put(`${CLIENTS}/${id}/subscription`, data),
 
   modules: (id) => apiClient.get(`${CLIENTS}/${id}/modules`),
+  modulesNested: (id) => apiClient.get(`${CLIENTS}/${id}/modules/nested`),
   toggleModule: (id, moduleName, isEnabled) =>
     apiClient.post(`${CLIENTS}/${id}/modules`, { module_name: moduleName, is_enabled: isEnabled }),
 

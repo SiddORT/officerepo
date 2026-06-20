@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { clientsApi } from "../../../services/apiClient";
 import Modal from "../../../components/ui/Modal";
@@ -150,7 +150,7 @@ export default function ClientDetails() {
         {tab === "Overview" && <OverviewTab client={client} />}
         {tab === "Contacts" && <ContactsTab clientId={id} contacts={client.contacts} options={options} onChange={load} />}
         {tab === "Commercials" && <CommercialsTab clientId={id} billing={client.billing_profile} options={options} onChange={load} />}
-        {tab === "Modules" && <ModulesTab clientId={id} modules={client.modules} options={options} onChange={load} />}
+        {tab === "Modules" && <ModulesTab clientId={id} onChange={load} />}
         {tab === "Subscription" && <SubscriptionTab clientId={id} subscription={client.subscription} options={options} onChange={load} />}
         {tab === "Documents" && <DocumentsTab clientId={id} documents={client.documents} options={options} onChange={load} />}
         {tab === "Activities" && <ActivitiesTab clientId={id} />}
@@ -396,93 +396,171 @@ function CommercialsTab({ clientId, billing, options, onChange }) {
   );
 }
 
-// ── Module sub-features catalog (UI-only metadata) ────────────────────────────
-const MODULE_DETAILS = {
+// ── Top-level module catalog (UI metadata + submodules) ──────────────────────
+const MODULE_CATALOG_UI = {
   "Organization Management": {
-    description: "Companies, departments, designations, and employee records — the foundation for all workplace modules.",
+    description: "Manage companies, organization structure and employees.",
     color: "#00aeec",
-    features: ["Companies", "Departments", "Designations", "Employee Profiles", "Employment History", "Education Records", "Emergency Contacts", "Bank Details", "Government IDs"],
+    icon: "building",
+    submodules: ["Companies", "Branches", "Departments", "Designations", "Employees", "Employee Documents"],
   },
   "HRMS": {
-    description: "Full human-resource management suite covering leave, payroll, and attendance.",
+    description: "Manage the complete employee lifecycle — recruitment, attendance, leave, and payroll.",
     color: "#8b5cf6",
-    features: ["Leave Management", "Payroll Processing", "Attendance Tracking", "Shift Management", "Leave Policies", "Holiday Calendar"],
+    icon: "briefcase",
+    submodules: ["Recruitment", "Interview Management", "Employee Onboarding", "Attendance Management", "Leave Management", "Payroll Management", "Employee Loan Management", "Expense & Reimbursements"],
   },
   "Asset Management": {
-    description: "Track and manage company assets across locations and teams.",
+    description: "Manage company assets and assignments across locations and teams.",
     color: "#f59e0b",
-    features: ["Asset Catalog", "Asset Assignments", "Maintenance Logs", "Disposal Records", "Location Tracking", "QR Code Labels"],
-  },
-  "Helpdesk": {
-    description: "Support ticket and service-request management with SLA tracking.",
-    color: "#ef4444",
-    features: ["Support Tickets", "Ticket Categories", "SLA Policies", "Agent Assignment", "Customer Portal", "Email Integration"],
+    icon: "package",
+    submodules: ["Asset Inventory", "Asset Maintenance", "Asset Audits", "Asset Requests"],
   },
   "Billing Management": {
     description: "Invoices, payments, and financial records for the workspace.",
     color: "#10b981",
-    features: ["Invoice Generation", "Payment Tracking", "Subscription Billing", "Tax Management", "Financial Reports", "Recurring Invoices"],
+    icon: "credit-card",
+    submodules: [],
   },
   "Workflow Engine": {
     description: "Process automation and multi-step approval workflows.",
     color: "#06b6d4",
-    features: ["Workflow Builder", "Triggers & Conditions", "Approval Chains", "Email Notifications", "Audit Trail", "Scheduled Automations"],
+    icon: "git-branch",
+    submodules: [],
   },
   "Reports": {
     description: "Analytics dashboards and exportable reports across all modules.",
     color: "#f97316",
-    features: ["Analytics Dashboards", "Custom Report Builder", "Scheduled Exports", "Data Visualizations", "Cross-module Reports", "Role-based Views"],
+    icon: "bar-chart",
+    submodules: [],
+  },
+  "Helpdesk": {
+    description: "Support ticket and service-request management with SLA tracking.",
+    color: "#ef4444",
+    icon: "headphones",
+    submodules: [],
   },
   "Knowledge Base": {
     description: "Internal wiki, SOPs, and documentation with version control.",
     color: "#84cc16",
-    features: ["Article Editor", "Category Management", "Version History", "Search & Tags", "Access Control", "Public/Private Articles"],
-  },
-  "Recruitment": {
-    description: "Job postings, applicant tracking, and full hiring pipelines.",
-    color: "#ec4899",
-    features: ["Job Postings", "Application Tracking", "Interview Scheduling", "Hiring Pipelines", "Offer Management", "Candidate Portal"],
+    icon: "book",
+    submodules: [],
   },
 };
 
+function ModuleIcon({ name, color, size = 20 }) {
+  const paths = {
+    building:    "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
+    briefcase:   "M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
+    package:     "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
+    "credit-card":"M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z",
+    "git-branch":"M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z",
+    "bar-chart": "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+    headphones:  "M3 18v-6a9 9 0 0118 0v6M3 18a1 1 0 001 1h1a1 1 0 001-1v-3a1 1 0 00-1-1H4a1 1 0 00-1 1v3zm16 0a1 1 0 01-1 1h-1a1 1 0 01-1-1v-3a1 1 0 011-1h1a1 1 0 011 1v3z",
+    book:        "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253",
+  };
+  return (
+    <svg width={size} height={size} fill="none" stroke={color} strokeWidth={1.7} viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d={paths[name] || paths.package} />
+    </svg>
+  );
+}
+
 // ── Modules ───────────────────────────────────────────────────────────────────
-function ModulesTab({ clientId, modules = [], options, onChange }) {
-  const savedMap = Object.fromEntries(modules.map((m) => [m.module_name, m.is_enabled]));
-  const allModules = options.modules || [];
-
-  const [pending, setPending]       = useState({});   // name → bool (staged changes only)
-  const [viewModule, setViewModule] = useState(null); // module name to show detail for
+function ModulesTab({ clientId, onChange }) {
+  const [nestedModules, setNestedModules] = useState([]);
+  const [loading, setLoading]  = useState(true);
+  const [pending, setPending]  = useState({});   // module_name → bool
+  const [infoModule, setInfoModule] = useState(null); // {name, color, icon, submodules, children}
   const [confirming, setConfirming] = useState(false);
-  const [saving, setSaving]         = useState(false);
-  const [err, setErr]               = useState("");
+  const [saving, setSaving]    = useState(false);
+  const [err, setErr]          = useState("");
 
-  const effective = (name) => (name in pending ? pending[name] : !!savedMap[name]);
+  const load = useCallback(async () => {
+    try {
+      const res = await clientsApi.modulesNested(clientId);
+      setNestedModules(res.data?.data || []);
+    } catch {
+      setNestedModules([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [clientId]);
 
-  const stageToggle = (name, value) => {
-    const savedVal = !!savedMap[name];
+  useEffect(() => { load(); }, [load]);
+
+  // Build a saved-state lookup from the nested data
+  const savedEnabled = useMemo(() => {
+    const map = {};
+    nestedModules.forEach((mod) => {
+      map[mod.module_name] = mod.is_enabled;
+      (mod.children || []).forEach((ch) => { map[ch.module_name] = ch.is_enabled; });
+    });
+    return map;
+  }, [nestedModules]);
+
+  const effective = (name) => (name in pending ? pending[name] : !!savedEnabled[name]);
+
+  // Stage a change, recording only diffs from saved state
+  const stage = (updates) => {
     setPending((prev) => {
       const next = { ...prev };
-      if (value === savedVal) {
-        delete next[name];
-      } else {
-        next[name] = value;
-      }
+      Object.entries(updates).forEach(([name, val]) => {
+        if (val === !!savedEnabled[name]) {
+          delete next[name];
+        } else {
+          next[name] = val;
+        }
+      });
       return next;
     });
   };
 
-  const hasPending = Object.keys(pending).length > 0;
+  // Toggle a top-level module card (cascades all children)
+  const stageParent = (parentName, val) => {
+    const parentMod = nestedModules.find((m) => m.module_name === parentName);
+    const updates = { [parentName]: val };
+    (parentMod?.children || []).forEach((ch) => { updates[ch.module_name] = val; });
+    stage(updates);
+  };
 
+  // Toggle a single child module (cascade up/down as needed)
+  const stageChild = (childName, val, parentMod) => {
+    const updates = { [childName]: val };
+    if (val) {
+      // enabling child → also ensure parent is on
+      if (!effective(parentMod.module_name)) updates[parentMod.module_name] = true;
+    } else {
+      // disabling child → if all siblings now off, also disable parent
+      const otherSiblings = (parentMod.children || []).filter((c) => c.module_name !== childName);
+      const anyOtherOn = otherSiblings.some((c) => {
+        const nm = c.module_name;
+        return nm in updates ? updates[nm] : effective(nm);
+      });
+      if (!anyOtherOn) updates[parentMod.module_name] = false;
+    }
+    stage(updates);
+  };
+
+  // "Select All" toggle in the info modal
+  const stageSelectAll = (parentMod, allOn) => {
+    const updates = { [parentMod.module_name]: allOn };
+    (parentMod.children || []).forEach((ch) => { updates[ch.module_name] = allOn; });
+    stage(updates);
+  };
+
+  const hasPending = Object.keys(pending).length > 0;
   const discard = () => { setPending({}); setErr(""); };
 
   const saveAll = async () => {
     setSaving(true); setErr("");
     try {
-      for (const [name, value] of Object.entries(pending)) {
-        await clientsApi.toggleModule(clientId, name, value);
+      for (const [name, val] of Object.entries(pending)) {
+        await clientsApi.toggleModule(clientId, name, val);
       }
       setPending({});
       setConfirming(false);
+      await load();
       onChange();
     } catch (e) {
       setErr(e.response?.data?.detail || "Some changes could not be saved.");
@@ -494,10 +572,11 @@ function ModulesTab({ clientId, modules = [], options, onChange }) {
   const enabledChanges  = Object.entries(pending).filter(([, v]) => v).map(([n]) => n);
   const disabledChanges = Object.entries(pending).filter(([, v]) => !v).map(([n]) => n);
 
+  if (loading) return <Card title="Modules"><p style={{ color: "var(--c-muted)", fontSize: 13 }}>Loading…</p></Card>;
+
   return (
     <>
       <Card title="Modules">
-        {/* Pending changes banner */}
         {hasPending && (
           <div style={{
             marginBottom: 16, padding: "10px 14px", borderRadius: 8,
@@ -519,112 +598,214 @@ function ModulesTab({ clientId, modules = [], options, onChange }) {
             </div>
           </div>
         )}
-
         {err && <p style={{ color: "#ef4444", fontSize: 13, marginBottom: 12 }}>{err}</p>}
 
-        {allModules.length === 0 ? <Empty>No modules available.</Empty> : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {allModules.map((name) => {
-              const detail = MODULE_DETAILS[name];
-              const isOn   = effective(name);
-              const isDirty = name in pending;
-              return (
-                <div key={name} style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  borderRadius: 8, padding: "10px 12px",
-                  background: "var(--c-bg)",
-                  border: `1px solid ${isDirty ? "rgba(0,174,236,0.4)" : "var(--c-border)"}`,
-                  transition: "border-color 0.15s",
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                    {detail && (
-                      <span style={{
-                        width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
-                        background: detail.color, opacity: isOn ? 1 : 0.35,
-                      }} />
-                    )}
-                    <span style={{ fontSize: 13, color: "var(--c-text)", fontWeight: isDirty ? 600 : 400 }}>{name}</span>
-                    {isDirty && (
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 5px", borderRadius: 3, background: "rgba(0,174,236,0.15)", color: "var(--c-accent)" }}>
-                        {pending[name] ? "Enabling" : "Disabling"}
-                      </span>
-                    )}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+          {nestedModules.map((mod) => {
+            const ui = MODULE_CATALOG_UI[mod.module_name] || {};
+            const isOn = effective(mod.module_name);
+            const isDirty = mod.module_name in pending;
+            const hasChildren = (mod.children || []).length > 0;
+            const enabledChildCount = hasChildren
+              ? (mod.children || []).filter((c) => effective(c.module_name)).length
+              : null;
+
+            return (
+              <div key={mod.module_name} style={{
+                borderRadius: 10, padding: "16px",
+                background: "var(--c-bg)",
+                border: `1px solid ${isDirty ? "rgba(0,174,236,0.4)" : isOn ? `${ui.color || "#00aeec"}28` : "var(--c-border)"}`,
+                transition: "border-color 0.15s, box-shadow 0.15s",
+                boxShadow: isOn ? `0 0 0 1px ${ui.color || "#00aeec"}14` : "none",
+              }}>
+                {/* Header row */}
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{
+                      width: 38, height: 38, borderRadius: 9, flexShrink: 0,
+                      background: isOn ? `${ui.color || "#00aeec"}1a` : "var(--c-surface2)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "background 0.15s",
+                    }}>
+                      <ModuleIcon name={ui.icon || "package"} color={isOn ? (ui.color || "#00aeec") : "var(--c-muted)"} size={18} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-heading)", lineHeight: 1.2 }}>
+                        {mod.module_name}
+                      </div>
+                      {hasChildren && (
+                        <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 2 }}>
+                          {enabledChildCount}/{mod.children.length} submodules active
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                    {detail && (
-                      <button type="button" title={`What's in ${name}`}
-                        onClick={() => setViewModule(name)}
-                        style={{
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          width: 26, height: 26, borderRadius: 6, border: "1px solid var(--c-border)",
-                          background: "var(--c-surface2)", color: "var(--c-muted)", cursor: "pointer",
-                          flexShrink: 0,
-                        }}>
-                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </button>
-                    )}
-                    <Toggle checked={isOn} onChange={(v) => stageToggle(name, v)} />
-                  </div>
+                  <Toggle checked={isOn} onChange={(v) => stageParent(mod.module_name, v)} />
                 </div>
-              );
-            })}
-          </div>
-        )}
+
+                {/* Description */}
+                <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--c-text2)", lineHeight: 1.5 }}>
+                  {ui.description || ""}
+                </p>
+
+                {/* Info button row */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  {isDirty && (
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "rgba(0,174,236,0.15)", color: "var(--c-accent)" }}>
+                      {pending[mod.module_name] !== undefined ? (pending[mod.module_name] ? "Enabling" : "Disabling") : "Modified"}
+                    </span>
+                  )}
+                  {!isDirty && <span />}
+                  {hasChildren && (
+                    <button type="button"
+                      onClick={() => setInfoModule(mod)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 5,
+                        fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 6,
+                        border: "1px solid var(--c-border)", background: "var(--c-surface2)",
+                        color: "var(--c-text2)", cursor: "pointer",
+                      }}>
+                      <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Submodules
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </Card>
 
-      {/* ── Module detail panel ──────────────────────────────────────────── */}
-      {viewModule && MODULE_DETAILS[viewModule] && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 9000,
-          display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
-        }} onClick={() => setViewModule(null)}>
+      {/* ── Submodule info / toggle modal ────────────────────────────────── */}
+      {infoModule && (() => {
+        const ui = MODULE_CATALOG_UI[infoModule.module_name] || {};
+        const children = infoModule.children || [];
+        const allOn  = children.every((c) => effective(c.module_name));
+        const someOn = !allOn && children.some((c) => effective(c.module_name));
+        const parentOn = effective(infoModule.module_name);
+
+        return (
           <div style={{
-            background: "var(--c-surface)", borderRadius: 14, padding: "28px 28px 24px",
-            width: "100%", maxWidth: 440, boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
-            border: "1px solid var(--c-border)",
-          }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: MODULE_DETAILS[viewModule].color, flexShrink: 0 }} />
-                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "var(--c-heading)" }}>{viewModule}</h3>
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9000,
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+          }} onClick={() => setInfoModule(null)}>
+            <div style={{
+              background: "var(--c-surface)", borderRadius: 14, padding: "0",
+              width: "100%", maxWidth: 480, maxHeight: "85vh", overflowY: "auto",
+              boxShadow: "0 24px 64px rgba(0,0,0,0.45)", border: "1px solid var(--c-border)",
+            }} onClick={(e) => e.stopPropagation()}>
+
+              {/* Modal header */}
+              <div style={{
+                padding: "20px 22px 16px", borderBottom: "1px solid var(--c-border)",
+                display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12,
+                position: "sticky", top: 0, background: "var(--c-surface)", zIndex: 1, borderRadius: "14px 14px 0 0",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: `${ui.color || "#00aeec"}1a`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <ModuleIcon name={ui.icon || "package"} color={ui.color || "#00aeec"} size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "var(--c-heading)" }}>{infoModule.module_name}</h3>
+                    <p style={{ margin: 0, fontSize: 12, color: "var(--c-muted)", marginTop: 2 }}>{ui.description}</p>
+                  </div>
                 </div>
-                <p style={{ margin: 0, fontSize: 13, color: "var(--c-text2)", lineHeight: 1.5 }}>
-                  {MODULE_DETAILS[viewModule].description}
-                </p>
+                <button type="button" onClick={() => setInfoModule(null)}
+                  style={{ background: "none", border: "none", color: "var(--c-muted)", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 2, flexShrink: 0 }}>
+                  ×
+                </button>
               </div>
-              <button type="button" onClick={() => setViewModule(null)}
-                style={{ marginLeft: 12, flexShrink: 0, background: "none", border: "none", color: "var(--c-muted)", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 2 }}>
-                ×
-              </button>
-            </div>
-            <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--c-muted)" }}>
-              Included features
-            </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {MODULE_DETAILS[viewModule].features.map((f) => (
-                <span key={f} style={{
-                  fontSize: 12, padding: "4px 10px", borderRadius: 999,
-                  background: `${MODULE_DETAILS[viewModule].color}18`,
-                  color: MODULE_DETAILS[viewModule].color,
-                  border: `1px solid ${MODULE_DETAILS[viewModule].color}33`,
-                  fontWeight: 500,
+
+              <div style={{ padding: "16px 22px" }}>
+                {/* Submodules section */}
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <p style={{ margin: 0, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--c-muted)" }}>
+                      Submodules
+                    </p>
+                    {/* Select All */}
+                    <label style={{ display: "flex", alignItems: "center", gap: 7, cursor: parentOn ? "pointer" : "not-allowed", opacity: parentOn ? 1 : 0.45 }}>
+                      <input
+                        type="checkbox"
+                        checked={allOn}
+                        ref={(el) => { if (el) el.indeterminate = someOn; }}
+                        disabled={!parentOn}
+                        onChange={(e) => stageSelectAll(infoModule, e.target.checked)}
+                        style={{ width: 14, height: 14, cursor: "inherit", accentColor: ui.color || "var(--c-accent)" }}
+                      />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text2)" }}>Select All</span>
+                    </label>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {children.map((ch) => {
+                      const childOn = effective(ch.module_name);
+                      const childDirty = ch.module_name in pending;
+                      return (
+                        <label key={ch.module_name} style={{
+                          display: "flex", alignItems: "center", justifyContent: "space-between",
+                          padding: "9px 12px", borderRadius: 8, cursor: parentOn ? "pointer" : "not-allowed",
+                          background: childOn ? `${ui.color || "#00aeec"}0d` : "var(--c-bg)",
+                          border: `1px solid ${childDirty ? `${ui.color || "#00aeec"}50` : childOn ? `${ui.color || "#00aeec"}25` : "var(--c-border)"}`,
+                          transition: "background 0.1s, border-color 0.1s",
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <input
+                              type="checkbox"
+                              checked={childOn}
+                              disabled={!parentOn}
+                              onChange={(e) => stageChild(ch.module_name, e.target.checked, infoModule)}
+                              style={{ width: 14, height: 14, flexShrink: 0, accentColor: ui.color || "var(--c-accent)", cursor: "inherit" }}
+                            />
+                            <span style={{ fontSize: 13, color: "var(--c-text)", fontWeight: childOn ? 500 : 400 }}>
+                              {ch.module_name}
+                            </span>
+                            {childDirty && (
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 5px", borderRadius: 3, background: "rgba(0,174,236,0.15)", color: "var(--c-accent)" }}>
+                                {pending[ch.module_name] ? "Enabling" : "Disabling"}
+                              </span>
+                            )}
+                          </div>
+                          {childOn && (
+                            <span style={{ width: 7, height: 7, borderRadius: "50%", background: ui.color || "#00aeec", flexShrink: 0 }} />
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {!parentOn && (
+                    <p style={{ margin: "10px 0 0", fontSize: 12, color: "var(--c-muted)", textAlign: "center", fontStyle: "italic" }}>
+                      Enable {infoModule.module_name} to configure submodules.
+                    </p>
+                  )}
+                </div>
+
+                {/* Future permissions placeholder */}
+                <div style={{
+                  padding: "14px", borderRadius: 8,
+                  background: "var(--c-surface2)", border: "1px dashed var(--c-border)",
                 }}>
-                  {f}
-                </span>
-              ))}
-            </div>
-            <div style={{ marginTop: 20, textAlign: "right" }}>
-              <button type="button" onClick={() => setViewModule(null)}
-                style={{ padding: "7px 20px", borderRadius: 7, border: "1px solid var(--c-border)", background: "var(--c-surface2)", color: "var(--c-text2)", fontSize: 13, cursor: "pointer" }}>
-                Close
-              </button>
+                  <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--c-muted)" }}>
+                    Permissions — coming soon
+                  </p>
+                  <p style={{ margin: 0, fontSize: 12, color: "var(--c-muted)" }}>
+                    Granular per-submodule permissions (View, Create, Edit, Delete) will be configurable here in a future release.
+                  </p>
+                </div>
+
+                <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end" }}>
+                  <button type="button" onClick={() => setInfoModule(null)}
+                    style={{ padding: "8px 20px", borderRadius: 7, border: "1px solid var(--c-border)", background: "var(--c-surface2)", color: "var(--c-text2)", fontSize: 13, cursor: "pointer" }}>
+                    Close
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ── Confirmation modal ───────────────────────────────────────────── */}
       {confirming && (

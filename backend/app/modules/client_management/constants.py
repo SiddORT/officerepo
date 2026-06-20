@@ -84,6 +84,7 @@ SUBSCRIPTION_STATUSES = [
 BILLING_CYCLES = ["Monthly", "Quarterly", "Half-Yearly", "Yearly"]
 
 # ── Modules (assignable to a client) ─────────────────────────────────────────
+# Top-level parent modules
 MODULE_ORG        = "Organization Management"
 MODULE_HRMS       = "HRMS"
 MODULE_ASSET      = "Asset Management"
@@ -92,18 +93,70 @@ MODULE_WORKFLOW   = "Workflow Engine"
 MODULE_REPORTS    = "Reports"
 MODULE_KNOWLEDGE  = "Knowledge Base"
 MODULE_HELPDESK   = "Helpdesk"
-MODULE_RECRUIT    = "Recruitment"
-CLIENT_MODULES = [
-    MODULE_ORG,
-    MODULE_HRMS,
-    MODULE_ASSET,
-    MODULE_BILLING,
-    MODULE_WORKFLOW,
-    MODULE_REPORTS,
-    MODULE_KNOWLEDGE,
-    MODULE_HELPDESK,
-    MODULE_RECRUIT,
+
+# Children of Organization Management
+MODULE_COMPANIES      = "Companies"
+MODULE_BRANCHES       = "Branches"
+MODULE_DEPARTMENTS    = "Departments"
+MODULE_DESIGNATIONS   = "Designations"
+MODULE_EMPLOYEES      = "Employees"
+MODULE_EMP_DOCS       = "Employee Documents"
+
+# Children of HRMS
+MODULE_RECRUIT        = "Recruitment"
+MODULE_INTERVIEW      = "Interview Management"
+MODULE_ONBOARDING     = "Employee Onboarding"
+MODULE_ATTENDANCE     = "Attendance Management"
+MODULE_LEAVE          = "Leave Management"
+MODULE_PAYROLL        = "Payroll Management"
+MODULE_LOANS          = "Employee Loan Management"
+MODULE_EXPENSES       = "Expense & Reimbursements"
+
+# Children of Asset Management
+MODULE_ASSET_INVENTORY   = "Asset Inventory"
+MODULE_ASSET_MAINTENANCE = "Asset Maintenance"
+MODULE_ASSET_AUDITS      = "Asset Audits"
+MODULE_ASSET_REQUESTS    = "Asset Requests"
+
+# ── Parent → children mapping (single source of truth for cascade logic) ─────
+PARENT_MODULE_CHILDREN = {
+    MODULE_ORG: [
+        MODULE_COMPANIES, MODULE_BRANCHES, MODULE_DEPARTMENTS,
+        MODULE_DESIGNATIONS, MODULE_EMPLOYEES, MODULE_EMP_DOCS,
+    ],
+    MODULE_HRMS: [
+        MODULE_RECRUIT, MODULE_INTERVIEW, MODULE_ONBOARDING,
+        MODULE_ATTENDANCE, MODULE_LEAVE, MODULE_PAYROLL,
+        MODULE_LOANS, MODULE_EXPENSES,
+    ],
+    MODULE_ASSET: [
+        MODULE_ASSET_INVENTORY, MODULE_ASSET_MAINTENANCE,
+        MODULE_ASSET_AUDITS, MODULE_ASSET_REQUESTS,
+    ],
+}
+
+# Reverse map: child name → parent name
+CHILD_PARENT_MAP = {
+    child: parent
+    for parent, children in PARENT_MODULE_CHILDREN.items()
+    for child in children
+}
+
+# Ordered list of top-level toggleable modules (shown as cards in the admin UI)
+TOP_LEVEL_MODULES = [
+    MODULE_ORG, MODULE_HRMS, MODULE_ASSET, MODULE_BILLING,
+    MODULE_WORKFLOW, MODULE_REPORTS, MODULE_KNOWLEDGE, MODULE_HELPDESK,
 ]
+
+# All client module names (parent + children) seeded as rows in client_modules
+CLIENT_MODULES = (
+    TOP_LEVEL_MODULES
+    + [MODULE_COMPANIES, MODULE_BRANCHES, MODULE_DEPARTMENTS, MODULE_DESIGNATIONS,
+       MODULE_EMPLOYEES, MODULE_EMP_DOCS]
+    + [MODULE_RECRUIT, MODULE_INTERVIEW, MODULE_ONBOARDING, MODULE_ATTENDANCE,
+       MODULE_LEAVE, MODULE_PAYROLL, MODULE_LOANS, MODULE_EXPENSES]
+    + [MODULE_ASSET_INVENTORY, MODULE_ASSET_MAINTENANCE, MODULE_ASSET_AUDITS, MODULE_ASSET_REQUESTS]
+)
 
 # ── Documents ────────────────────────────────────────────────────────────────
 DOCUMENT_TYPES = [

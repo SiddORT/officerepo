@@ -1,0 +1,508 @@
+Let's design and implement the Client Portal Skeleton for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Architecture:
+
+Client
+↓
+Dedicated Database
+↓
+Enabled Modules
+↓
+Submodules
+↓
+Screens
+
+The objective of this phase is NOT to build business functionality.
+
+The objective is to create the complete application skeleton that will support all current and future modules.
+
+Implement:
+
+* Dynamic Sidebar
+* Module Registry
+* Submodule Registry
+* Dynamic Routing
+* Module Enablement
+* Layout Structure
+* Route Guards
+* Placeholder Pages
+
+Business screens will be implemented later.
+
+---
+
+# Technology Stack
+
+Frontend:
+
+* React
+* TailwindCSS
+
+Backend:
+
+* FastAPI
+* SQLAlchemy 2.0
+* PostgreSQL
+
+Architecture:
+
+* Clean Architecture
+* Repository Pattern
+* Service Layer Pattern
+
+Authentication:
+
+* JWT
+
+Database Strategy:
+
+* Database Per Client
+
+---
+
+# Client Layout Structure
+
+Create a reusable application shell.
+
+Layout:
+
+Header
+
+Left Sidebar
+
+Content Area
+
+Right Drawer (Future)
+
+Footer (Optional)
+
+---
+
+# Header
+
+Include:
+
+* Client Logo
+* Current Company Selector
+* Search Bar (Future)
+* Notifications
+* User Profile Menu
+* Theme Toggle
+* Logout
+
+---
+
+# Sidebar Requirements
+
+Sidebar must be fully dynamic.
+
+Render modules based on:
+
+* Enabled Parent Modules
+* Enabled Submodules
+
+Do not hardcode navigation.
+
+Generate sidebar from API response.
+
+Support:
+
+* Collapse / Expand
+* Icons
+* Active Route Highlight
+* Nested Navigation
+
+---
+
+# Module Hierarchy
+
+Dashboard
+
+Organization
+
+HRMS
+
+Asset Management
+
+CRM
+
+LMS
+
+BMS
+
+Finance & Procurement
+
+Task & Project Management
+
+Ticket Management
+
+Visitor Management
+
+Reports & Analytics
+
+Workflow Engine
+
+Settings
+
+---
+
+# Submodules
+
+## Organization
+
+* Companies
+* Branches
+* Departments
+* Designations
+* Employees
+* Employee Documents
+
+---
+
+## HRMS
+
+* Recruitment
+* Interview Management
+* Employee Onboarding
+* Attendance Management
+* Leave Management
+* Payroll Management
+* Employee Loan Management
+* Expense & Reimbursements
+* Employee Self Service
+
+---
+
+## Asset Management
+
+* Asset Inventory
+* Asset Assignment
+* Asset Transfers
+* Asset Returns
+* Asset Maintenance
+* Asset Audits
+* Asset Disposal
+
+---
+
+## CRM
+
+* Leads
+* Accounts
+* Contacts
+* Opportunities
+* Activities
+* Quotes
+* Customers
+
+---
+
+## LMS
+
+* Courses
+* Learning Paths
+* Assessments
+* Certifications
+
+---
+
+## BMS
+
+* Products
+* Services
+* Categories
+* Customers
+* Contracts
+
+---
+
+## Finance & Procurement
+
+* Vendors
+* Purchase Requests
+* Purchase Orders
+* Invoices
+* Payments
+* Budgets
+* Cost Centers
+
+---
+
+## Task & Project Management
+
+* Projects
+* Milestones
+* Tasks
+* Sprints
+* Timesheets
+
+---
+
+## Ticket Management
+
+* Tickets
+* Service Catalog
+* SLA Management
+* Escalations
+* Knowledge Articles
+
+---
+
+## Visitor Management
+
+* Visitor Registration
+* Pre-Approvals
+* Check-In / Check-Out
+* Visitor Passes
+
+---
+
+## Reports & Analytics
+
+* Organization Reports
+* HR Reports
+* Asset Reports
+* Finance Reports
+* Scheduled Reports
+
+---
+
+## Workflow Engine
+
+* Approval Workflows
+* Automation Rules
+* Notification Templates
+* Escalation Rules
+
+---
+
+## Settings
+
+* Profile
+* Notifications
+* Security
+* Integrations
+* API Keys
+* Activity Logs
+
+---
+
+# Database Design
+
+Create module registry tables.
+
+modules
+
+Fields:
+
+* id
+* module_code
+* module_name
+* parent_module_id
+* icon
+* route
+* display_order
+* description
+* is_active
+
+client_modules
+
+Fields:
+
+* id
+* client_id
+* module_id
+* is_enabled
+
+Rules:
+
+* Parent modules are top-level modules.
+* Submodules reference parent_module_id.
+* Enablement is controlled through client_modules.
+
+---
+
+# Module Enablement Rules
+
+Only enabled modules should appear.
+
+Rules:
+
+* Parent module visible only if at least one child module is enabled.
+* Child modules visible only if enabled.
+* Disabling parent module disables all child modules.
+* Enabling parent module enables all child modules by default.
+
+---
+
+# Sidebar Example
+
+Dashboard
+
+Organization
+├── Companies
+├── Departments
+└── Employees
+
+HRMS
+├── Recruitment
+├── Attendance
+└── Leave Management
+
+Asset Management
+└── Asset Inventory
+
+Hide disabled modules.
+
+---
+
+# Dynamic Routing
+
+Create route registry.
+
+Example:
+
+/organization/companies
+
+/hrms/recruitment
+
+/assets/inventory
+
+Routes must be generated dynamically.
+
+Do not hardcode routes.
+
+---
+
+# Route Protection
+
+Validate:
+
+* JWT Authentication
+* Module Enabled
+* Client Access
+
+If unauthorized:
+
+Return:
+
+403 Forbidden
+
+Message:
+
+Module not enabled for this client.
+
+---
+
+# Placeholder Pages
+
+Create placeholder pages for all submodules.
+
+Each page should display:
+
+* Module Name
+* Submodule Name
+* Breadcrumbs
+
+Example:
+
+HRMS > Recruitment
+
+Message:
+
+Coming Soon
+
+This allows navigation testing before implementation.
+
+---
+
+# API Design
+
+Provide APIs:
+
+* Get Client Modules
+* Get Sidebar Menu
+* Enable Module
+* Disable Module
+
+Return nested structure.
+
+Example:
+
+[
+{
+"module_code": "HRMS",
+"children": [
+{
+"module_code": "RECRUITMENT",
+"enabled": true
+}
+]
+}
+]
+
+---
+
+# UI Standards
+
+Support:
+
+* Dark Mode
+* Responsive Design
+* Collapsible Sidebar
+* Consistent Icons
+* Consistent Spacing
+* Reusable Components
+
+---
+
+# Seed Data
+
+Seed all parent modules.
+
+Seed all submodules.
+
+Enable all modules for development.
+
+Generate sample sidebar data.
+
+---
+
+# Activity Logging
+
+Track:
+
+* Module Enabled
+* Module Disabled
+* Login
+* Logout
+
+Store:
+
+* User
+* Timestamp
+* Client
+* Module
+
+---
+
+# Deliverables
+
+Generate:
+
+* Database schema
+* Alembic migrations
+* SQLAlchemy models
+* API endpoints
+* React layout structure
+* Sidebar components
+* Route registry
+* Seed scripts
+
+Do not build business functionality.
+
+Only create the scalable client portal skeleton that all future Office Repo modules will plug into.

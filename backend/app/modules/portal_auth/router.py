@@ -124,16 +124,27 @@ def get_navigation(
         client = _get_client_by_workspace_id(db, subdomain)
         client_id = client.id if client else None
 
+    from backend.app.modules.client_management import constants as cm_c
+
     enriched_map = mod_repo.get_enriched_map(db)
-    enabled_modules = client_repo.list_modules(db, client_id)
+    all_client_modules = client_repo.list_modules(db, client_id)
+
+    # Build a quick lookup: module_name → is_enabled
+    enabled_map = {m.module_name: m.is_enabled for m in all_client_modules}
 
     nav_modules = []
-    for m in enabled_modules:
+    for m in all_client_modules:
         if not m.is_enabled:
             continue
         meta = enriched_map.get(m.module_name)
         if not meta or not meta.get("is_active"):
             continue
+        # Only include top-level modules as nav items (children are nested inside parents)
+        if meta.get("parent_module_code"):
+            continue
+        # Determine which children of this module are currently enabled
+        children = cm_c.PARENT_MODULE_CHILDREN.get(m.module_name, [])
+        enabled_children = [ch for ch in children if enabled_map.get(ch, False)]
         nav_modules.append({
             "code": meta["code"],
             "name": meta["name"],
@@ -141,6 +152,7 @@ def get_navigation(
             "route": meta.get("route"),
             "icon": meta.get("icon"),
             "display_order": meta.get("display_order", 0),
+            "enabled_children": enabled_children,
         })
 
     nav_modules.sort(key=lambda x: x["display_order"])

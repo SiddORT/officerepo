@@ -50,6 +50,7 @@ def _to_dict(m: ModuleMaster) -> Dict[str, Any]:
         "display_order": m.display_order,
         "is_active": m.is_active,
         "is_system_module": m.is_system_module,
+        "parent_module_code": m.parent_module_code,
         "created_at": m.created_at,
         "updated_at": m.updated_at,
     }

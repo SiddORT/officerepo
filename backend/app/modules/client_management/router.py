@@ -196,6 +196,12 @@ def list_modules(client_id: str, db: Session = Depends(get_platform_db), _admin:
     return ApiResponse.ok(service.list_modules(db, client_id)).model_dump()
 
 
+@router.get("/{client_id}/modules/nested")
+def list_modules_nested(client_id: str, db: Session = Depends(get_platform_db), _admin: dict = Depends(_current_admin)):
+    """Return top-level modules with their children and enabled status for the Modules tab."""
+    return ApiResponse.ok(service.list_modules_nested(db, client_id)).model_dump()
+
+
 @router.post("/{client_id}/modules")
 def toggle_module(client_id: str, payload: ModuleToggleRequest, db: Session = Depends(get_platform_db),
                   admin: dict = Depends(_current_admin)):
