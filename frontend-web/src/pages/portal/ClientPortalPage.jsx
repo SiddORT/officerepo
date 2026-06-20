@@ -42,6 +42,13 @@ import CandidateDetails from "./recruitment/CandidateDetails";
 import OfferList from "./recruitment/OfferList";
 import OfferForm from "./recruitment/OfferForm";
 
+// Interview Management pages
+import InterviewDashboard from "./interview/InterviewDashboard";
+import InterviewList from "./interview/InterviewList";
+import InterviewForm from "./interview/InterviewForm";
+import InterviewDetails from "./interview/InterviewDetails";
+import InterviewComplete from "./interview/InterviewComplete";
+
 // Asset Management pages
 import AssetCategories from "./assets/AssetCategories";
 import AssetSubCategoryList from "./assets/AssetSubCategoryList";
@@ -205,8 +212,13 @@ function PortalRoutes() {
       <Route path="/recruitment/offers"                   element={<Protected><PortalLayout title="Offers"><OfferList /></PortalLayout></Protected>} />
       <Route path="/recruitment/*" element={<Navigate to={`/portal/${subdomain}/recruitment`} replace />} />
 
-      {/* ── HRMS (non-recruitment submodules) ────────────────────────── */}
-      <Route path="/hrms/interviews"  element={<CS module="HRMS" submodule="Interview Management" />} />
+      {/* ── Interview Management ──────────────────────────────────────── */}
+      <Route path="/hrms/interviews/new"              element={<Protected><PortalLayout title="Schedule Interview"><InterviewForm editMode={false} /></PortalLayout></Protected>} />
+      <Route path="/hrms/interviews/:interviewId/edit"     element={<Protected><PortalLayout title="Edit Interview"><InterviewForm editMode={true} /></PortalLayout></Protected>} />
+      <Route path="/hrms/interviews/:interviewId/complete" element={<Protected><PortalLayout title="Complete Interview"><InterviewComplete /></PortalLayout></Protected>} />
+      <Route path="/hrms/interviews/:interviewId"          element={<Protected><PortalLayout title="Interview Details"><InterviewDetails /></PortalLayout></Protected>} />
+      <Route path="/hrms/interviews/list"             element={<Protected><PortalLayout title="All Interviews"><InterviewList /></PortalLayout></Protected>} />
+      <Route path="/hrms/interviews"                  element={<Protected><PortalLayout title="Interview Management"><InterviewDashboard /></PortalLayout></Protected>} />
       <Route path="/hrms/onboarding"  element={<CS module="HRMS" submodule="Employee Onboarding" />} />
       <Route path="/hrms/attendance"  element={<CS module="HRMS" submodule="Attendance Management" />} />
       <Route path="/hrms/leave"       element={<CS module="HRMS" submodule="Leave Management" />} />

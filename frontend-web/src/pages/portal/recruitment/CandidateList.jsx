@@ -40,6 +40,7 @@ export default function CandidateList() {
       <PageHeader
         title="Candidates"
         subtitle={`${total} candidates`}
+        breadcrumbs={[{ label: "Recruitment", path: `/portal/${subdomain}/recruitment` }, { label: "Candidates" }]}
         actions={<button onClick={() => navigate(`/portal/${subdomain}/recruitment/candidates/new`)} className="btn-primary">+ Add Candidate</button>}
       />
 

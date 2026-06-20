@@ -1,0 +1,719 @@
+Let's design and implement Client Module → HRMS → Interview Management for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Completed Modules:
+
+* Recruitment
+* Job Requisitions
+* Job Openings
+* Candidates
+* Offer Management
+
+Interview Management is a submodule of HRMS and must integrate tightly with Recruitment.
+
+Module Hierarchy:
+
+HRMS
+└── Interview Management
+
+Module Code:
+
+INTERVIEWS
+
+Purpose:
+
+Manage the complete interview lifecycle from candidate shortlisting to final selection or rejection.
+
+The module must support customizable interview workflows for different positions, departments and companies.
+
+Example:
+
+Software Engineer
+
+Round 1 → Aptitude Test
+Round 2 → Technical Interview
+Round 3 → Manager Discussion
+Round 4 → HR Discussion
+
+Example:
+
+Sales Executive
+
+Round 1 → Telephonic Screening
+Round 2 → Group Discussion
+Round 3 → HR Discussion
+
+The system must support custom interview pipelines without code changes.
+
+---
+
+# Interview Workflow
+
+Candidate
+↓
+Shortlisted
+↓
+Interview Pipeline Assigned
+↓
+Interview Rounds
+↓
+Evaluation
+↓
+Selection / Rejection
+↓
+Offer Management
+
+---
+
+# Module Structure
+
+Interview Management
+
+├── Interview Pipelines
+├── Interview Rounds
+├── Interview Scheduling
+├── Interview Panels
+├── Candidate Evaluations
+├── Interview Feedback
+├── Selection Decisions
+├── Interview Activities
+└── Calendar View
+
+---
+
+# Interview Pipelines
+
+Purpose:
+
+Define reusable interview workflows.
+
+Examples:
+
+Software Engineer Pipeline
+
+* Aptitude Test
+* Technical Round 1
+* Technical Round 2
+* HR Discussion
+
+Sales Pipeline
+
+* Screening Call
+* Group Discussion
+* HR Discussion
+
+Fields:
+
+* Pipeline Name *
+* Company
+* Department
+* Designation
+* Description
+* Active Status
+
+Support:
+
+* Drag and Drop Round Ordering
+* Round Sequence
+* Default Pipeline
+
+Assign pipeline to:
+
+* Job Opening
+* Candidate
+
+---
+
+# Interview Round Types
+
+Provide system-defined and custom round types.
+
+Default Round Types:
+
+* Telephonic Screening
+* Video Interview
+* Physical Interview
+* Technical Interview
+* Aptitude Test
+* Coding Test
+* Group Discussion
+* Manager Discussion
+* HR Discussion
+
+Allow custom round creation.
+
+Examples:
+
+* Leadership Round
+* Client Interview
+* Culture Fit Interview
+
+Fields:
+
+* Round Name
+* Round Type
+* Description
+
+---
+
+# Round Configuration
+
+Each round must support:
+
+* Round Sequence
+* Mandatory / Optional
+* Auto Advance Candidate
+* Passing Score
+* Maximum Score
+
+Interviewer Requirements:
+
+* Single Interviewer
+* Multiple Interviewers
+* Panel Interview
+
+Round Outcome:
+
+* Pass
+* Fail
+* Hold
+* Re-Schedule
+
+---
+
+# Interview Scheduling
+
+Support:
+
+* Calendar Integration Ready
+* Physical Interviews
+* Online Interviews
+
+Interview Modes:
+
+* Physical
+* Video Conference
+* Telephonic
+
+Fields:
+
+* Candidate *
+* Round *
+* Date *
+* Start Time *
+* End Time *
+* Timezone
+* Interview Location
+* Meeting URL
+* Instructions
+
+Support:
+
+* Multiple Timezones
+* Rescheduling
+* Cancellation
+
+Future Integrations:
+
+* Google Calendar
+* Microsoft Outlook
+* Zoom
+* Google Meet
+* Microsoft Teams
+
+Do not implement integrations now.
+
+Design APIs for future support.
+
+---
+
+# Calendar View
+
+Provide:
+
+* Day View
+* Week View
+* Month View
+
+Display:
+
+* Upcoming Interviews
+* Interview Status
+* Interviewers
+
+Filters:
+
+* Company
+* Department
+* Interviewer
+* Status
+
+---
+
+# Interview Panels
+
+Support:
+
+* Single Interviewer
+* Multiple Interviewers
+
+Interviewer Sources:
+
+* Employees
+
+Fields:
+
+* Interviewer
+* Role
+* Weightage
+
+Examples:
+
+Technical Lead
+HR Manager
+Department Head
+
+---
+
+# Candidate Evaluation
+
+Each round should have scorecards.
+
+Evaluation Methods:
+
+* Score Based
+* Pass / Fail
+* Rating Based
+
+Rating Scale:
+
+1 to 5
+
+Fields:
+
+* Technical Skills
+* Communication
+* Problem Solving
+* Cultural Fit
+* Experience Match
+
+Support customizable criteria.
+
+Department-specific scorecards.
+
+---
+
+# Interview Feedback
+
+Fields:
+
+* Overall Score
+* Recommendation
+
+Values:
+
+* Strong Hire
+
+* Hire
+
+* Hold
+
+* Reject
+
+* Strengths
+
+* Weaknesses
+
+* Comments
+
+Allow:
+
+* Private Notes
+* Shared Notes
+
+Support attachments.
+
+Examples:
+
+* Coding Assessment
+* Evaluation Sheets
+
+---
+
+# Candidate Status Flow
+
+Applied
+↓
+Screening
+↓
+Shortlisted
+↓
+Interview Scheduled
+↓
+Interview In Progress
+↓
+Selected
+
+Alternative Paths:
+
+Interview In Progress
+↓
+Rejected
+
+Interview In Progress
+↓
+On Hold
+
+Interview In Progress
+↓
+Re-Scheduled
+
+---
+
+# Selection Decision
+
+Fields:
+
+* Final Recommendation
+* Approved By
+* Decision Date
+* Remarks
+
+Values:
+
+* Selected
+* Rejected
+* Hold
+
+Rules:
+
+Selected candidates move to:
+
+Offer Management
+
+Rejected candidates update candidate status.
+
+---
+
+# Aptitude Tests
+
+Current Release:
+
+Support only manual uploads.
+
+Fields:
+
+* Test Name
+* Instructions
+* Question Paper Upload
+* Answer Key Upload
+
+Supported Formats:
+
+* PDF
+* DOCX
+
+Status:
+
+Coming Soon
+
+Display:
+
+AI Test Generation
+
+Badge:
+
+Coming Soon
+
+Future Scope:
+
+* AI Generated Tests
+* Auto Evaluation
+* Question Bank
+* Coding Assessments
+
+Design extensible database structure.
+
+Do not implement AI now.
+
+---
+
+# Candidate Timeline
+
+Track complete history.
+
+Examples:
+
+* Round Assigned
+* Interview Scheduled
+* Interview Completed
+* Feedback Submitted
+* Candidate Selected
+
+Display chronological timeline.
+
+---
+
+# Notifications
+
+Send notifications for:
+
+* Interview Scheduled
+* Interview Re-Scheduled
+* Interview Cancelled
+* Feedback Pending
+
+Channels:
+
+* Email
+* SMS
+* Push Notification
+
+Use Notification Settings module.
+
+---
+
+# UI Design
+
+## Dashboard Widgets
+
+* Interviews Today
+* Upcoming Interviews
+* Pending Feedback
+* Selected Candidates
+* Rejected Candidates
+
+---
+
+## Interview Pipeline Builder
+
+Provide:
+
+* Drag and Drop Interface
+* Round Sequencing
+
+---
+
+## Interview Calendar
+
+Provide:
+
+* Calendar View
+* Filter Panel
+
+---
+
+## Candidate Interview Page
+
+Tabs:
+
+* Overview
+* Schedule
+* Feedback
+* Timeline
+* Documents
+
+---
+
+## Feedback Screen
+
+Support:
+
+* Dynamic Scorecards
+* Ratings
+* Notes
+* Attachments
+
+---
+
+# Database Design
+
+Design tables:
+
+interview_pipelines
+
+interview_pipeline_rounds
+
+interviews
+
+interview_panels
+
+interview_feedback
+
+interview_scorecards
+
+interview_activities
+
+aptitude_tests
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+* Relationships
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+* Enums
+
+Use SQLAlchemy 2.0 standards.
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_060_interview_pipelines
+
+2026_061_interview_pipeline_rounds
+
+2026_062_interviews
+
+2026_063_interview_panels
+
+2026_064_interview_feedback
+
+2026_065_interview_scorecards
+
+2026_066_interview_activities
+
+2026_067_aptitude_tests
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Pipelines
+
+* Create Pipeline
+* Update Pipeline
+* Get Pipeline
+* List Pipelines
+
+Interviews
+
+* Schedule Interview
+* Re-Schedule Interview
+* Cancel Interview
+* Complete Interview
+
+Feedback
+
+* Submit Feedback
+* Update Feedback
+
+Selection
+
+* Select Candidate
+* Reject Candidate
+
+Calendar
+
+* Get Interview Calendar
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Pipeline Repository
+* Interview Repository
+* Feedback Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Interview Service
+* Scheduling Service
+* Feedback Service
+* Selection Service
+
+Include:
+
+* Pipeline Logic
+* Candidate Progression Logic
+* Notification Logic
+
+---
+
+# Validation Rules
+
+* End Time > Start Time
+* Candidate Cannot Have Duplicate Active Round
+* Previous Mandatory Round Must Be Completed
+* Passing Score Validation
+
+---
+
+# Activity Logging
+
+Track:
+
+* Pipeline Created
+* Interview Scheduled
+* Interview Re-Scheduled
+* Feedback Submitted
+* Candidate Selected
+* Candidate Rejected
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Seed Data
+
+Create default pipelines:
+
+Software Engineer
+
+* Aptitude Test
+* Technical Round
+* Manager Discussion
+* HR Discussion
+
+Sales Executive
+
+* Screening Call
+* Group Discussion
+* HR Discussion
+
+Use existing:
+
+* Companies
+* Departments
+* Designations
+* Candidates
+* Employees
+
+Generate production-ready specifications suitable for direct implementation in Office Repo using FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, React and TailwindCSS.

@@ -39,6 +39,7 @@ export default function RequisitionList() {
       <PageHeader
         title="Job Requisitions"
         subtitle={`${total} total`}
+        breadcrumbs={[{ label: "Recruitment", path: `/portal/${subdomain}/recruitment` }, { label: "Job Requisitions" }]}
         actions={<button onClick={() => navigate(`/portal/${subdomain}/recruitment/requisitions/new`)} className="btn-primary">+ New Requisition</button>}
       />
 

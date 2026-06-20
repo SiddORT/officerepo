@@ -45,6 +45,7 @@ export default function JobOpeningList() {
       <PageHeader
         title="Job Openings"
         subtitle={`${total} total`}
+        breadcrumbs={[{ label: "Recruitment", path: `/portal/${subdomain}/recruitment` }, { label: "Job Openings" }]}
         actions={<button onClick={() => navigate(`/portal/${subdomain}/recruitment/openings/new`)} className="btn-primary">+ New Opening</button>}
       />
 

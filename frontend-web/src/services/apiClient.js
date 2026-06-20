@@ -616,6 +616,24 @@ export const portalRecruitmentApi = {
   rejectOffer: (sd, tk, id, d)      => axios.post(_rurl(sd, `/offers/${id}/reject`), d, _rh(sd, tk)),
 };
 
+// ── Interview Management (portal) ─────────────────────────────────────────────
+const _iurl = (sd, path) => `${API_BASE_URL}/api/v1/portal/${sd}/hrms/interviews${path}`;
+
+export const portalInterviewApi = {
+  metaOptions: (sd, tk)          => axios.get(_iurl(sd, "/meta/options"), _rh(sd, tk)),
+  dashboard:   (sd, tk)          => axios.get(_iurl(sd, "/dashboard"),    _rh(sd, tk)),
+
+  list:   (sd, tk, p)            => axios.get(_iurl(sd, ""),            { ..._rh(sd, tk), params: p }),
+  get:    (sd, tk, id)           => axios.get(_iurl(sd, `/${id}`),       _rh(sd, tk)),
+  create: (sd, tk, d)            => axios.post(_iurl(sd, ""),           d, _rh(sd, tk)),
+  update: (sd, tk, id, d)        => axios.patch(_iurl(sd, `/${id}`),    d, _rh(sd, tk)),
+  remove: (sd, tk, id)           => axios.delete(_iurl(sd, `/${id}`),      _rh(sd, tk)),
+
+  complete: (sd, tk, id, d)      => axios.post(_iurl(sd, `/${id}/complete`), d, _rh(sd, tk)),
+  cancel:   (sd, tk, id, d)      => axios.post(_iurl(sd, `/${id}/cancel`),   d, _rh(sd, tk)),
+  noShow:   (sd, tk, id)         => axios.post(_iurl(sd, `/${id}/no-show`), {}, _rh(sd, tk)),
+};
+
 // ── Asset Management Setup (superadmin — categories, sub-categories, masters) ─
 const ASSETS = "/superadmin/assets";
 

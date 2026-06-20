@@ -37,6 +37,7 @@ export default function OfferList() {
       <PageHeader
         title="Offers"
         subtitle={`${total} offers`}
+        breadcrumbs={[{ label: "Recruitment", path: `/portal/${subdomain}/recruitment` }, { label: "Offers" }]}
         actions={<button onClick={() => navigate(`/portal/${subdomain}/recruitment/offers/new`)} className="btn-primary">+ Create Offer</button>}
       />
 
