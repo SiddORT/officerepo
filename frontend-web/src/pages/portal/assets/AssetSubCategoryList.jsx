@@ -242,7 +242,8 @@ export default function AssetSubCategoryList() {
         />
         <select
           value={categoryFilter} onChange={e => { setCategoryFilter(e.target.value); setPage(1); }}
-          className="input-field">
+          className="input-field"
+          style={{ width: "auto", minWidth: 180 }}>
           <option value="">All categories</option>
           {categories.map(c => (
             <option key={c.id} value={c.id}>{c.icon ? `${c.icon} ` : ""}{c.category_name}</option>
@@ -250,7 +251,8 @@ export default function AssetSubCategoryList() {
         </select>
         <select
           value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-          className="input-field">
+          className="input-field"
+          style={{ width: "auto", minWidth: 140 }}>
           <option value="">All statuses</option>
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>

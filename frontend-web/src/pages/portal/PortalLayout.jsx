@@ -47,9 +47,9 @@ const MODULE_SUB_NAV = {
     { label: "Self Service",        path: "hrms/ess",        childModule: "Employee Self Service", icon: <SI d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" /> },
   ],
   "assets": [
-    { label: "Categories",    path: "assets/categories",    icon: <SI d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /> },
-    { label: "Sub-Categories",path: "assets/sub-categories",icon: <SI d="M4 6h16M4 10h16M4 14h10M4 18h6" /> },
-    { label: "Asset Inventory",  path: "assets/inventory",    childModule: "Asset Inventory",   icon: <SI d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /> },
+    { label: "Categories",     path: "assets/categories",    icon: <SI d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /> },
+    { label: "Sub-Categories", path: "assets/sub-categories",icon: <SI d="M4 6h16M4 10h16M4 14h10M4 18h6" /> },
+    { label: "Asset Inventory", path: "assets/inventory",    icon: <SI d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /> },
     { label: "Assignment",    path: "assets/assignments",   childModule: "Asset Assignment",  icon: <SI d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" /> },
     { label: "Transfers",     path: "assets/transfers",     childModule: "Asset Transfers",   icon: <SI d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /> },
     { label: "Returns",       path: "assets/returns",       childModule: "Asset Returns",     icon: <SI d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /> },
