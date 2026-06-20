@@ -947,6 +947,50 @@ export const portalPayrollApi = {
   deleteStatutory: (sd, tk, id)    => axios.delete(_prurl(sd, `/statutory/${id}`),  _prh(sd, tk)),
 };
 
+// ── Loan Management (portal) ──────────────────────────────────────────────────
+const _lnurl = (sd, path) => `/api/v1/portal/${sd}/hrms/loans${path}`;
+const _lnh   = (sd, tk)   => ({ headers: { Authorization: `Bearer ${tk}` } });
+const _lnhp  = (sd, tk, p) => ({ headers: { Authorization: `Bearer ${tk}` }, params: p });
+
+export const portalLoanApi = {
+  meta:      (sd, tk)      => axios.get(_lnurl(sd, "/meta/options"), _lnh(sd, tk)),
+  dashboard: (sd, tk)      => axios.get(_lnurl(sd, "/dashboard"),    _lnh(sd, tk)),
+
+  // Loan Types
+  listTypes:   (sd, tk)         => axios.get(_lnurl(sd, "/types"),             _lnh(sd, tk)),
+  createType:  (sd, tk, d)      => axios.post(_lnurl(sd, "/types"),   d,       _lnh(sd, tk)),
+  updateType:  (sd, tk, id, d)  => axios.patch(_lnurl(sd, `/types/${id}`), d,  _lnh(sd, tk)),
+  deleteType:  (sd, tk, id)     => axios.delete(_lnurl(sd, `/types/${id}`),    _lnh(sd, tk)),
+
+  // Loan Policies
+  listPolicies:   (sd, tk, p)       => axios.get(_lnurl(sd, "/policies"),            _lnhp(sd, tk, p)),
+  createPolicy:   (sd, tk, d)       => axios.post(_lnurl(sd, "/policies"),   d,      _lnh(sd, tk)),
+  updatePolicy:   (sd, tk, id, d)   => axios.patch(_lnurl(sd, `/policies/${id}`), d, _lnh(sd, tk)),
+  deletePolicy:   (sd, tk, id)      => axios.delete(_lnurl(sd, `/policies/${id}`),   _lnh(sd, tk)),
+
+  // Loan Applications
+  listApplications:  (sd, tk, p)       => axios.get(_lnurl(sd, "/applications"),              _lnhp(sd, tk, p)),
+  createApplication: (sd, tk, d)       => axios.post(_lnurl(sd, "/applications"),     d,      _lnh(sd, tk)),
+  getApplication:    (sd, tk, id)      => axios.get(_lnurl(sd, `/applications/${id}`),        _lnh(sd, tk)),
+  updateApplication: (sd, tk, id, d)   => axios.patch(_lnurl(sd, `/applications/${id}`), d,  _lnh(sd, tk)),
+  submitApplication: (sd, tk, id)      => axios.post(_lnurl(sd, `/applications/${id}/submit`), {}, _lnh(sd, tk)),
+  approveApplication:(sd, tk, id, d)   => axios.post(_lnurl(sd, `/applications/${id}/approve`), d, _lnh(sd, tk)),
+  rejectApplication: (sd, tk, id, d)   => axios.post(_lnurl(sd, `/applications/${id}/reject`),  d, _lnh(sd, tk)),
+  cancelApplication: (sd, tk, id, d)   => axios.post(_lnurl(sd, `/applications/${id}/cancel`),  d, _lnh(sd, tk)),
+  disburseApplication:(sd, tk, id, d)  => axios.post(_lnurl(sd, `/applications/${id}/disburse`),d, _lnh(sd, tk)),
+  closeApplication:  (sd, tk, id, d)   => axios.post(_lnurl(sd, `/applications/${id}/close`),   d, _lnh(sd, tk)),
+
+  // Repayment Schedule
+  getSchedule:       (sd, tk, appId)          => axios.get(_lnurl(sd, `/applications/${appId}/schedule`),              _lnh(sd, tk)),
+  updateInstallment: (sd, tk, appId, instId, d) => axios.patch(_lnurl(sd, `/applications/${appId}/schedule/${instId}`), d, _lnh(sd, tk)),
+
+  // Activities
+  getActivities: (sd, tk, appId) => axios.get(_lnurl(sd, `/applications/${appId}/activities`), _lnh(sd, tk)),
+
+  // Payroll integration
+  getActiveEmis: (sd, tk, empId) => axios.get(_lnurl(sd, "/payroll/active-emis"), _lnhp(sd, tk, { employee_id: empId })),
+};
+
 // ── Currency Management (superadmin — global platform settings) ───────────────
 const CURRENCIES = "/superadmin/currencies";
 

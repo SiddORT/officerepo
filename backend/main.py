@@ -85,6 +85,7 @@ from backend.app.modules.onboarding.router import router as portal_onboarding_ro
 from backend.app.modules.attendance.router import router as portal_attendance_router
 from backend.app.modules.leave_management.router import router as portal_leave_router
 from backend.app.modules.payroll_management.router import router as portal_payroll_router
+from backend.app.modules.loan_management.router import router as portal_loan_router
 from backend.app.platform.superadmin.rotation_router import router as rotation_router
 from backend.app.platform.superadmin.rotation_status_router import router as rotation_status_router
 
@@ -512,6 +513,7 @@ def create_app(app_settings=settings) -> FastAPI:
     app.include_router(portal_attendance_router,  prefix=f"{prefix}/portal", tags=["portal attendance"])
     app.include_router(portal_leave_router,       prefix=f"{prefix}/portal", tags=["portal leave management"])
     app.include_router(portal_payroll_router,     prefix=f"{prefix}/portal", tags=["portal payroll management"])
+    app.include_router(portal_loan_router,        prefix=f"{prefix}/portal", tags=["portal loan management"])
 
     # Asset Management Setup (superadmin — global platform definitions)
     app.include_router(asset_router, prefix=f"{prefix}/superadmin/assets", tags=["asset management"])

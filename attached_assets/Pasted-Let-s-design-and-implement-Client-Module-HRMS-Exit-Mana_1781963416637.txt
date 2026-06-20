@@ -1,0 +1,756 @@
+Let's design and implement Client Module → HRMS → Exit Management for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Completed Modules:
+
+* Organization Management
+* Employee Management
+* Employee Documents
+* Recruitment
+* Interview Management
+* Employee Onboarding
+* Attendance Management
+* Leave Management
+* Payroll Management
+* Employee Loan Management
+* Expense & Reimbursements
+* Asset Inventory
+
+Exit Management must integrate tightly with:
+
+* Employees
+* Payroll Management
+* Leave Management
+* Employee Loan Management
+* Expense & Reimbursements
+* Asset Inventory
+* Employee Documents
+* Workflow Engine
+* Notifications
+
+Module Hierarchy:
+
+HRMS
+└── Exit Management
+
+Module Code:
+
+EXIT_MANAGEMENT
+
+Purpose:
+
+Manage the complete employee separation lifecycle including resignation, notice period, approvals, asset recovery, clearance, exit interviews, final settlement and employee deactivation.
+
+The module must ensure no employee exits without completing all required clearances.
+
+---
+
+# Exit Workflow
+
+Employee
+↓
+Submit Resignation
+↓
+Manager Review
+↓
+HR Approval
+↓
+Notice Period
+↓
+Clearance Process
+↓
+Asset Return
+↓
+Exit Interview
+↓
+Final Settlement
+↓
+Employee Deactivation
+
+Alternative Flows:
+
+* Resignation Withdrawn
+* Termination
+* Retirement
+* Contract Completion
+* Absconding
+
+---
+
+# Separation Types
+
+Support:
+
+* Resignation
+* Termination
+* Retirement
+* Contract Completion
+* Layoff
+* End Of Internship
+* Absconding
+* Deceased
+
+---
+
+# Module Structure
+
+Exit Management
+
+├── Exit Policies
+├── Resignation Requests
+├── Notice Period Management
+├── Clearance Workflows
+├── Asset Recovery
+├── Exit Interviews
+├── Final Settlement
+├── Experience Letters
+├── Relieving Letters
+├── Exit Reports
+└── Exit Activities
+
+---
+
+# Exit Policies
+
+Assign policies by:
+
+* Company
+* Branch
+* Department
+* Designation
+* Employee Category
+
+Fields:
+
+* Policy Name
+* Separation Type
+* Notice Period Days
+* Require Exit Interview
+* Require Asset Clearance
+* Require Loan Clearance
+* Require Expense Clearance
+* Require Manager Approval
+* Require HR Approval
+
+Support effective dates.
+
+---
+
+# Resignation Requests
+
+Employees can submit resignation requests.
+
+Fields:
+
+* Employee *
+* Resignation Date *
+* Requested Last Working Day *
+* Reason Category
+* Reason Description
+
+Reason Categories:
+
+* Better Opportunity
+* Relocation
+* Compensation
+* Higher Education
+* Personal Reasons
+* Work Environment
+* Career Change
+* Other
+
+Status:
+
+* Draft
+* Submitted
+* Under Review
+* Approved
+* Rejected
+* Withdrawn
+
+Track:
+
+* Submitted Date
+* Approved Date
+* Last Working Day
+
+---
+
+# Notice Period Management
+
+Automatically calculate:
+
+* Notice Start Date
+* Notice End Date
+* Remaining Days
+
+Support:
+
+* Notice Buyout
+* Early Release
+* Notice Extension
+
+Fields:
+
+* Required Notice Days
+* Served Notice Days
+* Buyout Amount
+* Waiver Amount
+
+Integrate with Payroll.
+
+---
+
+# Approval Workflow
+
+Integrate with Workflow Engine.
+
+Example:
+
+Employee
+↓
+Reporting Manager
+↓
+Department Head
+↓
+HR
+↓
+Approved
+
+Track:
+
+* Approved By
+* Comments
+* Approval Date
+
+---
+
+# Clearance Workflow
+
+Support configurable clearance checklists.
+
+Departments:
+
+* HR
+* IT
+* Admin
+* Finance
+* Manager
+
+Examples:
+
+HR
+
+* Document Verification
+* Exit Formalities
+
+IT
+
+* Email Deactivation
+* System Access Removal
+
+Admin
+
+* ID Card Return
+* Parking Access Removal
+
+Finance
+
+* Loan Clearance
+* Expense Clearance
+
+Manager
+
+* Knowledge Transfer
+* Handover Completion
+
+Status:
+
+* Pending
+* In Progress
+* Completed
+
+Employee cannot exit until all mandatory clearances are completed.
+
+---
+
+# Asset Recovery
+
+Integrate with Asset Inventory.
+
+Do not create duplicate asset tables.
+
+Use existing:
+
+* assets
+* asset_assignments
+
+Display all assets assigned to employee.
+
+Examples:
+
+* Laptop
+* Monitor
+* Mobile Phone
+* Access Card
+* Software License
+
+Actions:
+
+* Return Asset
+* Mark Damaged
+* Mark Lost
+
+Rules:
+
+Returned assets must automatically update Asset Inventory.
+
+Asset Status Flow:
+
+Assigned
+↓
+Returned
+↓
+Available
+
+Lost/Damaged assets should create recovery amounts.
+
+Track:
+
+* Return Date
+* Asset Condition
+* Recovery Amount
+
+Asset Inventory must reflect updates immediately.
+
+---
+
+# Employee Documents Integration
+
+Integrate with Employee Documents.
+
+Generate:
+
+* Experience Letter
+* Relieving Letter
+* Full & Final Settlement Letter
+
+Store generated documents in:
+
+employee_documents
+
+Document Types:
+
+* Experience Letter
+* Relieving Letter
+* Exit Clearance Letter
+
+Support:
+
+* Download
+* Reissue
+* Versioning
+
+---
+
+# Exit Interview
+
+Support customizable questionnaires.
+
+Question Types:
+
+* Rating Scale
+* Multiple Choice
+* Text Area
+
+Topics:
+
+* Work Environment
+* Compensation
+* Management
+* Career Growth
+* Suggestions
+
+Modes:
+
+* Self-Service
+* HR Interview
+
+Support anonymity configuration.
+
+---
+
+# Final Settlement
+
+Integrate with:
+
+* Payroll
+* Leave Management
+* Employee Loan Management
+* Expense & Reimbursements
+* Asset Inventory
+
+Calculate:
+
+Earnings:
+
+* Pending Salary
+* Leave Encashment
+* Approved Reimbursements
+
+Deductions:
+
+* Loan Outstanding
+* Notice Buyout
+* Asset Recovery
+* Advance Salary Recovery
+
+Formula:
+
+Final Settlement Amount
+
+=
+
+Earnings − Deductions
+
+Status:
+
+* Draft
+* Calculated
+* Approved
+* Paid
+
+Prevent employee deactivation until settlement is completed.
+
+---
+
+# Employee Status Lifecycle
+
+Active
+↓
+Resignation Submitted
+↓
+Notice Period
+↓
+Clearance In Progress
+↓
+Settlement Pending
+↓
+Exited
+
+Alternative Statuses:
+
+* Terminated
+* Retired
+* Absconded
+
+Update employee status automatically.
+
+Deactivate:
+
+* Employee Login
+* User Account
+* Active Sessions
+
+Archive employee records.
+
+Do not delete employee data.
+
+---
+
+# Dashboard Widgets
+
+* Pending Resignations
+* Employees Serving Notice
+* Pending Clearances
+* Assets Pending Return
+* Final Settlements Pending
+
+---
+
+# Employee Exit Profile
+
+Tabs:
+
+* Overview
+* Resignation
+* Notice Period
+* Clearances
+* Assets
+* Settlement
+* Documents
+* Interview
+* Activities
+
+---
+
+# Reports
+
+Generate:
+
+* Attrition Report
+* Exit Reasons Report
+* Notice Period Report
+* Asset Recovery Report
+* Settlement Report
+
+Filters:
+
+* Company
+* Branch
+* Department
+* Separation Type
+* Date Range
+
+Support:
+
+* PDF Export
+* Excel Export
+
+---
+
+# Notifications
+
+Send notifications for:
+
+* Resignation Submitted
+* Approval Required
+* Clearance Pending
+* Asset Return Pending
+* Exit Interview Pending
+* Settlement Completed
+
+Channels:
+
+* Email
+* SMS
+* Push Notification
+
+Use Notification Settings module.
+
+---
+
+# Employee Self Service Integration
+
+Employees can:
+
+* Submit Resignation
+* Track Exit Progress
+* View Clearance Status
+* Complete Exit Interview
+* Download Documents
+
+---
+
+# Database Design
+
+Design tables:
+
+exit_policies
+
+resignation_requests
+
+notice_periods
+
+exit_clearances
+
+exit_clearance_tasks
+
+exit_interviews
+
+exit_interview_responses
+
+final_settlements
+
+exit_documents
+
+exit_activities
+
+Do not duplicate:
+
+employees
+
+assets
+
+asset_assignments
+
+employee_documents
+
+employee_loans
+
+expense_claims
+
+payroll_runs
+
+Use relationships only.
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+* Relationships
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+* Enums
+
+Use SQLAlchemy 2.0 standards.
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_130_exit_policies
+
+2026_131_resignation_requests
+
+2026_132_notice_periods
+
+2026_133_exit_clearances
+
+2026_134_exit_interviews
+
+2026_135_final_settlements
+
+2026_136_exit_documents
+
+2026_137_exit_activities
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Resignations
+
+* Submit Resignation
+* Approve Resignation
+* Reject Resignation
+* Withdraw Resignation
+
+Clearances
+
+* Get Clearance Checklist
+* Complete Clearance Task
+
+Assets
+
+* Return Asset
+* Mark Asset Damaged
+
+Settlement
+
+* Calculate Settlement
+* Approve Settlement
+* Mark Settlement Paid
+
+Documents
+
+* Generate Experience Letter
+* Generate Relieving Letter
+
+Reports
+
+* Get Exit Summary
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Exit Repository
+* Clearance Repository
+* Settlement Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Exit Service
+* Clearance Service
+* Settlement Service
+* Asset Recovery Service
+
+Include:
+
+* Notice Calculation Logic
+* Settlement Calculation Logic
+* Asset Recovery Logic
+* Employee Deactivation Logic
+
+---
+
+# Validation Rules
+
+* Employee Must Be Active
+* Last Working Day ≥ Resignation Date
+* All Mandatory Clearances Required
+* All Assets Must Be Returned
+* Outstanding Loans Must Be Resolved
+* Settlement Must Be Paid Before Exit
+
+Prevent employee deactivation if blockers exist.
+
+---
+
+# Activity Logging
+
+Track:
+
+* Resignation Submitted
+* Resignation Approved
+* Asset Returned
+* Clearance Completed
+* Settlement Processed
+* Employee Exited
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Seed Data
+
+Create sample:
+
+* Exit Policies
+* Clearance Templates
+* Exit Questionnaires
+
+Use existing:
+
+* Employees
+* Assets
+* Loans
+* Payroll Data
+
+Generate production-ready specifications suitable for direct implementation in Office Repo using FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, React and TailwindCSS.

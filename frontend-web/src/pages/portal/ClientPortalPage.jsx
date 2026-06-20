@@ -53,6 +53,14 @@ import LeaveBalances       from "./leave/LeaveBalances";
 import LeaveCalendar       from "./leave/LeaveCalendar";
 import CompOffList         from "./leave/CompOffList";
 
+// Loan Management pages
+import LoanDashboard          from "./loans/LoanDashboard";
+import LoanTypeList           from "./loans/LoanTypeList";
+import LoanPolicyList         from "./loans/LoanPolicyList";
+import LoanApplicationList    from "./loans/LoanApplicationList";
+import LoanApplicationDetails from "./loans/LoanApplicationDetails";
+import LoanRepaymentList      from "./loans/LoanRepaymentList";
+
 // Payroll Management pages
 import PayrollDashboard        from "./payroll/PayrollDashboard";
 import SalaryComponentList     from "./payroll/SalaryComponentList";
@@ -309,7 +317,13 @@ function PortalRoutes() {
       <Route path="/hrms/payroll/cycles"          element={<Protected><PortalLayout title="Payroll Cycles"><PayrollCycleList /></PortalLayout></Protected>} />
       <Route path="/hrms/payroll/statutory"       element={<Protected><PortalLayout title="Statutory Compliance"><StatutoryList /></PortalLayout></Protected>} />
       <Route path="/hrms/payroll"                 element={<Protected><PortalLayout title="Payroll Management"><PayrollDashboard /></PortalLayout></Protected>} />
-      <Route path="/hrms/loans"       element={<CS module="HRMS" submodule="Employee Loan Management" />} />
+      {/* ── Employee Loan Management ──────────────────────────────────── */}
+      <Route path="/hrms/loans/applications/:appId" element={<Protected><LoanApplicationDetails /></Protected>} />
+      <Route path="/hrms/loans/applications"        element={<Protected><LoanApplicationList /></Protected>} />
+      <Route path="/hrms/loans/types"               element={<Protected><LoanTypeList /></Protected>} />
+      <Route path="/hrms/loans/policies"            element={<Protected><LoanPolicyList /></Protected>} />
+      <Route path="/hrms/loans/repayments"          element={<Protected><LoanRepaymentList /></Protected>} />
+      <Route path="/hrms/loans"                     element={<Protected><LoanDashboard /></Protected>} />
       <Route path="/hrms/expenses"    element={<CS module="HRMS" submodule="Expense & Reimbursements" />} />
       <Route path="/hrms/ess"         element={<CS module="HRMS" submodule="Employee Self Service" />} />
       <Route path="/hrms"             element={<Navigate to={`/portal/${subdomain}/recruitment`} replace />} />

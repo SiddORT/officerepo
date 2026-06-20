@@ -1,0 +1,621 @@
+Let's design and implement Client Module → HRMS → Expense & Reimbursements for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Completed Modules:
+
+* Organization Management
+* Employee Management
+* Employee Documents
+* Recruitment
+* Interview Management
+* Employee Onboarding
+* Attendance Management
+* Leave Management
+* Payroll Management
+* Employee Loan Management
+* Asset Inventory
+
+Expense & Reimbursements must integrate tightly with:
+
+* Employees
+* Payroll Management
+* Workflow Engine
+* Notifications
+* Finance & Procurement
+* Employee Self Service
+
+Module Hierarchy:
+
+HRMS
+└── Expense & Reimbursements
+
+Module Code:
+
+EXPENSES
+
+Purpose:
+
+Manage employee expense claims, approvals, reimbursements and payroll integration.
+
+The module must support policy-based validation, receipt management and multi-level approval workflows.
+
+---
+
+# Expense Workflow
+
+Employee
+↓
+Submit Expense Claim
+↓
+Manager Approval
+↓
+Finance Approval
+↓
+Reimbursement
+↓
+Payroll Processing
+
+Alternative Flows:
+
+* Rejected
+* Cancelled
+* Returned For Correction
+* Partially Approved
+
+---
+
+# Module Structure
+
+Expense & Reimbursements
+
+├── Expense Categories
+├── Expense Policies
+├── Expense Claims
+├── Expense Approvals
+├── Receipts & Attachments
+├── Reimbursements
+├── Mileage Claims
+├── Corporate Card Reconciliation
+├── Expense Reports
+└── Expense Activities
+
+---
+
+# Expense Categories
+
+Examples:
+
+* Travel
+* Fuel
+* Accommodation
+* Meals
+* Internet
+* Mobile
+* Training
+* Medical
+* Office Supplies
+* Client Entertainment
+
+Fields:
+
+* Category Code *
+* Category Name *
+* Description
+* Active Status
+
+Rules:
+
+* Receipt Required
+* Approval Required
+* Maximum Amount
+* Daily Limit
+* Monthly Limit
+
+---
+
+# Expense Policies
+
+Assign policies by:
+
+* Company
+* Branch
+* Department
+* Designation
+* Employee Category
+
+Fields:
+
+* Policy Name *
+* Effective From
+* Effective To
+
+Rules:
+
+* Eligible Categories
+* Daily Limits
+* Monthly Limits
+* Yearly Limits
+* Approval Levels
+* Receipt Requirements
+
+Support exceptions.
+
+---
+
+# Expense Claims
+
+Fields:
+
+* Claim Number *
+* Employee *
+* Expense Category *
+* Expense Date *
+* Amount *
+* Currency
+* Description
+* Project
+* Cost Center
+* Client
+
+Status:
+
+* Draft
+* Submitted
+* Under Review
+* Approved
+* Partially Approved
+* Rejected
+* Reimbursed
+* Cancelled
+
+Support:
+
+* Single Expense
+* Multi-Line Claims
+
+---
+
+# Expense Line Items
+
+Allow multiple entries.
+
+Fields:
+
+* Expense Category
+* Date
+* Amount
+* Tax Amount
+* Notes
+
+Auto-calculate:
+
+* Total Amount
+* Approved Amount
+
+---
+
+# Receipts & Attachments
+
+Support uploads:
+
+* PDF
+* JPG
+* PNG
+
+Fields:
+
+* File Name
+* Upload Date
+* OCR Status
+
+Current Release:
+
+Manual verification.
+
+Future Scope:
+
+* OCR Extraction
+* AI Validation
+* Duplicate Detection
+
+Display:
+
+AI Receipt Validation
+
+Badge:
+
+Coming Soon
+
+Do not implement AI now.
+
+---
+
+# Approval Workflow
+
+Integrate with Workflow Engine.
+
+Example:
+
+Employee
+↓
+Reporting Manager
+↓
+Finance
+↓
+Approved
+
+Approval rules based on:
+
+* Amount
+* Category
+* Department
+
+Track:
+
+* Approved Amount
+* Comments
+* Approval Date
+
+---
+
+# Reimbursements
+
+Reimbursement Methods:
+
+* Payroll
+* Bank Transfer
+* Cash
+
+Fields:
+
+* Reimbursement Date
+* Payment Method
+* Transaction Reference
+
+Rules:
+
+Approved expenses must be eligible for reimbursement.
+
+Prevent duplicate reimbursements.
+
+---
+
+# Payroll Integration
+
+Integrate with Payroll Management.
+
+Fetch:
+
+* Approved Reimbursements
+
+Add during payroll processing.
+
+Flow:
+
+Gross Salary
+
+* Reimbursements
+  − Deductions
+  = Net Salary
+
+After payroll approval:
+
+Mark reimbursement as paid.
+
+Prevent duplicate processing.
+
+---
+
+# Mileage Claims
+
+Support mileage reimbursement.
+
+Fields:
+
+* From Location
+* To Location
+* Distance
+* Rate Per Kilometer
+
+Auto-calculate:
+
+Distance × Rate
+
+Future:
+
+Map integration.
+
+Do not implement maps now.
+
+---
+
+# Corporate Card Reconciliation
+
+Track:
+
+* Corporate Card Transactions
+* Employee Reconciliation
+
+Status:
+
+* Pending
+* Reconciled
+
+Future integrations:
+
+* Banking APIs
+
+Do not implement now.
+
+---
+
+# Dashboard Widgets
+
+* Pending Approvals
+* Total Claims
+* Reimbursements Due
+* Expense By Category
+* Monthly Spend
+
+---
+
+# Employee Expense Profile
+
+Tabs:
+
+* Claims
+* Reimbursements
+* Receipts
+* Activities
+
+Display:
+
+* Pending Amount
+* Approved Amount
+* Reimbursed Amount
+
+---
+
+# Reports
+
+Generate:
+
+* Expense Register
+* Reimbursement Report
+* Category Spend Report
+* Employee Expense Report
+* Cost Center Report
+
+Filters:
+
+* Company
+* Branch
+* Department
+* Employee
+* Category
+* Status
+* Date Range
+
+Support:
+
+* PDF Export
+* Excel Export
+
+---
+
+# Notifications
+
+Send notifications for:
+
+* Claim Submitted
+* Claim Approved
+* Claim Rejected
+* Reimbursement Processed
+
+Channels:
+
+* Email
+* SMS
+* Push Notification
+
+Use Notification Settings module.
+
+---
+
+# Employee Self Service Integration
+
+Employees can:
+
+* Submit Claims
+* Upload Receipts
+* Track Approval Status
+* View Reimbursements
+
+---
+
+# Database Design
+
+Design tables:
+
+expense_categories
+
+expense_policies
+
+expense_claims
+
+expense_claim_items
+
+expense_approvals
+
+expense_receipts
+
+expense_reimbursements
+
+mileage_claims
+
+corporate_card_transactions
+
+expense_activities
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+* Relationships
+
+Do not duplicate:
+
+employees
+
+payroll_runs
+
+workflow_approvals
+
+Use relationships only.
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+* Enums
+
+Use SQLAlchemy 2.0 standards.
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_120_expense_categories
+
+2026_121_expense_policies
+
+2026_122_expense_claims
+
+2026_123_expense_claim_items
+
+2026_124_expense_reimbursements
+
+2026_125_mileage_claims
+
+2026_126_expense_activities
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Categories
+
+* Create Category
+* Update Category
+* List Categories
+
+Claims
+
+* Create Claim
+* Submit Claim
+* Approve Claim
+* Reject Claim
+* Cancel Claim
+
+Reimbursements
+
+* Process Reimbursement
+* Get Reimbursement Status
+
+Reports
+
+* Get Expense Summary
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Expense Repository
+* Reimbursement Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Expense Service
+* Approval Service
+* Reimbursement Service
+
+Include:
+
+* Policy Validation
+* Reimbursement Logic
+* Payroll Integration
+* Duplicate Detection
+
+---
+
+# Validation Rules
+
+* Expense Date Cannot Be Future Date
+* Receipt Required Based On Policy
+* Amount Must Be Within Policy Limits
+* Duplicate Claims Not Allowed
+* Approved Amount ≤ Claimed Amount
+
+Prevent duplicate reimbursements.
+
+---
+
+# Activity Logging
+
+Track:
+
+* Claim Submitted
+* Claim Approved
+* Claim Rejected
+* Reimbursement Processed
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Seed Data
+
+Create sample:
+
+* Expense Categories
+* Expense Policies
+* Expense Claims
+
+Use existing:
+
+* Employees
+* Payroll Data
+
+Generate production-ready specifications suitable for direct implementation in Office Repo using FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, React and TailwindCSS.
