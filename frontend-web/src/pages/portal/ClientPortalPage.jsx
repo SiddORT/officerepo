@@ -21,6 +21,12 @@ import EmployeeList from "./employees/EmployeeList";
 import EmployeeForm from "./employees/EmployeeForm";
 import EmployeeDetails from "./employees/EmployeeDetails";
 
+// Employee Document Management pages
+import EmployeeDocList from "./employee-documents/EmployeeDocList";
+import EmployeeDocForm from "./employee-documents/EmployeeDocForm";
+import EmployeeDocDetails from "./employee-documents/EmployeeDocDetails";
+import DocTypeList from "./employee-documents/DocTypeList";
+
 // Asset Management pages
 import AssetCategories from "./assets/AssetCategories";
 import AssetSubCategoryList from "./assets/AssetSubCategoryList";
@@ -143,6 +149,14 @@ function PortalRoutes() {
       {/* Redirect /org root → companies */}
       <Route path="/org" element={<Navigate to={`/portal/${subdomain}/org/companies`} replace />} />
       <Route path="/org/*" element={<Navigate to={`/portal/${subdomain}/org/companies`} replace />} />
+
+      {/* ── Employee Documents ───────────────────────────────────────── */}
+      <Route path="/employee-documents/types"        element={<Protected><PortalLayout title="Document Types"><DocTypeList /></PortalLayout></Protected>} />
+      <Route path="/employee-documents/new"          element={<Protected><EmployeeDocForm /></Protected>} />
+      <Route path="/employee-documents/:docId/edit"  element={<Protected><EmployeeDocForm /></Protected>} />
+      <Route path="/employee-documents/:docId"       element={<Protected><EmployeeDocDetails /></Protected>} />
+      <Route path="/employee-documents"              element={<Protected><EmployeeDocList /></Protected>} />
+      <Route path="/employee-documents/*"            element={<Navigate to={`/portal/${subdomain}/employee-documents`} replace />} />
 
       {/* ── Asset Management ─────────────────────────────────────────── */}
       <Route path="/assets/categories"         element={<Protected><AssetCategories /></Protected>} />

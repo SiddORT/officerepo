@@ -1,0 +1,535 @@
+Let's design and implement Client Module → Employee Documents for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Completed Modules:
+
+* Companies
+* Branches
+* Departments
+* Designations
+* Employees
+* Asset Inventory
+
+Employee Documents will centralize all employee-related files and compliance records.
+
+This module will be used by:
+
+* HR Teams
+* Recruitment
+* Onboarding
+* Payroll
+* Compliance
+* Audit
+* Employee Self Service
+
+Architecture:
+
+Client
+↓
+Company
+↓
+Employee
+↓
+Employee Documents
+
+Each document belongs to an Employee.
+
+This module must be developed as a reusable business module controlled through client_modules.
+
+Module Code:
+
+EMPLOYEE_DOCUMENTS
+
+When enabled:
+
+* Visible in Sidebar
+* Routes Accessible
+* APIs Accessible
+
+When disabled:
+
+* Hidden from Sidebar
+* Routes Blocked
+* APIs Blocked
+
+Storage:
+
+Current:
+
+* Local Storage
+
+Future:
+
+* AWS S3
+
+Design storage abstraction accordingly.
+
+---
+
+# Module Structure
+
+Employee Documents
+
+├── Document Types
+├── Employee Documents
+├── Verification Queue
+├── Expiry Reminders
+└── Document Activities
+
+---
+
+# Document Types
+
+Support system-defined and custom document types.
+
+Default Document Types:
+
+Identity Documents
+
+* Aadhar Card
+* PAN Card
+* Passport
+* Driving License
+* Voter ID
+
+Employment Documents
+
+* Resume
+* Offer Letter
+* Appointment Letter
+* Employment Agreement
+* NDA
+
+Education Documents
+
+* Degree Certificate
+* Diploma Certificate
+* Marksheet
+
+Previous Employment
+
+* Experience Letter
+* Relieving Letter
+* Salary Slip
+
+Compliance Documents
+
+* Visa
+* Work Permit
+
+Other Documents
+
+* Medical Certificate
+* Background Verification Report
+* Other
+
+Fields:
+
+* Document Type Code
+* Document Type Name
+* Category
+* Expiry Tracking Enabled
+* Verification Required
+* Mandatory During Onboarding
+
+---
+
+# Employee Documents
+
+Support multiple documents per employee.
+
+Fields:
+
+* Employee *
+* Document Type *
+* Document Number
+* Issue Date
+* Expiry Date
+* Issuing Authority
+* Remarks
+
+File Information:
+
+* File Name
+* File Type
+* File Size
+* Version Number
+
+Document Status:
+
+* Pending Upload
+* Uploaded
+* Under Review
+* Verified
+* Rejected
+* Expired
+
+---
+
+# Version Management
+
+Support document versioning.
+
+Examples:
+
+Passport v1
+Passport v2
+
+Track:
+
+* Version Number
+* Uploaded By
+* Upload Date
+* Change Notes
+
+Only latest version is active.
+
+Previous versions remain accessible.
+
+---
+
+# Verification Workflow
+
+Documents requiring verification should support:
+
+* Submit For Review
+* Approve
+* Reject
+
+Fields:
+
+* Verified By
+* Verified On
+* Rejection Reason
+
+---
+
+# Expiry Tracking
+
+Track documents with expiry dates.
+
+Examples:
+
+* Passport
+* Visa
+* Work Permit
+* Driving License
+
+Automatically calculate:
+
+* Days Remaining
+
+Reminder Rules:
+
+* 30 Days Before
+* 60 Days Before
+* 90 Days Before
+
+Notification Channels:
+
+* Email
+* SMS
+* Push Notification
+
+---
+
+# Bulk Upload
+
+Support HR bulk uploads.
+
+Actions:
+
+* Download Template
+* Upload ZIP File
+* Upload Excel Mapping File
+
+Example:
+
+Employee Code | Document Type | File Name
+
+EMP-00001 | PAN Card | pan_john.pdf
+
+Provide:
+
+* Validation
+* Preview
+* Error Report
+
+---
+
+# Employee Document Profile
+
+Add a Documents tab inside Employee Profile.
+
+Display:
+
+* Document Type
+* Status
+* Expiry Date
+* Verification Status
+
+Actions:
+
+* Upload
+* Download
+* Replace
+* Verify
+* Delete
+
+Show document completion percentage.
+
+Example:
+
+85% Complete
+
+---
+
+# UI Design
+
+## Document Dashboard
+
+Widgets:
+
+* Total Documents
+* Pending Verification
+* Expiring Soon
+* Expired Documents
+
+---
+
+## Employee Document List
+
+Columns:
+
+* Employee Code
+* Employee Name
+* Document Type
+* Status
+* Expiry Date
+* Verification Status
+
+Filters:
+
+* Company
+* Branch
+* Department
+* Document Type
+* Status
+
+Search:
+
+* Employee Name
+* Employee Code
+* Document Number
+
+---
+
+## Upload Document
+
+Sections:
+
+1. Document Information
+2. File Upload
+3. Verification Details
+
+Support:
+
+* Drag And Drop
+* Multiple File Upload
+
+---
+
+## Document Detail View
+
+Tabs:
+
+* Overview
+* Versions
+* Activities
+
+---
+
+# Supported File Types
+
+* PDF
+* JPG
+* PNG
+* DOCX
+
+Validation:
+
+* Max File Size
+* Virus Scan Ready Architecture
+
+---
+
+# Database Design
+
+Design tables:
+
+document_types
+
+employee_documents
+
+employee_document_versions
+
+employee_document_activities
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+* Relationships
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+* Enums
+
+Use SQLAlchemy 2.0 standards.
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_040_document_types
+
+2026_041_employee_documents
+
+2026_042_employee_document_versions
+
+2026_043_employee_document_activities
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Document Types
+
+* Create
+* Update
+* Get
+* List
+
+Employee Documents
+
+* Upload Document
+* Update Document
+* Get Document
+* List Documents
+* Download Document
+* Delete Document
+
+Verification
+
+* Verify Document
+* Reject Document
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Document Type Repository
+* Employee Document Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Document Service
+* Verification Service
+* Reminder Service
+
+Include:
+
+* File Storage Logic
+* Version Management
+* Expiry Calculation
+* Validation Logic
+
+---
+
+# Validation Rules
+
+* Employee Required
+* Document Type Required
+* Expiry Date >= Issue Date
+* File Type Validation
+* File Size Validation
+
+Prevent duplicate active documents where applicable.
+
+Example:
+
+Only one active passport per employee.
+
+---
+
+# Activity Logging
+
+Track:
+
+* Document Uploaded
+* Document Updated
+* Document Replaced
+* Document Verified
+* Document Rejected
+* Document Deleted
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Seed Data
+
+Create default document types.
+
+Generate sample documents for seeded employees.
+
+Create sample expiry reminders.
+
+---
+
+# Future Enhancements
+
+* OCR Extraction
+* AI-Based Document Validation
+* E-Signatures
+* Employee Self Upload
+* Background Verification Integration
+* DigiLocker Integration
+* Bulk Download
+* Compliance Dashboard
+
+Generate production-ready specifications suitable for direct implementation in Office Repo using FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, React and TailwindCSS.

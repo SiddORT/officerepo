@@ -544,6 +544,31 @@ export const portalAssetApi = {
   listInventoryActivities:(sd, tk, id)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/inventory/${id}/activities`, _ph(sd, tk)),
 };
 
+// ── Portal Employee Document Management ───────────────────────────────────────
+export const portalEmpDocApi = {
+  metaOptions: (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/meta/options`, _ph(sd, tk)),
+  dashboard:   (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/dashboard`, _ph(sd, tk)),
+
+  // Document Types
+  listTypes:   (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/types`, _php(sd, tk, p)),
+  createType:  (sd, tk, data)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/types`, data, _ph(sd, tk)),
+  updateType:  (sd, tk, id, d) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/types/${id}`, d, _ph(sd, tk)),
+
+  // Employee Documents
+  list:        (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents`, _php(sd, tk, p)),
+  get:         (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/${id}`, _ph(sd, tk)),
+  upload:      (sd, tk, data)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents`, data, { headers: { Authorization: `Bearer ${tk}`, "Content-Type": "multipart/form-data" } }),
+  update:      (sd, tk, id, d) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/${id}`, d, _ph(sd, tk)),
+  remove:      (sd, tk, id)    => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/${id}`, _ph(sd, tk)),
+  replace:     (sd, tk, id, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/${id}/replace`, data, { headers: { Authorization: `Bearer ${tk}`, "Content-Type": "multipart/form-data" } }),
+  submit:      (sd, tk, id)    => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/${id}/submit`, {}, _ph(sd, tk)),
+  verify:      (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/${id}/verify`, d, _ph(sd, tk)),
+  reject:      (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/${id}/reject`, d, _ph(sd, tk)),
+  listVersions:(sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/${id}/versions`, _ph(sd, tk)),
+  listActivities:(sd, tk, id)  => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/${id}/activities`, _ph(sd, tk)),
+  downloadUrl: (sd, id, v)     => `${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/${id}/download${v != null ? `?version=${v}` : ""}`,
+};
+
 // ── Asset Management Setup (superadmin — categories, sub-categories, masters) ─
 const ASSETS = "/superadmin/assets";
 
