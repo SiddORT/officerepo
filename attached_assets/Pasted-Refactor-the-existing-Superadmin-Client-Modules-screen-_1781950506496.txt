@@ -1,0 +1,273 @@
+Refactor the existing Superadmin → Client Modules screen in Office Repo.
+
+Context:
+
+The previous implementation introduced parent-child module relationships.
+
+Current issue:
+
+Submodules such as Recruitment are appearing as standalone modules alongside top-level business modules.
+
+Example:
+
+❌ Organization Management
+❌ Asset Management
+❌ HRMS
+❌ Recruitment
+
+Target behavior:
+
+Only top-level business modules should be displayed in the Client Modules page.
+
+Submodules must be managed inside the module details modal.
+
+Do not change existing database relationships or module enablement logic.
+
+Only refactor the UI and activation experience.
+
+--------------------------------------------------
+TOP-LEVEL MODULES ONLY
+--------------------------------------------------
+
+Display only:
+
+- Organization Management
+- HRMS
+- Asset Management
+- Workflow Engine
+- Billing Management
+- Reports
+- Helpdesk
+- Knowledge Base
+
+Example:
+
+[Organization Management]  [ON/OFF]
+
+[HRMS]                     [ON/OFF]
+
+[Asset Management]         [ON/OFF]
+
+[Workflow Engine]          [ON/OFF]
+
+Do NOT display child modules as separate cards.
+
+Remove:
+
+- Recruitment
+- Interview Management
+- Employee Onboarding
+- Attendance
+- Leave Management
+- Payroll
+- Employee Loans
+- Expenses
+
+- Companies
+- Branches
+- Departments
+- Designations
+- Employees
+- Employee Documents
+
+- Asset Inventory
+
+These must only exist inside the parent module modal.
+
+--------------------------------------------------
+MODULE CARD BEHAVIOR
+--------------------------------------------------
+
+Each module card should contain:
+
+- Module Icon
+- Module Name
+- Short Description
+- Info Button
+- Enable / Disable Toggle
+
+Example:
+
+HRMS
+
+Manage the complete employee lifecycle.
+
+[Info] [Toggle]
+
+--------------------------------------------------
+INFO MODAL
+--------------------------------------------------
+
+Clicking the info button opens a modal.
+
+The modal should contain:
+
+1. Module Description
+2. Included Submodules
+3. Individual Submodule Toggles
+4. Future Permissions Placeholder
+
+--------------------------------------------------
+ORGANIZATION MANAGEMENT MODAL
+--------------------------------------------------
+
+Description:
+
+Manage companies, organization structure and employees.
+
+Submodules:
+
+☑ Companies
+☑ Branches
+☑ Departments
+☑ Designations
+☑ Employees
+☑ Employee Documents
+
+--------------------------------------------------
+HRMS MODAL
+--------------------------------------------------
+
+Description:
+
+Manage the complete employee lifecycle.
+
+Submodules:
+
+☑ Recruitment
+☐ Interview Management
+☐ Employee Onboarding
+☐ Attendance Management
+☐ Leave Management
+☐ Payroll Management
+☐ Employee Loan Management
+☐ Expense & Reimbursements
+
+--------------------------------------------------
+ASSET MANAGEMENT MODAL
+--------------------------------------------------
+
+Description:
+
+Manage company assets and assignments.
+
+Submodules:
+
+☑ Asset Inventory
+☐ Asset Maintenance
+☐ Asset Audits
+☐ Asset Requests
+
+--------------------------------------------------
+SUBMODULE RULES
+--------------------------------------------------
+
+- Child modules can only be enabled if parent module is enabled.
+- Disabling a parent module disables all child modules.
+- Child modules must never appear as standalone cards.
+- Child modules must be controlled only through the modal.
+
+--------------------------------------------------
+CLIENT SIDEBAR RULES
+--------------------------------------------------
+
+Render:
+
+Parent Module
+└── Enabled Child Modules
+
+Example:
+
+HRMS
+├── Recruitment
+└── Attendance
+
+Organization Management
+├── Companies
+├── Departments
+└── Employees
+
+Hide disabled child modules.
+
+Hide parent module if no child modules are enabled.
+
+--------------------------------------------------
+DATABASE
+--------------------------------------------------
+
+Keep existing structure:
+
+modules
+- id
+- module_code
+- module_name
+- parent_module_id
+
+client_modules
+- client_id
+- module_id
+- is_enabled
+
+No migration required unless missing parent_module_id.
+
+--------------------------------------------------
+API CHANGES
+--------------------------------------------------
+
+Update module APIs to return nested structure.
+
+Example:
+
+[
+  {
+    "module_code": "HRMS",
+    "enabled": true,
+    "children": [
+      {
+        "module_code": "RECRUITMENT",
+        "enabled": true
+      },
+      {
+        "module_code": "ATTENDANCE",
+        "enabled": false
+      }
+    ]
+  }
+]
+
+--------------------------------------------------
+FUTURE PLACEHOLDER
+--------------------------------------------------
+
+Reserve space in modal for future permissions.
+
+Example:
+
+Recruitment
+
+☑ View
+☑ Create
+☑ Edit
+☑ Delete
+
+Do not implement permissions yet.
+
+--------------------------------------------------
+ACTIVITY LOGGING
+--------------------------------------------------
+
+Track:
+
+- Parent Module Enabled
+- Parent Module Disabled
+- Child Module Enabled
+- Child Module Disabled
+
+Store:
+
+- User
+- Client
+- Module
+- Timestamp
+
+Maintain existing Office Repo dark theme and current card design.
