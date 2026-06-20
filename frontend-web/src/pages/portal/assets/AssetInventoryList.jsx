@@ -75,11 +75,11 @@ export default function AssetInventoryList() {
       <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
         <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search by number, name, serial…" className="input-field" style={{ flex: 1, minWidth: 200 }} />
-        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className="input-field" style={{ minWidth: 140 }}>
+        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className="input-field" style={{ width: "auto", minWidth: 140 }}>
           <option value="">All Statuses</option>
           {statuses.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        <select value={categoryId} onChange={e => { setCategoryId(e.target.value); setPage(1); }} className="input-field" style={{ minWidth: 140 }}>
+        <select value={categoryId} onChange={e => { setCategoryId(e.target.value); setPage(1); }} className="input-field" style={{ width: "auto", minWidth: 140 }}>
           <option value="">All Categories</option>
           {categories.map(c => <option key={c.id} value={c.id}>{c.icon ? `${c.icon} ` : ""}{c.category_name}</option>)}
         </select>

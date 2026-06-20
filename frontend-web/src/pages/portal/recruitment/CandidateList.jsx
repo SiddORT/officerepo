@@ -45,11 +45,11 @@ export default function CandidateList() {
 
       <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
         <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search name, email, mobile, company…" className="input-field" style={{ flex: 1, minWidth: 200 }} />
-        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className="input-field" style={{ minWidth: 160 }}>
+        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className="input-field" style={{ width: "auto", minWidth: 160 }}>
           <option value="">All Statuses</option>
           {(meta.candidate_statuses || []).map(s => <option key={s}>{s}</option>)}
         </select>
-        <select value={source} onChange={e => { setSource(e.target.value); setPage(1); }} className="input-field" style={{ minWidth: 140 }}>
+        <select value={source} onChange={e => { setSource(e.target.value); setPage(1); }} className="input-field" style={{ width: "auto", minWidth: 140 }}>
           <option value="">All Sources</option>
           {(meta.candidate_sources || []).map(s => <option key={s}>{s}</option>)}
         </select>

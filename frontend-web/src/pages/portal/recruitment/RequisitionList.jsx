@@ -44,7 +44,7 @@ export default function RequisitionList() {
 
       <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
         <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search by number, department, designation…" className="input-field" style={{ flex: 1, minWidth: 200 }} />
-        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className="input-field" style={{ minWidth: 140 }}>
+        <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className="input-field" style={{ width: "auto", minWidth: 140 }}>
           <option value="">All Statuses</option>
           {statuses.map(s => <option key={s}>{s}</option>)}
         </select>

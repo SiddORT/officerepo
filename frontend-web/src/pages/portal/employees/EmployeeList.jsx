@@ -132,15 +132,15 @@ export default function EmployeeList() {
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
         <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
           placeholder="Search name, code, email…" className="input-field" style={{ minWidth: 200, flex: 1 }} />
-        <select value={filterCompany} onChange={e => { setFilterCompany(e.target.value); setPage(1); }} className="input-field" style={{ minWidth: 150 }}>
+        <select value={filterCompany} onChange={e => { setFilterCompany(e.target.value); setPage(1); }} className="input-field" style={{ width: "auto", minWidth: 150 }}>
           <option value="">All Companies</option>
           {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
         </select>
-        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} className="input-field" style={{ minWidth: 140 }}>
+        <select value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }} className="input-field" style={{ width: "auto", minWidth: 140 }}>
           <option value="">All Statuses</option>
           {statuses.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        <select value={filterType} onChange={e => { setFilterType(e.target.value); setPage(1); }} className="input-field" style={{ minWidth: 140 }}>
+        <select value={filterType} onChange={e => { setFilterType(e.target.value); setPage(1); }} className="input-field" style={{ width: "auto", minWidth: 140 }}>
           <option value="">All Types</option>
           {types.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
