@@ -408,13 +408,55 @@ const MODULE_CATALOG_UI = {
     description: "Manage the complete employee lifecycle — recruitment, attendance, leave, and payroll.",
     color: "#8b5cf6",
     icon: "briefcase",
-    submodules: ["Recruitment", "Interview Management", "Employee Onboarding", "Attendance Management", "Leave Management", "Payroll Management", "Employee Loan Management", "Expense & Reimbursements"],
+    submodules: ["Recruitment", "Interview Management", "Employee Onboarding", "Attendance Management", "Leave Management", "Payroll Management", "Employee Loan Management", "Expense & Reimbursements", "Employee Self Service"],
   },
   "Asset Management": {
     description: "Manage company assets and assignments across locations and teams.",
     color: "#f59e0b",
     icon: "package",
-    submodules: ["Asset Inventory", "Asset Maintenance", "Asset Audits", "Asset Requests"],
+    submodules: ["Asset Inventory", "Asset Maintenance", "Asset Audits", "Asset Requests", "Asset Assignment", "Asset Transfers", "Asset Returns", "Asset Disposal"],
+  },
+  "CRM": {
+    description: "Customer relationship management — leads, accounts, contacts, and opportunities.",
+    color: "#ec4899",
+    icon: "users",
+    submodules: ["CRM Leads", "Accounts", "Contacts", "Opportunities", "CRM Activities", "Quotes", "Customers"],
+  },
+  "LMS": {
+    description: "Learning management — courses, learning paths, assessments, and certifications.",
+    color: "#6366f1",
+    icon: "academic-cap",
+    submodules: ["Courses", "Learning Paths", "Assessments", "Certifications"],
+  },
+  "BMS": {
+    description: "Business management — products, services, categories, and contracts.",
+    color: "#0ea5e9",
+    icon: "briefcase-alt",
+    submodules: ["Products", "Services", "BMS Categories", "BMS Customers", "Contracts"],
+  },
+  "Finance & Procurement": {
+    description: "Vendors, purchase orders, invoices, payments, and budget management.",
+    color: "#22c55e",
+    icon: "currency",
+    submodules: ["Vendors", "Purchase Requests", "Purchase Orders", "Invoices", "Payments", "Budgets", "Cost Centers"],
+  },
+  "Task & Project Management": {
+    description: "Projects, milestones, sprints, task tracking, and timesheets.",
+    color: "#f97316",
+    icon: "clipboard-list",
+    submodules: ["Projects", "Milestones", "Task List", "Sprints", "Timesheets"],
+  },
+  "Helpdesk": {
+    description: "Support ticket and service-request management with SLA tracking.",
+    color: "#ef4444",
+    icon: "headphones",
+    submodules: ["Tickets", "Service Catalog", "SLA Management", "Escalations", "Knowledge Articles"],
+  },
+  "Visitor Management": {
+    description: "Visitor registration, pre-approvals, check-in/check-out, and visitor passes.",
+    color: "#14b8a6",
+    icon: "id-card",
+    submodules: ["Visitor Registration", "Pre-Approvals", "Check-In / Check-Out", "Visitor Passes"],
   },
   "Billing Management": {
     description: "Invoices, payments, and financial records for the workspace.",
@@ -422,23 +464,11 @@ const MODULE_CATALOG_UI = {
     icon: "credit-card",
     submodules: [],
   },
-  "Workflow Engine": {
-    description: "Process automation and multi-step approval workflows.",
-    color: "#06b6d4",
-    icon: "git-branch",
-    submodules: [],
-  },
   "Reports": {
     description: "Analytics dashboards and exportable reports across all modules.",
-    color: "#f97316",
+    color: "#fb923c",
     icon: "bar-chart",
-    submodules: [],
-  },
-  "Helpdesk": {
-    description: "Support ticket and service-request management with SLA tracking.",
-    color: "#ef4444",
-    icon: "headphones",
-    submodules: [],
+    submodules: ["Organization Reports", "HR Reports", "Asset Reports", "Finance Reports", "Scheduled Reports"],
   },
   "Knowledge Base": {
     description: "Internal wiki, SOPs, and documentation with version control.",
@@ -446,18 +476,30 @@ const MODULE_CATALOG_UI = {
     icon: "book",
     submodules: [],
   },
+  "Workflow Engine": {
+    description: "Process automation and multi-step approval workflows.",
+    color: "#06b6d4",
+    icon: "git-branch",
+    submodules: ["Approval Workflows", "Automation Rules", "Notification Templates", "Escalation Rules"],
+  },
 };
 
 function ModuleIcon({ name, color, size = 20 }) {
   const paths = {
-    building:    "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
-    briefcase:   "M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
-    package:     "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
-    "credit-card":"M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z",
-    "git-branch":"M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z",
-    "bar-chart": "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
-    headphones:  "M3 18v-6a9 9 0 0118 0v6M3 18a1 1 0 001 1h1a1 1 0 001-1v-3a1 1 0 00-1-1H4a1 1 0 00-1 1v3zm16 0a1 1 0 01-1 1h-1a1 1 0 01-1-1v-3a1 1 0 011-1h1a1 1 0 011 1v3z",
-    book:        "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253",
+    building:          "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
+    briefcase:         "M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
+    "briefcase-alt":   "M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
+    package:           "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
+    users:             "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z",
+    "academic-cap":    "M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222",
+    currency:          "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+    "clipboard-list":  "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01",
+    "id-card":         "M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2",
+    "credit-card":     "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z",
+    "git-branch":      "M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z",
+    "bar-chart":       "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
+    headphones:        "M3 18v-6a9 9 0 0118 0v6M3 18a1 1 0 001 1h1a1 1 0 001-1v-3a1 1 0 00-1-1H4a1 1 0 00-1 1v3zm16 0a1 1 0 01-1 1h-1a1 1 0 01-1-1v-3a1 1 0 011-1h1a1 1 0 011 1v3z",
+    book:              "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253",
   };
   return (
     <svg width={size} height={size} fill="none" stroke={color} strokeWidth={1.7} viewBox="0 0 24 24">
