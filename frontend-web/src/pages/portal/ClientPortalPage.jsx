@@ -71,6 +71,15 @@ import ExpenseClaimForm    from "./expenses/ExpenseClaimForm";
 import MileageClaimList    from "./expenses/MileageClaimList";
 import ReimbursementList   from "./expenses/ReimbursementList";
 
+// Exit Management pages
+import ExitDashboard       from "./exit/ExitDashboard";
+import ExitPolicyList      from "./exit/ExitPolicyList";
+import ResignationList     from "./exit/ResignationList";
+import ResignationDetails  from "./exit/ResignationDetails";
+import ResignationForm     from "./exit/ResignationForm";
+import ExitInterviewPage   from "./exit/ExitInterviewPage";
+import FinalSettlementList from "./exit/FinalSettlementList";
+
 // Payroll Management pages
 import PayrollDashboard        from "./payroll/PayrollDashboard";
 import SalaryComponentList     from "./payroll/SalaryComponentList";
@@ -343,6 +352,16 @@ function PortalRoutes() {
       <Route path="/hrms/expenses/mileage"           element={<Protected><MileageClaimList /></Protected>} />
       <Route path="/hrms/expenses/reimbursements"    element={<Protected><ReimbursementList /></Protected>} />
       <Route path="/hrms/expenses"                   element={<Protected><ExpenseDashboard /></Protected>} />
+      <Route path="/hrms/exit/resignations/new"                      element={<Protected><ResignationForm /></Protected>} />
+      <Route path="/hrms/exit/resignations/:resignationId/edit"      element={<Protected><ResignationForm editMode /></Protected>} />
+      <Route path="/hrms/exit/resignations/:resignationId/interview" element={<Protected><ExitInterviewPage /></Protected>} />
+      <Route path="/hrms/exit/resignations/:resignationId"           element={<Protected><ResignationDetails /></Protected>} />
+      <Route path="/hrms/exit/resignations"                          element={<Protected><ResignationList /></Protected>} />
+      <Route path="/hrms/exit/policies"                              element={<Protected><ExitPolicyList /></Protected>} />
+      <Route path="/hrms/exit/interviews"                            element={<Protected><ResignationList /></Protected>} />
+      <Route path="/hrms/exit/settlements"                           element={<Protected><FinalSettlementList /></Protected>} />
+      <Route path="/hrms/exit/documents"                             element={<Protected><ResignationList /></Protected>} />
+      <Route path="/hrms/exit"                                       element={<Protected><ExitDashboard /></Protected>} />
       <Route path="/hrms/ess"         element={<CS module="HRMS" submodule="Employee Self Service" />} />
       <Route path="/hrms"             element={<Navigate to={`/portal/${subdomain}/recruitment`} replace />} />
       <Route path="/hrms/*"           element={<Navigate to={`/portal/${subdomain}/recruitment`} replace />} />

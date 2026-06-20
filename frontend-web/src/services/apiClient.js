@@ -1036,6 +1036,64 @@ export const portalExpenseApi = {
   deleteMileage:  (sd, id)      => axios.delete(_exurl(sd, `/mileage/${id}`),   _exh(sd)),
 };
 
+// ── Portal Exit Management ─────────────────────────────────────────────────────
+const _exitUrl  = (sd, path) => `/api/v1/portal/${sd}/hrms/exit${path}`;
+const _exith    = (sd)       => ({ headers: { Authorization: `Bearer ${_portalToken(sd)}` } });
+const _exithp   = (sd, p)    => ({ headers: { Authorization: `Bearer ${_portalToken(sd)}` }, params: p });
+
+export const portalExitApi = {
+  meta:         (sd)      => axios.get(_exitUrl(sd, "/meta/options"), _exith(sd)),
+  getDashboard: (sd)      => axios.get(_exitUrl(sd, "/dashboard"),    _exith(sd)),
+
+  // Policies
+  listPolicies:   (sd, incInactive = false) => axios.get(_exitUrl(sd, "/policies"), _exithp(sd, { include_inactive: incInactive })),
+  createPolicy:   (sd, d)       => axios.post(_exitUrl(sd, "/policies"),             d, _exith(sd)),
+  updatePolicy:   (sd, id, d)   => axios.patch(_exitUrl(sd, `/policies/${id}`),      d, _exith(sd)),
+  deletePolicy:   (sd, id)      => axios.delete(_exitUrl(sd, `/policies/${id}`),        _exith(sd)),
+
+  // Resignations
+  listResignations: (sd, p)       => axios.get(_exitUrl(sd, "/resignations"),              _exithp(sd, p)),
+  createResignation:(sd, d)       => axios.post(_exitUrl(sd, "/resignations"),          d, _exith(sd)),
+  getResignation:   (sd, id)      => axios.get(_exitUrl(sd, `/resignations/${id}`),        _exith(sd)),
+  updateResignation:(sd, id, d)   => axios.patch(_exitUrl(sd, `/resignations/${id}`),   d, _exith(sd)),
+  submitResignation:(sd, id)      => axios.post(_exitUrl(sd, `/resignations/${id}/submit`),    {}, _exith(sd)),
+  approveResignation:(sd, id, d)  => axios.post(_exitUrl(sd, `/resignations/${id}/approve`),   d,  _exith(sd)),
+  rejectResignation: (sd, id, d)  => axios.post(_exitUrl(sd, `/resignations/${id}/reject`),    d,  _exith(sd)),
+  withdrawResignation:(sd, id)    => axios.post(_exitUrl(sd, `/resignations/${id}/withdraw`),  {}, _exith(sd)),
+
+  // Notice Period
+  getNotice:    (sd, id)    => axios.get(_exitUrl(sd, `/resignations/${id}/notice`),     _exith(sd)),
+  updateNotice: (sd, id, d) => axios.patch(_exitUrl(sd, `/resignations/${id}/notice`), d, _exith(sd)),
+
+  // Clearances
+  getClearances:      (sd, id)          => axios.get(_exitUrl(sd, `/resignations/${id}/clearances`),              _exith(sd)),
+  updateClearanceTask:(sd, id, taskId, d)=> axios.patch(_exitUrl(sd, `/resignations/${id}/clearances/tasks/${taskId}`), d, _exith(sd)),
+
+  // Exit Interview
+  getInterviewQuestions: (sd)       => axios.get(_exitUrl(sd, "/interview-questions"),           _exith(sd)),
+  getInterview:          (sd, id)   => axios.get(_exitUrl(sd, `/resignations/${id}/interview`),  _exith(sd)),
+  updateInterview:       (sd, id, d)=> axios.patch(_exitUrl(sd, `/resignations/${id}/interview`),d, _exith(sd)),
+  submitInterviewResponses:(sd, id, d)=> axios.post(_exitUrl(sd, `/resignations/${id}/interview/responses`), d, _exith(sd)),
+
+  // Asset Recovery
+  listAssets:    (sd, id)       => axios.get(_exitUrl(sd, `/resignations/${id}/assets`),           _exith(sd)),
+  addAsset:      (sd, id, d)    => axios.post(_exitUrl(sd, `/resignations/${id}/assets`),       d, _exith(sd)),
+  updateAsset:   (sd, id, rid, d)=> axios.patch(_exitUrl(sd, `/resignations/${id}/assets/${rid}`), d, _exith(sd)),
+
+  // Settlement
+  getSettlement:      (sd, id)   => axios.get(_exitUrl(sd, `/resignations/${id}/settlement`),            _exith(sd)),
+  calculateSettlement:(sd, id, d)=> axios.post(_exitUrl(sd, `/resignations/${id}/settlement/calculate`), d, _exith(sd)),
+  approveSettlement:  (sd, id, d)=> axios.post(_exitUrl(sd, `/resignations/${id}/settlement/approve`),   d, _exith(sd)),
+  paySettlement:      (sd, id, d)=> axios.post(_exitUrl(sd, `/resignations/${id}/settlement/pay`),       d, _exith(sd)),
+
+  // Documents
+  listDocuments:    (sd, id)   => axios.get(_exitUrl(sd, `/resignations/${id}/documents`),            _exith(sd)),
+  generateDocument: (sd, id, d)=> axios.post(_exitUrl(sd, `/resignations/${id}/documents/generate`), d, _exith(sd)),
+
+  // Activities
+  listActivities: (sd, id) => axios.get(_exitUrl(sd, `/resignations/${id}/activities`), _exith(sd)),
+};
+
 // ── Currency Management (superadmin — global platform settings) ───────────────
 const CURRENCIES = "/superadmin/currencies";
 
