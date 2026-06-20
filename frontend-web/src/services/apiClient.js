@@ -620,18 +620,54 @@ export const portalRecruitmentApi = {
 const _iurl = (sd, path) => `${API_BASE_URL}/api/v1/portal/${sd}/hrms/interviews${path}`;
 
 export const portalInterviewApi = {
-  metaOptions: (sd, tk)          => axios.get(_iurl(sd, "/meta/options"), _rh(sd, tk)),
-  dashboard:   (sd, tk)          => axios.get(_iurl(sd, "/dashboard"),    _rh(sd, tk)),
+  // Meta
+  metaOptions: (sd, tk)               => axios.get(_iurl(sd, "/meta/options"),    _rh(sd, tk)),
+  dashboard:   (sd, tk)               => axios.get(_iurl(sd, "/dashboard"),        _rh(sd, tk)),
 
-  list:   (sd, tk, p)            => axios.get(_iurl(sd, ""),            { ..._rh(sd, tk), params: p }),
-  get:    (sd, tk, id)           => axios.get(_iurl(sd, `/${id}`),       _rh(sd, tk)),
-  create: (sd, tk, d)            => axios.post(_iurl(sd, ""),           d, _rh(sd, tk)),
-  update: (sd, tk, id, d)        => axios.patch(_iurl(sd, `/${id}`),    d, _rh(sd, tk)),
-  remove: (sd, tk, id)           => axios.delete(_iurl(sd, `/${id}`),      _rh(sd, tk)),
+  // Calendar
+  calendarEvents: (sd, tk, start, end) =>
+    axios.get(_iurl(sd, "/calendar/events"), { ..._rh(sd, tk), params: { start, end } }),
 
-  complete: (sd, tk, id, d)      => axios.post(_iurl(sd, `/${id}/complete`), d, _rh(sd, tk)),
-  cancel:   (sd, tk, id, d)      => axios.post(_iurl(sd, `/${id}/cancel`),   d, _rh(sd, tk)),
-  noShow:   (sd, tk, id)         => axios.post(_iurl(sd, `/${id}/no-show`), {}, _rh(sd, tk)),
+  // Pipelines
+  listPipelines:   (sd, tk, p)        => axios.get(_iurl(sd, "/pipelines"),         { ..._rh(sd, tk), params: p }),
+  createPipeline:  (sd, tk, d)        => axios.post(_iurl(sd, "/pipelines"),        d, _rh(sd, tk)),
+  getPipeline:     (sd, tk, id)       => axios.get(_iurl(sd, `/pipelines/${id}`),    _rh(sd, tk)),
+  updatePipeline:  (sd, tk, id, d)    => axios.patch(_iurl(sd, `/pipelines/${id}`), d, _rh(sd, tk)),
+  deletePipeline:  (sd, tk, id)       => axios.delete(_iurl(sd, `/pipelines/${id}`),  _rh(sd, tk)),
+
+  // Pipeline stages
+  addStage:       (sd, tk, pid, d)    => axios.post(_iurl(sd, `/pipelines/${pid}/stages`),           d, _rh(sd, tk)),
+  updateStage:    (sd, tk, pid, sid, d) => axios.patch(_iurl(sd, `/pipelines/${pid}/stages/${sid}`), d, _rh(sd, tk)),
+  deleteStage:    (sd, tk, pid, sid)  => axios.delete(_iurl(sd, `/pipelines/${pid}/stages/${sid}`),     _rh(sd, tk)),
+  reorderStages:  (sd, tk, pid, ids)  => axios.post(_iurl(sd, `/pipelines/${pid}/stages/reorder`), { stage_ids: ids }, _rh(sd, tk)),
+
+  // Interviews
+  list:     (sd, tk, p)               => axios.get(_iurl(sd, "/list"),               { ..._rh(sd, tk), params: p }),
+  schedule: (sd, tk, d)               => axios.post(_iurl(sd, "/schedule"),          d, _rh(sd, tk)),
+  get:      (sd, tk, id, full)        => axios.get(_iurl(sd, `/${id}`),              { ..._rh(sd, tk), params: { full: full || false } }),
+  update:   (sd, tk, id, d)           => axios.patch(_iurl(sd, `/${id}`),            d, _rh(sd, tk)),
+  remove:   (sd, tk, id)              => axios.delete(_iurl(sd, `/${id}`),              _rh(sd, tk)),
+
+  // Status transitions
+  reschedule: (sd, tk, id, d)         => axios.post(_iurl(sd, `/${id}/reschedule`),  d, _rh(sd, tk)),
+  complete:   (sd, tk, id, d)         => axios.post(_iurl(sd, `/${id}/complete`),    d, _rh(sd, tk)),
+  cancel:     (sd, tk, id, d)         => axios.post(_iurl(sd, `/${id}/cancel`),      d, _rh(sd, tk)),
+  noShow:     (sd, tk, id)            => axios.post(_iurl(sd, `/${id}/no-show`),  {}, _rh(sd, tk)),
+  select:     (sd, tk, id, d)         => axios.post(_iurl(sd, `/${id}/select`),      d, _rh(sd, tk)),
+  reject:     (sd, tk, id, d)         => axios.post(_iurl(sd, `/${id}/reject`),      d, _rh(sd, tk)),
+
+  // Panel
+  listPanel:    (sd, tk, id)          => axios.get(_iurl(sd, `/${id}/panel`),          _rh(sd, tk)),
+  addPanel:     (sd, tk, id, d)       => axios.post(_iurl(sd, `/${id}/panel`),       d, _rh(sd, tk)),
+  removePanel:  (sd, tk, id, pid)     => axios.delete(_iurl(sd, `/${id}/panel/${pid}`), _rh(sd, tk)),
+
+  // Feedback
+  listFeedback:   (sd, tk, id)        => axios.get(_iurl(sd, `/${id}/feedback`),       _rh(sd, tk)),
+  submitFeedback: (sd, tk, id, d)     => axios.post(_iurl(sd, `/${id}/feedback`),    d, _rh(sd, tk)),
+  updateFeedback: (sd, tk, id, fid, d) => axios.patch(_iurl(sd, `/${id}/feedback/${fid}`), d, _rh(sd, tk)),
+
+  // Activities
+  activities: (sd, tk, id)            => axios.get(_iurl(sd, `/${id}/activities`),    _rh(sd, tk)),
 };
 
 // ── Asset Management Setup (superadmin — categories, sub-categories, masters) ─
