@@ -1,0 +1,616 @@
+Let's design and implement Client Module → Recruitment for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Completed Modules:
+
+* Companies
+* Branches
+* Departments
+* Designations
+* Employees
+* Employee Documents
+* Asset Inventory
+
+Recruitment will become the entry point for creating new employees.
+
+Future Workflow:
+
+Job Requisition
+↓
+Job Opening
+↓
+Candidate
+↓
+Interview
+↓
+Offer
+↓
+Document Collection
+↓
+Employee Creation
+↓
+Onboarding
+↓
+Asset Assignment
+
+Selected candidates should automatically convert into Employees.
+
+This module must be developed as a reusable business module controlled through client_modules.
+
+Module Code:
+
+RECRUITMENT
+
+When enabled:
+
+* Visible in Sidebar
+* Routes Accessible
+* APIs Accessible
+
+When disabled:
+
+* Hidden from Sidebar
+* Routes Blocked
+* APIs Blocked
+
+---
+
+# Module Structure
+
+Recruitment
+
+├── Job Requisitions
+├── Job Openings
+├── Candidates
+├── Resume Management
+├── Candidate Documents
+├── Candidate Activities
+└── Offer Management
+
+---
+
+# Recruitment Workflow
+
+Department
+↓
+Job Requisition
+↓
+Approval
+↓
+Job Opening
+↓
+Candidate Application
+↓
+Resume Screening
+↓
+Interview Process
+↓
+Selection
+↓
+Offer
+↓
+Employee Creation
+
+---
+
+# Job Requisitions
+
+Purpose:
+
+Allow departments to request new positions.
+
+Fields:
+
+* Requisition Number
+* Company *
+* Branch
+* Department *
+* Designation *
+* Hiring Manager
+* Number Of Positions
+* Employment Type
+* Employee Category
+
+Employee Categories:
+
+* Employee
+* Intern
+* Consultant
+* Contractor
+* Trainee
+* Apprentice
+
+Employment Types:
+
+* Permanent
+* Temporary
+* Contract
+* Part Time
+* Full Time
+* Freelance
+
+Additional Fields:
+
+* Budgeted Salary Range
+* Target Joining Date
+* Job Description
+* Skills Required
+* Reason For Hiring
+
+Reason Types:
+
+* New Position
+* Replacement
+* Expansion
+* Temporary Requirement
+
+Status:
+
+* Draft
+* Submitted
+* Approved
+* Rejected
+* Closed
+
+---
+
+# Job Openings
+
+Create openings from approved requisitions.
+
+Fields:
+
+* Opening Number
+* Requisition
+* Job Title
+* Company
+* Branch
+* Department
+* Designation
+* Number Of Vacancies
+* Employment Type
+* Employee Category
+* Experience Required
+* Location
+* Salary Range
+* Application Deadline
+
+Status:
+
+* Open
+* On Hold
+* Closed
+* Filled
+
+---
+
+# Candidates
+
+Fields:
+
+Basic Information
+
+* Candidate Number
+* First Name *
+* Last Name *
+* Email *
+* Mobile Number *
+* Date Of Birth
+* Gender
+
+Professional Information
+
+* Total Experience
+* Relevant Experience
+* Current Company
+* Current Designation
+* Current Salary
+* Expected Salary
+* Notice Period
+
+Application Information
+
+* Source
+
+Sources:
+
+* Referral
+
+* LinkedIn
+
+* Job Portal
+
+* Company Website
+
+* Walk In
+
+* Recruitment Agency
+
+* Internal Database
+
+* Applied Position
+
+* Assigned Recruiter
+
+Status:
+
+* Applied
+* Screening
+* Shortlisted
+* Interview Scheduled
+* Selected
+* Offered
+* Joined
+* Rejected
+* Withdrawn
+
+---
+
+# Resume Management
+
+Support:
+
+* Resume Upload
+* Resume Preview
+* Resume Download
+
+Supported Formats:
+
+* PDF
+* DOC
+* DOCX
+
+Storage:
+
+* Local Storage (Current)
+* AWS S3 (Future)
+
+Design storage abstraction accordingly.
+
+---
+
+# Candidate Documents
+
+Support uploads for:
+
+* Resume
+* Portfolio
+* Identity Proof
+* Educational Certificates
+* Experience Letters
+* Other Documents
+
+Track:
+
+* Document Type
+* Upload Date
+* Verification Status
+
+---
+
+# Candidate Activities
+
+Track:
+
+* Candidate Created
+* Resume Uploaded
+* Status Changed
+* Interview Scheduled
+* Offer Sent
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Offer Management
+
+Fields:
+
+* Offer Number
+* Candidate
+* Offered Designation
+* Offered Department
+* Offered Branch
+* Joining Date
+* Offered Salary
+* Offer Expiry Date
+
+Status:
+
+* Draft
+* Sent
+* Accepted
+* Rejected
+* Expired
+
+Rules:
+
+Accepted offer should trigger:
+
+Employee Onboarding Workflow
+
+---
+
+# Candidate To Employee Conversion
+
+When offer status becomes:
+
+Accepted
+
+System should:
+
+* Create Employee Record
+* Map Company
+* Map Branch
+* Map Department
+* Map Designation
+* Transfer Candidate Documents
+* Create Employee Profile
+* Start Onboarding Process
+
+Maintain reference:
+
+candidate_id → employee_id
+
+---
+
+# UI Design
+
+## Dashboard
+
+Widgets:
+
+* Open Positions
+* Total Candidates
+* Interviews Scheduled
+* Offers Sent
+* Positions Filled
+
+---
+
+## Job Requisition List
+
+Columns:
+
+* Requisition Number
+* Department
+* Designation
+* Vacancies
+* Status
+
+---
+
+## Job Opening List
+
+Columns:
+
+* Opening Number
+* Position
+* Department
+* Vacancies
+* Status
+
+---
+
+## Candidate List
+
+Columns:
+
+* Candidate Name
+* Applied Position
+* Experience
+* Source
+* Status
+
+Filters:
+
+* Company
+* Department
+* Recruiter
+* Status
+* Source
+
+Search:
+
+* Candidate Name
+* Email
+* Mobile
+
+---
+
+## Candidate Profile
+
+Tabs:
+
+* Overview
+* Resume
+* Documents
+* Interviews
+* Activities
+
+---
+
+# Database Design
+
+Design tables:
+
+job_requisitions
+
+job_openings
+
+candidates
+
+candidate_documents
+
+offers
+
+candidate_activities
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+* Relationships
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+* Enums
+
+Use SQLAlchemy 2.0 standards.
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_050_job_requisitions
+
+2026_051_job_openings
+
+2026_052_candidates
+
+2026_053_candidate_documents
+
+2026_054_offers
+
+2026_055_candidate_activities
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Job Requisitions
+
+* Create
+* Update
+* Get
+* List
+* Approve
+* Reject
+
+Job Openings
+
+* Create
+* Update
+* Get
+* List
+
+Candidates
+
+* Create
+* Update
+* Get
+* List
+* Change Status
+
+Offers
+
+* Create
+* Send
+* Accept
+* Reject
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Requisition Repository
+* Job Opening Repository
+* Candidate Repository
+* Offer Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Recruitment Service
+* Candidate Service
+* Offer Service
+* Candidate Conversion Service
+
+Include:
+
+* Business Rules
+* Validation Logic
+* Candidate To Employee Conversion Logic
+
+---
+
+# Validation Rules
+
+* Department Required
+* Designation Required
+* Candidate Email Unique Per Opening
+* Offer Expiry Date >= Offer Date
+* Joining Date >= Offer Date
+
+---
+
+# Activity Logging
+
+Track:
+
+* Requisition Created
+* Opening Created
+* Candidate Added
+* Candidate Status Changed
+* Offer Sent
+* Offer Accepted
+* Employee Created
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Seed Data
+
+Generate:
+
+* Sample Job Requisitions
+* Sample Job Openings
+* Sample Candidates
+
+Use existing:
+
+* Companies
+* Branches
+* Departments
+* Designations
+
+Generate production-ready specifications suitable for direct implementation in Office Repo using FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, React and TailwindCSS.

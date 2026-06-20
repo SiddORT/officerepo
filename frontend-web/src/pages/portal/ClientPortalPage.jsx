@@ -27,6 +27,19 @@ import EmployeeDocForm from "./employee-documents/EmployeeDocForm";
 import EmployeeDocDetails from "./employee-documents/EmployeeDocDetails";
 import DocTypeList from "./employee-documents/DocTypeList";
 
+// Recruitment pages
+import RecruitmentDashboard from "./recruitment/RecruitmentDashboard";
+import RequisitionList from "./recruitment/RequisitionList";
+import RequisitionForm from "./recruitment/RequisitionForm";
+import RequisitionDetails from "./recruitment/RequisitionDetails";
+import JobOpeningList from "./recruitment/JobOpeningList";
+import JobOpeningForm from "./recruitment/JobOpeningForm";
+import CandidateList from "./recruitment/CandidateList";
+import CandidateForm from "./recruitment/CandidateForm";
+import CandidateDetails from "./recruitment/CandidateDetails";
+import OfferList from "./recruitment/OfferList";
+import OfferForm from "./recruitment/OfferForm";
+
 // Asset Management pages
 import AssetCategories from "./assets/AssetCategories";
 import AssetSubCategoryList from "./assets/AssetSubCategoryList";
@@ -167,6 +180,29 @@ function PortalRoutes() {
       <Route path="/assets/inventory"          element={<Protected><AssetInventoryList /></Protected>} />
       <Route path="/assets"   element={<Navigate to={`/portal/${subdomain}/assets/inventory`} replace />} />
       <Route path="/assets/*" element={<Navigate to={`/portal/${subdomain}/assets/inventory`} replace />} />
+
+      {/* ── Recruitment ───────────────────────────────────────────── */}
+      <Route path="/recruitment" element={<Protected><PortalLayout title="Recruitment"><RecruitmentDashboard /></PortalLayout></Protected>} />
+
+      <Route path="/recruitment/requisitions/new"         element={<Protected><PortalLayout title="New Requisition"><RequisitionForm editMode={false} /></PortalLayout></Protected>} />
+      <Route path="/recruitment/requisitions/:reqId/edit" element={<Protected><PortalLayout title="Edit Requisition"><RequisitionForm editMode={true} /></PortalLayout></Protected>} />
+      <Route path="/recruitment/requisitions/:reqId"      element={<Protected><PortalLayout title="Requisition Details"><RequisitionDetails /></PortalLayout></Protected>} />
+      <Route path="/recruitment/requisitions"             element={<Protected><PortalLayout title="Job Requisitions"><RequisitionList /></PortalLayout></Protected>} />
+
+      <Route path="/recruitment/openings/new"             element={<Protected><PortalLayout title="New Opening"><JobOpeningForm editMode={false} /></PortalLayout></Protected>} />
+      <Route path="/recruitment/openings/:openingId/edit" element={<Protected><PortalLayout title="Edit Opening"><JobOpeningForm editMode={true} /></PortalLayout></Protected>} />
+      <Route path="/recruitment/openings"                 element={<Protected><PortalLayout title="Job Openings"><JobOpeningList /></PortalLayout></Protected>} />
+
+      <Route path="/recruitment/candidates/new"           element={<Protected><PortalLayout title="Add Candidate"><CandidateForm editMode={false} /></PortalLayout></Protected>} />
+      <Route path="/recruitment/candidates/:candId/edit"  element={<Protected><PortalLayout title="Edit Candidate"><CandidateForm editMode={true} /></PortalLayout></Protected>} />
+      <Route path="/recruitment/candidates/:candId"       element={<Protected><PortalLayout title="Candidate Details"><CandidateDetails /></PortalLayout></Protected>} />
+      <Route path="/recruitment/candidates"               element={<Protected><PortalLayout title="Candidates"><CandidateList /></PortalLayout></Protected>} />
+
+      <Route path="/recruitment/offers/new"               element={<Protected><PortalLayout title="Create Offer"><OfferForm editMode={false} /></PortalLayout></Protected>} />
+      <Route path="/recruitment/offers/:offerId/edit"     element={<Protected><PortalLayout title="Edit Offer"><OfferForm editMode={true} /></PortalLayout></Protected>} />
+      <Route path="/recruitment/offers"                   element={<Protected><PortalLayout title="Offers"><OfferList /></PortalLayout></Protected>} />
+
+      <Route path="/recruitment/*" element={<Navigate to={`/portal/${subdomain}/recruitment`} replace />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to={user ? `/portal/${subdomain}/dashboard` : `/portal/${subdomain}`} replace />} />

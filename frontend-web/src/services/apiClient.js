@@ -569,6 +569,52 @@ export const portalEmpDocApi = {
   downloadUrl: (sd, id, v)     => `${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/${id}/download${v != null ? `?version=${v}` : ""}`,
 };
 
+// ── Portal Recruitment API ────────────────────────────────────────────────────
+const _rh = (sd, tk) => ({ headers: { Authorization: `Bearer ${tk}` } });
+const _rurl = (sd, path) => `${API_BASE_URL}/api/v1/portal/${sd}/recruitment${path}`;
+
+export const portalRecruitmentApi = {
+  metaOptions:   (sd, tk)           => axios.get(_rurl(sd, "/meta/options"), _rh(sd, tk)),
+  dashboard:     (sd, tk)           => axios.get(_rurl(sd, "/dashboard"), _rh(sd, tk)),
+
+  listRequisitions:  (sd, tk, p)    => axios.get(_rurl(sd, "/requisitions"), { ..._rh(sd, tk), params: p }),
+  getRequisition:    (sd, tk, id)   => axios.get(_rurl(sd, `/requisitions/${id}`), _rh(sd, tk)),
+  createRequisition: (sd, tk, d)    => axios.post(_rurl(sd, "/requisitions"), d, _rh(sd, tk)),
+  updateRequisition: (sd, tk, id, d)=> axios.patch(_rurl(sd, `/requisitions/${id}`), d, _rh(sd, tk)),
+  deleteRequisition: (sd, tk, id)   => axios.delete(_rurl(sd, `/requisitions/${id}`), _rh(sd, tk)),
+  submitRequisition: (sd, tk, id)   => axios.post(_rurl(sd, `/requisitions/${id}/submit`), {}, _rh(sd, tk)),
+  approveRequisition:(sd, tk, id)   => axios.post(_rurl(sd, `/requisitions/${id}/approve`), {}, _rh(sd, tk)),
+  rejectRequisition: (sd, tk, id, d)=> axios.post(_rurl(sd, `/requisitions/${id}/reject`), d, _rh(sd, tk)),
+
+  listOpenings:  (sd, tk, p)        => axios.get(_rurl(sd, "/openings"), { ..._rh(sd, tk), params: p }),
+  getOpening:    (sd, tk, id)       => axios.get(_rurl(sd, `/openings/${id}`), _rh(sd, tk)),
+  createOpening: (sd, tk, d)        => axios.post(_rurl(sd, "/openings"), d, _rh(sd, tk)),
+  updateOpening: (sd, tk, id, d)    => axios.patch(_rurl(sd, `/openings/${id}`), d, _rh(sd, tk)),
+  deleteOpening: (sd, tk, id)       => axios.delete(_rurl(sd, `/openings/${id}`), _rh(sd, tk)),
+
+  listCandidates:  (sd, tk, p)      => axios.get(_rurl(sd, "/candidates"), { ..._rh(sd, tk), params: p }),
+  getCandidate:    (sd, tk, id)     => axios.get(_rurl(sd, `/candidates/${id}`), _rh(sd, tk)),
+  createCandidate: (sd, tk, d)      => axios.post(_rurl(sd, "/candidates"), d, _rh(sd, tk)),
+  updateCandidate: (sd, tk, id, d)  => axios.patch(_rurl(sd, `/candidates/${id}`), d, _rh(sd, tk)),
+  deleteCandidate: (sd, tk, id)     => axios.delete(_rurl(sd, `/candidates/${id}`), _rh(sd, tk)),
+  changeStatus:    (sd, tk, id, d)  => axios.post(_rurl(sd, `/candidates/${id}/status`), d, _rh(sd, tk)),
+  uploadResume:    (sd, tk, id, fd) => axios.post(_rurl(sd, `/candidates/${id}/resume`), fd, { headers: { Authorization: `Bearer ${tk}`, "Content-Type": "multipart/form-data" } }),
+  downloadResume:  (sd, tk, id)     => axios.get(_rurl(sd, `/candidates/${id}/resume/download`), { ..._rh(sd, tk), responseType: "blob" }),
+  listCandidateDocs: (sd, tk, id)   => axios.get(_rurl(sd, `/candidates/${id}/documents`), _rh(sd, tk)),
+  uploadDoc:       (sd, tk, id, fd) => axios.post(_rurl(sd, `/candidates/${id}/documents`), fd, { headers: { Authorization: `Bearer ${tk}`, "Content-Type": "multipart/form-data" } }),
+  deleteDoc:       (sd, tk, id, did)=> axios.delete(_rurl(sd, `/candidates/${id}/documents/${did}`), _rh(sd, tk)),
+  downloadDoc:     (sd, tk, id, did)=> axios.get(_rurl(sd, `/candidates/${id}/documents/${did}/download`), { ..._rh(sd, tk), responseType: "blob" }),
+  getCandidateActivities: (sd, tk, id) => axios.get(_rurl(sd, `/candidates/${id}/activities`), _rh(sd, tk)),
+
+  listOffers:  (sd, tk, p)          => axios.get(_rurl(sd, "/offers"), { ..._rh(sd, tk), params: p }),
+  getOffer:    (sd, tk, id)         => axios.get(_rurl(sd, `/offers/${id}`), _rh(sd, tk)),
+  createOffer: (sd, tk, d)          => axios.post(_rurl(sd, "/offers"), d, _rh(sd, tk)),
+  updateOffer: (sd, tk, id, d)      => axios.patch(_rurl(sd, `/offers/${id}`), d, _rh(sd, tk)),
+  sendOffer:   (sd, tk, id)         => axios.post(_rurl(sd, `/offers/${id}/send`), {}, _rh(sd, tk)),
+  acceptOffer: (sd, tk, id)         => axios.post(_rurl(sd, `/offers/${id}/accept`), {}, _rh(sd, tk)),
+  rejectOffer: (sd, tk, id, d)      => axios.post(_rurl(sd, `/offers/${id}/reject`), d, _rh(sd, tk)),
+};
+
 // ── Asset Management Setup (superadmin — categories, sub-categories, masters) ─
 const ASSETS = "/superadmin/assets";
 
