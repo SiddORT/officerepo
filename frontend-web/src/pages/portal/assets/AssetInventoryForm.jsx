@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { portalAssetApi } from "../../../services/apiClient";
+import { portalAssetApi, portalOrgApi, portalEmployeeApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import AssetLayout from "./AssetLayout";
 
@@ -80,12 +80,10 @@ export default function AssetInventoryForm({ editMode = false }) {
       setMaintenanceFreqs(d.maintenance_frequencies || []);
       setCurrencies(d.currencies || []);
     }).catch(() => {});
-    import("../../../services/apiClient").then(({ default: _, portalOrgApi, portalEmployeeApi }) => {
-      portalOrgApi?.listCompanies?.(subdomain, token, { page_size: 200 }).then(r => setCompanies(r.data?.data?.items || [])).catch(() => {});
-      portalOrgApi?.listBranches?.(subdomain, token, { page_size: 200 }).then(r => setBranches(r.data?.data?.items || [])).catch(() => {});
-      portalOrgApi?.listDepartments?.(subdomain, token, { page_size: 200 }).then(r => setDepartments(r.data?.data?.items || [])).catch(() => {});
-      portalEmployeeApi?.listEmployees?.(subdomain, token, { page_size: 200 }).then(r => setEmployees(r.data?.data?.items || [])).catch(() => {});
-    });
+    portalOrgApi.listCompanies(subdomain, token, { page_size: 200 }).then(r => setCompanies(r.data?.data?.items || [])).catch(() => {});
+    portalOrgApi.listBranches(subdomain, token, { page_size: 200 }).then(r => setBranches(r.data?.data?.items || [])).catch(() => {});
+    portalOrgApi.listDepts(subdomain, token, { page_size: 200 }).then(r => setDepartments(r.data?.data?.items || [])).catch(() => {});
+    portalEmployeeApi.list(subdomain, token, { page_size: 200 }).then(r => setEmployees(r.data?.data?.items || [])).catch(() => {});
     if (editMode && assetId) {
       portalAssetApi.getInventoryItem(subdomain, token, assetId).then(r => {
         const d = r.data?.data || {};

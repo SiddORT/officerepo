@@ -113,6 +113,7 @@ export default function AssetInventoryList() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
+                <th style={{ ...hdr, width: 40 }}>Sr.</th>
                 <th style={hdr}>Asset #</th>
                 <th style={hdr}>Name</th>
                 <th style={hdr}>Category</th>
@@ -125,15 +126,18 @@ export default function AssetInventoryList() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} style={{ ...cell, textAlign: "center", color: "var(--c-muted)", padding: 32 }}>Loading…</td></tr>
+                <tr><td colSpan={9} style={{ ...cell, textAlign: "center", color: "var(--c-muted)", padding: 32 }}>Loading…</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={8} style={{ ...cell, textAlign: "center", color: "var(--c-muted)", padding: 40 }}>
+                <tr><td colSpan={9} style={{ ...cell, textAlign: "center", color: "var(--c-muted)", padding: 40 }}>
                   No assets found. Add your first asset to get started.
                 </td></tr>
-              ) : rows.map(r => (
+              ) : rows.map((r, idx) => (
                 <tr key={r.id} style={{ cursor: "pointer" }}
                   onMouseEnter={e => e.currentTarget.style.background = "var(--c-surface-alt,rgba(255,255,255,0.03))"}
                   onMouseLeave={e => e.currentTarget.style.background = ""}>
+                  <td style={{ ...cell, textAlign: "center", color: "var(--c-muted)", fontSize: 12 }}>
+                    {(page - 1) * PAGE_SIZE + idx + 1}
+                  </td>
                   <td style={cell}>
                     <span style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 700, color: "var(--c-accent)" }}>{r.asset_number}</span>
                   </td>
