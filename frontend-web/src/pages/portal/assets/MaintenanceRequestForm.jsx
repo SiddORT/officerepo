@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAssetMaintenanceApi, portalAssetInventoryApi } from "../../../services/apiClient";
+import AssetLayout from "./AssetLayout";
 
 export default function MaintenanceRequestForm() {
-  const { subdomain, token } = useOutletContext();
+  const { subdomain } = useParams();
+  const { token } = usePortalAuth();
   const navigate = useNavigate();
 
   const [meta, setMeta] = useState(null);
@@ -69,6 +72,7 @@ export default function MaintenanceRequestForm() {
   const LABEL = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
 
   return (
+    <AssetLayout title="New Maintenance Request">
     <div className="p-6 max-w-2xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => navigate("..")} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
@@ -214,5 +218,6 @@ export default function MaintenanceRequestForm() {
         </div>
       </form>
     </div>
+    </AssetLayout>
   );
 }

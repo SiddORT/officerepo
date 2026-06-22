@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAssetMaintenanceApi } from "../../../services/apiClient";
+import AssetLayout from "./AssetLayout";
 
 const PRIORITY_COLOR = {
   Critical: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
@@ -22,7 +24,8 @@ const STATUS_COLOR = {
 };
 
 export default function MaintenanceList() {
-  const { subdomain, token } = useOutletContext();
+  const { subdomain } = useParams();
+  const { token } = usePortalAuth();
   const navigate = useNavigate();
 
   const [dashboard, setDashboard] = useState(null);
@@ -80,6 +83,7 @@ export default function MaintenanceList() {
   ] : [];
 
   return (
+    <AssetLayout title="Asset Maintenance">
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -219,5 +223,6 @@ export default function MaintenanceList() {
         )}
       </div>
     </div>
+    </AssetLayout>
   );
 }

@@ -97,36 +97,36 @@ export default function TransferForm() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(`/portal/${subdomain}/assets/transfers`)}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">New Transfer Request</h1>
-            <p className="text-sm text-gray-500">Initiate an asset transfer to another assignee</p>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">New Transfer Request</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Initiate an asset transfer to another assignee</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Source Assignment */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Source Assignment</h2>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Source Assignment</h2>
             {loadingAsgn ? (
               <p className="text-sm text-gray-400">Loading active assignments…</p>
             ) : assignments.length === 0 ? (
               <p className="text-sm text-amber-600">No active assignments found. Only active assignments can be transferred.</p>
             ) : (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Select Assignment <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={form.from_assignment_id}
                   onChange={e => set("from_assignment_id", e.target.value)}
                   required
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">— Select an active assignment —</option>
                   {assignments.map(a => (
@@ -152,29 +152,29 @@ export default function TransferForm() {
           </div>
 
           {/* Transfer Classification */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Transfer Type</h2>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Transfer Type</h2>
 
             <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={form.is_temporary}
                   onChange={e => set("is_temporary", e.target.checked)}
-                  className="rounded border-gray-300 text-purple-600"
+                  className="rounded border-gray-300 dark:border-gray-600 text-purple-600"
                 />
                 <span className="font-medium">Temporary Transfer</span>
               </label>
-              <span className="text-xs text-gray-400">(asset returns to original assignee after end date)</span>
+              <span className="text-xs text-gray-400 dark:text-gray-500">(asset returns to original assignee after end date)</span>
             </div>
 
             {!form.is_temporary && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Transfer Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Transfer Type</label>
                 <select
                   value={form.transfer_type}
                   onChange={e => set("transfer_type", e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {TRANSFER_TYPES.filter(t => t !== "Temporary Transfer").map(t => (
                     <option key={t} value={t}>{t}</option>
@@ -184,11 +184,11 @@ export default function TransferForm() {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Reason</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reason</label>
               <select
                 value={form.transfer_reason}
                 onChange={e => set("transfer_reason", e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">— Select reason —</option>
                 {TRANSFER_REASONS.map(r => (
@@ -199,12 +199,12 @@ export default function TransferForm() {
           </div>
 
           {/* Destination */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Destination</h2>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Destination</h2>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Target Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -212,15 +212,15 @@ export default function TransferForm() {
                   value={form.to_assignee_name}
                   onChange={e => { set("to_assignee_name", e.target.value); set("to_employee_name", e.target.value); }}
                   placeholder="Employee / Dept / Branch name"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Assignee Type</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assignee Type</label>
                 <select
                   value={form.to_assignee_type}
                   onChange={e => set("to_assignee_type", e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {["Employee","Department","Branch","Company"].map(t => (
                     <option key={t} value={t}>{t}</option>
@@ -231,69 +231,69 @@ export default function TransferForm() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Branch (optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Branch (optional)</label>
                 <input
                   type="text"
                   value={form.to_branch_name}
                   onChange={e => set("to_branch_name", e.target.value)}
                   placeholder="Target branch name"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Department (optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department (optional)</label>
                 <input
                   type="text"
                   value={form.to_department_name}
                   onChange={e => set("to_department_name", e.target.value)}
                   placeholder="Target department name"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
           </div>
 
           {/* Schedule */}
-          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Schedule</h2>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 space-y-4">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Schedule</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Transfer Date</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Transfer Date</label>
                 <input
                   type="date"
                   value={form.transfer_date}
                   onChange={e => set("transfer_date", e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               {form.is_temporary && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Expected Return Date <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="date"
                     value={form.expected_return_date}
                     onChange={e => set("expected_return_date", e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Remarks</label>
               <textarea
                 rows={3}
                 value={form.remarks}
                 onChange={e => set("remarks", e.target.value)}
                 placeholder="Additional notes or context…"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-4 py-3 text-sm text-red-700 dark:text-red-400">
               {error}
             </div>
           )}
@@ -309,7 +309,7 @@ export default function TransferForm() {
             <button
               type="button"
               onClick={() => navigate(`/portal/${subdomain}/assets/transfers`)}
-              className="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Cancel
             </button>

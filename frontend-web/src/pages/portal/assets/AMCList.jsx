@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAssetMaintenanceApi, portalAssetInventoryApi } from "../../../services/apiClient";
+import AssetLayout from "./AssetLayout";
 
 const STATUS_COLOR = {
   Active:  "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
@@ -15,7 +17,8 @@ function daysUntil(dateStr) {
 }
 
 export default function AMCList() {
-  const { subdomain, token } = useOutletContext();
+  const { subdomain } = useParams();
+  const { token } = usePortalAuth();
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -92,6 +95,7 @@ export default function AMCList() {
   const LABEL = "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-0.5";
 
   return (
+    <AssetLayout title="AMC Contracts">
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -287,5 +291,6 @@ export default function AMCList() {
         </div>
       )}
     </div>
+    </AssetLayout>
   );
 }

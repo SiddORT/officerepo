@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate, useOutletContext } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
+import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAssetMaintenanceApi } from "../../../services/apiClient";
+import AssetLayout from "./AssetLayout";
 
 const PRIORITY_COLOR = {
   Critical: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
@@ -38,8 +40,8 @@ const NEXT_STATUS_MAP = {
 };
 
 export default function MaintenanceRequestDetails() {
-  const { subdomain, token } = useOutletContext();
-  const { requestId } = useParams();
+  const { subdomain, requestId } = useParams();
+  const { token } = usePortalAuth();
   const navigate = useNavigate();
 
   const [req, setReq] = useState(null);
@@ -86,8 +88,8 @@ export default function MaintenanceRequestDetails() {
     }
   };
 
-  if (loading) return <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading…</div>;
-  if (error || !req) return <div className="p-10 text-center text-red-500">{error || "Not found."}</div>;
+  if (loading) return <AssetLayout><div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading…</div></AssetLayout>;
+  if (error || !req) return <AssetLayout><div className="p-10 text-center text-red-500">{error || "Not found."}</div></AssetLayout>;
 
   const canTransition = !!NEXT_STATUS_MAP[req.status];
   const nextStatuses  = NEXT_STATUS_MAP[req.status] || [];
@@ -106,6 +108,7 @@ export default function MaintenanceRequestDetails() {
   const MD = (k, v) => setModalData(d => ({ ...d, [k]: v }));
 
   return (
+    <AssetLayout title={req.request_number}>
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between">
@@ -564,5 +567,6 @@ export default function MaintenanceRequestDetails() {
         </div>
       )}
     </div>
+    </AssetLayout>
   );
 }
