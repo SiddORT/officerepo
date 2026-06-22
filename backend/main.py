@@ -81,6 +81,7 @@ from backend.app.modules.asset_management.inventory_router import router as port
 from backend.app.modules.asset_management.assignment_router import router as portal_asset_assignment_router
 from backend.app.modules.asset_management.asset_request_router import router as portal_asset_request_router
 from backend.app.modules.asset_management.return_router import router as portal_asset_return_router
+from backend.app.modules.asset_management.transfer_router import router as portal_asset_transfer_router
 from backend.app.modules.employee_document_management.router import router as portal_emp_docs_router
 from backend.app.modules.recruitment.router import router as portal_recruitment_router
 from backend.app.modules.interview.router import router as portal_interview_router
@@ -514,6 +515,7 @@ def create_app(app_settings=settings) -> FastAPI:
     app.include_router(portal_asset_assignment_router, prefix=f"{prefix}/portal", tags=["portal asset assignments"])
     app.include_router(portal_asset_request_router,    prefix=f"{prefix}/portal", tags=["portal asset requests"])
     app.include_router(portal_asset_return_router,     prefix=f"{prefix}/portal", tags=["portal asset returns"])
+    app.include_router(portal_asset_transfer_router,   prefix=f"{prefix}/portal", tags=["portal asset transfers"])
     app.include_router(portal_emp_docs_router, prefix=f"{prefix}/portal", tags=["portal employee documents"])
     app.include_router(portal_recruitment_router, prefix=f"{prefix}/portal", tags=["portal recruitment"])
     app.include_router(portal_interview_router,   prefix=f"{prefix}/portal", tags=["portal interview management"])

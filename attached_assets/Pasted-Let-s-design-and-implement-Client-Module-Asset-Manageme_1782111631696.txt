@@ -1,0 +1,701 @@
+Let's design and implement Client Module → Asset Management → Asset Maintenance for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Completed Modules:
+
+* Asset Categories
+* Asset Subcategories
+* Asset Inventory
+* Asset Requests
+* Asset Assignments
+* Asset Returns
+* Employees
+* Companies
+* Branches
+* Departments
+
+Asset Maintenance must integrate tightly with:
+
+* Asset Inventory
+* Asset Assignments
+* Employees
+* Vendors
+* Procurement
+* Notifications
+* Workflow Engine
+
+Module Hierarchy:
+
+Asset Management
+└── Asset Maintenance
+
+Module Code:
+
+ASSET_MAINTENANCE
+
+Purpose:
+
+Manage preventive maintenance, corrective maintenance, repairs, warranties, AMC contracts, downtime tracking and complete service history for all assets.
+
+The module must maintain a complete maintenance timeline for every asset and provide visibility into asset health, reliability and maintenance costs.
+
+---
+
+# Maintenance Workflow
+
+Asset
+↓
+Issue Reported
+↓
+Maintenance Request
+↓
+Inspection
+↓
+Work Order
+↓
+Repair / Service
+↓
+Quality Check
+↓
+Asset Available
+
+Alternative Flows:
+
+* Warranty Claim
+* AMC Service
+* Vendor Repair
+* Asset Replacement
+* Asset Disposal Recommendation
+
+---
+
+# Maintenance Types
+
+Support:
+
+* Preventive Maintenance
+* Corrective Maintenance
+* Breakdown Maintenance
+* Scheduled Service
+* Calibration
+* Warranty Repair
+* AMC Service
+
+---
+
+# Maintenance Request
+
+Fields:
+
+* Request Number *
+* Asset *
+* Reported By *
+* Maintenance Type *
+* Issue Category *
+* Issue Description *
+* Priority *
+* Reported Date *
+* Estimated Downtime
+
+Priority:
+
+* Low
+* Medium
+* High
+* Critical
+
+Issue Categories:
+
+* Hardware
+* Software
+* Electrical
+* Mechanical
+* Network
+* Performance
+* Calibration
+* Physical Damage
+
+Status:
+
+* Open
+* Assigned
+* Under Inspection
+* Under Repair
+* Waiting For Parts
+* Quality Check
+* Completed
+* Closed
+* Cancelled
+
+Support:
+
+* Single Asset Request
+* Bulk Maintenance Requests
+
+---
+
+# QR & Barcode Support
+
+Support:
+
+* QR Code Scan
+* Barcode Scan
+* Manual Search
+
+Scanning an asset should automatically:
+
+* Open asset profile
+* Create maintenance request
+* View maintenance history
+* View warranty information
+* View AMC details
+* View assignment details
+
+Support mobile scanning in future ESS mobile application.
+
+Design APIs accordingly.
+
+---
+
+# Work Orders
+
+Generate maintenance work orders.
+
+Fields:
+
+* Work Order Number *
+* Maintenance Request *
+* Assigned Vendor
+* Assigned Technician
+* Planned Start Date
+* Planned End Date
+* Actual Start Date
+* Actual End Date
+* Resolution Notes
+
+Status:
+
+* Pending
+* In Progress
+* Completed
+* Cancelled
+
+Track:
+
+* Parts Used
+* Labor Hours
+* Service Charges
+
+---
+
+# Vendor Integration
+
+Track:
+
+* Service Vendor
+* Warranty Provider
+* AMC Vendor
+
+Fields:
+
+* Vendor Name
+* Contact Person
+* Service SLA
+* Support Contract Number
+
+Future Integration:
+
+* Procurement
+* Vendor Management
+
+Do not implement procurement workflows now.
+
+Design APIs for future support.
+
+---
+
+# Warranty Management
+
+Track:
+
+* Warranty Provider
+* Warranty Start Date
+* Warranty End Date
+* Coverage Details
+* Claim Process
+
+Status:
+
+* Active
+* Expired
+* Extended
+
+Generate alerts:
+
+* 90 Days Before Expiry
+* 60 Days Before Expiry
+* 30 Days Before Expiry
+
+---
+
+# AMC Management
+
+Track:
+
+* AMC Number
+* Vendor
+* Contract Value
+* Coverage
+* Start Date
+* End Date
+* Renewal Date
+
+Status:
+
+* Active
+* Expired
+* Renewed
+
+Generate renewal reminders.
+
+---
+
+# Asset Downtime Tracking
+
+Automatically calculate:
+
+* Downtime Start
+* Downtime End
+* Total Downtime Hours
+
+Track:
+
+* Number Of Breakdowns
+* MTTR (Mean Time To Repair)
+* MTBF (Mean Time Between Failures)
+
+Downtime starts when:
+
+Status changes to:
+
+Under Maintenance
+
+Downtime ends when:
+
+Status changes to:
+
+Available
+
+Generate downtime analytics.
+
+Examples:
+
+* Machine unavailable for 16 hours
+* Laptop unavailable for 2 business days
+
+---
+
+# Maintenance Cost Tracking
+
+Track:
+
+* Labor Cost
+* Spare Parts Cost
+* Vendor Charges
+* Transportation Cost
+* Miscellaneous Cost
+
+Calculate:
+
+* Total Work Order Cost
+* Monthly Maintenance Cost
+* Annual Maintenance Cost
+* Lifetime Maintenance Cost
+
+Display cost trends.
+
+---
+
+# Inventory Integration
+
+Integrate with existing Asset Inventory.
+
+Do not duplicate asset records.
+
+Use existing:
+
+assets
+
+Status Flow:
+
+Assigned
+↓
+Under Maintenance
+↓
+Available
+
+Available
+↓
+Under Maintenance
+↓
+Available
+
+Assigned
+↓
+Under Maintenance
+↓
+Disposed
+
+Asset Inventory must reflect:
+
+* Current Status
+* Maintenance Status
+* Downtime Hours
+* Last Service Date
+* Next Service Date
+
+Prevent assignment of assets under maintenance.
+
+---
+
+# Asset Assignment Integration
+
+Display current assignment.
+
+Show:
+
+* Current Employee
+* Department
+* Branch
+
+If assigned asset enters maintenance:
+
+Notify assignee.
+
+Support replacement workflow through Asset Requests.
+
+---
+
+# Asset Profile Integration
+
+Enhance asset detail page.
+
+Add tabs:
+
+* Overview
+* Assignments
+* Documents
+* Warranty
+* AMC
+* Maintenance
+* Work Orders
+* Service History
+* Downtime Analytics
+* Activities
+
+Display:
+
+* Last Maintenance Date
+* Next Maintenance Date
+* Total Maintenance Cost
+* Total Downtime
+* MTTR
+* MTBF
+
+Provide quick actions:
+
+* Raise Maintenance Request
+* View Service History
+* Download Service Reports
+
+---
+
+# Service History
+
+Maintain immutable history.
+
+Track:
+
+* Maintenance Requests
+* Work Orders
+* Repairs
+* Vendor Visits
+* Parts Replaced
+* Costs
+* Downtime
+
+Display chronological timeline.
+
+Do not delete maintenance history.
+
+---
+
+# Maintenance Calendar
+
+Display:
+
+* Scheduled Services
+* Preventive Maintenance
+* AMC Renewals
+* Warranty Expiry
+
+Views:
+
+* Day
+* Week
+* Month
+
+Filters:
+
+* Company
+* Branch
+* Category
+* Asset
+* Vendor
+
+---
+
+# Dashboard Widgets
+
+* Open Maintenance Requests
+* Assets Under Maintenance
+* Critical Breakdowns
+* Warranty Expiring Soon
+* AMC Renewals Due
+* Downtime This Month
+* Maintenance Cost This Month
+
+---
+
+# Reports
+
+Generate:
+
+* Maintenance Register
+* Maintenance Cost Report
+* Downtime Report
+* Asset Reliability Report
+* MTTR Report
+* MTBF Report
+* Warranty Expiry Report
+* AMC Renewal Report
+* Vendor Performance Report
+
+Filters:
+
+* Company
+* Branch
+* Category
+* Asset
+* Vendor
+* Date Range
+
+Support:
+
+* PDF Export
+* Excel Export
+
+---
+
+# Notifications
+
+Send alerts for:
+
+* Maintenance Request Created
+* Work Order Assigned
+* Maintenance Completed
+* Warranty Expiring
+* AMC Renewal Due
+* Asset Downtime Threshold Exceeded
+
+Channels:
+
+* Email
+* SMS
+* Push Notification
+
+Use Notification Settings module.
+
+---
+
+# Database Design
+
+Design tables:
+
+asset_maintenance_requests
+
+asset_work_orders
+
+asset_work_order_parts
+
+asset_service_history
+
+asset_warranties
+
+asset_amc_contracts
+
+asset_downtime_logs
+
+asset_maintenance_costs
+
+asset_maintenance_activities
+
+Do not duplicate:
+
+assets
+
+asset_assignments
+
+vendors
+
+Use relationships only.
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+* Relationships
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+* Enums
+
+Use SQLAlchemy 2.0 standards.
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_170_asset_maintenance_requests
+
+2026_171_asset_work_orders
+
+2026_172_asset_service_history
+
+2026_173_asset_warranties
+
+2026_174_asset_amc_contracts
+
+2026_175_asset_downtime_logs
+
+2026_176_asset_maintenance_costs
+
+2026_177_asset_maintenance_activities
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Maintenance
+
+* Create Maintenance Request
+* Update Maintenance Request
+* Close Maintenance Request
+
+Work Orders
+
+* Create Work Order
+* Assign Vendor
+* Complete Work Order
+
+Warranty
+
+* Register Warranty
+* Extend Warranty
+
+AMC
+
+* Create AMC Contract
+* Renew AMC
+
+Reports
+
+* Get Downtime Report
+* Get Maintenance Summary
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Maintenance Repository
+* Work Order Repository
+* Warranty Repository
+* AMC Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Maintenance Service
+* Work Order Service
+* Downtime Service
+* Warranty Service
+* AMC Service
+
+Include:
+
+* Downtime Calculation Logic
+* Cost Calculation Logic
+* Inventory Status Update Logic
+* Notification Logic
+
+---
+
+# Validation Rules
+
+* Asset must exist
+* Asset cannot have multiple active maintenance requests
+* Maintenance completion requires closure notes
+* Warranty dates must be valid
+* AMC renewal date required
+
+Prevent assignment while asset is under maintenance.
+
+---
+
+# Activity Logging
+
+Track:
+
+* Maintenance Requested
+* Work Order Created
+* Vendor Assigned
+* Maintenance Completed
+* Warranty Updated
+* AMC Renewed
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+Generate production-ready specifications suitable for direct implementation in FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, React and TailwindCSS.

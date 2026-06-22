@@ -582,6 +582,20 @@ export const portalAssetReturnApi = {
   saveRecovery:  (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns/${id}/recovery`, d, _ph(sd, tk)),
 };
 
+export const portalAssetTransferApi = {
+  metaOptions:    (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/transfers/meta/options`, _ph(sd, tk)),
+  dashboard:      (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/transfers/dashboard`, _ph(sd, tk)),
+  list:           (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/transfers`, _php(sd, tk, p)),
+  get:            (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/transfers/${id}`, _ph(sd, tk)),
+  create:         (sd, tk, data)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/transfers`, data, _ph(sd, tk)),
+  submit:         (sd, tk, id)    => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/transfers/${id}/submit`, {}, _ph(sd, tk)),
+  approve:        (sd, tk, id)    => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/transfers/${id}/approve`, {}, _ph(sd, tk)),
+  reject:         (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/transfers/${id}/reject`, d, _ph(sd, tk)),
+  cancel:         (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/transfers/${id}/cancel`, d, _ph(sd, tk)),
+  recordHandover: (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/transfers/${id}/handover`, d, _ph(sd, tk)),
+  complete:       (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/transfers/${id}/complete`, d, _ph(sd, tk)),
+};
+
 export const portalAssetRequestApi = {
   metaOptions:  (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests/meta/options`, _ph(sd, tk)),
   list:         (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests`, _php(sd, tk, p)),

@@ -137,6 +137,9 @@ import AssetRequestDetails from "./assets/AssetRequestDetails";
 import ReturnList from "./assets/ReturnList";
 import ReturnDetails from "./assets/ReturnDetails";
 import ReturnForm from "./assets/ReturnForm";
+import TransferList from "./assets/TransferList";
+import TransferDetails from "./assets/TransferDetails";
+import TransferForm from "./assets/TransferForm";
 
 // Organization Management pages
 import CompanyList from "./org-management/CompanyList";
@@ -274,7 +277,9 @@ function PortalRoutes() {
       <Route path="/assets/assignments/requests"       element={<Protected><AssignmentRequestList /></Protected>} />
       <Route path="/assets/assignments/:assignmentId"  element={<Protected><AssignmentDetails /></Protected>} />
       <Route path="/assets/assignments"                element={<Protected><AssignmentList /></Protected>} />
-      <Route path="/assets/transfers"              element={<Protected><AssignmentList /></Protected>} />
+      <Route path="/assets/transfers/new"          element={<Protected><TransferForm /></Protected>} />
+      <Route path="/assets/transfers/:transferId"  element={<Protected><TransferDetails /></Protected>} />
+      <Route path="/assets/transfers"              element={<Protected><TransferList /></Protected>} />
       <Route path="/assets/returns/new"            element={<Protected><ReturnForm /></Protected>} />
       <Route path="/assets/returns/:returnId"      element={<Protected><ReturnDetails /></Protected>} />
       <Route path="/assets/returns"                element={<Protected><ReturnList /></Protected>} />
