@@ -567,6 +567,20 @@ export const portalAssetApi = {
   getEmployeeAssets:           (sd, tk, empId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/employee/${empId}`, _ph(sd, tk)),
 };
 
+export const portalAssetRequestApi = {
+  metaOptions:  (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests/meta/options`, _ph(sd, tk)),
+  list:         (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests`, _php(sd, tk, p)),
+  create:       (sd, tk, data)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests`, data, _ph(sd, tk)),
+  get:          (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests/${id}`, _ph(sd, tk)),
+  update:       (sd, tk, id, d) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests/${id}`, d, _ph(sd, tk)),
+  submit:       (sd, tk, id)    => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests/${id}/submit`, {}, _ph(sd, tk)),
+  review:       (sd, tk, id)    => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests/${id}/review`, {}, _ph(sd, tk)),
+  approve:      (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests/${id}/approve`, d, _ph(sd, tk)),
+  reject:       (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests/${id}/reject`, d, _ph(sd, tk)),
+  cancel:       (sd, tk, id)    => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests/${id}/cancel`, {}, _ph(sd, tk)),
+  fulfil:       (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests/${id}/fulfil`, d, _ph(sd, tk)),
+};
+
 // ── Portal Employee Document Management ───────────────────────────────────────
 export const portalEmpDocApi = {
   metaOptions: (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employee-documents/meta/options`, _ph(sd, tk)),

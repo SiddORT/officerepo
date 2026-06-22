@@ -279,3 +279,66 @@ class AssetActivity(ClientBase):
     new_value   = Column(Text, nullable=True)
 
     created_at  = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+
+class AssetRequest(ClientBase):
+    """General employee asset request — raised independently of the assignment workflow."""
+    __tablename__ = "asset_requests"
+
+    id          = Column(String(36), primary_key=True, default=_uuid)
+    client_id   = Column(String(36), nullable=False, index=True)
+
+    request_number = Column(String(30), nullable=False, index=True)   # AREQ-YYYYMMDD-XXXX
+
+    request_type   = Column(String(40),  nullable=False, default="New Asset")
+    # New Asset / Replacement / Repair / Software / Other
+
+    # Requester
+    requested_by_id   = Column(String(36),  nullable=True, index=True)
+    requested_by_name = Column(String(200), nullable=True)
+    employee_id       = Column(String(36),  nullable=True, index=True)
+    employee_code     = Column(String(30),  nullable=True)
+    department_id     = Column(String(36),  nullable=True)
+    department_name   = Column(String(200), nullable=True)
+
+    # What they need (catalog lookup or free-text)
+    category_id         = Column(String(36),  nullable=True)
+    category_name       = Column(String(100), nullable=True)
+    sub_category_id     = Column(String(36),  nullable=True)
+    sub_category_name   = Column(String(100), nullable=True)
+    asset_master_id     = Column(String(36),  nullable=True)
+    asset_master_name   = Column(String(200), nullable=True)
+    specific_asset_id   = Column(String(36),  nullable=True)
+    specific_asset_name = Column(String(200), nullable=True)
+    free_text_asset     = Column(String(300), nullable=True)   # when not in catalog
+
+    quantity    = Column(String(10),  nullable=False, default="1")
+    justification = Column(Text,     nullable=True)
+    priority    = Column(String(20),  nullable=False, default="Medium")
+    required_by = Column(Date,        nullable=True)
+    notes       = Column(Text,        nullable=True)
+
+    # Workflow
+    status      = Column(String(30),  nullable=False, default="Draft", index=True)
+    # Draft / Submitted / Under Review / Approved / Rejected / Fulfilled / Cancelled
+
+    approved_by_id   = Column(String(36),  nullable=True)
+    approved_by_name = Column(String(200), nullable=True)
+    approved_at      = Column(DateTime,    nullable=True)
+    approval_notes   = Column(Text,        nullable=True)
+
+    rejected_by_id   = Column(String(36),  nullable=True)
+    rejected_by_name = Column(String(200), nullable=True)
+    rejected_at      = Column(DateTime,    nullable=True)
+    rejection_reason = Column(Text,        nullable=True)
+
+    fulfilled_by_id   = Column(String(36),  nullable=True)
+    fulfilled_by_name = Column(String(200), nullable=True)
+    fulfilled_at      = Column(DateTime,    nullable=True)
+    fulfillment_notes = Column(Text,        nullable=True)
+
+    is_deleted  = Column(Boolean,  nullable=False, default=False)
+    deleted_at  = Column(DateTime, nullable=True)
+    created_at  = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at  = Column(DateTime, nullable=False, default=datetime.utcnow,
+                         onupdate=datetime.utcnow)

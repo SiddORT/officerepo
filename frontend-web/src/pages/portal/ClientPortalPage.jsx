@@ -132,6 +132,8 @@ import AssignmentList from "./assets/AssignmentList";
 import AssignmentDetails from "./assets/AssignmentDetails";
 import AssignmentForm from "./assets/AssignmentForm";
 import AssignmentRequestList from "./assets/AssignmentRequestList";
+import AssetRequestList from "./assets/AssetRequestList";
+import AssetRequestDetails from "./assets/AssetRequestDetails";
 
 // Organization Management pages
 import CompanyList from "./org-management/CompanyList";
@@ -263,7 +265,8 @@ function PortalRoutes() {
       <Route path="/assets/inventory"               element={<Protected><AssetInventoryList /></Protected>} />
       <Route path="/assets/maintenance"  element={<CS module="Asset Management" submodule="Asset Maintenance" />} />
       <Route path="/assets/audits"       element={<CS module="Asset Management" submodule="Asset Audits" />} />
-      <Route path="/assets/requests"     element={<Protected><AssignmentRequestList /></Protected>} />
+      <Route path="/assets/requests/:requestId" element={<Protected><AssetRequestDetails /></Protected>} />
+      <Route path="/assets/requests"     element={<Protected><AssetRequestList /></Protected>} />
       <Route path="/assets/assignments/new"            element={<Protected><AssignmentForm /></Protected>} />
       <Route path="/assets/assignments/requests"       element={<Protected><AssignmentRequestList /></Protected>} />
       <Route path="/assets/assignments/:assignmentId"  element={<Protected><AssignmentDetails /></Protected>} />

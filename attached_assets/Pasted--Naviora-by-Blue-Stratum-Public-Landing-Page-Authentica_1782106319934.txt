@@ -1,0 +1,555 @@
+# Naviora by Blue Stratum
+
+## Public Landing Page, Authentication Routing & Portal Structure
+
+Build the public landing page, authentication routing and multi-portal architecture for Naviora.
+
+Naviora supports three user types:
+
+* Platform Admin
+* Organization Users
+* Candidates
+
+Each user type must have a dedicated login experience and isolated portal.
+
+Follow existing platform standards:
+
+* Next.js 15 App Router
+* TypeScript
+* Tailwind CSS
+* shadcn/ui
+* FastAPI
+* PostgreSQL
+* JWT Authentication
+* Audit Logging
+* GDPR Compliance
+* Encryption Framework
+
+Generate production-ready code.
+
+Do not use placeholder implementations.
+
+---
+
+# Application Routing Structure
+
+## Public Website
+
+```text
+/
+├── /plans
+├── /contact
+├── /register
+├── /privacy-policy
+├── /terms-of-service
+└── /cookie-policy
+```
+
+---
+
+## Admin Portal
+
+```text
+/admin/login
+/admin/forgot-password
+/admin/reset-password
+
+/admin/dashboard
+/admin/organizations
+/admin/plans
+/admin/exercises
+/admin/assessments
+/admin/simulators
+/admin/settings
+```
+
+---
+
+## Organization Portal
+
+```text
+/org/login
+/org/forgot-password
+/org/reset-password
+
+/org/dashboard
+/org/users
+/org/candidates
+/org/assessments
+/org/sessions
+/org/reports
+/org/settings
+```
+
+---
+
+## Candidate Portal
+
+```text
+/candidate/login
+/candidate/forgot-password
+/candidate/reset-password
+
+/candidate/dashboard
+/candidate/assessments
+/candidate/sessions
+/candidate/results
+/candidate/certificates
+/candidate/profile
+```
+
+---
+
+# Next.js App Router Structure
+
+Create route groups:
+
+```text
+app
+
+(public)
+├── page.tsx
+├── plans
+├── contact
+├── register
+├── privacy-policy
+├── terms-of-service
+└── cookie-policy
+
+(admin)
+└── admin
+
+(org)
+└── org
+
+(candidate)
+└── candidate
+```
+
+Each route group must have:
+
+* Dedicated layout
+* Dedicated middleware
+* Dedicated navigation
+
+---
+
+# Authentication Strategy
+
+Use a single users table.
+
+Database table:
+
+users
+
+Fields:
+
+* id
+
+* uuid
+
+* first_name
+
+* last_name
+
+* email
+
+* password_hash
+
+* user_type
+
+* organization_id
+
+* is_active
+
+* last_login_at
+
+* created_at
+
+* updated_at
+
+User Types:
+
+* ADMIN
+* ORGANIZATION
+* CANDIDATE
+
+Rules:
+
+* organization_id is NULL for ADMIN users.
+* organization_id is mandatory for ORGANIZATION users.
+* organization_id is mandatory for CANDIDATE users.
+
+---
+
+# Login Rules
+
+Admin users:
+
+* Can authenticate only via:
+
+```text
+/admin/login
+```
+
+Organization users:
+
+* Can authenticate only via:
+
+```text
+/org/login
+```
+
+Candidate users:
+
+* Can authenticate only via:
+
+```text
+/candidate/login
+```
+
+Prevent cross-portal authentication.
+
+Examples:
+
+* Candidate credentials must not work on admin login.
+* Admin credentials must not work on organization login.
+* Organization credentials must not work on candidate login.
+
+Validate user type on backend and frontend.
+
+Return HTTP 403 when portal and user type do not match.
+
+---
+
+# Post Login Redirects
+
+ADMIN:
+
+```text
+/admin/dashboard
+```
+
+ORGANIZATION:
+
+```text
+/org/dashboard
+```
+
+CANDIDATE:
+
+```text
+/candidate/dashboard
+```
+
+Users must not manually access another portal.
+
+Example:
+
+Candidate accesses:
+
+```text
+/admin/dashboard
+```
+
+Response:
+
+```text
+403 Forbidden
+```
+
+Implement middleware validation.
+
+---
+
+# JWT Requirements
+
+Include claims:
+
+```json
+{
+  "user_id": "",
+  "user_type": "",
+  "organization_id": ""
+}
+```
+
+Use claims for authorization checks.
+
+Do not trust frontend route protection.
+
+All validation must happen server-side.
+
+---
+
+# Landing Page
+
+Route:
+
+```text
+/
+```
+
+Theme:
+
+* Maritime simulator theme
+* Blue Stratum branding
+
+Colors:
+
+Primary Gold:
+
+```text
+#D4A63A
+```
+
+Primary Blue:
+
+```text
+#2EA8FF
+```
+
+Background:
+
+```text
+#0B0B0F
+#141821
+#1E2430
+```
+
+---
+
+# Landing Page Sections
+
+1. Navigation Header
+
+2. Hero Section
+
+3. Platform Overview
+
+4. Supported Simulators
+
+5. Features
+
+6. Plans
+
+7. How It Works
+
+8. Testimonials
+
+9. Contact Form
+
+10. Footer
+
+---
+
+# Hero Section
+
+Headline:
+
+Maritime Assessment & Simulator Management Platform
+
+Subheadline:
+
+Create exercises, conduct assessments, integrate simulators and generate competency reports from one platform.
+
+Primary CTA:
+
+Request Demo
+
+Secondary CTA:
+
+View Plans
+
+---
+
+# Header Navigation
+
+Menu:
+
+* Features
+* Simulators
+* Plans
+* Contact
+
+Login Dropdown:
+
+* Admin Login
+* Organization Login
+* Candidate Login
+
+Routes:
+
+```text
+/admin/login
+
+/org/login
+
+/candidate/login
+```
+
+---
+
+# Registration Route
+
+Create:
+
+```text
+/register
+```
+
+Support:
+
+* Organization Registration
+* Candidate Registration
+
+Use approval workflow.
+
+Do not auto-create users.
+
+Registrations create onboarding requests.
+
+---
+
+# GDPR Requirements
+
+Create:
+
+* Privacy Policy
+* Terms of Service
+* Cookie Policy
+
+Mandatory consent checkboxes:
+
+Required:
+
+* Terms Acceptance
+* Privacy Acceptance
+* Data Processing Consent
+
+Optional:
+
+* Marketing Consent
+
+Checkboxes must never be pre-selected.
+
+Store immutable consent records.
+
+Track:
+
+* Consent Version
+* IP Address
+* User Agent
+* Timestamp
+
+Implement GDPR-compliant cookie banner.
+
+Do not load optional analytics before consent.
+
+---
+
+# Login Pages
+
+Create dedicated branded login screens.
+
+Routes:
+
+```text
+/admin/login
+
+/org/login
+
+/candidate/login
+```
+
+Requirements:
+
+* Distinct title per portal
+* Same design language
+* Forgot Password support
+* Remember Me support
+* Loading states
+* Error states
+
+Examples:
+
+Admin:
+
+Platform Administration
+
+Organization:
+
+Organization Portal
+
+Candidate:
+
+Candidate Portal
+
+---
+
+# Middleware
+
+Create middleware for:
+
+Authentication
+
+Authorization
+
+Portal Validation
+
+Organization Isolation
+
+Subscription Validation
+
+Protect route groups:
+
+```text
+/admin/*
+
+/org/*
+
+/candidate/*
+```
+
+Redirect unauthenticated users to the correct login page.
+
+---
+
+# Audit Logging
+
+Track:
+
+* Login Success
+* Login Failure
+* Logout
+* Password Reset
+* Unauthorized Access Attempts
+
+Use existing audit framework.
+
+---
+
+# Deliverables
+
+Generate:
+
+* Public Landing Page
+* Public Navigation
+* Route Groups
+* Authentication Middleware
+* Login Pages
+* Forgot Password Flow
+* Registration Flow
+* GDPR Consent Management
+* Cookie Banner
+* Portal Authorization
+
+Build a scalable multi-portal architecture that supports:
+
+* Cloud Mode
+* Offline Mode
+* Organizations
+* Candidates
+* Future RBAC
+
+for Naviora by Blue Stratum.
