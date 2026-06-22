@@ -168,6 +168,6 @@ def provision_portal_schema(url: str, *, force: bool = False) -> None:
     import backend.app.modules.expense_management.models  # noqa: F401
     import backend.app.modules.exit_management.models  # noqa: F401
     engine = _get_engine(url)
-    ClientBase.metadata.create_all(engine)
+    ClientBase.metadata.create_all(engine, checkfirst=True)
     _migrate_columns(engine)
     _provisioned.add(url)
