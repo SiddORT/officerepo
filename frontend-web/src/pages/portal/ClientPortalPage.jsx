@@ -127,6 +127,11 @@ import AssetSubCategoryList from "./assets/AssetSubCategoryList";
 import AssetInventoryList from "./assets/AssetInventoryList";
 import AssetInventoryForm from "./assets/AssetInventoryForm";
 import AssetInventoryDetails from "./assets/AssetInventoryDetails";
+import AssignmentDashboard from "./assets/AssignmentDashboard";
+import AssignmentList from "./assets/AssignmentList";
+import AssignmentDetails from "./assets/AssignmentDetails";
+import AssignmentForm from "./assets/AssignmentForm";
+import AssignmentRequestList from "./assets/AssignmentRequestList";
 
 // Organization Management pages
 import CompanyList from "./org-management/CompanyList";
@@ -258,10 +263,13 @@ function PortalRoutes() {
       <Route path="/assets/inventory"               element={<Protected><AssetInventoryList /></Protected>} />
       <Route path="/assets/maintenance"  element={<CS module="Asset Management" submodule="Asset Maintenance" />} />
       <Route path="/assets/audits"       element={<CS module="Asset Management" submodule="Asset Audits" />} />
-      <Route path="/assets/requests"     element={<CS module="Asset Management" submodule="Asset Requests" />} />
-      <Route path="/assets/assignments"  element={<CS module="Asset Management" submodule="Asset Assignment" />} />
-      <Route path="/assets/transfers"    element={<CS module="Asset Management" submodule="Asset Transfers" />} />
-      <Route path="/assets/returns"      element={<CS module="Asset Management" submodule="Asset Returns" />} />
+      <Route path="/assets/requests"     element={<Protected><AssignmentRequestList /></Protected>} />
+      <Route path="/assets/assignments/new"            element={<Protected><AssignmentForm /></Protected>} />
+      <Route path="/assets/assignments/requests"       element={<Protected><AssignmentRequestList /></Protected>} />
+      <Route path="/assets/assignments/:assignmentId"  element={<Protected><AssignmentDetails /></Protected>} />
+      <Route path="/assets/assignments"                element={<Protected><AssignmentList /></Protected>} />
+      <Route path="/assets/transfers"    element={<Protected><AssignmentList /></Protected>} />
+      <Route path="/assets/returns"      element={<Protected><AssignmentList /></Protected>} />
       <Route path="/assets/disposal"     element={<CS module="Asset Management" submodule="Asset Disposal" />} />
       <Route path="/assets"   element={<Navigate to={`/portal/${subdomain}/assets/inventory`} replace />} />
       <Route path="/assets/*" element={<Navigate to={`/portal/${subdomain}/assets/inventory`} replace />} />

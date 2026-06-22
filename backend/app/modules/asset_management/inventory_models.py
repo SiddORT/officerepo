@@ -1,10 +1,13 @@
 """Asset Inventory models — live in the CLIENT database (ClientBase).
 
 Tables:
-  assets               — actual client-owned assets
-  asset_assignments    — assignment history (employee ↔ asset)
-  asset_documents      — uploaded files per asset
-  asset_activities     — full audit trail
+  assets                       — actual client-owned assets
+  asset_assignment_requests    — employee/manager request for an asset
+  asset_assignments            — assignment history (polymorphic assignee)
+  asset_acknowledgements       — digital confirmation of receipt
+  asset_assignment_history     — immutable lifecycle audit trail
+  asset_documents              — uploaded files per asset
+  asset_activities             — full audit trail
 """
 from __future__ import annotations
 
@@ -116,34 +119,128 @@ class Asset(ClientBase):
                              onupdate=datetime.utcnow)
 
 
+class AssetAssignmentRequest(ClientBase):
+    """Optional pre-assignment request workflow."""
+    __tablename__ = "asset_assignment_requests"
+
+    id              = Column(String(36), primary_key=True, default=_uuid)
+    client_id       = Column(String(36), nullable=False, index=True)
+    request_number  = Column(String(30),  nullable=False, index=True)
+
+    requested_by_id   = Column(String(36),  nullable=True, index=True)
+    requested_by_name = Column(String(200), nullable=True)
+
+    # What they need
+    asset_category_id   = Column(String(36),  nullable=True)
+    asset_category_name = Column(String(100), nullable=True)
+    asset_id            = Column(String(36),  nullable=True)  # specific asset if known
+    asset_name          = Column(String(200), nullable=True)
+
+    justification   = Column(Text,        nullable=True)
+    priority        = Column(String(20),  nullable=False, default="Medium")  # Low/Medium/High/Critical
+    required_by     = Column(Date,        nullable=True)
+
+    status          = Column(String(20),  nullable=False, default="Draft", index=True)
+    # Draft/Submitted/Approved/Rejected/Fulfilled
+
+    approved_by_id   = Column(String(36),  nullable=True)
+    approved_by_name = Column(String(200), nullable=True)
+    approved_at      = Column(DateTime,    nullable=True)
+    rejection_reason = Column(Text,        nullable=True)
+    fulfilled_at     = Column(DateTime,    nullable=True)
+    assignment_id    = Column(String(36),  nullable=True)  # set when fulfilled
+
+    remarks         = Column(Text, nullable=True)
+
+    created_at  = Column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at  = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class AssetAssignment(ClientBase):
-    """Assignment history — one active row per asset when assigned."""
+    """Assignment history — one active row per asset when assigned (polymorphic assignee)."""
     __tablename__ = "asset_assignments"
 
     id              = Column(String(36), primary_key=True, default=_uuid)
     client_id       = Column(String(36), nullable=False, index=True)
     asset_id        = Column(String(36), nullable=False, index=True)
+    assignment_number = Column(String(30), nullable=True, index=True)  # ASGN-YYYYMMDD-XXXX
 
+    # Polymorphic assignee
+    assignee_type   = Column(String(30),  nullable=True, index=True)  # Employee/Department/Branch/Company
+    assignee_id     = Column(String(36),  nullable=True, index=True)
+    assignee_name   = Column(String(200), nullable=True)
+
+    # Legacy employee columns (kept for backward compat)
     employee_id     = Column(String(36),  nullable=True, index=True)
     employee_name   = Column(String(200), nullable=True)
     employee_code   = Column(String(30),  nullable=True)
+
+    assignment_type     = Column(String(30),  nullable=True)   # Permanent/Temporary/Project
+    assignment_source   = Column(String(50),  nullable=True)   # Manual/Onboarding/Transfer/etc.
+    source_reference_id = Column(String(36),  nullable=True)   # onboarding_id / request_id / etc.
+    request_id          = Column(String(36),  nullable=True)
 
     assigned_date           = Column(Date, nullable=True)
     expected_return_date    = Column(Date, nullable=True)
     actual_return_date      = Column(Date, nullable=True)
 
+    condition_on_assign = Column(String(30), nullable=True)  # New/Good/Fair
     assignment_notes    = Column(Text, nullable=True)
     return_notes        = Column(Text, nullable=True)
     condition_on_return = Column(String(30), nullable=True)  # Good/Damaged/Lost
 
     status          = Column(String(20), nullable=False, default="Active", index=True)
+    # Active/Returned/Transferred/Lost/Damaged
+
+    is_acknowledged     = Column(Boolean, nullable=False, default=False)
+    acknowledged_at     = Column(DateTime, nullable=True)
+
+    transferred_to_id   = Column(String(36),  nullable=True)   # next assignment when transferred
 
     assigned_by     = Column(String(200), nullable=True)
+    assigned_by_id  = Column(String(36),  nullable=True)
     returned_by     = Column(String(200), nullable=True)
 
     created_at      = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at      = Column(DateTime, nullable=False, default=datetime.utcnow,
                              onupdate=datetime.utcnow)
+
+
+class AssetAcknowledgement(ClientBase):
+    """Digital confirmation of asset receipt by assignee."""
+    __tablename__ = "asset_acknowledgements"
+
+    id              = Column(String(36), primary_key=True, default=_uuid)
+    client_id       = Column(String(36), nullable=False, index=True)
+    assignment_id   = Column(String(36), nullable=False, index=True)
+    asset_id        = Column(String(36), nullable=False, index=True)
+
+    acknowledged_by_id   = Column(String(36),  nullable=True)
+    acknowledged_by_name = Column(String(200), nullable=True)
+    acknowledged_at      = Column(DateTime,    nullable=True)
+    notes                = Column(Text,        nullable=True)
+    is_confirmed         = Column(Boolean,     nullable=False, default=False)
+
+    created_at  = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+
+class AssetAssignmentHistory(ClientBase):
+    """Immutable lifecycle audit trail per assignment."""
+    __tablename__ = "asset_assignment_history"
+
+    id              = Column(String(36), primary_key=True, default=_uuid)
+    client_id       = Column(String(36), nullable=False, index=True)
+    asset_id        = Column(String(36), nullable=False, index=True)
+    assignment_id   = Column(String(36), nullable=True,  index=True)
+
+    event           = Column(String(60),  nullable=False)   # assigned/returned/transferred/lost/damaged
+    description     = Column(Text,        nullable=True)
+    actor_id        = Column(String(36),  nullable=True)
+    actor_name      = Column(String(200), nullable=True)
+    old_value       = Column(Text, nullable=True)
+    new_value       = Column(Text, nullable=True)
+
+    created_at  = Column(DateTime, nullable=False, default=datetime.utcnow)
 
 
 class AssetDocument(ClientBase):

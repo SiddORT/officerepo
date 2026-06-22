@@ -543,6 +543,28 @@ export const portalAssetApi = {
   returnAsset:           (sd, tk, id, d)   => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/inventory/${id}/return`, d, _ph(sd, tk)),
   listInventoryDocs:     (sd, tk, id)      => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/inventory/${id}/documents`, _ph(sd, tk)),
   listInventoryActivities:(sd, tk, id)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/inventory/${id}/activities`, _ph(sd, tk)),
+
+  // Assignment module
+  assignmentMeta:              (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/meta/options`, _ph(sd, tk)),
+  assignmentDashboard:         (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/dashboard`, _ph(sd, tk)),
+  // Requests
+  listAssignmentRequests:      (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/requests`, _php(sd, tk, p)),
+  createAssignmentRequest:     (sd, tk, data)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/requests`, data, _ph(sd, tk)),
+  getAssignmentRequest:        (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/requests/${id}`, _ph(sd, tk)),
+  updateAssignmentRequest:     (sd, tk, id, d) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/requests/${id}`, d, _ph(sd, tk)),
+  submitAssignmentRequest:     (sd, tk, id)    => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/requests/${id}/submit`, {}, _ph(sd, tk)),
+  approveAssignmentRequest:    (sd, tk, id)    => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/requests/${id}/approve`, {}, _ph(sd, tk)),
+  rejectAssignmentRequest:     (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/requests/${id}/reject`, d, _ph(sd, tk)),
+  // Assignments
+  listAssignments:             (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments`, _php(sd, tk, p)),
+  createAssignment:            (sd, tk, data)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments`, data, _ph(sd, tk)),
+  getAssignment:               (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/${id}`, _ph(sd, tk)),
+  returnAssignment:            (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/${id}/return`, d, _ph(sd, tk)),
+  transferAssignment:          (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/${id}/transfer`, d, _ph(sd, tk)),
+  reportDamage:                (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/${id}/damage`, d, _ph(sd, tk)),
+  markLost:                    (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/${id}/lost`, d, _ph(sd, tk)),
+  acknowledgeAssignment:       (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/${id}/acknowledge`, d, _ph(sd, tk)),
+  getEmployeeAssets:           (sd, tk, empId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/employee/${empId}`, _ph(sd, tk)),
 };
 
 // ── Portal Employee Document Management ───────────────────────────────────────

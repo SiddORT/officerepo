@@ -1,0 +1,659 @@
+Let's design and implement Client Module → Asset Management → Asset Assignments for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Completed Modules:
+
+* Organization Management
+* Employees
+* Employee Documents
+* Employee Onboarding
+* Exit Management
+* Asset Categories
+* Asset Subcategories
+* Asset Inventory
+
+Asset Assignments must integrate tightly with:
+
+* Asset Inventory
+* Employees
+* Companies
+* Branches
+* Departments
+* Employee Onboarding
+* Exit Management
+* Notifications
+* Workflow Engine
+
+Module Hierarchy:
+
+Asset Management
+└── Asset Assignments
+
+Module Code:
+
+ASSET_ASSIGNMENTS
+
+Purpose:
+
+Track the complete lifecycle of asset ownership and responsibility.
+
+The module must support assigning assets to employees, departments, branches and companies while maintaining full audit history.
+
+Asset assignments must update inventory status in real time.
+
+---
+
+# Asset Lifecycle
+
+Available
+↓
+Reserved
+↓
+Assigned
+↓
+In Use
+↓
+Return Requested
+↓
+Returned
+↓
+Available
+
+Alternative Statuses:
+
+* Under Maintenance
+* Lost
+* Damaged
+* Disposed
+
+---
+
+# Assignment Workflow
+
+Available Asset
+↓
+Assignment Request
+↓
+Approval (Optional)
+↓
+Asset Assignment
+↓
+Employee Acknowledgement
+↓
+Active Usage
+↓
+Return / Transfer
+↓
+Available
+
+---
+
+# Module Structure
+
+Asset Assignments
+
+├── Assignment Requests
+├── Asset Assignments
+├── Employee Acknowledgements
+├── Return Requests
+├── Transfer Requests
+├── Assignment History
+└── Assignment Reports
+
+---
+
+# Assignment Types
+
+Support assignments to:
+
+* Employee
+* Department
+* Branch
+* Company
+
+Examples:
+
+Laptop → Employee
+
+Printer → Department
+
+Vehicle → Branch
+
+Conference Screen → Company
+
+Store assignee type and assignee reference.
+
+Do not create separate assignment tables.
+
+Use polymorphic assignment design.
+
+---
+
+# Assignment Sources
+
+Track how assignment originated.
+
+Values:
+
+* Manual Assignment
+* Employee Onboarding
+* Replacement
+* Transfer
+* Temporary Assignment
+* Project Assignment
+
+Maintain source references.
+
+Examples:
+
+onboarding_id
+
+transfer_id
+
+request_id
+
+---
+
+# Assignment Requests
+
+Optional workflow.
+
+Employees can request assets.
+
+Examples:
+
+* New Laptop
+* Additional Monitor
+* Mobile Phone
+
+Fields:
+
+* Request Number
+* Requested By
+* Requested Asset Category
+* Justification
+* Priority
+
+Priority:
+
+* Low
+* Medium
+* High
+* Critical
+
+Status:
+
+* Draft
+* Submitted
+* Approved
+* Rejected
+* Fulfilled
+
+Integrate with Workflow Engine.
+
+---
+
+# Asset Assignment
+
+Fields:
+
+* Assignment Number *
+* Asset *
+* Assignment Type *
+* Assignee *
+* Assignment Date *
+* Expected Return Date
+* Assignment Source
+* Remarks
+
+Current Condition:
+
+* New
+* Good
+* Fair
+
+Status:
+
+* Active
+* Returned
+* Transferred
+* Lost
+* Damaged
+
+Capture:
+
+* Assigned By
+* Assigned At
+
+Rules:
+
+Only assets with status:
+
+Available
+
+can be assigned.
+
+Prevent duplicate active assignments.
+
+Example:
+
+One laptop cannot have multiple active employee assignments.
+
+---
+
+# Employee Acknowledgement
+
+Support digital acceptance.
+
+Fields:
+
+* Acknowledged By
+* Acknowledged At
+* Notes
+
+Current Release:
+
+Checkbox confirmation.
+
+Future Scope:
+
+* E-Signature
+
+Display:
+
+Digital Signature
+
+Badge:
+
+Coming Soon
+
+Do not implement e-signatures now.
+
+---
+
+# Inventory Integration
+
+Integrate with existing Asset Inventory.
+
+Do not duplicate asset data.
+
+Use existing:
+
+assets
+
+Rules:
+
+Assignment updates asset status.
+
+Example:
+
+Available
+↓
+Assigned
+
+Returned
+↓
+Available
+
+Transferred
+↓
+Assigned
+
+Lost
+↓
+Lost
+
+Damaged
+↓
+Under Maintenance
+
+Asset Inventory must display:
+
+* Current Assignee
+* Assignment Date
+* Expected Return Date
+
+Assignment history must be accessible from Asset Inventory.
+
+---
+
+# Employee Profile Integration
+
+Add Assets tab inside Employee Profile.
+
+Display:
+
+* Asset Name
+* Asset Code
+* Category
+* Assignment Date
+* Status
+
+Actions:
+
+* Return Asset
+* Report Damage
+* Request Replacement
+
+---
+
+# Employee Onboarding Integration
+
+Allow onboarding tasks to assign assets.
+
+Examples:
+
+* Laptop
+* Monitor
+* Access Card
+
+Assigned assets should automatically create assignment records.
+
+Assignment Source:
+
+Onboarding
+
+---
+
+# Exit Management Integration
+
+During employee exit:
+
+Display all assigned assets.
+
+Block employee exit if mandatory assets are not returned.
+
+Returned assets must automatically update inventory.
+
+Integrate with:
+
+Final Settlement
+
+Examples:
+
+Lost Laptop
+
+Recovery Amount:
+
+₹50,000
+
+---
+
+# Asset History
+
+Maintain immutable audit history.
+
+Track:
+
+* Assigned
+* Returned
+* Transferred
+* Lost
+* Damaged
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+Do not delete historical records.
+
+---
+
+# Notifications
+
+Send notifications for:
+
+* Asset Assigned
+* Return Due
+* Return Overdue
+* Asset Returned
+
+Channels:
+
+* Email
+* SMS
+* Push Notification
+
+Use Notification Settings module.
+
+Reminder Rules:
+
+* 7 Days Before Return
+* 3 Days Before Return
+* On Due Date
+
+---
+
+# Dashboard Widgets
+
+* Assets Assigned
+* Assets Due For Return
+* Overdue Assets
+* Assets Under Maintenance
+* Unassigned Assets
+
+---
+
+# Assignment Calendar
+
+Provide calendar view.
+
+Display:
+
+* Upcoming Returns
+* Overdue Returns
+
+Views:
+
+* Month
+* Week
+
+Filters:
+
+* Company
+* Branch
+* Department
+* Employee
+* Asset Category
+
+---
+
+# Reports
+
+Generate:
+
+* Asset Assignment Register
+* Employee Asset Report
+* Department Asset Report
+* Return Due Report
+* Overdue Assets Report
+
+Filters:
+
+* Company
+* Branch
+* Department
+* Asset Category
+* Employee
+* Status
+
+Support:
+
+* PDF Export
+* Excel Export
+
+---
+
+# Database Design
+
+Design tables:
+
+asset_assignment_requests
+
+asset_assignments
+
+asset_acknowledgements
+
+asset_assignment_history
+
+Do not duplicate:
+
+assets
+
+employees
+
+departments
+
+branches
+
+Use relationships only.
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+* Relationships
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+* Enums
+
+Use SQLAlchemy 2.0 standards.
+
+Implement polymorphic assignment support.
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_140_asset_assignment_requests
+
+2026_141_asset_assignments
+
+2026_142_asset_acknowledgements
+
+2026_143_asset_assignment_history
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Assignment Requests
+
+* Create Request
+* Approve Request
+* Reject Request
+
+Assignments
+
+* Assign Asset
+* Return Asset
+* Transfer Asset
+* Report Damage
+* Mark Lost
+
+Reports
+
+* Get Assignment Summary
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Assignment Repository
+* Request Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Asset Assignment Service
+* Asset Return Service
+* Transfer Service
+
+Include:
+
+* Inventory Status Updates
+* Assignment Validation
+* Notification Logic
+* Exit Management Validation
+
+---
+
+# Validation Rules
+
+* Asset Must Be Available
+* One Active Assignment Per Asset
+* Assignee Required
+* Return Date >= Assignment Date
+
+Prevent duplicate active assignments.
+
+---
+
+# Activity Logging
+
+Track:
+
+* Asset Requested
+* Asset Assigned
+* Asset Returned
+* Asset Transferred
+* Asset Marked Lost
+* Asset Marked Damaged
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+---
+
+# Seed Data
+
+Generate sample:
+
+* Assignment Requests
+* Asset Assignments
+* Return Schedules
+
+Use existing:
+
+* Assets
+* Employees
+* Companies
+* Departments
+
+Generate production-ready specifications suitable for direct implementation in Office Repo using FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, React and TailwindCSS.
