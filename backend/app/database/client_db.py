@@ -157,6 +157,7 @@ def provision_portal_schema(url: str, *, force: bool = False) -> None:
     import backend.app.modules.organization_management.models  # noqa: F401
     import backend.app.modules.employee_management.models  # noqa: F401
     import backend.app.modules.asset_management.inventory_models  # noqa: F401
+    import backend.app.modules.asset_management.return_models  # noqa: F401
     import backend.app.modules.employee_document_management.models  # noqa: F401
     import backend.app.modules.recruitment.models  # noqa: F401
     import backend.app.modules.interview.models  # noqa: F401

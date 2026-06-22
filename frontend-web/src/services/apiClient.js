@@ -567,6 +567,21 @@ export const portalAssetApi = {
   getEmployeeAssets:           (sd, tk, empId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/employee/${empId}`, _ph(sd, tk)),
 };
 
+export const portalAssetReturnApi = {
+  metaOptions:   (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns/meta/options`, _ph(sd, tk)),
+  dashboard:     (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns/dashboard`, _ph(sd, tk)),
+  list:          (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns`, _php(sd, tk, p)),
+  get:           (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns/${id}`, _ph(sd, tk)),
+  create:        (sd, tk, data)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns`, data, _ph(sd, tk)),
+  submit:        (sd, tk, id)    => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns/${id}/submit`, {}, _ph(sd, tk)),
+  approve:       (sd, tk, id)    => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns/${id}/approve`, {}, _ph(sd, tk)),
+  reject:        (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns/${id}/reject`, d, _ph(sd, tk)),
+  complete:      (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns/${id}/complete`, d, _ph(sd, tk)),
+  close:         (sd, tk, id)    => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns/${id}/close`, {}, _ph(sd, tk)),
+  saveAssessment:(sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns/${id}/assessment`, d, _ph(sd, tk)),
+  saveRecovery:  (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns/${id}/recovery`, d, _ph(sd, tk)),
+};
+
 export const portalAssetRequestApi = {
   metaOptions:  (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests/meta/options`, _ph(sd, tk)),
   list:         (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/requests`, _php(sd, tk, p)),
