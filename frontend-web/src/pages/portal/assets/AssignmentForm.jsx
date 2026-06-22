@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { usePortalAuth } from "../../../contexts/PortalNavContext";
+import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAssetApi } from "../../../services/apiClient";
 
 const ASSIGNEE_TYPES   = ["Employee", "Department", "Branch", "Company"];

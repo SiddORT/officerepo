@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { usePortalAuth } from "../../../contexts/PortalNavContext";
+import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAssetApi } from "../../../services/apiClient";
 
 const StatCard = ({ label, value, color, to, subdomain }) => (
