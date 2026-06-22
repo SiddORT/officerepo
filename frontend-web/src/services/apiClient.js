@@ -567,6 +567,36 @@ export const portalAssetApi = {
   getEmployeeAssets:           (sd, tk, empId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/assignments/employee/${empId}`, _ph(sd, tk)),
 };
 
+export const portalAssetInventoryApi = {
+  list:   (sd, tk, p)     => portalAssetApi.listInventory(sd, tk, p),
+  get:    (sd, tk, id)    => portalAssetApi.getInventoryItem(sd, tk, id),
+  create: (sd, tk, data)  => portalAssetApi.createInventoryItem(sd, tk, data),
+  update: (sd, tk, id, d) => portalAssetApi.updateInventoryItem(sd, tk, id, d),
+  remove: (sd, tk, id)    => portalAssetApi.deleteInventoryItem(sd, tk, id),
+  metaOptions: (sd, tk)   => portalAssetApi.inventoryMeta(sd, tk),
+};
+
+export const portalAssetAssignmentApi = {
+  list:          (sd, tk, p)     => portalAssetApi.listAssignments(sd, tk, p),
+  get:           (sd, tk, id)    => portalAssetApi.getAssignment(sd, tk, id),
+  create:        (sd, tk, data)  => portalAssetApi.createAssignment(sd, tk, data),
+  return:        (sd, tk, id, d) => portalAssetApi.returnAssignment(sd, tk, id, d),
+  transfer:      (sd, tk, id, d) => portalAssetApi.transferAssignment(sd, tk, id, d),
+  reportDamage:  (sd, tk, id, d) => portalAssetApi.reportDamage(sd, tk, id, d),
+  markLost:      (sd, tk, id, d) => portalAssetApi.markLost(sd, tk, id, d),
+  acknowledge:   (sd, tk, id, d) => portalAssetApi.acknowledgeAssignment(sd, tk, id, d),
+  getEmployee:   (sd, tk, empId) => portalAssetApi.getEmployeeAssets(sd, tk, empId),
+  metaOptions:   (sd, tk)        => portalAssetApi.assignmentMeta(sd, tk),
+  dashboard:     (sd, tk)        => portalAssetApi.assignmentDashboard(sd, tk),
+  listRequests:  (sd, tk, p)     => portalAssetApi.listAssignmentRequests(sd, tk, p),
+  createRequest: (sd, tk, data)  => portalAssetApi.createAssignmentRequest(sd, tk, data),
+  getRequest:    (sd, tk, id)    => portalAssetApi.getAssignmentRequest(sd, tk, id),
+  updateRequest: (sd, tk, id, d) => portalAssetApi.updateAssignmentRequest(sd, tk, id, d),
+  submitRequest: (sd, tk, id)    => portalAssetApi.submitAssignmentRequest(sd, tk, id),
+  approveRequest:(sd, tk, id)    => portalAssetApi.approveAssignmentRequest(sd, tk, id),
+  rejectRequest: (sd, tk, id, d) => portalAssetApi.rejectAssignmentRequest(sd, tk, id, d),
+};
+
 export const portalAssetReturnApi = {
   metaOptions:   (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns/meta/options`, _ph(sd, tk)),
   dashboard:     (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/returns/dashboard`, _ph(sd, tk)),
@@ -594,6 +624,30 @@ export const portalAssetTransferApi = {
   cancel:         (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/transfers/${id}/cancel`, d, _ph(sd, tk)),
   recordHandover: (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/transfers/${id}/handover`, d, _ph(sd, tk)),
   complete:       (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/transfers/${id}/complete`, d, _ph(sd, tk)),
+};
+
+export const portalAssetMaintenanceApi = {
+  metaOptions:    (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/maintenance/meta/options`, _ph(sd, tk)),
+  dashboard:      (sd, tk)        => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/maintenance/dashboard`, _ph(sd, tk)),
+  list:           (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/maintenance`, _php(sd, tk, p)),
+  get:            (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/maintenance/${id}`, _ph(sd, tk)),
+  create:         (sd, tk, data)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/maintenance`, data, _ph(sd, tk)),
+  assign:         (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/maintenance/${id}/assign`, d, _ph(sd, tk)),
+  updateStatus:   (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/maintenance/${id}/status`, d, _ph(sd, tk)),
+  complete:       (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/maintenance/${id}/complete`, d, _ph(sd, tk)),
+  close:          (sd, tk, id)    => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/maintenance/${id}/close`, {}, _ph(sd, tk)),
+  cancel:         (sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/maintenance/${id}/cancel`, d, _ph(sd, tk)),
+  createWorkOrder:(sd, tk, id, d) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/maintenance/${id}/work-orders`, d, _ph(sd, tk)),
+  updateWorkOrder:(sd, tk, wid, d)=> axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/assets/maintenance/work-orders/${wid}`, d, _ph(sd, tk)),
+  listWorkOrders: (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/maintenance/work-orders/list`, _php(sd, tk, p)),
+  listWarranties: (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/warranties`, _php(sd, tk, p)),
+  getWarranty:    (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/warranties/${id}`, _ph(sd, tk)),
+  createWarranty: (sd, tk, data)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/warranties`, data, _ph(sd, tk)),
+  updateWarranty: (sd, tk, id, d) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/assets/warranties/${id}`, d, _ph(sd, tk)),
+  listAmcs:       (sd, tk, p)     => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/amc`, _php(sd, tk, p)),
+  getAmc:         (sd, tk, id)    => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/assets/amc/${id}`, _ph(sd, tk)),
+  createAmc:      (sd, tk, data)  => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/assets/amc`, data, _ph(sd, tk)),
+  updateAmc:      (sd, tk, id, d) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/assets/amc/${id}`, d, _ph(sd, tk)),
 };
 
 export const portalAssetRequestApi = {

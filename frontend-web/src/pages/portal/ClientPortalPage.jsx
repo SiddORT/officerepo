@@ -140,6 +140,11 @@ import ReturnForm from "./assets/ReturnForm";
 import TransferList from "./assets/TransferList";
 import TransferDetails from "./assets/TransferDetails";
 import TransferForm from "./assets/TransferForm";
+import MaintenanceList from "./assets/MaintenanceList";
+import MaintenanceRequestForm from "./assets/MaintenanceRequestForm";
+import MaintenanceRequestDetails from "./assets/MaintenanceRequestDetails";
+import WarrantyList from "./assets/WarrantyList";
+import AMCList from "./assets/AMCList";
 
 // Organization Management pages
 import CompanyList from "./org-management/CompanyList";
@@ -269,7 +274,11 @@ function PortalRoutes() {
       <Route path="/assets/inventory/:assetId/edit" element={<Protected><AssetInventoryForm editMode={true} /></Protected>} />
       <Route path="/assets/inventory/:assetId"      element={<Protected><AssetInventoryDetails /></Protected>} />
       <Route path="/assets/inventory"               element={<Protected><AssetInventoryList /></Protected>} />
-      <Route path="/assets/maintenance"  element={<CS module="Asset Management" submodule="Asset Maintenance" />} />
+      <Route path="/assets/maintenance/new"             element={<Protected><MaintenanceRequestForm /></Protected>} />
+      <Route path="/assets/maintenance/:requestId"      element={<Protected><MaintenanceRequestDetails /></Protected>} />
+      <Route path="/assets/maintenance"                 element={<Protected><MaintenanceList /></Protected>} />
+      <Route path="/assets/warranties"                  element={<Protected><WarrantyList /></Protected>} />
+      <Route path="/assets/amc"                         element={<Protected><AMCList /></Protected>} />
       <Route path="/assets/audits"       element={<CS module="Asset Management" submodule="Asset Audits" />} />
       <Route path="/assets/requests/:requestId" element={<Protected><AssetRequestDetails /></Protected>} />
       <Route path="/assets/requests"     element={<Protected><AssetRequestList /></Protected>} />
