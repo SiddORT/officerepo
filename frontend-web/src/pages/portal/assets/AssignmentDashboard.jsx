@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAssetApi } from "../../../services/apiClient";
+import AssetLayout from "./AssetLayout";
 
 const StatCard = ({ label, value, color, to, subdomain }) => (
   <Link to={to ? `/portal/${subdomain}/assets/${to}` : "#"}
@@ -29,6 +30,7 @@ export default function AssignmentDashboard() {
   const d = data || {};
 
   return (
+    <AssetLayout title="Asset Assignments">
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Asset Assignments</h1>
@@ -105,5 +107,6 @@ export default function AssignmentDashboard() {
         </div>
       )}
     </div>
+    </AssetLayout>
   );
 }

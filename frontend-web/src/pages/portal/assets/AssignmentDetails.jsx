@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAssetApi } from "../../../services/apiClient";
+import AssetLayout from "./AssetLayout";
 
 const STATUS_COLORS = {
   Active:"bg-blue-100 text-blue-700", Returned:"bg-emerald-100 text-emerald-700",
@@ -49,6 +50,7 @@ export default function AssignmentDetails() {
   const isOverdue = a.status === "Active" && a.expected_return_date && a.expected_return_date < today;
 
   return (
+    <AssetLayout title="Assignment Details">
     <div className="p-6 space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
@@ -271,5 +273,6 @@ export default function AssignmentDetails() {
         </div>
       )}
     </div>
+    </AssetLayout>
   );
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAssetRequestApi } from "../../../services/apiClient";
+import AssetLayout from "./AssetLayout";
 
 const STATUS_COLORS = {
   Draft:          "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
@@ -96,6 +97,7 @@ export default function AssetRequestList() {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
+    <AssetLayout title="Asset Requests">
     <div className="p-6 space-y-5">
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3">
@@ -380,5 +382,6 @@ export default function AssetRequestList() {
         </div>
       )}
     </div>
+    </AssetLayout>
   );
 }

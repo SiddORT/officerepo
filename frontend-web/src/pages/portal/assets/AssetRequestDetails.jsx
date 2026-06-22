@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAssetRequestApi } from "../../../services/apiClient";
+import AssetLayout from "./AssetLayout";
 
 const STATUS_COLORS = {
   Draft:          "bg-slate-100 text-slate-600",
@@ -71,6 +72,7 @@ export default function AssetRequestDetails() {
   const isEditable = req.status === "Draft";
 
   return (
+    <AssetLayout title="Asset Request Details">
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -268,5 +270,6 @@ export default function AssetRequestDetails() {
         </div>
       )}
     </div>
+    </AssetLayout>
   );
 }

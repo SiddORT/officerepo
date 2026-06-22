@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAssetApi } from "../../../services/apiClient";
+import AssetLayout from "./AssetLayout";
 
 const ASSIGNEE_TYPES   = ["Employee", "Department", "Branch", "Company"];
 const ASSIGNMENT_TYPES = ["Permanent", "Temporary", "Project"];
@@ -58,6 +59,7 @@ export default function AssignmentForm() {
   const selectedAsset = assets.find(a => a.id === form.asset_id);
 
   return (
+    <AssetLayout title="Assign Asset">
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">Assign Asset</h1>
@@ -174,5 +176,6 @@ export default function AssignmentForm() {
         </div>
       </form>
     </div>
+    </AssetLayout>
   );
 }

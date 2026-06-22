@@ -1,0 +1,655 @@
+Let's design and implement Client Module → Asset Management → Asset Returns for Office Repo.
+
+Context:
+
+Office Repo is a Multi-Tenant SaaS platform.
+
+Completed Modules:
+
+* Organization Management
+* Employees
+* Employee Onboarding
+* Exit Management
+* Asset Inventory
+* Asset Assignments
+* Asset Requests
+
+Asset Returns must integrate tightly with:
+
+* Asset Inventory
+* Asset Assignments
+* Employees
+* Exit Management
+* Final Settlement
+* Notifications
+* Workflow Engine
+
+Module Hierarchy:
+
+Asset Management
+└── Asset Returns
+
+Module Code:
+
+ASSET_RETURNS
+
+Purpose:
+
+Manage the complete return lifecycle of assigned assets.
+
+The module must support scheduled returns, employee exit returns, replacement returns and damaged/lost asset handling.
+
+Asset returns must update inventory status in real time and maintain a complete audit trail.
+
+---
+
+# Return Workflow
+
+Assigned Asset
+↓
+Return Request Created
+↓
+Approval (Optional)
+↓
+Asset Handover
+↓
+Condition Assessment
+↓
+Inventory Update
+↓
+Return Closure
+
+Alternative Flows:
+
+* Damaged Return
+* Lost Asset
+* Partial Return
+* Replacement Return
+
+---
+
+# Return Sources
+
+Track how returns are initiated.
+
+Values:
+
+* Employee Exit
+* Replacement Request
+* Temporary Assignment Expiry
+* Manual Return
+* Transfer Request
+
+Maintain source references.
+
+Examples:
+
+* exit_id
+* assignment_id
+* request_id
+
+---
+
+# Return Types
+
+Support:
+
+* Full Return
+* Partial Return
+* Temporary Assignment Return
+* Replacement Return
+
+---
+
+# Return Requests
+
+Employees and administrators can initiate returns.
+
+Fields:
+
+* Return Number *
+* Asset Assignment *
+* Requested By *
+* Return Type *
+* Return Reason *
+* Requested Return Date *
+* Remarks
+
+Return Reasons:
+
+* Employee Exit
+* Project Completed
+* Asset Upgrade
+* Temporary Assignment Ended
+* Replacement Requested
+* Asset No Longer Required
+
+Status:
+
+* Draft
+* Submitted
+* Approved
+* Rejected
+* In Progress
+* Returned
+* Closed
+
+---
+
+# Asset Selection
+
+Only active assignments should be available.
+
+Display:
+
+* Asset Name
+* Asset Code
+* Asset Category
+* Current Assignee
+* Assignment Date
+* Expected Return Date
+
+Prevent return of already returned assets.
+
+---
+
+# QR & Barcode Support
+
+Support quick asset returns.
+
+Methods:
+
+* QR Code Scan
+* Barcode Scan
+* Manual Search
+
+Scanning asset code should automatically:
+
+* Load assignment details
+* Validate assignment status
+* Open return screen
+
+---
+
+# Return Processing
+
+Fields:
+
+* Return Date *
+* Received By *
+* Receiving Location
+* Return Notes
+
+Capture handover details.
+
+Support:
+
+* Single Asset Return
+* Bulk Asset Return
+
+Examples:
+
+Employee Exit
+
+Return all assigned assets.
+
+---
+
+# Condition Assessment
+
+Capture asset condition at return.
+
+Values:
+
+* Excellent
+* Good
+* Fair
+* Damaged
+* Lost
+
+Fields:
+
+* Physical Condition
+* Functional Condition
+* Accessories Returned
+* Inspection Notes
+
+Support image uploads.
+
+Examples:
+
+* Damaged Screen Photo
+* Missing Charger Photo
+
+---
+
+# Recovery Amounts
+
+If asset is:
+
+* Lost
+* Damaged
+
+Calculate recovery amount.
+
+Fields:
+
+* Recovery Type
+* Estimated Cost
+* Approved Recovery Amount
+
+Recovery Types:
+
+* Full Recovery
+* Partial Recovery
+* Waived
+
+Integrate with:
+
+Final Settlement
+
+Example:
+
+Laptop Lost
+
+Recovery Amount:
+
+₹50,000
+
+---
+
+# Inventory Integration
+
+Integrate with Asset Inventory.
+
+Do not duplicate asset data.
+
+Use existing:
+
+assets
+
+asset_assignments
+
+Status Flow:
+
+Assigned
+↓
+Returned
+↓
+Available
+
+Damaged
+↓
+Under Maintenance
+
+Lost
+↓
+Lost
+
+Update inventory immediately after return completion.
+
+Asset Inventory should display:
+
+* Last Return Date
+* Last Assignee
+* Condition
+
+---
+
+# Assignment Integration
+
+Integrate with Asset Assignments.
+
+Automatically update assignment status.
+
+Status Flow:
+
+Active
+↓
+Returned
+
+Store:
+
+* Return Date
+* Return Condition
+
+Prevent duplicate active assignments.
+
+---
+
+# Exit Management Integration
+
+During employee exit:
+
+Display all active assignments.
+
+Rules:
+
+Employee cannot complete exit process until:
+
+* Mandatory assets returned
+* Recovery amounts approved
+
+Update clearance checklist automatically.
+
+---
+
+# Replacement Workflow
+
+Support replacement scenarios.
+
+Example:
+
+Old Laptop Returned
+↓
+Replacement Request Approved
+↓
+New Asset Assigned
+
+Maintain links between:
+
+* Returned Asset
+* Replacement Asset
+
+---
+
+# Return Acknowledgement
+
+Capture confirmation.
+
+Fields:
+
+* Returned By
+* Received By
+* Acknowledged At
+
+Current Release:
+
+Checkbox confirmation.
+
+Future Scope:
+
+* Digital Signature
+
+Display:
+
+Digital Signature
+
+Badge:
+
+Coming Soon
+
+Do not implement e-signatures now.
+
+---
+
+# Notifications
+
+Send notifications for:
+
+* Return Requested
+* Return Approved
+* Return Due
+* Return Overdue
+* Asset Returned
+
+Channels:
+
+* Email
+* SMS
+* Push Notification
+
+Use Notification Settings module.
+
+Reminder Rules:
+
+* 7 Days Before Due Date
+* 3 Days Before Due Date
+* On Due Date
+
+---
+
+# Dashboard Widgets
+
+* Assets Due For Return
+* Overdue Returns
+* Assets Returned Today
+* Damaged Returns
+* Lost Assets
+
+---
+
+# Return Calendar
+
+Display:
+
+* Upcoming Returns
+* Overdue Returns
+
+Views:
+
+* Month
+* Week
+
+Filters:
+
+* Company
+* Branch
+* Department
+* Employee
+* Asset Category
+
+---
+
+# Return Detail View
+
+Tabs:
+
+* Overview
+* Assignment Details
+* Condition Assessment
+* Recovery
+* Activities
+
+---
+
+# Reports
+
+Generate:
+
+* Return Register
+* Overdue Return Report
+* Damaged Asset Report
+* Lost Asset Report
+* Recovery Report
+
+Filters:
+
+* Company
+* Branch
+* Department
+* Employee
+* Asset Category
+* Status
+* Date Range
+
+Support:
+
+* PDF Export
+* Excel Export
+
+---
+
+# Database Design
+
+Design tables:
+
+asset_returns
+
+asset_return_items
+
+asset_return_assessments
+
+asset_return_recoveries
+
+asset_return_activities
+
+Do not duplicate:
+
+assets
+
+asset_assignments
+
+employees
+
+final_settlements
+
+Use relationships only.
+
+Provide:
+
+* Columns
+* Data Types
+* Constraints
+* Indexes
+* Relationships
+
+---
+
+# SQLAlchemy Design
+
+Provide:
+
+* Models
+* Relationships
+* Enums
+
+Use SQLAlchemy 2.0 standards.
+
+---
+
+# Alembic Design
+
+Provide migrations:
+
+2026_160_asset_returns
+
+2026_161_asset_return_items
+
+2026_162_asset_return_assessments
+
+2026_163_asset_return_recoveries
+
+2026_164_asset_return_activities
+
+Follow Office Repo migration standards.
+
+---
+
+# API Design
+
+Returns
+
+* Create Return Request
+* Approve Return
+* Reject Return
+* Complete Return
+
+Assessment
+
+* Record Condition Assessment
+
+Recovery
+
+* Create Recovery Amount
+* Waive Recovery
+
+Reports
+
+* Get Return Summary
+
+Provide:
+
+* Endpoints
+* Methods
+* Request Schemas
+* Response Schemas
+* Error Responses
+
+---
+
+# Repository Layer
+
+Provide:
+
+* Return Repository
+* Assessment Repository
+* Recovery Repository
+
+---
+
+# Service Layer
+
+Provide:
+
+* Asset Return Service
+* Assessment Service
+* Recovery Service
+
+Include:
+
+* Inventory Status Updates
+* Assignment Status Updates
+* Exit Validation Logic
+* Recovery Calculation Logic
+
+---
+
+# Validation Rules
+
+* Asset Must Have Active Assignment
+* Return Date >= Assignment Date
+* Lost Assets Require Recovery Review
+* Damaged Assets Require Assessment
+
+Prevent duplicate returns.
+
+---
+
+# Activity Logging
+
+Track:
+
+* Return Requested
+* Return Approved
+* Asset Returned
+* Asset Marked Damaged
+* Asset Marked Lost
+* Recovery Created
+
+Store:
+
+* User
+* Timestamp
+* Old Value
+* New Value
+
+Maintain immutable history.
+
+---
+
+# Seed Data
+
+Generate sample:
+
+* Return Requests
+* Damaged Returns
+* Recovery Records
+
+Use existing:
+
+* Assets
+* Asset Assignments
+* Employees
+
+Generate production-ready specifications suitable for direct implementation in Office Repo using FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, React and TailwindCSS.

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAssetApi } from "../../../services/apiClient";
+import AssetLayout from "./AssetLayout";
 
 const STATUS_COLORS = {
   Draft:      "bg-slate-100 text-slate-600",
@@ -58,6 +59,7 @@ export default function AssignmentRequestList() {
   };
 
   return (
+    <AssetLayout title="Assignment Requests">
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -189,5 +191,6 @@ export default function AssignmentRequestList() {
         </div>
       )}
     </div>
+    </AssetLayout>
   );
 }
