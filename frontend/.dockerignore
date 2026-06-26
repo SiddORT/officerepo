@@ -1,0 +1,16 @@
+.git
+.gitignore
+node_modules
+dist
+__pycache__
+.pytest_cache
+uploads
+private_storage
+attached_assets
+.vscode
+.idea
+*.log
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

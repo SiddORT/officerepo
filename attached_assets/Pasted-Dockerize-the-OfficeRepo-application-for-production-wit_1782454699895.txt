@@ -1,0 +1,224 @@
+Dockerize the OfficeRepo application for production without changing any application logic.
+
+## Objective
+
+Create a production-ready Docker setup for the project.
+
+Current project structure:
+
+```
+backend/
+frontend/
+alembic/
+pyproject.toml
+uv.lock
+docker-compose.yml (create if missing)
+```
+
+The backend is FastAPI.
+The frontend is React + Vite.
+
+The frontend should be served by Nginx inside its own container.
+
+The backend should run in its own container using Uvicorn.
+
+The backend and frontend should communicate over the Docker network.
+
+Do NOT change any API endpoints or business logic.
+
+---
+
+# 1. Backend Dockerfile
+
+Create:
+
+```
+backend/Dockerfile
+```
+
+Requirements:
+
+* Use Python 3.11 slim.
+* Install system packages only if required.
+* Use `uv` with `pyproject.toml` and `uv.lock` (preferred), falling back to pip only if absolutely necessary.
+* Copy only the required project files.
+* Install dependencies efficiently to maximize Docker layer caching.
+* Expose port 8000.
+* Start the application using:
+
+```
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
+```
+
+Do not enable reload mode.
+
+Run the container as a non-root user if practical.
+
+---
+
+# 2. Frontend Dockerfile
+
+Create:
+
+```
+frontend/Dockerfile
+```
+
+Use a multi-stage build.
+
+Builder stage:
+
+* Node 22
+* npm ci
+* npm run build
+
+Runtime stage:
+
+* nginx:alpine
+* Copy the generated dist folder
+* Configure Nginx for SPA routing
+* Ensure refreshing React routes works correctly
+
+---
+
+# 3. Nginx configuration
+
+Create:
+
+```
+frontend/nginx.conf
+```
+
+Requirements:
+
+* Serve React build
+* SPA fallback using:
+
+```
+try_files $uri $uri/ /index.html;
+```
+
+Do not proxy API requests here.
+The VPS reverse proxy will handle that later.
+
+---
+
+# 4. Docker Compose
+
+Create:
+
+```
+docker-compose.yml
+```
+
+Include:
+
+## backend
+
+* build from backend/
+* expose port 8000
+* restart unless-stopped
+* load environment variables from `.env`
+
+## frontend
+
+* build from frontend/
+* expose port 80
+* depends_on backend
+* restart unless-stopped
+
+Use a dedicated Docker network.
+
+Do NOT add PostgreSQL unless the application already requires a local database container.
+
+---
+
+# 5. Docker Ignore
+
+Create:
+
+```
+backend/.dockerignore
+frontend/.dockerignore
+```
+
+Exclude:
+
+```
+.git
+.gitignore
+node_modules
+dist
+__pycache__
+.pytest_cache
+uploads
+private_storage
+attached_assets
+.vscode
+.idea
+*.log
+```
+
+---
+
+# 6. Environment
+
+Do not hardcode secrets.
+
+Read configuration from:
+
+```
+.env
+```
+
+Do not commit secrets.
+
+---
+
+# 7. Health Check
+
+If practical, add Docker health checks.
+
+Backend health endpoint already exists:
+
+```
+/health
+```
+
+Use it.
+
+---
+
+# 8. Validation
+
+Verify:
+
+* Dockerfiles build successfully.
+* Frontend builds successfully.
+* Backend starts successfully.
+* React loads correctly.
+* API communication still uses `VITE_API_BASE_URL`.
+* No application logic is modified.
+
+---
+
+# 9. Final Report
+
+Provide:
+
+* Files created
+* Files modified
+* Docker architecture explanation
+* Exact command to build:
+
+```
+docker compose build
+```
+
+* Exact command to start:
+
+```
+docker compose up -d
+```
+
+Do not make any unrelated refactoring or code changes beyond what is necessary to support Docker.
