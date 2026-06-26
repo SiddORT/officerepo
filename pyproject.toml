@@ -32,7 +32,7 @@ build-backend = "setuptools.build_meta"
 # deployment build.
 [tool.setuptools.packages.find]
 include = ["backend*"]
-exclude = ["uploads*", "attached_assets*", "private_storage*", "frontend-web*", "scripts*", "tests*"]
+exclude = ["uploads*", "attached_assets*", "private_storage*", "frontend*", "scripts*", "tests*"]
 namespaces = false
 
 [tool.pytest.ini_options]

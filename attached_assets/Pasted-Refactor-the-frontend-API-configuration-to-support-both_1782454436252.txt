@@ -1,0 +1,122 @@
+Refactor the frontend API configuration to support both development and production environments without changing application functionality.
+
+### Goal
+
+Keep the existing Vite development proxy for local development, but make the frontend use an environment variable for its API base URL so the same code works in production behind Nginx.
+
+### Requirements
+
+#### 1. Create environment files
+
+Create:
+
+**frontend/.env.development**
+
+```env
+VITE_API_BASE_URL=/api
+```
+
+Create:
+
+**frontend/.env.production**
+
+```env
+VITE_API_BASE_URL=/api
+```
+
+Do not hardcode localhost anywhere in these files.
+
+---
+
+#### 2. Refactor Axios
+
+Locate wherever Axios is configured (or where API requests are created).
+
+Replace any hardcoded values such as:
+
+```javascript
+http://localhost:8000
+```
+
+or
+
+```javascript
+http://127.0.0.1:8000
+```
+
+or
+
+```javascript
+/api
+```
+
+with a centralized configuration:
+
+```javascript
+const api = axios.create({
+    baseURL: import.meta.env.VITE_API_BASE_URL,
+});
+```
+
+If an Axios instance already exists, simply update its `baseURL` to use:
+
+```javascript
+import.meta.env.VITE_API_BASE_URL
+```
+
+Do not change request interceptors, authentication logic, headers, or error handling.
+
+---
+
+#### 3. Preserve the Vite development proxy
+
+Do **not** remove or modify the existing Vite proxy:
+
+```javascript
+proxy: {
+  "/api": {
+    target: "http://localhost:8000",
+    changeOrigin: true,
+  },
+}
+```
+
+It should continue to work for local development.
+
+---
+
+#### 4. Verify
+
+Search the frontend project for:
+
+* `localhost:8000`
+* `127.0.0.1`
+* hardcoded API URLs
+
+Replace them with the centralized Axios configuration where appropriate.
+
+---
+
+#### 5. Do NOT
+
+* Change backend routes.
+* Change API endpoints.
+* Change authentication.
+* Change React components.
+* Change business logic.
+
+This should only improve environment configuration.
+
+---
+
+#### 6. Final Report
+
+At the end, provide:
+
+* Files modified
+* Old API configuration
+* New API configuration
+* Confirmation that:
+
+  * Local development still works via the Vite proxy.
+  * Production will work behind Nginx using `/api`.

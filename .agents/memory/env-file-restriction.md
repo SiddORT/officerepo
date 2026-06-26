@@ -4,7 +4,7 @@ description: The platform blocks writing any .env file; use .env.example instead
 ---
 
 The `write` tool refuses to create or edit any `.env` file (root or nested,
-e.g. `frontend-web/.env`) — it's treated as a secrets anti-pattern.
+e.g. `frontend/.env`) — it's treated as a secrets anti-pattern.
 
 **Why:** prevents accidental secret exposure on the filesystem.
 

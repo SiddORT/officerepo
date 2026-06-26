@@ -542,7 +542,7 @@ def create_app(app_settings=settings) -> FastAPI:
 
     @app.get("/", tags=["root"])
     def root():
-        dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend-web", "dist"))
+        dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
         index = os.path.join(dist, "index.html")
         if os.path.isfile(index):
             return FileResponse(index)
@@ -558,7 +558,7 @@ def create_app(app_settings=settings) -> FastAPI:
         return {"status": "ok"}
 
     # Serve compiled React frontend in production
-    frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend-web", "dist"))
+    frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
     if os.path.isdir(frontend_dist):
         index_html = os.path.join(frontend_dist, "index.html")
 

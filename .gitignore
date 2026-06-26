@@ -1,26 +1,27 @@
+# Python
 __pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-.Python
-*.egg
-*.egg-info/
-dist/
-build/
-
-# Environment files — never commit real secrets. .env.example IS committed.
+*.pyc
+.pytest_cache/
+.venv/
 .env
 .env.*
 !.env.example
-frontend-web/.env
-frontend-web/.env.*
-!frontend-web/.env.example
-.venv
-venv/
-.mypy_cache/
-.ruff_cache/
-.pytest_cache/
 
-# Local file storage (not committed)
+# React
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Uploads
 uploads/
 private_storage/
+
+# OS
+.DS_Store
+Thumbs.db

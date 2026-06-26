@@ -10,7 +10,7 @@ fi
 
 # Install / update frontend dependencies
 echo "Installing frontend dependencies..."
-cd frontend-web
+cd frontend
 npm install --silent
 cd ..
 

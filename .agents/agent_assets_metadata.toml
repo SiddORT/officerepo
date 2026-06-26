@@ -3,18 +3,18 @@ outputs = []
 
 [[generated]]
 id = "0YkQE66Q-kZ0qMneNVzmV"
-uri = "file://frontend-web/public/office-login.png"
+uri = "file://frontend/public/office-login.png"
 type = "image"
 title = "generated_image"
 
 [[generated]]
 id = "lfyTKCdTHKksagfCZv5ke"
-uri = "file://frontend-web/public/login-tablet.png"
+uri = "file://frontend/public/login-tablet.png"
 type = "image"
 title = "generated_image"
 
 [[generated]]
 id = "lqfX6OcPKHCTq0e8y4UxB"
-uri = "file://frontend-web/public/admin-bg.png"
+uri = "file://frontend/public/admin-bg.png"
 type = "image"
 title = "generated_image"

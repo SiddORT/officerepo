@@ -15,5 +15,5 @@ flag-image CDNs. The landing-page `PhoneInput` already does this.
 **Why:** loosening `img-src` to allow a CDN weakens the CSP for the whole app;
 emoji flags are zero-network, CSP-safe, and consistent with existing components.
 
-**How to apply:** `flagEmoji(iso2)` in `frontend-web/src/constants/countryCodes.js`
+**How to apply:** `flagEmoji(iso2)` in `frontend/src/constants/countryCodes.js`
 converts an ISO-2 code to its emoji. Reuse it; don't add external image hosts to CSP.

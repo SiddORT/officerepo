@@ -4,13 +4,13 @@
  *
  * Usage:
  *   1. Copy `.env.example` to `.env` and fill in real values (see also
- *      `frontend-web/.env.example`). Secrets are read from the environment —
+ *      `frontend/.env.example`). Secrets are read from the environment —
  *      they are NOT inlined here.
  *   2. Export the variables into your shell (PM2 inherits the parent
  *      environment), for example:
  *         set -a && . ./.env && set +a
  *   3. Build the frontend once (only needed for the frontend process):
- *         cd frontend-web && npm install && npm run build && cd ..
+ *         cd frontend && npm install && npm run build && cd ..
  *   4. Start the managed processes:
  *         pm2 start ecosystem.config.cjs
  *      Other handy commands:
@@ -50,13 +50,13 @@ module.exports = {
     },
     {
       // Optional: static frontend served by Vite's preview server.
-      // Requires `npm run build` in frontend-web/ first. Comment this block
+      // Requires `npm run build` in frontend/ first. Comment this block
       // out if you serve the built `dist/` via Nginx/CDN instead.
       name: "officerepo-frontend",
       script: "npm",
       args: `run preview -- --host 0.0.0.0 --port ${FRONTEND_PORT}`,
       interpreter: "none",
-      cwd: path.join(REPO_ROOT, "frontend-web"),
+      cwd: path.join(REPO_ROOT, "frontend"),
       autorestart: true,
       max_restarts: 10,
       restart_delay: 3000,

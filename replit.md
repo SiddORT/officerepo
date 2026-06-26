@@ -47,7 +47,7 @@ backend/
   shared/notifications/       Multi-channel notification helpers (email/SMS/WhatsApp/push):
                               base + config + dispatcher + one provider module per channel
 
-frontend-web/
+frontend/
   public/
     ort-logo-dark.png          ORT logo — white text on black (dark theme, use with mix-blend-mode: screen)
     ort-logo-light.jpg         ORT logo — dark text on white (light theme)
@@ -111,7 +111,7 @@ alembic revision --autogenerate -m "short description"
 ```
 
 ### Self-hosting (outside Replit)
-- `.env.example` (root) + `frontend-web/.env.example` document every config key; copy each to `.env` (git-ignored) and fill in real values.
+- `.env.example` (root) + `frontend/.env.example` document every config key; copy each to `.env` (git-ignored) and fill in real values.
 - `ecosystem.config.cjs` (root) runs the backend (uvicorn) and optional frontend preview under PM2: `set -a && . ./.env && set +a && pm2 start ecosystem.config.cjs`.
 - CORS policy lives in one place — `backend/app/core/cors.py` (imported by `main.py` and the tests).
 
@@ -150,7 +150,7 @@ alembic revision --autogenerate -m "short description"
 
 ## Branding
 - **Product**: Office Repo — "Unified Workplace Management"
-- **Made by**: ORT (One Roof Tech) — logo files in `frontend-web/public/`
+- **Made by**: ORT (One Roof Tech) — logo files in `frontend/public/`
 - The login page shows: Office Repo wordmark + tagline above card, "by ort_" in card footer
 
 ## API Routes
@@ -620,7 +620,7 @@ superadmin JWT guard, platform DB (`get_platform_db`).
   **"Not Provisioned"**. Actual provisioning + a "Provision" action are future work.
 - **Currency**: stored as an ISO `currency_code` string on the billing profile. A
   Settings→Currency Management module (`backend/app/modules/currency_management/`,
-  `frontend-web/src/pages/superadmin/settings/currency/`) manages the currency catalog,
+  `frontend/src/pages/superadmin/settings/currency/`) manages the currency catalog,
   the single base currency, and exchange rates — Manual entry plus live "Run Sync Now"
   via a provider abstraction (`providers/`). The built-in `ExchangeRateApiProvider`
   (exchangerate-api.com v6) is registered as the "Forex API" source when
