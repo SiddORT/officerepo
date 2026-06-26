@@ -1,27 +1,58 @@
+# -----------------------------
 # Python
+# -----------------------------
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
 .pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 .venv/
+venv/
+
+# Environment
 .env
 .env.*
 !.env.example
 
-# React
+# -----------------------------
+# React / Vite
+# -----------------------------
 frontend/node_modules/
 frontend/dist/
+frontend/.vite/
 
-# IDE
-.vscode/
-.idea/
-
-# Logs
-*.log
-
-# Uploads
+# -----------------------------
+# Uploads & Storage
+# -----------------------------
 uploads/
 private_storage/
 
-# OS
+# Keep attached_assets only if you intentionally version them.
+# Otherwise uncomment:
+# attached_assets/
+
+# -----------------------------
+# Logs
+# -----------------------------
+*.log
+logs/
+
+# -----------------------------
+# IDE
+# -----------------------------
+.vscode/
+.idea/
+
+# -----------------------------
+# GitHub / OS
+# -----------------------------
 .DS_Store
 Thumbs.db
+
+# -----------------------------
+# Docker
+# -----------------------------
+*.pid
