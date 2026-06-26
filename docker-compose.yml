@@ -7,7 +7,16 @@ services:
     ports:
       - "9000:8000"
     env_file:
-      - .env
+      - path: .env
+        required: false
+    environment:
+      - DATABASE_URL
+      - SESSION_SECRET
+      - JWT_SECRET
+      - REFRESH_SECRET
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - officerepo
     healthcheck:
