@@ -1,0 +1,42 @@
+name: Deploy UAT
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to UAT VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd /opt/apps/uat.officerepo.com
+
+            echo "Pulling latest code..."
+            git pull origin main
+
+            echo "Building containers..."
+            docker compose build
+
+            echo "Starting containers..."
+            docker compose up -d
+
+            echo "Removing unused Docker images..."
+            docker image prune -f
+
+            echo "Waiting for backend..."
+            sleep 20
+
+            echo "Checking backend health..."
+            curl --fail http://localhost:9000/health
+
+            echo "Deployment completed successfully."
