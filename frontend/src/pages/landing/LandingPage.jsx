@@ -421,7 +421,7 @@ function LandingHero({ onEnter, user, p, isDark, toggle }) {
             backgroundClip: "text",
           }}
         >
-          for Modern Teams
+          for Modern Workspaces
         </span>
       </motion.h1>
 
