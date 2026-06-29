@@ -406,6 +406,7 @@ _INDUSTRY_SEED = [
     ("Government & Public Sector",   ["Defence & Security", "Infrastructure", "Public Health", "Municipal Services", "Regulatory Bodies"]),
     ("Automotive",                   ["OEM", "Auto Parts & Components", "Electric Vehicles", "Auto Retail & Dealership", "Fleet Services"]),
     ("Construction & Infrastructure",["Civil Engineering", "Roads & Bridges", "Smart Cities", "Water & Sanitation", "Real Estate Development", "Interior Design"]),
+    # ↓ Add new industries here — backend restart picks them up automatically
 ]
 
 
