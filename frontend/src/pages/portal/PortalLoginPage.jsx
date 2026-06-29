@@ -1,5 +1,5 @@
-import React, { useState, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { usePortalAuth } from "../../contexts/PortalAuthContext";
 import {
   motion,
@@ -52,10 +52,11 @@ const fadeSlide = {
 
 export default function PortalLoginPage() {
   const { subdomain } = useParams();
+  const [searchParams] = useSearchParams();
   const { login } = usePortalAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);

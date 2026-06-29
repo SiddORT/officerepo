@@ -30,6 +30,10 @@ class PortalLoginRequest(BaseModel):
     password: str
 
 
+class WorkspaceLookupRequest(BaseModel):
+    email: str
+
+
 def _require_portal_jwt(request: Request) -> dict:
     """Dependency: validates a portal_access JWT and returns its payload."""
     auth = request.headers.get("Authorization", "")
@@ -43,6 +47,13 @@ def _require_portal_jwt(request: Request) -> dict:
     if payload.get("token_type") != "portal_access":
         raise HTTPException(status_code=401, detail="Invalid token type — portal_access required")
     return payload
+
+
+@router.post("/lookup-workspace")
+def lookup_workspace(payload: WorkspaceLookupRequest, db: Session = Depends(get_platform_db)):
+    """Public: resolve an email address to its workspace subdomain."""
+    data = cm_service.lookup_workspace_by_email(db, payload.email)
+    return ApiResponse.ok(data, "Workspace found.").model_dump()
 
 
 @router.get("/{subdomain}/invite/{token}")

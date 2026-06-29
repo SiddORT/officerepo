@@ -869,10 +869,8 @@ export default function LandingPage() {
   }, [user, navigate]);
 
   const handleEnterWorkspace = useCallback(() => {
-    setPhase("sweeping");
-    // After sweep, show login
-    setTimeout(() => setPhase("login"), 700);
-  }, []);
+    navigate("/client-login");
+  }, [navigate]);
 
   const handleBack = useCallback(() => {
     setPhase("landing");

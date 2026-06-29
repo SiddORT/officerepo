@@ -240,6 +240,7 @@ class ClientAdminUser(Base):
     first_name = Column(String(120), nullable=False)
     last_name = Column(String(120), nullable=True)
     email_encrypted = Column(Text, nullable=True)
+    email_hash = Column(String(64), nullable=True, index=True, unique=True)
     phone_encrypted = Column(Text, nullable=True)
     country_code = Column(String(8), nullable=True)
     status = Column(String(30), nullable=False, default="Placeholder")

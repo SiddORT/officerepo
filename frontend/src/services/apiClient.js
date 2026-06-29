@@ -48,6 +48,12 @@ apiClient.interceptors.response.use(
 
 export default apiClient;
 
+// ── Portal workspace lookup (public — bare axios, no auth header) ──────────────
+export const portalLookupApi = {
+  lookupWorkspace: (email) =>
+    axios.post("/api/v1/portal/lookup-workspace", { email }),
+};
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
   superAdminLogin: (email, password) =>

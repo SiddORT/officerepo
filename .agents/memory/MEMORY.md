@@ -34,3 +34,4 @@
 - [Portal nav uses /navigation not /nav](portal-nav-endpoint.md) — portal nav endpoint is GET /portal/{subdomain}/navigation (not /nav); both portal_auth and portal_user_mgmt routers share the same /api/v1/portal prefix.
 - [Module catalog + client enable flow](module-catalog-enable.md) — new modules need: (1) entry in MODULE_CATALOG constants.py, (2) seeded into module_master on restart, (3) client_modules row with matching module_name = module_master.name for it to appear in portal nav.
 - [ApiResponse method is .ok() not .success()](api-response-pattern.md) — always use `ApiResponse.ok(data, msg?).model_dump()`; there is no `.success()` method; import from `backend.shared.response`.
+- [Global portal email uniqueness](portal-global-email-uniqueness.md) — email_hash (SHA-256) on client_admin_users enforces cross-workspace uniqueness; lookup-workspace endpoint resolves email→subdomain for email-first login.

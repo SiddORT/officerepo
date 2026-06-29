@@ -55,6 +55,27 @@ def _dec(token: Optional[str]) -> Optional[str]:
         return None
 
 
+def _email_hash(email: str) -> str:
+    """SHA-256 blind index of a normalized email — used for global uniqueness checks."""
+    return hashlib.sha256(email.strip().lower().encode()).hexdigest()
+
+
+def _assert_email_globally_unique(db: Session, email: str, exclude_user_id: Optional[str] = None) -> None:
+    """Raise 409 if this email is already registered to any portal user on the platform."""
+    h = _email_hash(email)
+    q = db.query(ClientAdminUser).filter(
+        ClientAdminUser.email_hash == h,
+        ClientAdminUser.is_deleted.is_(False),
+    )
+    if exclude_user_id:
+        q = q.filter(ClientAdminUser.id != exclude_user_id)
+    if q.first():
+        raise HTTPException(
+            status_code=409,
+            detail="This email address is already registered in another workspace on this platform.",
+        )
+
+
 def _require_client(db: Session, client_id: str) -> Client:
     client = repo.get_client(db, client_id)
     if not client:
@@ -882,11 +903,14 @@ def list_admin_users(db: Session, client_id: str) -> list:
 
 def add_admin_user(db: Session, client_id: str, payload: AdminUserCreateRequest, *, actor) -> dict:
     _require_client(db, client_id)
+    if payload.email:
+        _assert_email_globally_unique(db, payload.email)
     user = ClientAdminUser(
         client_id=client_id,
         first_name=payload.first_name,
         last_name=payload.last_name,
         email_encrypted=encrypt_value(payload.email),
+        email_hash=_email_hash(payload.email) if payload.email else None,
         phone_encrypted=encrypt_value(payload.phone),
         country_code=payload.country_code,
         status=payload.status or c.ADMIN_STATUS_INVITED,
@@ -907,7 +931,13 @@ def update_admin_user(db: Session, client_id: str, admin_id: str, payload: Admin
         raise HTTPException(status_code=404, detail="Admin user not found.")
     data = payload.model_dump(exclude_unset=True)
     if "email" in data:
-        user.email_encrypted = encrypt_value(data.pop("email"))
+        new_email = data.pop("email")
+        if new_email:
+            _assert_email_globally_unique(db, new_email, exclude_user_id=user.id)
+            user.email_hash = _email_hash(new_email)
+        else:
+            user.email_hash = None
+        user.email_encrypted = encrypt_value(new_email)
     if "phone" in data:
         user.phone_encrypted = encrypt_value(data.pop("phone"))
     for field, value in data.items():
@@ -1026,6 +1056,32 @@ def _get_client_by_workspace_id(db: Session, workspace_id: str) -> Optional["Cli
 
 # Keep old name as an alias so any existing callers still work
 _get_client_by_subdomain = _get_client_by_workspace_id
+
+
+def lookup_workspace_by_email(db: Session, email: str) -> dict:
+    """Public: given an email, return the workspace subdomain the user belongs to.
+
+    Raises 404 if the email is not registered on the platform.
+    """
+    from backend.app.modules.client_management.models import ClientDomain
+    h = _email_hash(email)
+    user = (
+        db.query(ClientAdminUser)
+        .filter(
+            ClientAdminUser.email_hash == h,
+            ClientAdminUser.is_deleted.is_(False),
+        )
+        .first()
+    )
+    if not user:
+        raise HTTPException(status_code=404, detail="No workspace found for this email address.")
+
+    client = repo.get_client(db, user.client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="No workspace found for this email address.")
+
+    subdomain = _get_active_subdomain(db, client.id) or client.id
+    return {"subdomain": subdomain, "workspace_name": client.company_name}
 
 
 def _get_active_subdomain(db: Session, client_id: str) -> Optional[str]:

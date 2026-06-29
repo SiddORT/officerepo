@@ -36,6 +36,7 @@ import Layout from "./components/Layout";
 import SettingsVariantA from "./pages/mockups/SettingsVariantA";
 import SettingsVariantB from "./pages/mockups/SettingsVariantB";
 import SettingsVariantC from "./pages/mockups/SettingsVariantC";
+import ClientLoginPage from "./pages/login/ClientLoginPage";
 import ClientPortalPage from "./pages/portal/ClientPortalPage";
 import AssetMasterList from "./pages/superadmin/assets/AssetMasterList";
 import AssetMasterForm from "./pages/superadmin/assets/AssetMasterForm";
@@ -59,6 +60,7 @@ function AppRoutes() {
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <AdminLoginPage />} />
       <Route path="/admin" element={user ? <Navigate to="/dashboard" replace /> : <AdminLoginPage />} />
+      <Route path="/client-login" element={<ClientLoginPage />} />
       <Route path="/accept-invite" element={<AcceptInvitePage />} />
 
       {/* Protected — general */}
