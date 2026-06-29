@@ -49,6 +49,10 @@ class OrgCompany(ClientBase):
     country             = Column(String(100), nullable=True)
     postal_code         = Column(String(20),  nullable=True)
 
+    # Industry
+    industry            = Column(String(200), nullable=True)
+    sub_industry        = Column(String(200), nullable=True)
+
     # Branding
     logo_url            = Column(String(500), nullable=True)
 

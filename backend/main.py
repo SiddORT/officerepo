@@ -357,6 +357,7 @@ def init_database() -> None:
     _seed_rbac_data()
     _seed_module_catalog()
     _seed_asset_defaults()
+    _seed_industry_master()
 
 
 def _seed_rbac_data() -> None:
@@ -380,6 +381,51 @@ def _seed_module_catalog() -> None:
         print("Module catalog seeded.")
     except Exception as e:
         print(f"Module catalog seed error: {e}")
+    finally:
+        db.close()
+
+
+_INDUSTRY_SEED = [
+    ("Information Technology",       ["SaaS", "Software Development", "IT Consulting", "Cybersecurity", "Cloud Services", "AI & Machine Learning", "Data Analytics", "IT Infrastructure", "ERP & CRM"]),
+    ("Banking & Finance",            ["Retail Banking", "Investment Banking", "Insurance", "Asset Management", "FinTech", "Microfinance", "NBFC", "Wealth Management", "Payment Services"]),
+    ("Healthcare",                   ["Hospitals & Clinics", "Pharmaceuticals", "Medical Devices", "Health Insurance", "Diagnostics & Labs", "Telemedicine", "Biotechnology", "Wellness & Fitness"]),
+    ("Manufacturing",                ["Automotive Parts", "Electronics Manufacturing", "Textiles & Apparel", "FMCG", "Chemicals", "Steel & Metals", "Food Processing", "Plastics & Rubber", "Heavy Machinery"]),
+    ("Real Estate",                  ["Residential Development", "Commercial Real Estate", "Retail Spaces", "Construction", "Property Management", "PropTech", "Warehousing & Logistics Parks"]),
+    ("Education",                    ["K-12 Schools", "Higher Education", "EdTech", "Vocational Training", "Online Learning", "Coaching & Test Prep", "Corporate Training"]),
+    ("Retail & E-Commerce",          ["Fashion & Apparel", "Electronics Retail", "Grocery & FMCG", "D2C Brands", "Marketplace", "Luxury Goods", "Sports & Outdoors"]),
+    ("Logistics & Supply Chain",     ["Freight & Cargo", "Last-Mile Delivery", "Warehousing", "3PL & 4PL", "Cold Chain", "Fleet Management", "Customs & Compliance"]),
+    ("Media & Entertainment",        ["Film & OTT", "Publishing", "Gaming", "Music & Audio", "Advertising & PR", "Social Media", "Live Events"]),
+    ("Telecommunications",           ["Mobile Services", "Broadband & ISP", "Enterprise Connectivity", "Tower & Infrastructure", "Satellite Communications"]),
+    ("Energy & Utilities",           ["Oil & Gas", "Renewable Energy", "Power Generation & Distribution", "Utilities", "Energy Storage", "Clean Tech"]),
+    ("Agriculture",                  ["AgriTech", "Crop Production", "Livestock & Poultry", "Food Processing", "Horticulture", "Agri-Export & Trading", "Irrigation & Water Management"]),
+    ("Hospitality & Tourism",        ["Hotels & Resorts", "Restaurants & Food Service", "Travel Agencies", "Aviation", "Cruise & Leisure", "Event Management"]),
+    ("Legal & Compliance",           ["Law Firms", "Compliance Consulting", "Arbitration & Mediation", "Intellectual Property", "Corporate & M&A Law"]),
+    ("Human Resources",              ["Staffing & Recruitment", "HR Consulting", "Payroll & Benefits", "Training & Development", "HR Tech"]),
+    ("Consulting",                   ["Management Consulting", "Strategy", "Operations", "Business Process", "Risk & Advisory", "Digital Transformation"]),
+    ("Non-Profit & NGO",             ["Social Services", "Environmental", "Education NGO", "Healthcare NGO", "Disaster Relief", "Community Development"]),
+    ("Government & Public Sector",   ["Defence & Security", "Infrastructure", "Public Health", "Municipal Services", "Regulatory Bodies"]),
+    ("Automotive",                   ["OEM", "Auto Parts & Components", "Electric Vehicles", "Auto Retail & Dealership", "Fleet Services"]),
+    ("Construction & Infrastructure",["Civil Engineering", "Roads & Bridges", "Smart Cities", "Water & Sanitation", "Real Estate Development", "Interior Design"]),
+]
+
+
+def _seed_industry_master() -> None:
+    """Idempotently seed the industry master table (adds missing rows only)."""
+    from backend.app.modules.industry_master.models import IndustryMaster
+    db = SessionLocal()
+    try:
+        existing = {r.name for r in db.query(IndustryMaster.name).all()}
+        added = 0
+        for i, (name, subs) in enumerate(_INDUSTRY_SEED):
+            if name not in existing:
+                db.add(IndustryMaster(name=name, sub_industries=subs, sort_order=i))
+                added += 1
+        if added:
+            db.commit()
+        print(f"Industry master seeded: {added} new industries added ({len(_INDUSTRY_SEED)} total).")
+    except Exception as e:
+        print(f"Industry master seed error: {e}")
+        db.rollback()
     finally:
         db.close()
 

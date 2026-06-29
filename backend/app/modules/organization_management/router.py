@@ -117,6 +117,28 @@ def _subdomain_check(portal_user: dict, subdomain: str) -> None:
         raise HTTPException(403, "Token does not match this workspace.")
 
 
+# ── Meta / lookup data ─────────────────────────────────────────────────────────
+
+@router.get("/{subdomain}/org/meta/industries")
+def list_industries(
+    subdomain: str,
+    portal_user: dict = Depends(_portal_jwt),
+    platform_db: Session = Depends(get_platform_db),
+):
+    """Return the full industry master list (no module-gate required, just portal JWT)."""
+    from backend.app.modules.industry_master.models import IndustryMaster
+    rows = (
+        platform_db.query(IndustryMaster)
+        .filter(IndustryMaster.is_active.is_(True))
+        .order_by(IndustryMaster.sort_order, IndustryMaster.name)
+        .all()
+    )
+    return ApiResponse.ok([
+        {"id": r.id, "name": r.name, "sub_industries": r.sub_industries or []}
+        for r in rows
+    ]).model_dump()
+
+
 # ── Companies ──────────────────────────────────────────────────────────────────
 
 @router.get("/{subdomain}/org/companies")

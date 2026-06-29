@@ -35,10 +35,11 @@ const API_EMPTY = {
   registration_number: "", tax_number: "", website: "",
   email: "", phone: "",
   address_line_1: "", address_line_2: "", city: "", state: "", country: "", postal_code: "",
+  industry: "", sub_industry: "",
 };
 
 const EXTRA_EMPTY = {
-  company_type: "", industry: "", sub_industry: "",
+  company_type: "",
   date_of_incorporation: "", company_description: "",
   cin_number: "", pan_number: "", tan_number: "",
   msme_registered: false, msme_number: "",
@@ -132,10 +133,17 @@ export default function CompanyForm({ editMode }) {
   const [newDoc,    setNewDoc]    = useState(EMPTY_DOC);
   const [logoPreview, setLogoPreview] = useState(null);
 
+  const [industries, setIndustries] = useState([]);
   const [saving, setSaving]   = useState(false);
   const [loading, setLoading] = useState(editMode);
   const [error,  setError]    = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+
+  useEffect(() => {
+    portalOrgApi.getIndustries(subdomain, token)
+      .then(r => setIndustries(r.data?.data || []))
+      .catch(() => {});
+  }, [subdomain, token]);
 
   useEffect(() => {
     if (!editMode || !companyId) return;
@@ -158,6 +166,17 @@ export default function CompanyForm({ editMode }) {
     if (codeTouched) return;
     set("company_code", generateCode(form.company_name));
   }, [form.company_name]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Derived industry options
+  const industryNames = industries.map(i => i.name);
+  const subOptions    = industries.find(i => i.name === form.industry)?.sub_industries || [];
+
+  // When industry changes clear sub_industry if it no longer belongs to the new selection
+  useEffect(() => {
+    if (form.sub_industry && subOptions.length && !subOptions.includes(form.sub_industry)) {
+      set("sub_industry", "");
+    }
+  }, [form.industry]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Shared props passed to every field() call
   const fp = { form, extra, fieldErrors, set, setX };
@@ -287,8 +306,8 @@ export default function CompanyForm({ editMode }) {
                 {field({ ...fp, k: "legal_name",    label: "Legal / Registered Name", required: true, placeholder: "Acme Private Limited" })}
                 {field({ ...fp, k: "display_name",  label: "Display Name",            placeholder: "Acme", note: "Short name shown in the portal" })}
                 {field({ ...fp, k: "company_type",  label: "Company Type",            placeholder: "Select type", as: "select", options: COMPANY_TYPES })}
-                {field({ ...fp, k: "industry",      label: "Industry",                placeholder: "e.g. Information Technology" })}
-                {field({ ...fp, k: "sub_industry",  label: "Sub-Industry",            placeholder: "e.g. SaaS" })}
+                {field({ ...fp, k: "industry",     label: "Industry",    as: "select", placeholder: "Select industry…",     options: industryNames })}
+                {field({ ...fp, k: "sub_industry", label: "Sub-Industry", as: "select", placeholder: form.industry ? "Select sub-industry…" : "Select industry first", options: subOptions })}
                 {field({ ...fp, k: "date_of_incorporation", label: "Date of Incorporation", type: "date" })}
               </div>
               {field({ ...fp, k: "company_description", label: "Company Description", placeholder: "Brief overview of what the company does…", as: "textarea", rows: 3, full: true })}

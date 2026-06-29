@@ -24,6 +24,8 @@ class CompanyCreate(BaseModel):
     state:               Optional[str] = None
     country:             Optional[str] = None
     postal_code:         Optional[str] = None
+    industry:            Optional[str] = None
+    sub_industry:        Optional[str] = None
     logo_url:            Optional[str] = None
 
     @field_validator("company_code")
@@ -47,6 +49,8 @@ class CompanyUpdate(BaseModel):
     state:               Optional[str] = None
     country:             Optional[str] = None
     postal_code:         Optional[str] = None
+    industry:            Optional[str] = None
+    sub_industry:        Optional[str] = None
     logo_url:            Optional[str] = None
 
 

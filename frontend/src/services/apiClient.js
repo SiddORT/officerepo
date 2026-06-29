@@ -416,6 +416,9 @@ export const portalOrgApi = {
   activateCompany:  (sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${id}/activate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
   deactivateCompany:(sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
 
+  // Meta
+  getIndustries: (sd, tk) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/meta/industries`, { headers: { Authorization: `Bearer ${tk}` } }),
+
   // Departments
   listDepts:        (sd, tk, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
   getDept:          (sd, tk, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
