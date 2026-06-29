@@ -214,6 +214,7 @@ function PortalRoutes() {
     <Routes>
       {/* Auth */}
       <Route path="/" element={user ? <Navigate to={`/portal/${subdomain}/dashboard`} replace /> : <PortalLoginPage />} />
+      <Route path="/login" element={user ? <Navigate to={`/portal/${subdomain}/dashboard`} replace /> : <PortalLoginPage />} />
       <Route path="/accept-invite" element={<PortalAcceptInvitePage />} />
 
       {/* Dashboard + profile */}
