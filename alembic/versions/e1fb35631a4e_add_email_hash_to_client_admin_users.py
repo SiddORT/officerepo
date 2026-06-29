@@ -6,9 +6,11 @@ Create Date: 2026-06-29 13:37:07.935848
 
 """
 from typing import Sequence, Union
+import hashlib
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.sql import text
 
 
 revision: str = 'e1fb35631a4e'
@@ -30,6 +32,30 @@ def upgrade() -> None:
     op.create_index(op.f('ix_asset_masters_asset_code'), 'asset_masters', ['asset_code'], unique=True)
     op.create_index(op.f('ix_asset_masters_sub_category_id'), 'asset_masters', ['sub_category_id'], unique=False)
     op.add_column('client_admin_users', sa.Column('email_hash', sa.String(length=64), nullable=True))
+
+    # Backfill email_hash for existing users (decrypt + SHA-256).
+    # Done BEFORE creating the unique index so we can detect and skip duplicates gracefully.
+    conn = op.get_bind()
+    try:
+        from backend.shared.security.encryption import decrypt_value
+        rows = conn.execute(
+            text("SELECT id, email_encrypted FROM client_admin_users WHERE email_hash IS NULL AND is_deleted = false AND email_encrypted IS NOT NULL")
+        ).fetchall()
+        seen_hashes: set = set()
+        for row in rows:
+            uid, enc = row[0], row[1]
+            try:
+                email = decrypt_value(enc)
+                h = hashlib.sha256(email.strip().lower().encode()).hexdigest()
+                if h in seen_hashes:
+                    continue  # skip duplicate — global uniqueness violation; leave hash NULL
+                seen_hashes.add(h)
+                conn.execute(text("UPDATE client_admin_users SET email_hash = :h WHERE id = :uid"), {"h": h, "uid": uid})
+            except Exception:
+                pass  # if decrypt fails, leave hash NULL — admin can fix manually
+    except ImportError:
+        pass  # encryption helper not available in this env — skip backfill
+
     op.create_index(op.f('ix_client_admin_users_email_hash'), 'client_admin_users', ['email_hash'], unique=True)
     # ### end Alembic commands ###
 
