@@ -17,7 +17,7 @@ const isValidUrl   = v => !v || /^https?:\/\/.+/.test(v.trim());
 const isValidPhone = v => !v || /^[+\d\s\-().]{7,20}$/.test(v.trim());
 const isValidPAN   = v => !v || /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v.trim().toUpperCase());
 const isValidGST   = v => !v || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(v.trim().toUpperCase());
-const trim         = v  => typeof v === "string" ? v.replace(/\s+/g, " ").trim() : v;
+const trimStr      = v => typeof v === "string" ? v.replace(/\s+/g, " ").trim() : v;
 
 const API_EMPTY = {
   company_code: "", company_name: "", legal_name: "", display_name: "",
@@ -40,7 +40,6 @@ const EXTRA_EMPTY = {
 
 const EMPTY_DOC = { doc_type: "", doc_number: "", issue_date: "", expiry_date: "", remarks: "", file: null, fileName: "" };
 
-// Which field keys belong to which tab (for error highlighting)
 const TAB_FIELDS = {
   general:    ["company_code", "company_name", "legal_name", "display_name", "company_type", "industry", "sub_industry", "date_of_incorporation", "company_description", "status"],
   compliance: ["registration_number", "cin_number", "pan_number", "tan_number", "msme_number", "tax_number", "gst_registration_date", "tax_identification_number"],
@@ -49,29 +48,68 @@ const TAB_FIELDS = {
 };
 
 const TABS = [
-  { id: "general",    label: "General",            icon: "🏢" },
-  { id: "compliance", label: "Compliance",          icon: "📋" },
-  { id: "contact",    label: "Contact & Address",   icon: "📞" },
-  { id: "branding",   label: "Branding & Docs",     icon: "🎨" },
+  { id: "general",    label: "General",          icon: "🏢" },
+  { id: "compliance", label: "Compliance",        icon: "📋" },
+  { id: "contact",    label: "Contact & Address", icon: "📞" },
+  { id: "branding",   label: "Branding & Docs",   icon: "🎨" },
 ];
+
+// ── Field renderer — called as a FUNCTION {field({...})}, NOT as <field /> ──
+// (Keeping it as a component causes React to remount on every re-render,
+//  losing input focus after each keystroke.)
+function field({ k, label, placeholder, type = "text", mono, full, required, note, as, rows, options,
+                 form, extra, fieldErrors, set, setX }) {
+  const isForm = k in API_EMPTY;
+  const value  = isForm ? form[k] : extra[k];
+  const setter = isForm ? set : setX;
+  const errMsg = fieldErrors[k];
+  const El     = as === "textarea" ? "textarea" : as === "select" ? "select" : "input";
+  return (
+    <div key={k} style={full ? { gridColumn: "1 / -1" } : {}}>
+      {label && (
+        <label className={`portal-form-label ${required ? "portal-form-label-req" : ""}`}>{label}</label>
+      )}
+      {El === "textarea" ? (
+        <textarea value={value} rows={rows || 3}
+          onChange={e => setter(k, e.target.value)} placeholder={placeholder}
+          className="input-field"
+          style={{ resize: "vertical", lineHeight: 1.5, ...(errMsg ? { borderColor: "#f87171" } : {}) }} />
+      ) : El === "select" ? (
+        <select value={value} onChange={e => setter(k, e.target.value)}
+          className="input-field"
+          style={{ cursor: "pointer", ...(errMsg ? { borderColor: "#f87171" } : {}) }}>
+          <option value="">{placeholder || "Select…"}</option>
+          {(options || []).map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      ) : (
+        <input type={type} value={value}
+          onChange={e => setter(k, mono ? e.target.value.toUpperCase() : e.target.value)}
+          placeholder={placeholder} className="input-field"
+          style={{ ...(mono ? { fontFamily: "monospace" } : {}), ...(errMsg ? { borderColor: "#f87171" } : {}) }} />
+      )}
+      {errMsg && <div style={{ fontSize: 11, color: "#f87171", marginTop: 3 }}>{errMsg}</div>}
+      {note && !errMsg && <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 4 }}>{note}</div>}
+    </div>
+  );
+}
 
 export default function CompanyForm({ editMode }) {
   const { subdomain, companyId } = useParams();
   const { token } = usePortalAuth();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
   const logoInputRef = useRef(null);
 
-  const [tab, setTab]     = useState("general");
-  const [form, setForm]   = useState(API_EMPTY);
+  const [tab,  setTab]  = useState("general");
+  const [form, setForm] = useState(API_EMPTY);
   const [extra, setExtra] = useState(EXTRA_EMPTY);
-  const [docs, setDocs]   = useState([]);
+  const [docs,  setDocs]  = useState([]);
   const [addingDoc, setAddingDoc] = useState(false);
-  const [newDoc, setNewDoc]       = useState(EMPTY_DOC);
+  const [newDoc,    setNewDoc]    = useState(EMPTY_DOC);
   const [logoPreview, setLogoPreview] = useState(null);
 
   const [saving, setSaving]   = useState(false);
   const [loading, setLoading] = useState(editMode);
-  const [error, setError]     = useState("");
+  const [error,  setError]    = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
@@ -90,6 +128,9 @@ export default function CompanyForm({ editMode }) {
   const set  = (k, v) => setForm(f  => ({ ...f, [k]: v }));
   const setX = (k, v) => setExtra(f => ({ ...f, [k]: v }));
 
+  // Shared props passed to every field() call
+  const fp = { form, extra, fieldErrors, set, setX };
+
   const handleLogoChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -105,22 +146,19 @@ export default function CompanyForm({ editMode }) {
     const errs = {};
     if (!form.company_code.trim()) errs.company_code = "Required";
     if (!form.company_name.trim()) errs.company_name = "Required";
-    if (!form.legal_name.trim()) errs.legal_name = "Required";
-    if (form.email && !isValidEmail(form.email)) errs.email = "Invalid email";
-    if (extra.support_email && !isValidEmail(extra.support_email)) errs.support_email = "Invalid email";
-    if (extra.hr_email && !isValidEmail(extra.hr_email)) errs.hr_email = "Invalid email";
-    if (extra.accounts_email && !isValidEmail(extra.accounts_email)) errs.accounts_email = "Invalid email";
-    if (form.phone && !isValidPhone(form.phone)) errs.phone = "Invalid phone";
-    if (form.website && !isValidUrl(form.website)) errs.website = "Must start with https://";
-    if (extra.pan_number && !isValidPAN(extra.pan_number)) errs.pan_number = "Invalid PAN (e.g. ABCDE1234F)";
-    if (form.tax_number && !isValidGST(form.tax_number)) errs.tax_number = "Invalid GST number";
+    if (!form.legal_name.trim())   errs.legal_name   = "Required";
+    if (form.email            && !isValidEmail(form.email))            errs.email            = "Invalid email";
+    if (extra.support_email   && !isValidEmail(extra.support_email))   errs.support_email    = "Invalid email";
+    if (extra.hr_email        && !isValidEmail(extra.hr_email))        errs.hr_email         = "Invalid email";
+    if (extra.accounts_email  && !isValidEmail(extra.accounts_email))  errs.accounts_email   = "Invalid email";
+    if (form.phone            && !isValidPhone(form.phone))            errs.phone            = "Invalid phone";
+    if (form.website          && !isValidUrl(form.website))            errs.website          = "Must start with https://";
+    if (extra.pan_number      && !isValidPAN(extra.pan_number))        errs.pan_number       = "Invalid PAN (e.g. ABCDE1234F)";
+    if (form.tax_number       && !isValidGST(form.tax_number))         errs.tax_number       = "Invalid GST number";
     return errs;
   };
 
-  const tabHasError = (tabId) => {
-    const keys = TAB_FIELDS[tabId] || [];
-    return keys.some(k => fieldErrors[k]);
-  };
+  const tabHasError = (tabId) => (TAB_FIELDS[tabId] || []).some(k => fieldErrors[k]);
 
   const handleSubmit = async () => {
     setError("");
@@ -128,7 +166,6 @@ export default function CompanyForm({ editMode }) {
     if (Object.keys(errs).length) {
       setFieldErrors(errs);
       setError("Please fix the highlighted fields before saving.");
-      // Jump to first tab that has errors
       const firstErrTab = TABS.find(t => (TAB_FIELDS[t.id] || []).some(k => errs[k]));
       if (firstErrTab) setTab(firstErrTab.id);
       return;
@@ -136,57 +173,24 @@ export default function CompanyForm({ editMode }) {
     setFieldErrors({});
     setSaving(true);
     const payload = Object.fromEntries(
-      Object.entries(form).map(([k, v]) => [k, v === "" ? null : trim(v)])
+      Object.entries(form).map(([k, v]) => [k, v === "" ? null : trimStr(v)])
     );
     payload.company_code = (payload.company_code || "").toUpperCase();
     try {
       if (editMode) await portalOrgApi.updateCompany(subdomain, token, companyId, payload);
-      else await portalOrgApi.createCompany(subdomain, token, payload);
+      else          await portalOrgApi.createCompany(subdomain, token, payload);
       navigate(`/portal/${subdomain}/org/companies`);
     } catch (e) { setError(e?.response?.data?.detail || "Save failed."); }
     finally { setSaving(false); }
   };
 
-  // Field renderer
-  const F = ({ k, label, placeholder, type = "text", mono, full, required, note, as, rows, options }) => {
-    const isForm = k in API_EMPTY;
-    const value  = isForm ? form[k] : extra[k];
-    const setter = isForm ? set : setX;
-    const errMsg = fieldErrors[k];
-    const El     = as === "textarea" ? "textarea" : as === "select" ? "select" : "input";
-    return (
-      <div style={full ? { gridColumn: "1 / -1" } : {}}>
-        {label && <label className={`portal-form-label ${required ? "portal-form-label-req" : ""}`}>{label}</label>}
-        {El === "textarea" ? (
-          <textarea value={value} rows={rows || 3} onChange={e => setter(k, e.target.value)}
-            placeholder={placeholder} className="input-field"
-            style={{ resize: "vertical", lineHeight: 1.5, ...(errMsg ? { borderColor: "#f87171" } : {}) }} />
-        ) : El === "select" ? (
-          <select value={value} onChange={e => setter(k, e.target.value)}
-            className="input-field"
-            style={{ cursor: "pointer", ...(errMsg ? { borderColor: "#f87171" } : {}) }}>
-            <option value="">{placeholder || "Select…"}</option>
-            {options.map(o => <option key={o} value={o}>{o}</option>)}
-          </select>
-        ) : (
-          <input type={type} value={value}
-            onChange={e => setter(k, mono ? e.target.value.toUpperCase() : e.target.value)}
-            placeholder={placeholder} className="input-field"
-            style={{ ...(mono ? { fontFamily: "monospace" } : {}), ...(errMsg ? { borderColor: "#f87171" } : {}) }} />
-        )}
-        {errMsg && <div style={{ fontSize: 11, color: "#f87171", marginTop: 3 }}>{errMsg}</div>}
-        {note && !errMsg && <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 4 }}>{note}</div>}
-      </div>
-    );
-  };
-
   // Document helpers
-  const setDocField = (k, v) => setNewDoc(d => ({ ...d, [k]: v }));
+  const setDocField  = (k, v) => setNewDoc(d => ({ ...d, [k]: v }));
   const handleDocFile = (e) => {
     const file = e.target.files?.[0];
     if (file) setNewDoc(d => ({ ...d, file, fileName: file.name }));
   };
-  const addDoc = () => {
+  const addDoc    = () => {
     if (!newDoc.doc_type) return;
     setDocs(d => [...d, { ...newDoc, id: Date.now() }]);
     setNewDoc(EMPTY_DOC);
@@ -206,9 +210,7 @@ export default function CompanyForm({ editMode }) {
         <PageHeader
           title={editMode ? "Edit Company" : "Add Company"}
           subtitle={editMode ? "Update company details" : "Register a new legal entity"}
-          actions={
-            <button onClick={() => navigate(-1)} className="btn-secondary">← Back</button>
-          }
+          actions={<button onClick={() => navigate(-1)} className="btn-secondary">← Back</button>}
         />
 
         {error && (
@@ -218,25 +220,19 @@ export default function CompanyForm({ editMode }) {
         )}
 
         {/* ── Tab bar ── */}
-        <div style={{
-          display: "flex", gap: 0, borderBottom: "1px solid var(--c-border)",
-          marginBottom: 20, overflowX: "auto",
-        }}>
+        <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--c-border)", marginBottom: 20, overflowX: "auto" }}>
           {TABS.map(t => {
-            const active = tab === t.id;
-            const hasErr = tabHasError(t.id);
+            const active  = tab === t.id;
+            const hasErr  = tabHasError(t.id);
             return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 7,
-                  padding: "10px 20px", fontSize: 13, fontWeight: active ? 600 : 400,
-                  background: "none", border: "none", cursor: "pointer",
-                  color: active ? "var(--c-accent)" : hasErr ? "#f87171" : "var(--c-muted)",
-                  borderBottom: active ? "2px solid var(--c-accent)" : "2px solid transparent",
-                  marginBottom: -1, whiteSpace: "nowrap", transition: "color 0.15s",
-                }}>
+              <button key={t.id} onClick={() => setTab(t.id)} style={{
+                display: "flex", alignItems: "center", gap: 7,
+                padding: "10px 20px", fontSize: 13, fontWeight: active ? 600 : 400,
+                background: "none", border: "none", cursor: "pointer",
+                color: active ? "var(--c-accent)" : hasErr ? "#f87171" : "var(--c-muted)",
+                borderBottom: active ? "2px solid var(--c-accent)" : "2px solid transparent",
+                marginBottom: -1, whiteSpace: "nowrap", transition: "color 0.15s",
+              }}>
                 <span>{t.icon}</span>
                 <span>{t.label}</span>
                 {hasErr && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#f87171", flexShrink: 0 }} />}
@@ -245,44 +241,43 @@ export default function CompanyForm({ editMode }) {
           })}
         </div>
 
-        {/* ══════════════ TAB: General ══════════════ */}
+        {/* ══ TAB: General ══ */}
         {tab === "general" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div className="portal-form-card">
               <div className="portal-form-title">🏢 General Information</div>
               <div className="portal-form-row">
-                <F k="company_code"  label="Company Code"              required placeholder="ACME"        mono note="Auto-uppercased unique short code" />
-                <F k="company_name"  label="Company Name"              required placeholder="Acme Pvt Ltd" />
-                <F k="legal_name"    label="Legal / Registered Name"   required placeholder="Acme Private Limited" />
-                <F k="display_name"  label="Display Name"              placeholder="Acme"   note="Short name shown in the portal" />
-                <F k="company_type"  label="Company Type"              placeholder="Select type" as="select" options={COMPANY_TYPES} />
-                <F k="industry"      label="Industry"                  placeholder="e.g. Information Technology" />
-                <F k="sub_industry"  label="Sub-Industry"              placeholder="e.g. SaaS" />
-                <F k="date_of_incorporation" label="Date of Incorporation" type="date" />
+                {field({ ...fp, k: "company_code",  label: "Company Code",            required: true, placeholder: "ACME",                 mono: true, note: "Auto-uppercased unique short code" })}
+                {field({ ...fp, k: "company_name",  label: "Company Name",            required: true, placeholder: "Acme Pvt Ltd" })}
+                {field({ ...fp, k: "legal_name",    label: "Legal / Registered Name", required: true, placeholder: "Acme Private Limited" })}
+                {field({ ...fp, k: "display_name",  label: "Display Name",            placeholder: "Acme", note: "Short name shown in the portal" })}
+                {field({ ...fp, k: "company_type",  label: "Company Type",            placeholder: "Select type", as: "select", options: COMPANY_TYPES })}
+                {field({ ...fp, k: "industry",      label: "Industry",                placeholder: "e.g. Information Technology" })}
+                {field({ ...fp, k: "sub_industry",  label: "Sub-Industry",            placeholder: "e.g. SaaS" })}
+                {field({ ...fp, k: "date_of_incorporation", label: "Date of Incorporation", type: "date" })}
               </div>
-              <F k="company_description" label="Company Description"
-                placeholder="Brief overview of what the company does…" as="textarea" rows={3} full />
+              {field({ ...fp, k: "company_description", label: "Company Description", placeholder: "Brief overview of what the company does…", as: "textarea", rows: 3, full: true })}
             </div>
 
             <div className="portal-form-card">
               <div className="portal-form-title">🔖 Status</div>
               <div style={{ maxWidth: 260 }}>
-                <F k="status" label="Status" as="select" options={STATUSES} placeholder="Select status" />
+                {field({ ...fp, k: "status", label: "Status", as: "select", options: STATUSES, placeholder: "Select status" })}
               </div>
             </div>
           </div>
         )}
 
-        {/* ══════════════ TAB: Compliance ══════════════ */}
+        {/* ══ TAB: Compliance ══ */}
         {tab === "compliance" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div className="portal-form-card">
               <div className="portal-form-title">📋 Registration & Compliance</div>
               <div className="portal-form-row">
-                <F k="registration_number" label="Registration Number" placeholder="CIN / Reg. No." />
-                <F k="cin_number"          label="CIN Number"          placeholder="U12345MH2020PTC123456" mono />
-                <F k="pan_number"          label="PAN Number"          placeholder="ABCDE1234F" mono />
-                <F k="tan_number"          label="TAN Number"          placeholder="MUMO12345A" mono />
+                {field({ ...fp, k: "registration_number", label: "Registration Number", placeholder: "CIN / Reg. No." })}
+                {field({ ...fp, k: "cin_number",          label: "CIN Number",          placeholder: "U12345MH2020PTC123456", mono: true })}
+                {field({ ...fp, k: "pan_number",          label: "PAN Number",          placeholder: "ABCDE1234F",            mono: true })}
+                {field({ ...fp, k: "tan_number",          label: "TAN Number",          placeholder: "MUMO12345A",            mono: true })}
               </div>
               <div style={{ paddingTop: 6, display: "flex", alignItems: "center", gap: 10 }}>
                 <button type="button"
@@ -294,7 +289,7 @@ export default function CompanyForm({ editMode }) {
               </div>
               {extra.msme_registered && (
                 <div style={{ maxWidth: 320, paddingTop: 4 }}>
-                  <F k="msme_number" label="MSME Number" placeholder="UDYAM-XX-00-0000000" mono />
+                  {field({ ...fp, k: "msme_number", label: "MSME Number", placeholder: "UDYAM-XX-00-0000000", mono: true })}
                 </div>
               )}
             </div>
@@ -311,43 +306,43 @@ export default function CompanyForm({ editMode }) {
               </div>
               {extra.gst_registered && (
                 <div className="portal-form-row" style={{ marginBottom: 12 }}>
-                  <F k="tax_number"           label="GST Number"            placeholder="22AAAAA0000A1Z5" mono />
-                  <F k="gst_registration_date" label="GST Registration Date" type="date" />
+                  {field({ ...fp, k: "tax_number",            label: "GST Number",            placeholder: "22AAAAA0000A1Z5",  mono: true })}
+                  {field({ ...fp, k: "gst_registration_date", label: "GST Registration Date", type: "date" })}
                 </div>
               )}
               <div style={{ maxWidth: 320 }}>
-                <F k="tax_identification_number" label="Tax Identification Number (TIN)" placeholder="TIN number" mono />
+                {field({ ...fp, k: "tax_identification_number", label: "Tax Identification Number (TIN)", placeholder: "TIN number", mono: true })}
               </div>
             </div>
           </div>
         )}
 
-        {/* ══════════════ TAB: Contact & Address ══════════════ */}
+        {/* ══ TAB: Contact & Address ══ */}
         {tab === "contact" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div className="portal-form-card">
               <div className="portal-form-title">📞 Contact Information</div>
               <div className="portal-form-row">
-                <F k="primary_contact_person" label="Primary Contact Person" placeholder="Full name" />
-                <F k="phone"         label="Phone"          placeholder="+91 98765 43210" />
-                <F k="email"         label="Primary Email"  placeholder="contact@acme.com" type="email" />
-                <F k="website"       label="Website"        placeholder="https://acme.com" note="Include https://" />
-                <F k="support_email" label="Support Email"  placeholder="support@acme.com" type="email" />
-                <F k="hr_email"      label="HR Email"       placeholder="hr@acme.com"      type="email" />
-                <F k="accounts_email" label="Accounts Email" placeholder="accounts@acme.com" type="email" />
+                {field({ ...fp, k: "primary_contact_person", label: "Primary Contact Person", placeholder: "Full name" })}
+                {field({ ...fp, k: "phone",         label: "Phone",         placeholder: "+91 98765 43210" })}
+                {field({ ...fp, k: "email",         label: "Primary Email", placeholder: "contact@acme.com", type: "email" })}
+                {field({ ...fp, k: "website",       label: "Website",       placeholder: "https://acme.com", note: "Include https://" })}
+                {field({ ...fp, k: "support_email", label: "Support Email", placeholder: "support@acme.com", type: "email" })}
+                {field({ ...fp, k: "hr_email",      label: "HR Email",      placeholder: "hr@acme.com",      type: "email" })}
+                {field({ ...fp, k: "accounts_email", label: "Accounts Email", placeholder: "accounts@acme.com", type: "email" })}
               </div>
             </div>
 
             <div className="portal-form-card">
               <div className="portal-form-title">📍 Registered Address</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <F k="address_line_1" label="Address Line 1" placeholder="Street / Plot / Building" full />
-                <F k="address_line_2" label="Address Line 2" placeholder="Area / Landmark / Floor"  full />
+                {field({ ...fp, k: "address_line_1", label: "Address Line 1", placeholder: "Street / Plot / Building", full: true })}
+                {field({ ...fp, k: "address_line_2", label: "Address Line 2", placeholder: "Area / Landmark / Floor",  full: true })}
                 <div className="portal-form-row">
-                  <F k="city"        label="City"        placeholder="Mumbai" />
-                  <F k="state"       label="State"       placeholder="Maharashtra" />
-                  <F k="country"     label="Country"     placeholder="India" />
-                  <F k="postal_code" label="Postal Code" placeholder="400001" />
+                  {field({ ...fp, k: "city",        label: "City",        placeholder: "Mumbai" })}
+                  {field({ ...fp, k: "state",       label: "State",       placeholder: "Maharashtra" })}
+                  {field({ ...fp, k: "country",     label: "Country",     placeholder: "India" })}
+                  {field({ ...fp, k: "postal_code", label: "Postal Code", placeholder: "400001" })}
                 </div>
               </div>
             </div>
@@ -365,14 +360,14 @@ export default function CompanyForm({ editMode }) {
               {!extra.office_same && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
                   <div className="portal-form-row">
-                    <F k="off_address_line_1" label="Address Line 1" placeholder="Street / Plot / Building" />
-                    <F k="off_address_line_2" label="Address Line 2" placeholder="Area / Landmark / Floor" />
+                    {field({ ...fp, k: "off_address_line_1", label: "Address Line 1", placeholder: "Street / Plot / Building" })}
+                    {field({ ...fp, k: "off_address_line_2", label: "Address Line 2", placeholder: "Area / Landmark / Floor" })}
                   </div>
                   <div className="portal-form-row">
-                    <F k="off_city"        label="City"        placeholder="Mumbai" />
-                    <F k="off_state"       label="State"       placeholder="Maharashtra" />
-                    <F k="off_country"     label="Country"     placeholder="India" />
-                    <F k="off_postal_code" label="Postal Code" placeholder="400001" />
+                    {field({ ...fp, k: "off_city",        label: "City",        placeholder: "Mumbai" })}
+                    {field({ ...fp, k: "off_state",       label: "State",       placeholder: "Maharashtra" })}
+                    {field({ ...fp, k: "off_country",     label: "Country",     placeholder: "India" })}
+                    {field({ ...fp, k: "off_postal_code", label: "Postal Code", placeholder: "400001" })}
                   </div>
                 </div>
               )}
@@ -380,7 +375,7 @@ export default function CompanyForm({ editMode }) {
           </div>
         )}
 
-        {/* ══════════════ TAB: Branding & Docs ══════════════ */}
+        {/* ══ TAB: Branding & Docs ══ */}
         {tab === "branding" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div className="portal-form-card">
@@ -428,9 +423,7 @@ export default function CompanyForm({ editMode }) {
                   <table className="portal-table">
                     <thead>
                       <tr>
-                        {["Type", "Doc. Number", "Issue Date", "Expiry Date", "File", ""].map(h => (
-                          <th key={h}>{h}</th>
-                        ))}
+                        {["Type", "Doc. Number", "Issue Date", "Expiry Date", "File", ""].map(h => <th key={h}>{h}</th>)}
                       </tr>
                     </thead>
                     <tbody>
@@ -478,13 +471,11 @@ export default function CompanyForm({ editMode }) {
                   <div className="portal-form-row">
                     <div>
                       <label className="portal-form-label">Issue Date</label>
-                      <input type="date" value={newDoc.issue_date} onChange={e => setDocField("issue_date", e.target.value)}
-                        className="input-field" />
+                      <input type="date" value={newDoc.issue_date} onChange={e => setDocField("issue_date", e.target.value)} className="input-field" />
                     </div>
                     <div>
                       <label className="portal-form-label">Expiry Date</label>
-                      <input type="date" value={newDoc.expiry_date} onChange={e => setDocField("expiry_date", e.target.value)}
-                        className="input-field" />
+                      <input type="date" value={newDoc.expiry_date} onChange={e => setDocField("expiry_date", e.target.value)} className="input-field" />
                     </div>
                   </div>
                   <div>
@@ -513,7 +504,7 @@ export default function CompanyForm({ editMode }) {
           </div>
         )}
 
-        {/* ── Form Actions (always visible) ── */}
+        {/* ── Actions (always visible) ── */}
         <div style={{ display: "flex", gap: 12, marginTop: 24, paddingBottom: 40 }}>
           <button onClick={handleSubmit} disabled={saving} className="btn-primary" style={{ padding: "10px 30px" }}>
             {saving ? "Saving…" : editMode ? "Update Company" : "Register Company"}
