@@ -19,6 +19,17 @@ const isValidPAN   = v => !v || /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v.trim().toUpperC
 const isValidGST   = v => !v || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(v.trim().toUpperCase());
 const trimStr      = v => typeof v === "string" ? v.replace(/\s+/g, " ").trim() : v;
 
+// Auto-generate a company code from the company name
+const SKIP_WORDS = new Set(["pvt", "private", "ltd", "limited", "llp", "public", "inc", "corp", "co", "and", "the", "&"]);
+function generateCode(name) {
+  if (!name.trim()) return "";
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const significant = words.filter(w => !SKIP_WORDS.has(w.toLowerCase()));
+  const src = significant.length ? significant : words;
+  if (src.length === 1) return src[0].slice(0, 6).toUpperCase();
+  return src.map(w => w[0].toUpperCase()).join("").slice(0, 6);
+}
+
 const API_EMPTY = {
   company_code: "", company_name: "", legal_name: "", display_name: "",
   registration_number: "", tax_number: "", website: "",
@@ -58,35 +69,48 @@ const TABS = [
 // (Keeping it as a component causes React to remount on every re-render,
 //  losing input focus after each keystroke.)
 function field({ k, label, placeholder, type = "text", mono, full, required, note, as, rows, options,
-                 form, extra, fieldErrors, set, setX }) {
+                 form, extra, fieldErrors, set, setX, onChangeOverride, suffix }) {
   const isForm = k in API_EMPTY;
   const value  = isForm ? form[k] : extra[k];
   const setter = isForm ? set : setX;
   const errMsg = fieldErrors[k];
   const El     = as === "textarea" ? "textarea" : as === "select" ? "select" : "input";
+  const handleChange = onChangeOverride || (e => setter(k, mono ? e.target.value.toUpperCase() : e.target.value));
   return (
     <div key={k} style={full ? { gridColumn: "1 / -1" } : {}}>
       {label && (
         <label className={`portal-form-label ${required ? "portal-form-label-req" : ""}`}>{label}</label>
       )}
-      {El === "textarea" ? (
-        <textarea value={value} rows={rows || 3}
-          onChange={e => setter(k, e.target.value)} placeholder={placeholder}
-          className="input-field"
-          style={{ resize: "vertical", lineHeight: 1.5, ...(errMsg ? { borderColor: "#f87171" } : {}) }} />
-      ) : El === "select" ? (
-        <select value={value} onChange={e => setter(k, e.target.value)}
-          className="input-field"
-          style={{ cursor: "pointer", ...(errMsg ? { borderColor: "#f87171" } : {}) }}>
-          <option value="">{placeholder || "Select…"}</option>
-          {(options || []).map(o => <option key={o} value={o}>{o}</option>)}
-        </select>
-      ) : (
-        <input type={type} value={value}
-          onChange={e => setter(k, mono ? e.target.value.toUpperCase() : e.target.value)}
-          placeholder={placeholder} className="input-field"
-          style={{ ...(mono ? { fontFamily: "monospace" } : {}), ...(errMsg ? { borderColor: "#f87171" } : {}) }} />
-      )}
+      <div style={suffix ? { position: "relative" } : undefined}>
+        {El === "textarea" ? (
+          <textarea value={value} rows={rows || 3}
+            onChange={e => setter(k, e.target.value)} placeholder={placeholder}
+            className="input-field"
+            style={{ resize: "vertical", lineHeight: 1.5, ...(errMsg ? { borderColor: "#f87171" } : {}) }} />
+        ) : El === "select" ? (
+          <select value={value} onChange={e => setter(k, e.target.value)}
+            className="input-field"
+            style={{ cursor: "pointer", ...(errMsg ? { borderColor: "#f87171" } : {}) }}>
+            <option value="">{placeholder || "Select…"}</option>
+            {(options || []).map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        ) : (
+          <input type={type} value={value}
+            onChange={handleChange}
+            placeholder={placeholder} className="input-field"
+            style={{
+              ...(mono ? { fontFamily: "monospace" } : {}),
+              ...(errMsg ? { borderColor: "#f87171" } : {}),
+              ...(suffix ? { paddingRight: 90 } : {}),
+            }} />
+        )}
+        {suffix && (
+          <span style={{
+            position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+            fontSize: 11, color: "var(--c-muted)", pointerEvents: "none", userSelect: "none",
+          }}>{suffix}</span>
+        )}
+      </div>
       {errMsg && <div style={{ fontSize: 11, color: "#f87171", marginTop: 3 }}>{errMsg}</div>}
       {note && !errMsg && <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 4 }}>{note}</div>}
     </div>
@@ -102,6 +126,7 @@ export default function CompanyForm({ editMode }) {
   const [tab,  setTab]  = useState("general");
   const [form, setForm] = useState(API_EMPTY);
   const [extra, setExtra] = useState(EXTRA_EMPTY);
+  const [codeTouched, setCodeTouched] = useState(!!editMode);
   const [docs,  setDocs]  = useState([]);
   const [addingDoc, setAddingDoc] = useState(false);
   const [newDoc,    setNewDoc]    = useState(EMPTY_DOC);
@@ -127,6 +152,12 @@ export default function CompanyForm({ editMode }) {
 
   const set  = (k, v) => setForm(f  => ({ ...f, [k]: v }));
   const setX = (k, v) => setExtra(f => ({ ...f, [k]: v }));
+
+  // Auto-generate company code from company name (only while code hasn't been manually touched)
+  useEffect(() => {
+    if (codeTouched) return;
+    set("company_code", generateCode(form.company_name));
+  }, [form.company_name]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Shared props passed to every field() call
   const fp = { form, extra, fieldErrors, set, setX };
@@ -247,7 +278,11 @@ export default function CompanyForm({ editMode }) {
             <div className="portal-form-card">
               <div className="portal-form-title">🏢 General Information</div>
               <div className="portal-form-row">
-                {field({ ...fp, k: "company_code",  label: "Company Code",            required: true, placeholder: "ACME",                 mono: true, note: "Auto-uppercased unique short code" })}
+                {field({ ...fp, k: "company_code", label: "Company Code", required: true, placeholder: "ACME", mono: true,
+                  note: codeTouched ? "Manually set · uppercase only" : "Auto-generated from company name · editable",
+                  suffix: codeTouched ? null : "auto",
+                  onChangeOverride: e => { setCodeTouched(true); set("company_code", e.target.value.toUpperCase()); },
+                })}
                 {field({ ...fp, k: "company_name",  label: "Company Name",            required: true, placeholder: "Acme Pvt Ltd" })}
                 {field({ ...fp, k: "legal_name",    label: "Legal / Registered Name", required: true, placeholder: "Acme Private Limited" })}
                 {field({ ...fp, k: "display_name",  label: "Display Name",            placeholder: "Acme", note: "Short name shown in the portal" })}
