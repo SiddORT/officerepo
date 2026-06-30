@@ -6,6 +6,8 @@ import Modal from "../../../components/ui/Modal";
 import Input from "../../../components/ui/Input";
 import Toggle from "../../../components/ui/Toggle";
 import Pagination from "../../../components/ui/Pagination";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const unwrap = (res) => res?.data?.data ?? res?.data;
 
@@ -34,47 +36,6 @@ function StatCard({ label, value, color }) {
   );
 }
 
-function IconBtn({ onClick, title, danger, disabled, children }) {
-  const [hovered, setHovered] = React.useState(false);
-  return (
-    <button
-      onClick={disabled ? undefined : onClick}
-      title={title}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        width: 30, height: 30, borderRadius: 7, border: "1px solid",
-        display: "inline-flex", alignItems: "center", justifyContent: "center",
-        cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.15s ease",
-        opacity: disabled ? 0.35 : 1,
-        background: disabled
-          ? "var(--c-surface2)"
-          : danger
-            ? hovered ? "rgba(239,68,68,0.15)" : "rgba(239,68,68,0.06)"
-            : hovered ? "rgba(0,174,236,0.13)" : "var(--c-surface2)",
-        borderColor: disabled
-          ? "var(--c-border)"
-          : danger
-            ? hovered ? "rgba(239,68,68,0.5)" : "rgba(239,68,68,0.2)"
-            : hovered ? "rgba(0,174,236,0.45)" : "var(--c-border)",
-        color: disabled ? "var(--c-muted)" : danger ? "#f87171" : hovered ? "#00aeec" : "var(--c-muted)",
-      }}
-    >{children}</button>
-  );
-}
-
-const EditIcon = () => (
-  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-  </svg>
-);
-const TrashIcon = () => (
-  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-  </svg>
-);
 
 export default function DocumentTypesPage() {
   const [rows, setRows]         = useState([]);
@@ -92,6 +53,8 @@ export default function DocumentTypesPage() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleteErr, setDeleteErr]         = useState("");
   const [deleting, setDeleting]           = useState(false);
+
+  const [confirmToggle, setConfirmToggle] = useState(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -131,11 +94,14 @@ export default function DocumentTypesPage() {
     } finally { setSaving(false); }
   };
 
-  const toggleActive = async (row) => {
+  const doToggleActive = async () => {
+    if (!confirmToggle) return;
+    const row = confirmToggle;
+    setConfirmToggle(null);
     try {
       await clientDocTypeApi.update(row.id, { is_active: !row.is_active });
       load();
-    } catch (e) { alert(e.response?.data?.detail || "Failed to update."); }
+    } catch (e) { /* silently reload — error is transient */ load(); }
   };
 
   const doDelete = async () => {
@@ -192,26 +158,24 @@ export default function DocumentTypesPage() {
     {
       key: "is_active", label: "Status", width: 110,
       render: (_v, row) => (
-        <button onClick={() => toggleActive(row)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
-          <Badge variant={row.is_active ? "active" : "inactive"} label={row.is_active ? "Active" : "Inactive"} />
-        </button>
+        <Badge
+          variant={row.is_active ? "active" : "inactive"}
+          label={row.is_active ? "Active" : "Inactive"}
+          onClick={() => setConfirmToggle(row)}
+          title={row.is_active ? "Click to deactivate" : "Click to activate"}
+        />
       ),
     },
     {
       key: "actions", label: "", width: 90,
       render: (_v, row) => (
         <div className="flex items-center justify-end gap-1.5">
-          <IconBtn onClick={() => openEdit(row)} title="Edit">
-            <EditIcon />
-          </IconBtn>
-          <IconBtn
+          <EditIconBtn onClick={() => openEdit(row)} title="Edit document type" />
+          <DeleteIconBtn
             onClick={() => { setConfirmDelete(row); setDeleteErr(""); }}
             title={row.is_system ? "System types cannot be deleted" : "Delete"}
-            danger
             disabled={row.is_system}
-          >
-            <TrashIcon />
-          </IconBtn>
+          />
         </div>
       ),
     },
@@ -332,26 +296,25 @@ export default function DocumentTypesPage() {
         </div>
       </Modal>
 
-      {/* Delete confirm modal */}
-      <Modal
+      <ConfirmDialog
+        open={!!confirmToggle}
+        title={confirmToggle?.is_active ? "Deactivate Document Type" : "Activate Document Type"}
+        message={`${confirmToggle?.is_active ? "Deactivate" : "Activate"} "${confirmToggle?.name}"?`}
+        confirmLabel={confirmToggle?.is_active ? "Deactivate" : "Activate"}
+        confirmVariant={confirmToggle?.is_active ? "danger" : "primary"}
+        onConfirm={doToggleActive}
+        onCancel={() => setConfirmToggle(null)}
+      />
+
+      <ConfirmDialog
         open={!!confirmDelete}
-        onClose={() => setConfirmDelete(null)}
         title="Delete Document Type"
-        size="sm"
-        footer={
-          <>
-            <button onClick={() => setConfirmDelete(null)} className="btn-secondary">Cancel</button>
-            <button onClick={doDelete} disabled={deleting} className="btn-danger">
-              {deleting ? "Deleting…" : "Delete"}
-            </button>
-          </>
-        }
-      >
-        {deleteErr && <div className="rounded-lg px-3 py-2 text-sm text-red-400 mb-3" style={{ background: "rgba(239,68,68,0.08)" }}>{deleteErr}</div>}
-        <p className="text-sm t-body">
-          Delete <strong>{confirmDelete?.name}</strong>? This cannot be undone. The type must not be in use by any uploaded documents.
-        </p>
-      </Modal>
+        message={`Delete "${confirmDelete?.name}"? This cannot be undone. The type must not be in use by any uploaded documents.${deleteErr ? `\n\nError: ${deleteErr}` : ""}`}
+        confirmLabel={deleting ? "Deleting…" : "Delete"}
+        confirmVariant="danger"
+        onConfirm={doDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }

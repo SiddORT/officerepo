@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { portalExitApi } from "../../../services/apiClient";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const FIELDS = [
   { key: "policy_name",        label: "Policy Name" },
@@ -48,8 +50,12 @@ export default function ExitPolicyList() {
     } finally { setSaving(false); }
   };
 
-  const handleDelete = async id => {
-    if (!window.confirm("Delete this policy?")) return;
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    const { id } = confirmDelete;
+    setConfirmDelete(null);
     await portalExitApi.deletePolicy(subdomain, id);
     load(true);
   };
@@ -99,9 +105,11 @@ export default function ExitPolicyList() {
                       {p.is_active ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right space-x-2">
-                    <button onClick={() => openEdit(p)} className="text-blue-600 hover:underline text-xs">Edit</button>
-                    <button onClick={() => handleDelete(p.id)} className="text-red-500 hover:underline text-xs">Delete</button>
+                  <td className="px-4 py-3 text-right">
+                    <div className="flex gap-2 justify-end items-center">
+                      <EditIconBtn onClick={() => openEdit(p)} title="Edit policy" />
+                      <DeleteIconBtn onClick={() => setConfirmDelete({ id: p.id, name: p.policy_name })} title="Delete policy" />
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -162,6 +170,16 @@ export default function ExitPolicyList() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete Policy"
+        message={`Delete "${confirmDelete?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }

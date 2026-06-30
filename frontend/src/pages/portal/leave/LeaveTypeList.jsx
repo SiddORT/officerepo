@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalLeaveApi } from "../../../services/apiClient";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const COLORS = ["#3B82F6","#EF4444","#10B981","#F59E0B","#8B5CF6","#EC4899","#06B6D4","#6B7280","#14B8A6","#F97316"];
 
@@ -197,13 +199,9 @@ export default function LeaveTypeList() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <button onClick={() => setModal(t)}
-                        className="text-xs px-3 py-1 rounded-lg border hover:opacity-70"
-                        style={{ borderColor: "var(--c-border)", color: "var(--c-text)" }}>Edit</button>
-                      <button onClick={() => setDelId(t.id)}
-                        className="text-xs px-3 py-1 rounded-lg border hover:opacity-70 text-red-500"
-                        style={{ borderColor: "#FCA5A5" }}>Delete</button>
+                    <div className="flex gap-2 items-center">
+                      <EditIconBtn onClick={() => setModal(t)} title="Edit leave type" />
+                      <DeleteIconBtn onClick={() => setDelId(t.id)} title="Delete leave type" />
                     </div>
                   </td>
                 </tr>
@@ -220,25 +218,15 @@ export default function LeaveTypeList() {
           onClose={() => setModal(null)} />
       )}
 
-      {delId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="rounded-2xl p-6 max-w-sm w-full space-y-4"
-            style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)" }}>
-            <h3 className="font-bold" style={{ color: "var(--c-heading)" }}>Delete Leave Type?</h3>
-            <p className="text-sm" style={{ color: "var(--c-muted)" }}>
-              This action cannot be undone. Existing requests using this type will not be affected.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setDelId(null)}
-                className="flex-1 py-2 rounded-xl text-sm border"
-                style={{ borderColor: "var(--c-border)", color: "var(--c-muted)" }}>Cancel</button>
-              <button onClick={handleDelete}
-                className="flex-1 py-2 rounded-xl text-sm text-white bg-red-500">Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!delId}
+        title="Delete Leave Type"
+        message="This action cannot be undone. Existing requests using this type will not be affected."
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setDelId(null)}
+      />
     </div>
   );
 }

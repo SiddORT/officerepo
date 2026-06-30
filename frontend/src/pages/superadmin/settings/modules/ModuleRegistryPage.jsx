@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { moduleRegistryApi } from "../../../../services/apiClient";
+import { EditIconBtn } from "../../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../../components/ui/ConfirmDialog";
 
 const ICON_MAP = {
   "id-card":    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" /></svg>,
@@ -31,22 +33,22 @@ function ModuleIcon({ icon }) {
   );
 }
 
-function StatusBadge({ isActive, isSystem }) {
-  if (isSystem) return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: "rgba(99,102,241,0.12)", color: "#818cf8" }}>
-      System
-    </span>
+function StatusBadge({ isActive, isSystem, onToggle }) {
+  const inner = isSystem ? (
+    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: "rgba(99,102,241,0.12)", color: "#818cf8" }}>System</span>
+  ) : isActive ? (
+    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: "rgba(34,197,94,0.12)", color: "#4ade80" }}>Active</span>
+  ) : (
+    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: "rgba(100,116,139,0.15)", color: "var(--c-muted)" }}>Inactive</span>
   );
-  if (isActive) return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: "rgba(34,197,94,0.12)", color: "#4ade80" }}>
-      Active
-    </span>
-  );
-  return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: "rgba(100,116,139,0.15)", color: "var(--c-muted)" }}>
-      Inactive
-    </span>
-  );
+  if (onToggle && !isSystem) {
+    return (
+      <button onClick={onToggle} title={isActive ? "Click to deactivate" : "Click to re-activate"} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+        {inner}
+      </button>
+    );
+  }
+  return inner;
 }
 
 function EditModal({ module, onClose, onSaved }) {
@@ -178,8 +180,13 @@ export default function ModuleRegistryPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleDeactivate = async (code, name) => {
-    if (!window.confirm(`Deactivate module "${name}"? It will be hidden from all clients until re-activated.`)) return;
+  const [confirmDeactivate, setConfirmDeactivate] = useState(null);
+  const [confirmActivate, setConfirmActivate] = useState(null);
+
+  const handleDeactivate = async () => {
+    if (!confirmDeactivate) return;
+    const { code, name } = confirmDeactivate;
+    setConfirmDeactivate(null);
     setDeactivating(code);
     try {
       await moduleRegistryApi.deactivate(code);
@@ -187,6 +194,22 @@ export default function ModuleRegistryPage() {
       load();
     } catch (e) {
       showToast(e.response?.data?.detail || "Failed to deactivate", false);
+    } finally {
+      setDeactivating(null);
+    }
+  };
+
+  const handleActivate = async () => {
+    if (!confirmActivate) return;
+    const { code, name } = confirmActivate;
+    setConfirmActivate(null);
+    setDeactivating(code);
+    try {
+      await moduleRegistryApi.update(code, { is_active: true });
+      showToast(`${name} activated`);
+      load();
+    } catch (e) {
+      showToast(e.response?.data?.detail || "Failed to activate", false);
     } finally {
       setDeactivating(null);
     }
@@ -266,7 +289,7 @@ export default function ModuleRegistryPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                           <span style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)" }}>{m.name}</span>
-                          <StatusBadge isActive={m.is_active} isSystem={m.is_system_module} />
+                          <StatusBadge isActive={m.is_active} isSystem={m.is_system_module} onToggle={!m.is_system_module ? () => setConfirmDeactivate({ code: m.code, name: m.name }) : undefined} />
                         </div>
                         <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 1, fontFamily: "monospace" }}>{m.code}</div>
                       </div>
@@ -280,18 +303,7 @@ export default function ModuleRegistryPage() {
                           /{m.route}
                         </span>
                       )}
-                      <button onClick={() => setEditTarget(m)}
-                        style={{ fontSize: 12, color: "var(--c-accent)", background: "none", border: "none", cursor: "pointer", fontWeight: 500, padding: "2px 6px" }}>
-                        Edit
-                      </button>
-                      {!m.is_system_module && (
-                        <button
-                          onClick={() => handleDeactivate(m.code, m.name)}
-                          disabled={deactivating === m.code}
-                          style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500, padding: "2px 6px" }}>
-                          {deactivating === m.code ? "…" : "Deactivate"}
-                        </button>
-                      )}
+                      <EditIconBtn onClick={() => setEditTarget(m)} title="Edit module" />
                     </div>
                   </div>
                 ))}
@@ -317,16 +329,13 @@ export default function ModuleRegistryPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                           <span style={{ fontSize: 14, fontWeight: 600, color: "var(--c-text)" }}>{m.name}</span>
-                          <StatusBadge isActive={m.is_active} isSystem={m.is_system_module} />
+                          <StatusBadge isActive={m.is_active} isSystem={m.is_system_module} onToggle={!m.is_system_module ? () => setConfirmActivate({ code: m.code, name: m.name }) : undefined} />
                         </div>
                         <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 1, fontFamily: "monospace" }}>{m.code}</div>
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", paddingTop: 4, borderTop: "1px solid var(--c-border)" }}>
-                      <button onClick={() => setEditTarget(m)}
-                        style={{ fontSize: 12, color: "var(--c-accent)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
-                        Edit / Re-activate
-                      </button>
+                    <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center", paddingTop: 4, borderTop: "1px solid var(--c-border)" }}>
+                      <EditIconBtn onClick={() => setEditTarget(m)} title="Edit / Re-activate" />
                     </div>
                   </div>
                 ))}
@@ -341,6 +350,25 @@ export default function ModuleRegistryPage() {
           )}
         </>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDeactivate}
+        title="Deactivate Module"
+        message={`Deactivate "${confirmDeactivate?.name}"? It will be hidden from all clients until re-activated.`}
+        confirmLabel="Deactivate"
+        confirmVariant="danger"
+        onConfirm={handleDeactivate}
+        onCancel={() => setConfirmDeactivate(null)}
+      />
+      <ConfirmDialog
+        open={!!confirmActivate}
+        title="Activate Module"
+        message={`Activate "${confirmActivate?.name}"? It will become available to clients.`}
+        confirmLabel="Activate"
+        confirmVariant="primary"
+        onConfirm={handleActivate}
+        onCancel={() => setConfirmActivate(null)}
+      />
 
       {/* Modals */}
       {editTarget !== undefined && (

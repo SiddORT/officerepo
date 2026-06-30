@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { portalOnboardingApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 export default function TemplateList() {
   const { subdomain } = useParams();
@@ -24,8 +26,13 @@ export default function TemplateList() {
 
   useEffect(() => { load(); }, [subdomain, token]);
 
-  const doDelete = async (id, name) => {
-    if (!window.confirm(`Delete template "${name}"? This cannot be undone.`)) return;
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmToggle, setConfirmToggle] = useState(null);
+
+  const doDelete = async () => {
+    if (!confirmDelete) return;
+    const { id } = confirmDelete;
+    setConfirmDelete(null);
     setDeleting(id);
     try {
       await portalOnboardingApi.deleteTemplate(subdomain, token, id);
@@ -37,7 +44,10 @@ export default function TemplateList() {
     }
   };
 
-  const toggleActive = async (t) => {
+  const toggleActive = async () => {
+    if (!confirmToggle) return;
+    const t = confirmToggle;
+    setConfirmToggle(null);
     try {
       await portalOnboardingApi.updateTemplate(subdomain, token, t.id, { is_active: !t.is_active });
       load();
@@ -80,13 +90,15 @@ export default function TemplateList() {
                     {t.is_default && <span style={{ color: "var(--c-accent)", marginLeft: 6, fontWeight: 600 }}>★ Default</span>}
                   </div>
                 </div>
-                <span style={{
-                  display: "inline-block", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 600,
-                  background: t.is_active ? "#22c55e22" : "#6b728022",
-                  color: t.is_active ? "#22c55e" : "#6b7280",
-                }}>
-                  {t.is_active ? "Active" : "Inactive"}
-                </span>
+                <button title={t.is_active ? "Click to deactivate" : "Click to activate"} onClick={() => setConfirmToggle(t)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                  <span style={{
+                    display: "inline-block", padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 600,
+                    background: t.is_active ? "#22c55e22" : "#6b728022",
+                    color: t.is_active ? "#22c55e" : "#6b7280",
+                  }}>
+                    {t.is_active ? "Active" : "Inactive"}
+                  </span>
+                </button>
               </div>
 
               {t.description && (
@@ -113,21 +125,32 @@ export default function TemplateList() {
                 </div>
               )}
 
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button onClick={() => navigate(`${base}/templates/${t.id}/edit`)} className="btn-secondary" style={{ padding: "5px 12px", fontSize: 12 }}>✏️ Edit</button>
-                <button onClick={() => toggleActive(t)} className="btn-secondary" style={{ padding: "5px 12px", fontSize: 12 }}>
-                  {t.is_active ? "Deactivate" : "Activate"}
-                </button>
-                <button onClick={() => doDelete(t.id, t.template_name)}
-                  disabled={deleting === t.id}
-                  style={{ padding: "5px 12px", fontSize: 12, background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 8, cursor: "pointer" }}>
-                  {deleting === t.id ? "…" : "Delete"}
-                </button>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <EditIconBtn onClick={() => navigate(`${base}/templates/${t.id}/edit`)} title="Edit template" />
+                <DeleteIconBtn onClick={() => setConfirmDelete({ id: t.id, name: t.template_name })} disabled={deleting === t.id} title="Delete template" />
               </div>
             </div>
           ))}
         </div>
       )}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete Template"
+        message={`Delete "${confirmDelete?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={doDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
+      <ConfirmDialog
+        open={!!confirmToggle}
+        title={confirmToggle?.is_active ? "Deactivate Template" : "Activate Template"}
+        message={`${confirmToggle?.is_active ? "Deactivate" : "Activate"} "${confirmToggle?.template_name}"?`}
+        confirmLabel={confirmToggle?.is_active ? "Deactivate" : "Activate"}
+        confirmVariant={confirmToggle?.is_active ? "danger" : "primary"}
+        onConfirm={toggleActive}
+        onCancel={() => setConfirmToggle(null)}
+      />
     </div>
   );
 }

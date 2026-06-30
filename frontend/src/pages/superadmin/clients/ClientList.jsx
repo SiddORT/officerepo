@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { clientsApi } from "../../../services/apiClient";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
 import Table from "../../../components/ui/Table";
 import Pagination from "../../../components/ui/Pagination";
 import SearchBar from "../../../components/ui/SearchBar";
@@ -164,13 +165,12 @@ export default function ClientList() {
     {
       key: "actions",
       label: "",
+      width: 80,
       render: (_, row) => (
-        <ActionsDropdown
-          row={row}
-          onView={() => navigate(`/superadmin/clients/${row.id}`)}
-          onEdit={() => navigate(`/superadmin/clients/${row.id}/edit`)}
-          onDelete={() => setConfirmDelete(row)}
-        />
+        <div className="flex items-center justify-end gap-1.5">
+          <EditIconBtn onClick={() => navigate(`/superadmin/clients/${row.id}/edit`)} title="Edit client" />
+          <DeleteIconBtn onClick={() => setConfirmDelete(row)} title="Archive client" />
+        </div>
       ),
     },
   ];

@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { assetMgmtApi } from "../../../services/apiClient";
+import { EditIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const PAGE_SIZE = 30;
 
@@ -77,6 +79,7 @@ export default function AssetSubCategoryList() {
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState("");
+  const [confirmToggle, setConfirmToggle] = useState(null);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
@@ -96,7 +99,9 @@ export default function AssetSubCategoryList() {
 
   useEffect(() => { load(); }, [load]);
 
-  const toggleStatus = async (sc) => {
+  const confirmAndToggle = async () => {
+    const sc = confirmToggle;
+    setConfirmToggle(null);
     try {
       if (sc.is_active) await assetMgmtApi.deactivateSubCategory(sc.id);
       else await assetMgmtApi.activateSubCategory(sc.id);
@@ -181,11 +186,14 @@ export default function AssetSubCategoryList() {
                     <span style={{ fontSize: 11, fontFamily: "monospace", padding: "2px 6px", borderRadius: 4, background: "var(--c-surface2)", color: "var(--c-text2)", border: "1px solid var(--c-border)" }}>{sc.sub_category_code}</span>
                   </td>
                   <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)" }}>{sc.category_name || <span style={{ opacity: 0.4 }}>—</span>}</td>
-                  <td style={{ padding: "12px 16px" }}><StatusBadge active={sc.is_active} /></td>
                   <td style={{ padding: "12px 16px" }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={() => setModal(sc)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 5, border: "1px solid var(--c-border)", background: "transparent", color: "var(--c-text2)", cursor: "pointer" }}>Edit</button>
-                      <button onClick={() => toggleStatus(sc)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 5, border: `1px solid ${sc.is_active ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}`, background: "transparent", color: sc.is_active ? "#f87171" : "#4ade80", cursor: "pointer" }}>{sc.is_active ? "Deactivate" : "Activate"}</button>
+                    <button title={sc.is_active ? "Click to deactivate" : "Click to activate"} onClick={() => setConfirmToggle(sc)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                      <StatusBadge active={sc.is_active} />
+                    </button>
+                  </td>
+                  <td style={{ padding: "12px 16px" }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <EditIconBtn onClick={() => setModal(sc)} title="Edit sub-category" />
                     </div>
                   </td>
                 </tr>
@@ -194,6 +202,16 @@ export default function AssetSubCategoryList() {
           </table>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmToggle}
+        title={confirmToggle?.is_active ? "Deactivate Sub-Category" : "Activate Sub-Category"}
+        message={`${confirmToggle?.is_active ? "Deactivate" : "Activate"} "${confirmToggle?.sub_category_name}"?`}
+        confirmLabel={confirmToggle?.is_active ? "Deactivate" : "Activate"}
+        confirmVariant={confirmToggle?.is_active ? "danger" : "primary"}
+        onConfirm={confirmAndToggle}
+        onCancel={() => setConfirmToggle(null)}
+      />
 
       {totalPages > 1 && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, fontSize: 13, color: "var(--c-text2)" }}>

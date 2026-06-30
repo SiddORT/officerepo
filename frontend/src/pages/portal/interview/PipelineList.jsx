@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { portalInterviewApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 export default function PipelineList() {
   const { subdomain } = useParams();
@@ -23,8 +25,13 @@ export default function PipelineList() {
 
   useEffect(() => { load(); }, [subdomain, token]);
 
-  const handleDelete = async id => {
-    if (!window.confirm("Delete this pipeline? This cannot be undone.")) return;
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmToggle, setConfirmToggle] = useState(null);
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    const { id } = confirmDelete;
+    setConfirmDelete(null);
     try {
       await portalInterviewApi.deletePipeline(subdomain, token, id);
       load();
@@ -33,7 +40,10 @@ export default function PipelineList() {
     }
   };
 
-  const toggleActive = async (p) => {
+  const toggleActive = async () => {
+    if (!confirmToggle) return;
+    const p = confirmToggle;
+    setConfirmToggle(null);
     try {
       await portalInterviewApi.updatePipeline(subdomain, token, p.id, { is_active: !p.is_active });
       load();
@@ -84,14 +94,17 @@ export default function PipelineList() {
                         Default
                       </span>
                     )}
-                    <span style={{
-                      background: p.is_active ? "rgba(34,197,94,0.1)" : "rgba(107,114,128,0.1)",
-                      color: p.is_active ? "#22c55e" : "#6b7280",
-                      padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 600,
-                      border: `1px solid ${p.is_active ? "rgba(34,197,94,0.3)" : "rgba(107,114,128,0.3)"}`,
-                    }}>
-                      {p.is_active ? "Active" : "Inactive"}
-                    </span>
+                    <button title={p.is_active ? "Click to deactivate" : "Click to activate"} onClick={() => setConfirmToggle(p)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                      <span style={{
+                        display: "inline-block",
+                        background: p.is_active ? "rgba(34,197,94,0.1)" : "rgba(107,114,128,0.1)",
+                        color: p.is_active ? "#22c55e" : "#6b7280",
+                        padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 600,
+                        border: `1px solid ${p.is_active ? "rgba(34,197,94,0.3)" : "rgba(107,114,128,0.3)"}`,
+                      }}>
+                        {p.is_active ? "Active" : "Inactive"}
+                      </span>
+                    </button>
                   </div>
 
                   {p.description && <div className="t-muted" style={{ fontSize: 13, marginBottom: 8 }}>{p.description}</div>}
@@ -126,27 +139,37 @@ export default function PipelineList() {
                   )}
                 </div>
 
-                <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginLeft: 16 }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: 16 }}>
                   <button onClick={() => navigate(`${base}/pipelines/${p.id}`)} className="btn-secondary" style={{ padding: "6px 14px", fontSize: 12 }}>
                     View
                   </button>
-                  <button onClick={() => navigate(`${base}/pipelines/${p.id}/edit`)} className="btn-secondary" style={{ padding: "6px 14px", fontSize: 12 }}>
-                    Edit
-                  </button>
-                  <button onClick={() => toggleActive(p)}
-                    style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid var(--c-border)", background: "none", color: "var(--c-muted)", cursor: "pointer", fontSize: 12 }}>
-                    {p.is_active ? "Deactivate" : "Activate"}
-                  </button>
-                  <button onClick={() => handleDelete(p.id)}
-                    style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid rgba(239,68,68,0.3)", background: "none", color: "#ef4444", cursor: "pointer", fontSize: 12 }}>
-                    Delete
-                  </button>
+                  <EditIconBtn onClick={() => navigate(`${base}/pipelines/${p.id}/edit`)} title="Edit pipeline" />
+                  <DeleteIconBtn onClick={() => setConfirmDelete({ id: p.id, name: p.pipeline_name })} title="Delete pipeline" />
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete Pipeline"
+        message={`Delete "${confirmDelete?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
+      <ConfirmDialog
+        open={!!confirmToggle}
+        title={confirmToggle?.is_active ? "Deactivate Pipeline" : "Activate Pipeline"}
+        message={`${confirmToggle?.is_active ? "Deactivate" : "Activate"} "${confirmToggle?.pipeline_name}"?`}
+        confirmLabel={confirmToggle?.is_active ? "Deactivate" : "Activate"}
+        confirmVariant={confirmToggle?.is_active ? "danger" : "primary"}
+        onConfirm={toggleActive}
+        onCancel={() => setConfirmToggle(null)}
+      />
     </div>
   );
 }

@@ -6,6 +6,8 @@ import Modal from "../../../components/ui/Modal";
 import Input from "../../../components/ui/Input";
 import Badge from "../../../components/ui/Badge";
 import Pagination from "../../../components/ui/Pagination";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const PERM = {
   create: "rbac.role.create",
@@ -145,17 +147,10 @@ function RolesTab({ hasPermission, refreshPermissions }) {
       render: (_v, row) => (
         <div className="flex items-center justify-end gap-2">
           {hasPermission(PERM.update) && !row.is_system && (
-            <button onClick={() => setEditing(row)} className="text-xs px-2 py-1 rounded-lg layout-nav-idle">
-              Edit
-            </button>
+            <EditIconBtn onClick={() => setEditing(row)} title="Edit role" />
           )}
           {hasPermission(PERM.delete) && !row.is_system && (
-            <button
-              onClick={() => setConfirmDelete(row)}
-              className="text-xs px-2 py-1 rounded-lg text-red-400 hover:bg-red-500/10"
-            >
-              Delete
-            </button>
+            <DeleteIconBtn onClick={() => setConfirmDelete(row)} title="Delete role" />
           )}
           {row.is_system && <span className="text-xs t-muted">Managed</span>}
         </div>
@@ -444,7 +439,12 @@ function UsersTab({ user, hasPermission, refreshPermissions }) {
   const safUserPage    = Math.min(userPage, userTotalPages);
   const pageUsers      = users.slice((safUserPage - 1) * USER_PAGE_SIZE, safUserPage * USER_PAGE_SIZE);
 
-  const toggleActive = async (row) => {
+  const [confirmToggleUser, setConfirmToggleUser] = useState(null);
+  const [confirmRemoveUser, setConfirmRemoveUser] = useState(null);
+
+  const toggleActive = async () => {
+    const row = confirmToggleUser;
+    setConfirmToggleUser(null);
     setBusyId(row.id);
     setError("");
     try {
@@ -471,8 +471,9 @@ function UsersTab({ user, hasPermission, refreshPermissions }) {
     }
   };
 
-  const removeUser = async (row) => {
-    if (!window.confirm(`Remove pending invite for ${row.email}? This cannot be undone.`)) return;
+  const removeUser = async () => {
+    const row = confirmRemoveUser;
+    setConfirmRemoveUser(null);
     setBusyId(row.id);
     setError("");
     try {
@@ -501,8 +502,17 @@ function UsersTab({ user, hasPermission, refreshPermissions }) {
     {
       key: "status",
       label: "Status",
-      render: (s) => {
+      render: (s, row) => {
         const meta = USER_STATUS[s] || { variant: "default", label: s || "—" };
+        const isSelf = user?.user_id === row.id;
+        const pending = isPendingStatus(row.status);
+        if (!pending && canUpdate && !isSelf) {
+          return (
+            <button title={row.is_active ? "Click to deactivate" : "Click to activate"} onClick={() => setConfirmToggleUser(row)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+              <Badge variant={meta.variant} label={meta.label} />
+            </button>
+          );
+        }
         return <Badge variant={meta.variant} label={meta.label} />;
       },
     },
@@ -551,25 +561,12 @@ function UsersTab({ user, hasPermission, refreshPermissions }) {
                 Resend
               </button>
             )}
-            {!pending && canUpdate && !isSelf && (
-              <button
-                onClick={() => toggleActive(row)}
-                disabled={busyId === row.id}
-                className="text-xs px-2 py-1 rounded-lg layout-nav-idle"
-                style={{ color: row.is_active ? "#ef4444" : "#10b981" }}
-              >
-                {row.is_active ? "Deactivate" : "Activate"}
-              </button>
-            )}
             {pending && canDelete && (
-              <button
-                onClick={() => removeUser(row)}
+              <DeleteIconBtn
+                onClick={() => setConfirmRemoveUser(row)}
                 disabled={busyId === row.id}
-                className="text-xs px-2 py-1 rounded-lg layout-nav-idle"
-                style={{ color: "#ef4444" }}
-              >
-                Remove
-              </button>
+                title="Remove pending invite"
+              />
             )}
           </div>
         );
@@ -618,6 +615,25 @@ function UsersTab({ user, hasPermission, refreshPermissions }) {
           onSaved={() => { setAssigning(null); load(); refreshPermissions?.(); }}
         />
       )}
+
+      <ConfirmDialog
+        open={!!confirmToggleUser}
+        title={confirmToggleUser?.is_active ? "Deactivate User" : "Activate User"}
+        message={`${confirmToggleUser?.is_active ? "Deactivate" : "Activate"} ${confirmToggleUser?.name || confirmToggleUser?.email}?`}
+        confirmLabel={confirmToggleUser?.is_active ? "Deactivate" : "Activate"}
+        confirmVariant={confirmToggleUser?.is_active ? "danger" : "primary"}
+        onConfirm={toggleActive}
+        onCancel={() => setConfirmToggleUser(null)}
+      />
+      <ConfirmDialog
+        open={!!confirmRemoveUser}
+        title="Remove Pending Invite"
+        message={`Remove pending invite for ${confirmRemoveUser?.email}? This cannot be undone.`}
+        confirmLabel="Remove"
+        confirmVariant="danger"
+        onConfirm={removeUser}
+        onCancel={() => setConfirmRemoveUser(null)}
+      />
     </div>
   );
 }

@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { assetMgmtApi } from "../../../services/apiClient";
+import { EditIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const Label = ({ children }) => (
   <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-muted)", marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.04em" }}>{children}</div>
@@ -226,7 +228,10 @@ export default function AssetMasterDetails() {
 
   useEffect(() => { load(); }, [load]);
 
+  const [confirmToggle, setConfirmToggle] = useState(false);
+
   const toggleStatus = async () => {
+    setConfirmToggle(false);
     try {
       if (master.is_active) await assetMgmtApi.deactivateMaster(master.id);
       else await assetMgmtApi.activateMaster(master.id);
@@ -261,26 +266,32 @@ export default function AssetMasterDetails() {
                   {master.category_name}{master.sub_category_name ? ` › ${master.sub_category_name}` : ""}
                 </span>
               )}
-              <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 999, fontWeight: 600,
-                background: master.is_active ? "rgba(34,197,94,0.1)" : "rgba(156,163,175,0.1)",
-                color: master.is_active ? "#4ade80" : "#9ca3af",
-                border: `1px solid ${master.is_active ? "rgba(34,197,94,0.2)" : "rgba(156,163,175,0.2)"}` }}>
-                {master.is_active ? "Active" : "Inactive"}
-              </span>
+              <button onClick={() => setConfirmToggle(true)} title={master.is_active ? "Click to deactivate" : "Click to activate"}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 999, fontWeight: 600,
+                  background: master.is_active ? "rgba(34,197,94,0.1)" : "rgba(156,163,175,0.1)",
+                  color: master.is_active ? "#4ade80" : "#9ca3af",
+                  border: `1px solid ${master.is_active ? "rgba(34,197,94,0.2)" : "rgba(156,163,175,0.2)"}` }}>
+                  {master.is_active ? "Active" : "Inactive"}
+                </span>
+              </button>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => navigate(`/superadmin/assets/masters/${master.id}/edit`)}
-              style={{ padding: "8px 16px", borderRadius: 7, fontWeight: 600, fontSize: 13, background: "var(--c-accent)", color: "#fff", border: "none", cursor: "pointer" }}>
-              Edit
-            </button>
-            <button onClick={toggleStatus}
-              style={{ padding: "8px 16px", borderRadius: 7, fontWeight: 500, fontSize: 13, background: "transparent", color: master.is_active ? "#f87171" : "#4ade80", border: `1px solid ${master.is_active ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}`, cursor: "pointer" }}>
-              {master.is_active ? "Deactivate" : "Activate"}
-            </button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <EditIconBtn onClick={() => navigate(`/superadmin/assets/masters/${master.id}/edit`)} title="Edit asset master" />
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmToggle}
+        title={master.is_active ? "Deactivate Asset Master" : "Activate Asset Master"}
+        message={`${master.is_active ? "Deactivate" : "Activate"} "${master.asset_name}"?`}
+        confirmLabel={master.is_active ? "Deactivate" : "Activate"}
+        confirmVariant={master.is_active ? "danger" : "primary"}
+        onConfirm={toggleStatus}
+        onCancel={() => setConfirmToggle(false)}
+      />
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--c-border)", marginBottom: 20 }}>

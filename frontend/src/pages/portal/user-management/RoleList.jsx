@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { EditIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalUserMgmtApi } from "../../../services/apiClient";
 import UserManagementLayout from "./UserManagementLayout";
@@ -13,6 +15,7 @@ export default function RoleList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
+  const [confirmStatus, setConfirmStatus] = useState(null);
 
   const showToast = (msg, ok = true) => {
     setToast({ msg, ok });
@@ -53,11 +56,27 @@ export default function RoleList() {
     }
   };
 
+  const doStatusToggle = async () => {
+    if (!confirmStatus) return;
+    const { roleId, roleName, is_active } = confirmStatus;
+    setConfirmStatus(null);
+    await handleStatus(roleId, roleName, is_active);
+  };
+
   const system = roles.filter(r => r.is_system_role);
   const custom = roles.filter(r => !r.is_system_role);
 
   return (
     <UserManagementLayout title="Roles">
+      <ConfirmDialog
+        open={!!confirmStatus}
+        title={confirmStatus?.is_active ? "Activate Role" : "Deactivate Role"}
+        message={`${confirmStatus?.is_active ? "Activate" : "Deactivate"} role "${confirmStatus?.roleName}"?`}
+        confirmLabel={confirmStatus?.is_active ? "Activate" : "Deactivate"}
+        confirmVariant={confirmStatus?.is_active ? "primary" : "danger"}
+        onConfirm={doStatusToggle}
+        onCancel={() => setConfirmStatus(null)}
+      />
       {toast && (
         <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: toast.ok ? "#166534" : "#dc2626", color: "#fff", padding: "10px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>
           {toast.msg}
@@ -87,7 +106,7 @@ export default function RoleList() {
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>System Roles</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
-                {system.map(r => <RoleCard key={r.id} role={r} subdomain={subdomain} onClone={handleClone} onStatus={handleStatus} />)}
+                {system.map(r => <RoleCard key={r.id} role={r} subdomain={subdomain} onClone={handleClone} onStatus={(id, name, is_active) => setConfirmStatus({ roleId: id, roleName: name, is_active })} />)}
               </div>
             </div>
           )}
@@ -95,7 +114,7 @@ export default function RoleList() {
             <div>
               <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Custom Roles</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
-                {custom.map(r => <RoleCard key={r.id} role={r} subdomain={subdomain} onClone={handleClone} onStatus={handleStatus} />)}
+                {custom.map(r => <RoleCard key={r.id} role={r} subdomain={subdomain} onClone={handleClone} onStatus={(id, name, is_active) => setConfirmStatus({ roleId: id, roleName: name, is_active })} />)}
               </div>
             </div>
           )}
@@ -111,6 +130,7 @@ export default function RoleList() {
 }
 
 function RoleCard({ role, subdomain, onClone, onStatus }) {
+  const navigate = useNavigate();
   return (
     <div className="card" style={{ padding: "14px 16px" }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
@@ -120,8 +140,13 @@ function RoleCard({ role, subdomain, onClone, onStatus }) {
             {role.is_system_role && (
               <span className="badge-purple" style={{ fontSize: 10 }}>System</span>
             )}
-            {!role.is_active && (
-              <Badge status="Inactive" />
+            {!role.is_system_role && (
+              <button
+                title={role.is_active ? "Click to deactivate" : "Click to activate"}
+                onClick={() => onStatus(role.id, role.name, !role.is_active)}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                <Badge status={role.is_active ? "Active" : "Inactive"} />
+              </button>
             )}
           </div>
           {role.description && (
@@ -130,20 +155,13 @@ function RoleCard({ role, subdomain, onClone, onStatus }) {
         </div>
         <div className="t-accent" style={{ fontSize: 20, fontWeight: 700 }}>{role.user_count}</div>
       </div>
-      <div style={{ display: "flex", gap: 6, marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--c-border)" }}>
-        {!role.is_system_role && (
-          <Link to={`/portal/${subdomain}/user-management/roles/${role.id}/edit`}
-            className="t-accent" style={{ fontSize: 12, textDecoration: "none", fontWeight: 600 }}>Edit</Link>
-        )}
+      <div style={{ display: "flex", gap: 6, marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--c-border)", alignItems: "center" }}>
         <button onClick={() => onClone(role.id, role.name)}
           className="t-muted" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
           Clone
         </button>
         {!role.is_system_role && (
-          <button onClick={() => onStatus(role.id, role.name, !role.is_active)}
-            className="t-accent" style={{ color: role.is_active ? "#f87171" : "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 600, fontSize: 12 }}>
-            {role.is_active ? "Deactivate" : "Activate"}
-          </button>
+          <EditIconBtn onClick={() => navigate(`/portal/${subdomain}/user-management/roles/${role.id}/edit`)} title="Edit role" />
         )}
       </div>
     </div>

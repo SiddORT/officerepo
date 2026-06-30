@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { portalExpenseApi } from "../../../services/apiClient";
+import { DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 export default function ExpenseClaimForm({ editMode = false }) {
   const { subdomain, claimId } = useParams();
@@ -56,8 +58,9 @@ export default function ExpenseClaimForm({ editMode = false }) {
     </div>
   );
 
+  const [confirmRemoveIdx, setConfirmRemoveIdx] = useState(null);
   const addItem = () => setItems(p => [...p, { ...EMPTY_ITEM }]);
-  const removeItem = (i) => setItems(p => p.filter((_, idx) => idx !== i));
+  const removeItem = (i) => { setItems(p => p.filter((_, idx) => idx !== i)); setConfirmRemoveIdx(null); };
   const setItem = (i, k, v) => setItems(p => p.map((row, idx) => idx === i ? { ...row, [k]: v } : row));
 
   const totalFromItems = items.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
@@ -168,7 +171,7 @@ export default function ExpenseClaimForm({ editMode = false }) {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Item {idx + 1}</span>
                   {items.length > 1 && (
-                    <button type="button" onClick={() => removeItem(idx)} className="text-xs text-red-500 hover:text-red-700">✕ Remove</button>
+                    <DeleteIconBtn onClick={() => setConfirmRemoveIdx(idx)} title="Remove item" />
                   )}
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -223,6 +226,15 @@ export default function ExpenseClaimForm({ editMode = false }) {
           </button>
         </div>
       </form>
+      <ConfirmDialog
+        open={confirmRemoveIdx !== null}
+        title="Remove Item"
+        message="Remove this expense item?"
+        confirmLabel="Remove"
+        confirmVariant="danger"
+        onConfirm={() => removeItem(confirmRemoveIdx)}
+        onCancel={() => setConfirmRemoveIdx(null)}
+      />
     </div>
   );
 }

@@ -5,6 +5,8 @@ import { portalPayrollApi } from "../../../services/apiClient";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const TYPE_COLOR = { "Earning":"#10B981","Deduction":"#EF4444","Employer Contribution":"#8B5CF6" };
 
@@ -198,8 +200,12 @@ export default function SalaryStructureList() {
     setModal(null); setPage(1); load();
   };
 
-  const handleDelete = async (item) => {
-    if (!confirm(`Delete "${item.structure_name}"?`)) return;
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    const item = confirmDelete;
+    setConfirmDelete(null);
     try { await portalPayrollApi.deleteStructure(subdomain, token, item.id); showToast("Deleted."); load(); }
     catch (ex) { showToast(ex?.response?.data?.detail || "Delete failed.", false); }
   };
@@ -285,13 +291,9 @@ export default function SalaryStructureList() {
                 </td>
                 <td><Badge status={item.is_active ? "Active" : "Inactive"} /></td>
                 <td style={{ textAlign:"right" }}>
-                  <div style={{ display:"flex",gap:6,justifyContent:"flex-end" }}>
-                    <button onClick={() => setModal({ mode:"edit",item })}
-                      className="btn-secondary" style={{ padding:"5px 10px",fontSize:11 }}>Edit</button>
-                    <button onClick={() => handleDelete(item)}
-                      className="btn-secondary" style={{ padding:"5px 10px",fontSize:11,color:"#f87171",borderColor:"rgba(239,68,68,0.35)" }}>
-                      Delete
-                    </button>
+                  <div style={{ display:"flex",gap:6,justifyContent:"flex-end",alignItems:"center" }}>
+                    <EditIconBtn onClick={() => setModal({ mode:"edit",item })} title="Edit structure" />
+                    <DeleteIconBtn onClick={() => setConfirmDelete(item)} title="Delete structure" />
                   </div>
                 </td>
               </tr>
@@ -300,6 +302,16 @@ export default function SalaryStructureList() {
         </table>
         <Pagination page={page} totalPages={Math.ceil(total/PAGE_SIZE)||1} onPage={setPage} total={total} pageSize={PAGE_SIZE} />
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete Salary Structure"
+        message={`Delete "${confirmDelete?.structure_name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
 
       {modal && (
         <StructureModal

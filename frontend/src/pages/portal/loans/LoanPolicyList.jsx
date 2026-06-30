@@ -1,6 +1,8 @@
 // @refresh reset
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PortalLayout from "../PortalLayout";
 import { portalLoanApi } from "../../../services/apiClient";
@@ -55,8 +57,12 @@ export default function LoanPolicyList() {
     }
   };
 
-  const del = async (id) => {
-    if (!confirm("Delete this policy?")) return;
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const del = async () => {
+    if (!confirmDelete) return;
+    const { id } = confirmDelete;
+    setConfirmDelete(null);
     await portalLoanApi.deletePolicy(subdomain, token, id).catch(() => {});
     load();
   };
@@ -119,9 +125,11 @@ export default function LoanPolicyList() {
                         {p.is_active ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 flex gap-2 justify-end">
-                      <button onClick={() => openEdit(p)} className="text-xs px-3 py-1 rounded-lg" style={{ background: "var(--c-border)", color: "var(--c-text)" }}>Edit</button>
-                      <button onClick={() => del(p.id)} className="text-xs px-3 py-1 rounded-lg text-red-400" style={{ background: "#ef444422" }}>Del</button>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2 justify-end items-center">
+                        <EditIconBtn onClick={() => openEdit(p)} title="Edit policy" />
+                        <DeleteIconBtn onClick={() => setConfirmDelete({ id: p.id, name: p.policy_name })} title="Delete policy" />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -130,6 +138,16 @@ export default function LoanPolicyList() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete Policy"
+        message={`Delete "${confirmDelete?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={del}
+        onCancel={() => setConfirmDelete(null)}
+      />
 
       {modal && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 overflow-y-auto">

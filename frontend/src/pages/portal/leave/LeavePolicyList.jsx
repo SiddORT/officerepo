@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalLeaveApi } from "../../../services/apiClient";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 function PolicyModal({ initial, leaveTypes, onSave, onClose }) {
   const [form, setForm] = useState(initial || {
@@ -44,8 +46,10 @@ function PolicyModal({ initial, leaveTypes, onSave, onClose }) {
     setRules(rs => rs.map((r, i) => i === idx ? { ...r, [k]: v } : r));
   }
 
+  const [confirmRemoveRuleIdx, setConfirmRemoveRuleIdx] = useState(null);
   function removeRule(idx) {
     setRules(rs => rs.filter((_, i) => i !== idx));
+    setConfirmRemoveRuleIdx(null);
   }
 
   async function submit(e) {
@@ -136,8 +140,7 @@ function PolicyModal({ initial, leaveTypes, onSave, onClose }) {
                       value={rule.leave_type_id} onChange={e => setRule(idx, "leave_type_id", e.target.value)}>
                       {leaveTypes.map(t => <option key={t.id} value={t.id}>{t.leave_name}</option>)}
                     </select>
-                    <button type="button" onClick={() => removeRule(idx)}
-                      className="text-xs text-red-500 hover:underline">Remove</button>
+                    <DeleteIconBtn onClick={() => setConfirmRemoveRuleIdx(idx)} title="Remove rule" />
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
@@ -202,6 +205,15 @@ function PolicyModal({ initial, leaveTypes, onSave, onClose }) {
           </div>
         </form>
       </div>
+      <ConfirmDialog
+        open={confirmRemoveRuleIdx !== null}
+        title="Remove Rule"
+        message="Remove this leave rule from the policy?"
+        confirmLabel="Remove"
+        confirmVariant="danger"
+        onConfirm={() => removeRule(confirmRemoveRuleIdx)}
+        onCancel={() => setConfirmRemoveRuleIdx(null)}
+      />
     </div>
   );
 }
@@ -213,6 +225,7 @@ export default function LeavePolicyList() {
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -233,8 +246,10 @@ export default function LeavePolicyList() {
     setModal(null); load();
   }
 
-  async function deletePolicy(id) {
-    if (!confirm("Delete this policy?")) return;
+  async function doDeletePolicy() {
+    if (!confirmDelete) return;
+    const id = confirmDelete;
+    setConfirmDelete(null);
     await portalLeaveApi.deletePolicy(subdomain, token, id);
     load();
   }
@@ -295,13 +310,9 @@ export default function LeavePolicyList() {
                     </div>
                   )}
                 </div>
-                <div className="flex gap-2 ml-4">
-                  <button onClick={() => setModal(p)}
-                    className="text-xs px-3 py-1 rounded-lg border hover:opacity-70"
-                    style={{ borderColor: "var(--c-border)", color: "var(--c-text)" }}>Edit</button>
-                  <button onClick={() => deletePolicy(p.id)}
-                    className="text-xs px-3 py-1 rounded-lg border hover:opacity-70 text-red-500"
-                    style={{ borderColor: "#FCA5A5" }}>Delete</button>
+                <div className="flex gap-2 ml-4 items-center">
+                  <EditIconBtn onClick={() => setModal(p)} title="Edit policy" />
+                  <DeleteIconBtn onClick={() => setConfirmDelete(p.id)} title="Delete policy" />
                 </div>
               </div>
             </div>
@@ -316,6 +327,15 @@ export default function LeavePolicyList() {
           onSave={handleSave}
           onClose={() => setModal(null)} />
       )}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete Policy"
+        message="Delete this leave policy? This cannot be undone."
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={doDeletePolicy}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }

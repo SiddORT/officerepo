@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAttendanceApi } from "../../../services/apiClient";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const VENDORS = ["eSSL", "ZKTeco", "Matrix", "Suprema", "FingerTec", "Other"];
 const SYNC_METHODS = ["REST API", "Device SDK", "Webhook", "File Import", "Scheduled Sync"];
@@ -28,6 +30,7 @@ export default function DeviceRegistry() {
   const [saving, setSaving]     = useState(false);
   const [error, setError]       = useState("");
   const [syncMsg, setSyncMsg]   = useState({});
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -52,8 +55,10 @@ export default function DeviceRegistry() {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Remove device "${name}"?`)) return;
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    const { id } = confirmDelete;
+    setConfirmDelete(null);
     try { await portalAttendanceApi.deleteDevice(subdomain, token, id); load(); }
     catch (e) { setError(e.response?.data?.detail || "Delete failed."); }
   };
@@ -141,6 +146,16 @@ export default function DeviceRegistry() {
         </div>
       )}
 
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Remove Device"
+        message={`Remove device "${confirmDelete?.name}"? This cannot be undone.`}
+        confirmLabel="Remove"
+        confirmVariant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
+
       {/* Device list */}
       <div className="card overflow-hidden">
         {loading ? (
@@ -174,13 +189,13 @@ export default function DeviceRegistry() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 items-center">
-                      <button onClick={() => openEdit(d)} className="text-xs t-accent hover:underline">Edit</button>
+                      <EditIconBtn onClick={() => openEdit(d)} title="Edit device" />
                       <button onClick={() => handleSync(d.id)}
                         title="Biometric sync coming soon"
                         className="text-xs text-yellow-400 hover:underline">
                         {syncMsg[d.id] || "Sync"}
                       </button>
-                      <button onClick={() => handleDelete(d.id, d.device_name)} className="text-xs text-red-400 hover:underline">Remove</button>
+                      <DeleteIconBtn onClick={() => setConfirmDelete({ id: d.id, name: d.device_name })} title="Remove device" />
                     </div>
                   </td>
                 </tr>

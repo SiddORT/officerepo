@@ -6,6 +6,8 @@ import Input from "../../../components/ui/Input";
 import Select from "../../../components/ui/Select";
 import CountryCodeSelect from "../../../components/ui/CountryCodeSelect";
 import Toggle from "../../../components/ui/Toggle";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import {
   StatusBadge,
   DbStatusBadge,
@@ -126,7 +128,7 @@ export default function ClientDetails() {
           {client.converted_from_lead && client.lead_id && (
             <button onClick={() => navigate(`/superadmin/leads/${client.lead_id}`)} className="btn-secondary">View Source Lead</button>
           )}
-          <button onClick={() => navigate(`/superadmin/clients/${id}/edit`)} className="btn-primary">Edit</button>
+          <EditIconBtn onClick={() => navigate(`/superadmin/clients/${id}/edit`)} title="Edit client" />
         </div>
       </div>
 
@@ -284,8 +286,12 @@ function ContactsTab({ clientId, contacts = [], options, onChange }) {
     } finally { setSaving(false); }
   };
 
-  const remove = async (c) => {
-    if (!window.confirm(`Delete contact ${contactName(c)}?`)) return;
+  const [confirmRemove, setConfirmRemove] = useState(null);
+
+  const remove = async () => {
+    if (!confirmRemove) return;
+    const c = confirmRemove;
+    setConfirmRemove(null);
     try { await clientsApi.deleteContact(clientId, c.id); onChange(); }
     catch (e) { alert(e.response?.data?.detail || "Failed to delete."); }
   };
@@ -305,8 +311,8 @@ function ContactsTab({ clientId, contacts = [], options, onChange }) {
                 <p className="text-xs t-muted truncate">{[c.designation, c.email, [c.country_code, c.phone].filter(Boolean).join(" ")].filter(Boolean).join(" · ") || "—"}</p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <button onClick={() => open(c)} className="text-xs t-muted hover:text-[var(--c-accent)]">Edit</button>
-                <button onClick={() => remove(c)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
+                <EditIconBtn onClick={() => open(c)} title="Edit contact" />
+                <DeleteIconBtn onClick={() => setConfirmRemove(c)} title="Delete contact" />
               </div>
             </div>
           ))}
@@ -329,6 +335,16 @@ function ContactsTab({ clientId, contacts = [], options, onChange }) {
           <div className="sm:col-span-2"><Toggle checked={!!form.is_primary} onChange={(v) => setForm({ ...form, is_primary: v })} label="Primary contact" /></div>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        open={!!confirmRemove}
+        title="Delete Contact"
+        message={`Delete contact ${contactName(confirmRemove)}?`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={remove}
+        onCancel={() => setConfirmRemove(null)}
+      />
     </Card>
   );
 }
@@ -1228,7 +1244,7 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
                   )}
                   <button onClick={() => download(doc)} className="text-xs t-muted hover:text-[var(--c-accent)]">Download</button>
                   <button onClick={() => openReplace(doc)} className="text-xs t-muted hover:text-[var(--c-accent)]">Replace</button>
-                  <button onClick={() => confirmDelete(doc)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
+                  <DeleteIconBtn onClick={() => confirmDelete(doc)} title="Delete document" />
                 </div>
               </div>
             </div>
@@ -1506,8 +1522,12 @@ function DomainsTab({ clientId, domains = [], onChange }) {
     finally { setActivating(null); }
   };
 
-  const remove = async (d) => {
-    if (!window.confirm("Delete this domain?")) return;
+  const [confirmRemoveDomain, setConfirmRemoveDomain] = useState(null);
+
+  const remove = async () => {
+    if (!confirmRemoveDomain) return;
+    const d = confirmRemoveDomain;
+    setConfirmRemoveDomain(null);
     try { await clientsApi.deleteDomain(clientId, d.id); onChange(); }
     catch (e) { alert(e.response?.data?.detail || "Failed."); }
   };
@@ -1577,18 +1597,23 @@ function DomainsTab({ clientId, domains = [], onChange }) {
                       {activating === d.id ? "Activating…" : "Set Active"}
                     </button>
                   )}
-                  <button
-                    onClick={() => remove(d)}
-                    className="text-xs text-red-400 hover:text-red-300"
-                  >
-                    Delete
-                  </button>
+                  <DeleteIconBtn onClick={() => setConfirmRemoveDomain(d)} title="Delete domain" />
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmRemoveDomain}
+        title="Delete Domain"
+        message={`Delete domain "${confirmRemoveDomain?.subdomain || confirmRemoveDomain?.custom_domain}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={remove}
+        onCancel={() => setConfirmRemoveDomain(null)}
+      />
 
       <Modal
         open={modal}

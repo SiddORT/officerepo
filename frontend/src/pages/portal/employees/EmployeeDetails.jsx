@@ -8,6 +8,7 @@ import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Toggle from "../../../components/ui/Toggle";
 import Modal from "../../../components/ui/Modal";
+import { EditIconBtn } from "../../../components/ui/ActionIcons";
 
 // ── Design tokens ──────────────────────────────────────────────────────────────
 const Val = ({ children }) => (
@@ -640,7 +641,7 @@ export default function EmployeeDetails() {
                         </td>
                         <td>{r.is_completed ? <Badge status="Active" /> : <Badge status="Pending" />}</td>
                         <td style={{ textAlign: "right" }}>
-                          <button onClick={() => { setEditRow(r); setShowEdu(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Edit</button>
+                          <EditIconBtn onClick={() => { setEditRow(r); setShowEdu(true); }} title="Edit education" />
                         </td>
                       </tr>
                     ))}
@@ -687,7 +688,7 @@ export default function EmployeeDetails() {
                         </td>
                         <td>{r.reason_for_leaving}</td>
                         <td style={{ textAlign: "right" }}>
-                          <button onClick={() => { setEditRow(r); setShowPrev(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Edit</button>
+                          <EditIconBtn onClick={() => { setEditRow(r); setShowPrev(true); }} title="Edit experience" />
                         </td>
                       </tr>
                     ))}
@@ -737,7 +738,7 @@ export default function EmployeeDetails() {
                           {r.is_nominee && r.nomination_percentage && <div style={{ fontSize: 10, color: "var(--c-muted)", marginTop: 2 }}>{r.nomination_percentage}% share</div>}
                         </td>
                         <td style={{ textAlign: "right" }}>
-                          <button onClick={() => { setEditRow(r); setShowFamily(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Edit</button>
+                          <EditIconBtn onClick={() => { setEditRow(r); setShowFamily(true); }} title="Edit family member" />
                         </td>
                       </tr>
                     ))}
@@ -778,7 +779,7 @@ export default function EmployeeDetails() {
                         </td>
                         <td style={{ maxWidth: 200, fontSize: 12 }}>{r.address}</td>
                         <td style={{ textAlign: "right" }}>
-                          <button onClick={() => { setEditRow(r); setShowContact(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Edit</button>
+                          <EditIconBtn onClick={() => { setEditRow(r); setShowContact(true); }} title="Edit emergency contact" />
                         </td>
                       </tr>
                     ))}

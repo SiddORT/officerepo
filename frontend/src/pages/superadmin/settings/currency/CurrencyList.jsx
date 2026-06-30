@@ -9,6 +9,8 @@ import Modal from "../../../../components/ui/Modal";
 import Pagination from "../../../../components/ui/Pagination";
 import RateModal from "./components/RateModal";
 import { CURRENCY_PERMS, STATUS_VARIANT, toOptions, formatRate } from "./constants";
+import { EditIconBtn, DeleteIconBtn } from "../../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../../components/ui/ConfirmDialog";
 
 const unwrap = (res) => res?.data?.data ?? res?.data;
 const PAGE_SIZE = 20;
@@ -77,7 +79,11 @@ export default function CurrencyList() {
 
   const refresh = () => { load(); loadStats(); };
 
-  const toggleStatus = async (row) => {
+  const [confirmToggle, setConfirmToggle] = useState(null);
+
+  const executeToggle = async () => {
+    const row = confirmToggle;
+    setConfirmToggle(null);
     setActionLoading(true);
     setActionError("");
     try {
@@ -160,22 +166,21 @@ export default function CurrencyList() {
       key: "status",
       label: "Status",
       sortable: true,
-      render: (v) => <Badge variant={STATUS_VARIANT[v] || "default"} label={v} />,
+      render: (v, row) => (
+        hasPermission(CURRENCY_PERMS.activate) && !row.is_base_currency
+          ? <button title={v === "Active" ? "Click to deactivate" : "Click to activate"} onClick={() => setConfirmToggle(row)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}><Badge variant={STATUS_VARIANT[v] || "default"} label={v} /></button>
+          : <Badge variant={STATUS_VARIANT[v] || "default"} label={v} />
+      ),
     },
     {
       key: "actions",
       label: "",
-      width: 280,
+      width: 200,
       render: (_v, row) => (
         <div className="flex items-center justify-end gap-1.5 flex-wrap">
           {hasPermission(CURRENCY_PERMS.overrideRate) && (
             <button onClick={() => setRateFor(row)} className="text-xs px-2 py-1 rounded-lg layout-nav-idle">
               Rate
-            </button>
-          )}
-          {hasPermission(CURRENCY_PERMS.activate) && !row.is_base_currency && (
-            <button onClick={() => toggleStatus(row)} className="text-xs px-2 py-1 rounded-lg layout-nav-idle">
-              {row.status === "Active" ? "Deactivate" : "Activate"}
             </button>
           )}
           {hasPermission(CURRENCY_PERMS.edit) && !row.is_base_currency && (
@@ -184,20 +189,10 @@ export default function CurrencyList() {
             </button>
           )}
           {hasPermission(CURRENCY_PERMS.edit) && (
-            <button
-              onClick={() => navigate(`/superadmin/settings/currencies/${row.id}/edit`)}
-              className="text-xs px-2 py-1 rounded-lg layout-nav-idle"
-            >
-              Edit
-            </button>
+            <EditIconBtn onClick={() => navigate(`/superadmin/settings/currencies/${row.id}/edit`)} title="Edit currency" />
           )}
           {hasPermission(CURRENCY_PERMS.edit) && !row.is_base_currency && (
-            <button
-              onClick={() => setConfirmDelete(row)}
-              className="text-xs px-2 py-1 rounded-lg text-red-400 hover:bg-red-500/10"
-            >
-              Delete
-            </button>
+            <DeleteIconBtn onClick={() => setConfirmDelete(row)} title="Delete currency" />
           )}
         </div>
       ),
@@ -281,6 +276,16 @@ export default function CurrencyList() {
           onSaved={() => { setRateFor(null); refresh(); }}
         />
       )}
+
+      <ConfirmDialog
+        open={!!confirmToggle}
+        title={confirmToggle?.status === "Active" ? "Deactivate Currency" : "Activate Currency"}
+        message={`${confirmToggle?.status === "Active" ? "Deactivate" : "Activate"} ${confirmToggle?.currency_code} (${confirmToggle?.currency_name})?`}
+        confirmLabel={confirmToggle?.status === "Active" ? "Deactivate" : "Activate"}
+        confirmVariant={confirmToggle?.status === "Active" ? "danger" : "primary"}
+        onConfirm={executeToggle}
+        onCancel={() => setConfirmToggle(null)}
+      />
 
       <Modal
         open={!!confirmBase}

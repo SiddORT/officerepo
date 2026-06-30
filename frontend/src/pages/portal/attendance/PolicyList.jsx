@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAttendanceApi } from "../../../services/apiClient";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const Field = ({ label, required, children, hint }) => (
   <div>
@@ -67,8 +69,12 @@ export default function PolicyList() {
     setEditItem(p); setShowForm(true); setError("");
   };
 
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Delete policy "${name}"?`)) return;
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    const { id } = confirmDelete;
+    setConfirmDelete(null);
     try {
       await portalAttendanceApi.deletePolicy(subdomain, token, id);
       load();
@@ -235,9 +241,9 @@ export default function PolicyList() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <button onClick={() => openEdit(p)} className="text-xs t-accent hover:underline">Edit</button>
-                      <button onClick={() => handleDelete(p.id, p.policy_name)} className="text-xs text-red-400 hover:underline">Delete</button>
+                    <div className="flex gap-2 items-center">
+                      <EditIconBtn onClick={() => openEdit(p)} title="Edit policy" />
+                      <DeleteIconBtn onClick={() => setConfirmDelete({ id: p.id, name: p.policy_name })} title="Delete policy" />
                     </div>
                   </td>
                 </tr>
@@ -246,6 +252,16 @@ export default function PolicyList() {
           </table>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete Policy"
+        message={`Delete "${confirmDelete?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </div>
   );
 }

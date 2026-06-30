@@ -5,6 +5,8 @@ import { portalPayrollApi } from "../../../services/apiClient";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const TYPE_COLOR = {
   "Earning": "#10B981",
@@ -172,8 +174,12 @@ export default function SalaryComponentList() {
     setModal(null); setPage(1); load();
   };
 
-  const handleDelete = async (item) => {
-    if (!confirm(`Delete "${item.component_name}"?`)) return;
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    const item = confirmDelete;
+    setConfirmDelete(null);
     try {
       await portalPayrollApi.deleteComponent(subdomain, token, item.id);
       showToast("Component deleted.");
@@ -271,14 +277,10 @@ export default function SalaryComponentList() {
                 <td style={{ fontSize:12 }}>{item.is_taxable ? "Yes" : "No"}</td>
                 <td><Badge status={item.is_active ? "Active" : "Inactive"} /></td>
                 <td style={{ textAlign:"right" }}>
-                  <div style={{ display:"flex",gap:6,justifyContent:"flex-end" }}>
-                    <button onClick={() => setModal({ mode:"edit",item })}
-                      className="btn-secondary" style={{ padding:"5px 10px",fontSize:11 }}>Edit</button>
+                  <div style={{ display:"flex",gap:6,justifyContent:"flex-end",alignItems:"center" }}>
+                    <EditIconBtn onClick={() => setModal({ mode:"edit",item })} title="Edit component" />
                     {!item.is_system && (
-                      <button onClick={() => handleDelete(item)}
-                        className="btn-secondary" style={{ padding:"5px 10px",fontSize:11,color:"#f87171",borderColor:"rgba(239,68,68,0.35)" }}>
-                        Delete
-                      </button>
+                      <DeleteIconBtn onClick={() => setConfirmDelete(item)} title="Delete component" />
                     )}
                   </div>
                 </td>
@@ -296,6 +298,15 @@ export default function SalaryComponentList() {
           onSave={handleSave}
         />
       )}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete Component"
+        message={`Delete "${confirmDelete?.component_name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </>
   );
 }

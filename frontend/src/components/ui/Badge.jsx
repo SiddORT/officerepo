@@ -9,11 +9,11 @@ const VARIANTS = {
   default:   { bg: "rgba(100,116,139,0.10)", text: "#64748b", border: "rgba(100,116,139,0.2)" },
 };
 
-export default function Badge({ status, label, variant, className = "" }) {
+export default function Badge({ status, label, variant, className = "", onClick, title }) {
   const key = variant || status?.toLowerCase() || "default";
   const style = VARIANTS[key] || VARIANTS.default;
   const text = label || (status ? status.charAt(0).toUpperCase() + status.slice(1) : "");
-  return (
+  const inner = (
     <span
       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}
       style={{ backgroundColor: style.bg, color: style.text, border: `1px solid ${style.border}` }}
@@ -21,4 +21,16 @@ export default function Badge({ status, label, variant, className = "" }) {
       {text}
     </span>
   );
+  if (onClick) {
+    return (
+      <button
+        onClick={onClick}
+        title={title}
+        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "inline-flex" }}
+      >
+        {inner}
+      </button>
+    );
+  }
+  return inner;
 }

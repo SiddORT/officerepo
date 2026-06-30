@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { assetMgmtApi } from "../../../services/apiClient";
+import { EditIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const PAGE_SIZE = 20;
 
@@ -37,6 +39,7 @@ export default function AssetMasterList() {
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [toast, setToast] = useState("");
+  const [confirmToggle, setConfirmToggle] = useState(null);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
@@ -70,8 +73,9 @@ export default function AssetMasterList() {
     ? subCategories.filter(s => s.category_id === catFilter)
     : subCategories;
 
-  const toggleStatus = async (m, e) => {
-    e.stopPropagation();
+  const confirmAndToggle = async () => {
+    const m = confirmToggle;
+    setConfirmToggle(null);
     try {
       if (m.is_active) await assetMgmtApi.deactivateMaster(m.id);
       else await assetMgmtApi.activateMaster(m.id);
@@ -183,24 +187,22 @@ export default function AssetMasterList() {
                         )}
                       </div>
                     </td>
-                    <td style={{ padding: "12px 16px" }}><StatusBadge active={m.is_active} /></td>
                     <td style={{ padding: "12px 16px" }} onClick={e => e.stopPropagation()}>
-                      <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        title={m.is_active ? "Click to deactivate" : "Click to activate"}
+                        onClick={() => setConfirmToggle(m)}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                        <StatusBadge active={m.is_active} />
+                      </button>
+                    </td>
+                    <td style={{ padding: "12px 16px" }} onClick={e => e.stopPropagation()}>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                         <button
-                          onClick={e => { e.stopPropagation(); navigate(`/superadmin/assets/masters/${m.id}`); }}
+                          onClick={() => navigate(`/superadmin/assets/masters/${m.id}`)}
                           style={{ fontSize: 12, padding: "4px 10px", borderRadius: 5, border: "1px solid var(--c-border)", background: "transparent", color: "var(--c-text2)", cursor: "pointer" }}>
                           View
                         </button>
-                        <button
-                          onClick={e => { e.stopPropagation(); navigate(`/superadmin/assets/masters/${m.id}/edit`); }}
-                          style={{ fontSize: 12, padding: "4px 10px", borderRadius: 5, border: "1px solid var(--c-border)", background: "transparent", color: "var(--c-text2)", cursor: "pointer" }}>
-                          Edit
-                        </button>
-                        <button
-                          onClick={e => toggleStatus(m, e)}
-                          style={{ fontSize: 12, padding: "4px 10px", borderRadius: 5, border: `1px solid ${m.is_active ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}`, background: "transparent", color: m.is_active ? "#f87171" : "#4ade80", cursor: "pointer" }}>
-                          {m.is_active ? "Deactivate" : "Activate"}
-                        </button>
+                        <EditIconBtn onClick={() => navigate(`/superadmin/assets/masters/${m.id}/edit`)} title="Edit asset master" />
                       </div>
                     </td>
                   </tr>
@@ -210,6 +212,16 @@ export default function AssetMasterList() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmToggle}
+        title={confirmToggle?.is_active ? "Deactivate Asset Master" : "Activate Asset Master"}
+        message={`${confirmToggle?.is_active ? "Deactivate" : "Activate"} "${confirmToggle?.asset_name}"?`}
+        confirmLabel={confirmToggle?.is_active ? "Deactivate" : "Activate"}
+        confirmVariant={confirmToggle?.is_active ? "danger" : "primary"}
+        onConfirm={confirmAndToggle}
+        onCancel={() => setConfirmToggle(null)}
+      />
 
       {/* Pagination */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, fontSize: 13, color: "var(--c-text2)" }}>

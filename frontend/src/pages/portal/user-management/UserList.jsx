@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalUserMgmtApi } from "../../../services/apiClient";
 import UserManagementLayout from "./UserManagementLayout";
@@ -51,6 +53,9 @@ export default function UserList() {
   const [toast, setToast] = useState(null);
   const [resendingId, setResendingId] = useState(null);
   const [resendResult, setResendResult] = useState(null); // {userId, invite_link}
+  const [confirmRemove, setConfirmRemove] = useState(null);
+  const [confirmToggle, setConfirmToggle] = useState(null);
+  const navigate = useNavigate();
 
   const PAGE_SIZE = 20;
 
@@ -103,8 +108,10 @@ export default function UserList() {
     }
   };
 
-  const handleRemoveUser = async (userId, userName) => {
-    if (!window.confirm(`Remove ${userName}? This cannot be undone.`)) return;
+  const handleRemoveUser = async () => {
+    if (!confirmRemove) return;
+    const { userId, userName } = confirmRemove;
+    setConfirmRemove(null);
     try {
       await portalUserMgmtApi.removeUser(subdomain, token, userId);
       showToast("User removed.");
@@ -112,6 +119,13 @@ export default function UserList() {
     } catch (e) {
       showToast(e.response?.data?.detail || "Failed to remove user.", false);
     }
+  };
+
+  const handleToggleStatus = async () => {
+    if (!confirmToggle) return;
+    const { userId, action } = confirmToggle;
+    setConfirmToggle(null);
+    await handleStatusChange(userId, action);
   };
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -220,7 +234,18 @@ export default function UserList() {
                         {u.roles?.length > 2 && <span style={{ fontSize: 11, color: "var(--c-muted)" }}>+{u.roles.length - 2}</span>}
                       </div>
                     </td>
-                    <td><Badge status={u.status} /></td>
+                    <td>
+                      {(isActive || isInactive) ? (
+                        <button
+                          title={isActive ? "Click to deactivate" : "Click to activate"}
+                          onClick={() => setConfirmToggle({ userId: u.id, action: isActive ? "deactivate" : "activate", userName: displayName })}
+                          style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                          <Badge status={u.status} />
+                        </button>
+                      ) : (
+                        <Badge status={u.status} />
+                      )}
+                    </td>
                     <td style={{ fontSize: 12, color: "var(--c-muted)" }}>
                       {u.last_login ? new Date(u.last_login).toLocaleDateString() : "Never"}
                     </td>
@@ -230,22 +255,7 @@ export default function UserList() {
                           className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, textDecoration: "none" }}>
                           View
                         </Link>
-                        <Link to={`/portal/${subdomain}/user-management/users/${u.id}/edit`}
-                          className="t-muted" style={{ fontSize: 12, textDecoration: "none", fontWeight: 600 }}>
-                          Edit
-                        </Link>
-                        {isActive && (
-                          <button onClick={() => handleStatusChange(u.id, "deactivate")}
-                            className="t-accent" style={{ color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 600, padding: 0, fontSize: 12 }}>
-                            Deactivate
-                          </button>
-                        )}
-                        {isInactive && (
-                          <button onClick={() => handleStatusChange(u.id, "activate")}
-                            className="t-accent" style={{ color: "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 600, padding: 0, fontSize: 12 }}>
-                            Activate
-                          </button>
-                        )}
+                        <EditIconBtn onClick={() => navigate(`/portal/${subdomain}/user-management/users/${u.id}/edit`)} title="Edit user" />
                         {isInvited && (
                           <>
                             <button
@@ -254,11 +264,7 @@ export default function UserList() {
                               className="t-accent" style={{ color: "#fbbf24", background: "none", border: "none", cursor: resendingId === u.id ? "not-allowed" : "pointer", fontWeight: 600, padding: 0, opacity: resendingId === u.id ? 0.6 : 1, fontSize: 12 }}>
                               {resendingId === u.id ? "…" : "Resend"}
                             </button>
-                            <button
-                              onClick={() => handleRemoveUser(u.id, displayName)}
-                              className="t-accent" style={{ color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 600, padding: 0, fontSize: 12 }}>
-                              Remove
-                            </button>
+                            <DeleteIconBtn onClick={() => setConfirmRemove({ userId: u.id, userName: displayName })} title="Remove pending invite" />
                           </>
                         )}
                       </div>
@@ -270,6 +276,25 @@ export default function UserList() {
           </table>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmRemove}
+        title="Remove User"
+        message={`Remove pending invite for ${confirmRemove?.userName}? This cannot be undone.`}
+        confirmLabel="Remove"
+        confirmVariant="danger"
+        onConfirm={handleRemoveUser}
+        onCancel={() => setConfirmRemove(null)}
+      />
+      <ConfirmDialog
+        open={!!confirmToggle}
+        title={confirmToggle?.action === "deactivate" ? "Deactivate User" : "Activate User"}
+        message={`${confirmToggle?.action === "deactivate" ? "Deactivate" : "Activate"} ${confirmToggle?.userName}?`}
+        confirmLabel={confirmToggle?.action === "deactivate" ? "Deactivate" : "Activate"}
+        confirmVariant={confirmToggle?.action === "deactivate" ? "danger" : "primary"}
+        onConfirm={handleToggleStatus}
+        onCancel={() => setConfirmToggle(null)}
+      />
 
       {/* Pagination */}
       <Pagination page={page} totalPages={totalPages} onPage={setPage} total={total} pageSize={PAGE_SIZE} />

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { portalExpenseApi } from "../../../services/apiClient";
 
 function Modal({ title, children, onClose }) {
@@ -143,9 +145,9 @@ export default function ExpensePolicyList() {
                     {p.effective_to   && <span>To: {p.effective_to.slice(0,10)}</span>}
                   </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  <button onClick={() => openEdit(p)} className="text-xs px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors">Edit</button>
-                  <button onClick={() => setDelConfirm(p)} className="text-xs px-3 py-1 border border-red-300 dark:border-red-700 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors">Delete</button>
+                <div className="flex gap-2 shrink-0 items-center">
+                  <EditIconBtn onClick={() => openEdit(p)} title="Edit policy" />
+                  <DeleteIconBtn onClick={() => setDelConfirm(p)} title="Delete policy" />
                 </div>
               </div>
             </div>
@@ -191,15 +193,15 @@ export default function ExpensePolicyList() {
         </Modal>
       )}
 
-      {delConfirm && (
-        <Modal title="Delete Policy?" onClose={() => setDelConfirm(null)}>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Delete <strong>{delConfirm.name}</strong>? This cannot be undone.</p>
-          <div className="flex justify-end gap-3">
-            <button onClick={() => setDelConfirm(null)} className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
-            <button onClick={() => handleDelete(delConfirm.id)} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg">Delete</button>
-          </div>
-        </Modal>
-      )}
+      <ConfirmDialog
+        open={!!delConfirm}
+        title="Delete Policy"
+        message={`Delete "${delConfirm?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={() => { handleDelete(delConfirm.id); setDelConfirm(null); }}
+        onCancel={() => setDelConfirm(null)}
+      />
     </div>
   );
 }

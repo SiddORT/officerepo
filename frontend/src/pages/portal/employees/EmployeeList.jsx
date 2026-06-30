@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { EditIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalEmployeeApi, portalOrgApi } from "../../../services/apiClient";
 import EmployeeLayout from "./EmployeeLayout";
@@ -51,6 +53,7 @@ export default function EmployeeList() {
 
   const [actionLoading, setActionLoading] = useState(null);
   const [toast, setToast] = useState(null);
+  const [confirmToggle, setConfirmToggle] = useState(null);
 
   const showToast = (msg, ok = true) => {
     setToast({ msg, ok });
@@ -201,21 +204,19 @@ export default function EmployeeList() {
                       {emp.joining_date ? tenure(emp.joining_date) : <span style={{ opacity: 0.4 }}>—</span>}
                     </td>
                     <td>
-                      <Badge status={emp.employment_status} />
+                      <button
+                        title={emp.is_active ? "Click to deactivate" : "Click to activate"}
+                        onClick={() => setConfirmToggle(emp)}
+                        disabled={actionLoading === emp.id}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: 0, opacity: actionLoading === emp.id ? 0.5 : 1 }}>
+                        <Badge status={emp.employment_status} />
+                      </button>
                     </td>
                     <td>
                       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <Link to={`/portal/${subdomain}/employees/${emp.id}`}
                           className="t-accent" style={{background:"none",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>View</Link>
-                        <Link to={`/portal/${subdomain}/employees/${emp.id}/edit`}
-                          className="t-body" style={{fontSize: 12, fontWeight: 600, textDecoration: "none" }}>Edit</Link>
-                        <button
-                          onClick={() => handleToggle(emp)}
-                          disabled={actionLoading === emp.id}
-                          className={emp.is_active ? "btn-secondary" : "btn-primary"}
-                          style={{ fontSize: 11, padding: "2px 8px" }}>
-                          {actionLoading === emp.id ? "…" : emp.is_active ? "Deactivate" : "Activate"}
-                        </button>
+                        <EditIconBtn onClick={() => navigate(`/portal/${subdomain}/employees/${emp.id}/edit`)} title="Edit employee" />
                       </div>
                     </td>
                   </tr>
@@ -225,6 +226,16 @@ export default function EmployeeList() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmToggle}
+        title={confirmToggle?.is_active ? "Deactivate Employee" : "Activate Employee"}
+        message={`${confirmToggle?.is_active ? "Deactivate" : "Activate"} ${confirmToggle?.full_name}?`}
+        confirmLabel={confirmToggle?.is_active ? "Deactivate" : "Activate"}
+        confirmVariant={confirmToggle?.is_active ? "danger" : "primary"}
+        onConfirm={() => { const emp = confirmToggle; setConfirmToggle(null); handleToggle(emp); }}
+        onCancel={() => setConfirmToggle(null)}
+      />
 
       {/* Pagination */}
       <Pagination page={page} totalPages={totalPages} onPage={setPage} total={total} pageSize={PAGE_SIZE} />

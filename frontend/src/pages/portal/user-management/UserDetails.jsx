@@ -5,6 +5,8 @@ import { portalUserMgmtApi } from "../../../services/apiClient";
 import UserManagementLayout from "./UserManagementLayout";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
+import { EditIconBtn } from "../../../components/ui/ActionIcons";
 
 function InfoRow({ label, value }) {
   return (
@@ -27,6 +29,7 @@ export default function UserDetails() {
   const [showReset, setShowReset] = useState(false);
   const [showResetPw, setShowResetPw] = useState(false);
   const [actionBusy, setActionBusy] = useState("");
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3500); };
 
@@ -89,29 +92,17 @@ export default function UserDetails() {
             <div className="t-heading" style={{ fontSize: 17, fontWeight: 700 }}>{name}</div>
             <div className="t-muted" style={{ fontSize: 13, marginTop: 2 }}>{user.email}</div>
             <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-              <Badge status={user.status} />
+              {(user.status === "Active" || user.status === "Inactive")
+                ? <button onClick={() => setConfirmAction(user.status === "Active" ? "deactivate" : "activate")} disabled={!!actionBusy} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }} title={user.status === "Active" ? "Click to deactivate" : "Click to activate"}><Badge status={user.status} /></button>
+                : <Badge status={user.status} />
+              }
               {user.roles?.map(r => (
                 <span key={r.id} className="badge-info">{r.name}</span>
               ))}
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <Link to={`/portal/${subdomain}/user-management/users/${userId}/edit`}
-              className="btn-primary" style={{ textDecoration: "none" }}>
-              Edit
-            </Link>
-            {user.status === "Active"
-              ? <button onClick={() => doAction("deactivate")} disabled={!!actionBusy}
-                  className="btn-secondary" style={{ color: "#f87171" }}>
-                  {actionBusy === "deactivate" ? "…" : "Deactivate"}
-                </button>
-              : user.status === "Inactive"
-              ? <button onClick={() => doAction("activate")} disabled={!!actionBusy}
-                  className="btn-secondary" style={{ color: "#4ade80" }}>
-                  {actionBusy === "activate" ? "…" : "Activate"}
-                </button>
-              : null
-            }
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <EditIconBtn onClick={() => navigate(`/portal/${subdomain}/user-management/users/${userId}/edit`)} title="Edit user" />
           </div>
         </div>
       </div>
@@ -174,6 +165,15 @@ export default function UserDetails() {
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        open={!!confirmAction}
+        title={confirmAction === "deactivate" ? "Deactivate User" : "Activate User"}
+        message={`${confirmAction === "deactivate" ? "Deactivate" : "Activate"} user "${user?.display_name || user?.email}"?`}
+        confirmLabel={confirmAction === "deactivate" ? "Deactivate" : "Activate"}
+        confirmVariant={confirmAction === "deactivate" ? "danger" : "primary"}
+        onConfirm={() => { doAction(confirmAction); setConfirmAction(null); }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </UserManagementLayout>
   );
 }

@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { assetMgmtApi } from "../../../services/apiClient";
+import { EditIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const PAGE_SIZE = 20;
 
@@ -75,6 +77,7 @@ export default function AssetCategoryList() {
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState("");
+  const [confirmToggle, setConfirmToggle] = useState(null);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
@@ -90,7 +93,9 @@ export default function AssetCategoryList() {
 
   useEffect(() => { load(); }, [load]);
 
-  const toggleStatus = async (cat) => {
+  const confirmAndToggle = async () => {
+    const cat = confirmToggle;
+    setConfirmToggle(null);
     try {
       if (cat.is_active) await assetMgmtApi.deactivateCategory(cat.id);
       else await assetMgmtApi.activateCategory(cat.id);
@@ -173,11 +178,14 @@ export default function AssetCategoryList() {
                   </td>
                   <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--c-text2)" }}>{cat.sub_category_count ?? 0}</td>
                   <td style={{ padding: "12px 16px", textAlign: "center", fontSize: 13, color: "var(--c-muted)" }}>{cat.display_order}</td>
-                  <td style={{ padding: "12px 16px" }}><StatusBadge active={cat.is_active} /></td>
                   <td style={{ padding: "12px 16px" }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button onClick={() => setModal(cat)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 5, border: "1px solid var(--c-border)", background: "transparent", color: "var(--c-text2)", cursor: "pointer" }}>Edit</button>
-                      <button onClick={() => toggleStatus(cat)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 5, border: `1px solid ${cat.is_active ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}`, background: "transparent", color: cat.is_active ? "#f87171" : "#4ade80", cursor: "pointer" }}>{cat.is_active ? "Deactivate" : "Activate"}</button>
+                    <button title={cat.is_active ? "Click to deactivate" : "Click to activate"} onClick={() => setConfirmToggle(cat)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                      <StatusBadge active={cat.is_active} />
+                    </button>
+                  </td>
+                  <td style={{ padding: "12px 16px" }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <EditIconBtn onClick={() => setModal(cat)} title="Edit category" />
                     </div>
                   </td>
                 </tr>
@@ -186,6 +194,16 @@ export default function AssetCategoryList() {
           </table>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmToggle}
+        title={confirmToggle?.is_active ? "Deactivate Category" : "Activate Category"}
+        message={`${confirmToggle?.is_active ? "Deactivate" : "Activate"} "${confirmToggle?.category_name}"?`}
+        confirmLabel={confirmToggle?.is_active ? "Deactivate" : "Activate"}
+        confirmVariant={confirmToggle?.is_active ? "danger" : "primary"}
+        onConfirm={confirmAndToggle}
+        onCancel={() => setConfirmToggle(null)}
+      />
 
       {totalPages > 1 && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16, fontSize: 13, color: "var(--c-text2)" }}>

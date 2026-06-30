@@ -5,6 +5,8 @@ import { portalPayrollApi } from "../../../services/apiClient";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 function CycleModal({ initial, onClose, onSave }) {
   const isEdit = !!initial?.id;
@@ -152,8 +154,12 @@ export default function PayrollCycleList() {
     setModal(null); setPage(1); load();
   };
 
-  const handleDelete = async (item) => {
-    if (!confirm(`Delete "${item.cycle_name}"?`)) return;
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    const item = confirmDelete;
+    setConfirmDelete(null);
     try {
       await portalPayrollApi.deleteCycle(subdomain, token, item.id);
       showToast("Cycle deleted."); load();
@@ -223,13 +229,9 @@ export default function PayrollCycleList() {
                 </td>
                 <td><Badge status={item.is_active ? "Active" : "Inactive"} /></td>
                 <td style={{ textAlign:"right" }}>
-                  <div style={{ display:"flex",gap:6,justifyContent:"flex-end" }}>
-                    <button onClick={() => setModal({ mode:"edit",item })}
-                      className="btn-secondary" style={{ padding:"5px 10px",fontSize:11 }}>Edit</button>
-                    <button onClick={() => handleDelete(item)}
-                      className="btn-secondary" style={{ padding:"5px 10px",fontSize:11,color:"#f87171",borderColor:"rgba(239,68,68,0.35)" }}>
-                      Delete
-                    </button>
+                  <div style={{ display:"flex",gap:6,justifyContent:"flex-end",alignItems:"center" }}>
+                    <EditIconBtn onClick={() => setModal({ mode:"edit",item })} title="Edit cycle" />
+                    <DeleteIconBtn onClick={() => setConfirmDelete(item)} title="Delete cycle" />
                   </div>
                 </td>
               </tr>
@@ -238,6 +240,16 @@ export default function PayrollCycleList() {
         </table>
         <Pagination page={page} totalPages={Math.ceil(total/PAGE_SIZE)||1} onPage={setPage} total={total} pageSize={PAGE_SIZE} />
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete Payroll Cycle"
+        message={`Delete "${confirmDelete?.cycle_name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
 
       {modal && <CycleModal initial={modal.mode==="edit"?modal.item:null} onClose={() => setModal(null)} onSave={handleSave} />}
     </>

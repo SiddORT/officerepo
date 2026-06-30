@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { portalExpenseApi } from "../../../services/apiClient";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
 
 const STATUS_BADGE = {
   Draft:              "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
@@ -73,8 +75,10 @@ export default function ExpenseClaimDetails() {
     }
   };
 
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   const handleDelete = async () => {
-    if (!confirm("Delete this draft claim?")) return;
+    setConfirmDelete(false);
     try {
       await portalExpenseApi.deleteClaim(subdomain, claimId);
       navigate(`/portal/${subdomain}/hrms/expenses/claims`);
@@ -112,14 +116,14 @@ export default function ExpenseClaimDetails() {
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2 shrink-0">
-          {canEdit      && <Link to={`/portal/${subdomain}/hrms/expenses/claims/${claimId}/edit`} className="px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Edit</Link>}
+          {canEdit      && <EditIconBtn onClick={() => navigate(`/portal/${subdomain}/hrms/expenses/claims/${claimId}/edit`)} title="Edit claim" />}
           {canSubmit    && <button onClick={() => { setActionModal("submit"); setError(""); }} className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">Submit</button>}
           {canApprove   && <button onClick={() => { setActionModal("approve"); setActionForm({}); setError(""); }} className="px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium">Approve</button>}
           {canReject    && <button onClick={() => { setActionModal("reject"); setActionForm({}); setError(""); }} className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium">Reject</button>}
           {canReturn    && <button onClick={() => { setActionModal("return"); setActionForm({}); setError(""); }} className="px-3 py-1.5 text-xs bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium">Return</button>}
           {canReimburse && <button onClick={() => { setActionModal("reimburse"); setActionForm({ method: "Payroll" }); setError(""); }} className="px-3 py-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium">Reimburse</button>}
           {canCancel    && <button onClick={() => { setActionModal("cancel"); setActionForm({}); setError(""); }} className="px-3 py-1.5 text-xs border border-red-300 dark:border-red-700 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">Cancel</button>}
-          {canDelete    && <button onClick={handleDelete} className="px-3 py-1.5 text-xs border border-red-300 dark:border-red-700 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">Delete</button>}
+          {canDelete    && <DeleteIconBtn onClick={() => setConfirmDelete(true)} title="Delete claim" />}
         </div>
       </div>
 
@@ -406,6 +410,16 @@ export default function ExpenseClaimDetails() {
           </div>
         </Modal>
       )}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete Claim"
+        message="Delete this draft claim? This cannot be undone."
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   );
 }
