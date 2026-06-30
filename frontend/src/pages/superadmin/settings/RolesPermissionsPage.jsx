@@ -120,6 +120,12 @@ function RolesTab({ hasPermission, refreshPermissions }) {
 
   const columns = [
     {
+      key: "_sr",
+      label: "#",
+      width: 48,
+      render: (_v, _row, i) => <span className="t-muted text-xs">{(page - 1) * pageSize + i + 1}</span>,
+    },
+    {
       key: "name",
       label: "Role",
       render: (v, row) => (
@@ -397,10 +403,13 @@ function RoleEditorModal({ role, onClose, onSaved }) {
 // ════════════════════════════════════════════════════════════════════════════
 // Users tab — invite users, assign roles, manage account status
 // ════════════════════════════════════════════════════════════════════════════
+const USER_PAGE_SIZE = 20;
+
 function UsersTab({ user, hasPermission, refreshPermissions }) {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userPage, setUserPage] = useState(1);
   const [assigning, setAssigning] = useState(null); // user object
   const [inviting, setInviting] = useState(false);
   const [inviteResult, setInviteResult] = useState(null); // {user, invite_token, email_sent}
@@ -430,6 +439,10 @@ function UsersTab({ user, hasPermission, refreshPermissions }) {
     roles.forEach((r) => (map[r.id] = r));
     return map;
   }, [roles]);
+
+  const userTotalPages = Math.max(1, Math.ceil(users.length / USER_PAGE_SIZE));
+  const safUserPage    = Math.min(userPage, userTotalPages);
+  const pageUsers      = users.slice((safUserPage - 1) * USER_PAGE_SIZE, safUserPage * USER_PAGE_SIZE);
 
   const toggleActive = async (row) => {
     setBusyId(row.id);
@@ -473,6 +486,12 @@ function UsersTab({ user, hasPermission, refreshPermissions }) {
   };
 
   const columns = [
+    {
+      key: "_sr",
+      label: "#",
+      width: 48,
+      render: (_v, _row, i) => <span className="t-muted text-xs">{(safUserPage - 1) * USER_PAGE_SIZE + i + 1}</span>,
+    },
     { key: "email", label: "User", render: (v, row) => (
       <div>
         <span className="block font-medium t-body">{row.name || v}</span>
@@ -573,7 +592,11 @@ function UsersTab({ user, hasPermission, refreshPermissions }) {
 
       {error && <p className="text-xs text-red-400 mb-3">{error}</p>}
 
-      <Table columns={columns} data={users} loading={loading} emptyMessage="No users yet." />
+      <Table columns={columns} data={pageUsers} loading={loading} emptyMessage="No users yet." />
+
+      {userTotalPages > 1 && (
+        <Pagination page={safUserPage} totalPages={userTotalPages} onChange={setUserPage} total={users.length} />
+      )}
 
       {inviting && (
         <InviteUserModal

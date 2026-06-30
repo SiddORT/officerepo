@@ -225,17 +225,17 @@ export default function ModuleRegistryPage() {
         </button>
       </div>
 
-      {/* Stats bar */}
-      <div style={{ display: "flex", gap: 20, marginBottom: 20, padding: "12px 16px", background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 10 }}>
+      {/* Stat cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
         {[
-          { label: "Total Modules", value: modules.length },
-          { label: "Active", value: active.length, color: "#4ade80" },
-          { label: "Inactive", value: inactive.length, color: "var(--c-muted)" },
-          { label: "System Modules", value: modules.filter(m => m.is_system_module).length, color: "#818cf8" },
+          { label: "Total",   value: modules.length },
+          { label: "Active",  value: active.length },
+          { label: "Inactive",value: inactive.length },
+          { label: "System",  value: modules.filter(m => m.is_system_module).length },
         ].map(s => (
-          <div key={s.label}>
-            <div style={{ fontSize: 11, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: s.color || "var(--c-text)" }}>{s.value}</div>
+          <div key={s.label} className="rounded-xl p-4" style={{ border: "1px solid var(--c-border)", background: "var(--c-surface2)" }}>
+            <p className="text-xs uppercase tracking-widest t-muted">{s.label}</p>
+            <p className="text-2xl font-bold t-heading mt-1">{s.value}</p>
           </div>
         ))}
       </div>

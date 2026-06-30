@@ -123,6 +123,14 @@ export default function CurrencyList() {
 
   const columns = [
     {
+      key: "_sr",
+      label: "#",
+      width: 48,
+      render: (_v, _row, i) => (
+        <span className="t-muted text-xs">{(page - 1) * PAGE_SIZE + i + 1}</span>
+      ),
+    },
+    {
       key: "currency_code",
       label: "Code",
       sortable: true,
