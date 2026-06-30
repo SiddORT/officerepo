@@ -1009,6 +1009,90 @@ const PDF_EXT  = "pdf";
 function fileExt(name) { return (name || "").split(".").pop().toLowerCase(); }
 function isImage(name) { return IMG_EXTS.includes(fileExt(name)); }
 function isPdf(name)   { return fileExt(name) === PDF_EXT; }
+function isPreviewable(name) { return isImage(name) || isPdf(name); }
+
+function FilePreviewModal({ clientId, doc, onClose }) {
+  const [blobUrl, setBlobUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    let url;
+    clientsApi.downloadDocument(clientId, doc.id)
+      .then((res) => {
+        const mime = isImage(doc.file_name)
+          ? `image/${fileExt(doc.file_name) === "svg" ? "svg+xml" : fileExt(doc.file_name)}`
+          : "application/pdf";
+        const blob = new Blob([res.data], { type: mime });
+        url = URL.createObjectURL(blob);
+        setBlobUrl(url);
+      })
+      .catch(() => setErr("Failed to load preview."))
+      .finally(() => setLoading(false));
+    return () => { if (url) URL.revokeObjectURL(url); };
+  }, [clientId, doc.id, doc.file_name]);
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.82)" }}
+      onClick={onClose}
+    >
+      {/* Header bar */}
+      <div
+        className="w-full max-w-5xl flex items-center justify-between px-4 py-2 mb-2 rounded-t-xl"
+        style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="text-sm font-medium t-heading truncate max-w-[80%]" title={doc.file_name}>{doc.file_name}</span>
+        <button
+          onClick={onClose}
+          className="text-xs t-muted hover:text-[var(--c-accent)] px-2 py-1 rounded"
+          style={{ border: "1px solid var(--c-border)" }}
+        >
+          ✕ Close
+        </button>
+      </div>
+
+      {/* Preview content */}
+      <div
+        className="w-full max-w-5xl flex-1 flex items-center justify-center rounded-b-xl overflow-hidden"
+        style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", minHeight: 0, maxHeight: "80vh" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {loading && (
+          <div className="text-sm t-muted p-8">Loading preview…</div>
+        )}
+        {err && (
+          <div className="text-sm text-red-400 p-8">{err}</div>
+        )}
+        {!loading && !err && blobUrl && isImage(doc.file_name) && (
+          <img
+            src={blobUrl}
+            alt={doc.file_name}
+            className="max-w-full max-h-full object-contain p-4"
+            style={{ maxHeight: "80vh" }}
+          />
+        )}
+        {!loading && !err && blobUrl && isPdf(doc.file_name) && (
+          <iframe
+            src={blobUrl}
+            title={doc.file_name}
+            className="w-full"
+            style={{ height: "80vh", border: "none" }}
+          />
+        )}
+      </div>
+      <p className="text-xs t-muted mt-2 opacity-60">Press Esc or click outside to close</p>
+    </div>
+  );
+}
 
 function DocFileIcon({ name }) {
   const ext = fileExt(name);
@@ -1043,6 +1127,7 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
   const [replaceSaving, setReplaceSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteErr, setDeleteErr] = useState("");
+  const [previewDoc, setPreviewDoc] = useState(null);
   const replaceInputRef = React.useRef(null);
 
   const docTypeMaster = options?.document_type_master || [];
@@ -1136,6 +1221,9 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
                 <p className="text-xs t-muted mt-0.5">{doc.document_type || "—"}</p>
                 <p className="text-xs t-muted">{formatDate(doc.created_at)}</p>
                 <div className="flex items-center gap-3 mt-2">
+                  {doc.has_file && isPreviewable(doc.file_name) && (
+                    <button onClick={() => setPreviewDoc(doc)} className="text-xs font-medium" style={{ color: "var(--c-accent)" }}>Preview</button>
+                  )}
                   <button onClick={() => download(doc)} className="text-xs t-muted hover:text-[var(--c-accent)]">Download</button>
                   <button onClick={() => openReplace(doc)} className="text-xs t-muted hover:text-[var(--c-accent)]">Replace</button>
                   <button onClick={() => confirmDelete(doc)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
@@ -1144,6 +1232,15 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
             </div>
           ))}
         </div>
+      )}
+
+      {/* File preview modal */}
+      {previewDoc && (
+        <FilePreviewModal
+          clientId={clientId}
+          doc={previewDoc}
+          onClose={() => setPreviewDoc(null)}
+        />
       )}
 
       {/* Replace modal */}
