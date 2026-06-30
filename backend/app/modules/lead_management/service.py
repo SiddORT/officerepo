@@ -925,10 +925,10 @@ def add_document(db: Session, lead_id: str, *, document_type: str, file_name: st
 
 
 def replace_document(db: Session, lead_id: str, document_id: str, *,
-                     file_name: str, file_path: str, actor_id) -> tuple:
+                     file_name: str, file_path: str, actor_id) -> tuple[str, dict]:
     """Replace a document's file. Returns (old_file_key, updated_doc_dict)."""
-    _require_lead(db, lead_id)
-    doc = repo.get_child(db, LeadDocument, document_id, lead_id)
+    lead = _require_lead(db, lead_id)
+    doc = repo.get_child(db, LeadDocument, document_id, lead.id)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
     old_key = doc.file_path
