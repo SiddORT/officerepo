@@ -4,6 +4,7 @@ import { portalRecruitmentApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const Field = ({ label, value }) => (
   <div>
@@ -32,6 +33,16 @@ export default function CandidateDetails() {
   const resumeRef = useRef();
   const docRef = useRef();
   const [docType, setDocType] = useState("Resume");
+
+  // Confirm dialog
+  const [confirmDlg, setConfirmDlg] = useState({ open: false, title: "", message: "", fn: null, loading: false });
+  const askConfirm = (title, message, fn) => setConfirmDlg({ open: true, title, message, fn, loading: false });
+  const closeConfirm = () => setConfirmDlg(d => ({ ...d, open: false, fn: null }));
+  const runConfirm = async () => {
+    if (!confirmDlg.fn) return;
+    setConfirmDlg(d => ({ ...d, loading: true }));
+    try { await confirmDlg.fn(); } finally { setConfirmDlg(d => ({ ...d, open: false, loading: false, fn: null })); }
+  };
 
   const load = () => {
     setLoading(true);
@@ -70,9 +81,10 @@ export default function CandidateDetails() {
     e.target.value = "";
   };
 
-  const deleteDoc = async docId => {
-    if (!window.confirm("Delete this document?")) return;
-    try { await portalRecruitmentApi.deleteDoc(subdomain, token, candId, docId); load(); } catch (e) { alert("Failed to delete."); }
+  const deleteDoc = (docId) => {
+    askConfirm("Delete Document", "Delete this document? This cannot be undone.", async () => {
+      try { await portalRecruitmentApi.deleteDoc(subdomain, token, candId, docId); load(); } catch (e) { alert("Failed to delete."); }
+    });
   };
 
   const blobDownload = async (fn, fileName) => {
@@ -221,6 +233,16 @@ export default function CandidateDetails() {
             ))}
         </div>
       )}
+      <ConfirmDialog
+        open={confirmDlg.open}
+        title={confirmDlg.title}
+        message={confirmDlg.message}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        loading={confirmDlg.loading}
+        onConfirm={runConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

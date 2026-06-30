@@ -4,6 +4,7 @@ import { portalInterviewApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const STATUS_COLOR = {
   Scheduled: "#3b82f6", Rescheduled: "#8b5cf6", Completed: "#10b981",
@@ -54,6 +55,16 @@ export default function InterviewDetails() {
   const [panelForm, setPanelForm]         = useState({ employee_name: "", employee_email: "", role: "Panel Member", weightage: "" });
   const [panelSaving, setPanelSaving]     = useState(false);
 
+  // Confirm dialog
+  const [confirmDlg, setConfirmDlg] = useState({ open: false, title: "", message: "", fn: null, loading: false });
+  const askConfirm = (title, message, fn) => setConfirmDlg({ open: true, title, message, fn, loading: false });
+  const closeConfirm = () => setConfirmDlg(d => ({ ...d, open: false, fn: null }));
+  const runConfirm = async () => {
+    if (!confirmDlg.fn) return;
+    setConfirmDlg(d => ({ ...d, loading: true }));
+    try { await confirmDlg.fn(); } finally { setConfirmDlg(d => ({ ...d, open: false, loading: false, fn: null })); }
+  };
+
   const loadInterview = () => {
     setLoading(true);
     portalInterviewApi.get(subdomain, token, interviewId)
@@ -78,8 +89,7 @@ export default function InterviewDetails() {
     if (tab === "Timeline") loadTimeline();
   }, [tab, iv]);
 
-  const doAction = async (fn, msg) => {
-    if (msg && !window.confirm(msg)) return;
+  const doAction = async (fn) => {
     try { await fn(); loadInterview(); } catch (e) { alert(e.response?.data?.message || "Action failed."); }
   };
 
@@ -164,21 +174,21 @@ export default function InterviewDetails() {
               <button onClick={() => navigate(`${base}/${iv.id}/edit`)} className="btn-secondary">Edit</button>
               <button onClick={() => navigate(`${base}/${iv.id}/reschedule`)} style={{ padding: "8px 16px", background: "none", border: "1px solid #8b5cf6", color: "#8b5cf6", borderRadius: 8, cursor: "pointer", fontSize: 13 }}>Reschedule</button>
               <button onClick={() => navigate(`${base}/${iv.id}/complete`)} className="btn-primary">Mark Complete</button>
-              <button onClick={() => doAction(() => portalInterviewApi.noShow(subdomain, token, iv.id), "Mark as No Show?")}
+              <button onClick={() => askConfirm("No Show", "Mark this interview as No Show?", () => doAction(() => portalInterviewApi.noShow(subdomain, token, iv.id)))}
                 style={{ padding: "8px 16px", background: "none", border: "1px solid #f59e0b", color: "#f59e0b", borderRadius: 8, cursor: "pointer", fontSize: 13 }}>
                 No Show
               </button>
-              <button onClick={() => doAction(() => portalInterviewApi.cancel(subdomain, token, iv.id, {}), "Cancel this interview?")}
+              <button onClick={() => askConfirm("Cancel Interview", "Cancel this interview?", () => doAction(() => portalInterviewApi.cancel(subdomain, token, iv.id, {})))}
                 style={{ padding: "8px 16px", background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 8, cursor: "pointer", fontSize: 13 }}>
                 Cancel
               </button>
             </>}
             {iv.status === "Completed" && iv.result === "Pending" && <>
-              <button onClick={() => doAction(() => portalInterviewApi.select(subdomain, token, iv.id, {}), "Mark candidate as Selected?")}
+              <button onClick={() => askConfirm("Select Candidate", "Mark candidate as Selected?", () => doAction(() => portalInterviewApi.select(subdomain, token, iv.id, {})))}
                 style={{ padding: "8px 16px", background: "none", border: "1px solid #10b981", color: "#10b981", borderRadius: 8, cursor: "pointer", fontSize: 13 }}>
                 ✓ Select
               </button>
-              <button onClick={() => doAction(() => portalInterviewApi.reject(subdomain, token, iv.id, {}), "Mark candidate as Rejected?")}
+              <button onClick={() => askConfirm("Reject Candidate", "Mark candidate as Rejected?", () => doAction(() => portalInterviewApi.reject(subdomain, token, iv.id, {})))}
                 style={{ padding: "8px 16px", background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 8, cursor: "pointer", fontSize: 13 }}>
                 ✗ Reject
               </button>
@@ -322,7 +332,7 @@ export default function InterviewDetails() {
                     <span style={{ fontSize: 12, color: "var(--c-muted)" }}>{p.role}</span>
                     {p.weightage != null && <span style={{ fontSize: 12, color: "var(--c-accent)" }}>{p.weightage}%</span>}
                     {isActive && (
-                      <button onClick={() => { if (window.confirm("Remove this panel member?")) doAction(() => portalInterviewApi.removePanel(subdomain, token, iv.id, p.id)).then(() => loadPanel()); }}
+                      <button onClick={() => askConfirm("Remove Panel Member", "Remove this panel member from the interview?", async () => { await doAction(() => portalInterviewApi.removePanel(subdomain, token, iv.id, p.id)); loadPanel(); })}
                         style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 12 }}>
                         Remove
                       </button>
@@ -532,6 +542,16 @@ export default function InterviewDetails() {
           )}
         </div>
       )}
+      <ConfirmDialog
+        open={confirmDlg.open}
+        title={confirmDlg.title}
+        message={confirmDlg.message}
+        confirmLabel="Confirm"
+        confirmVariant="danger"
+        loading={confirmDlg.loading}
+        onConfirm={runConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

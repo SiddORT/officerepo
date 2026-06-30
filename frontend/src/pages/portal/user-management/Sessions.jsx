@@ -6,6 +6,7 @@ import UserManagementLayout from "./UserManagementLayout";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 export default function Sessions() {
   const { subdomain } = useParams();
@@ -17,6 +18,16 @@ export default function Sessions() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const PAGE_SIZE = 20;
+
+  // Confirm dialog
+  const [confirmDlg, setConfirmDlg] = useState({ open: false, title: "", message: "", fn: null, loading: false });
+  const askConfirm = (title, message, fn) => setConfirmDlg({ open: true, title, message, fn, loading: false });
+  const closeConfirm = () => setConfirmDlg(d => ({ ...d, open: false, fn: null }));
+  const runConfirm = async () => {
+    if (!confirmDlg.fn) return;
+    setConfirmDlg(d => ({ ...d, loading: true }));
+    try { await confirmDlg.fn(); } finally { setConfirmDlg(d => ({ ...d, open: false, loading: false, fn: null })); }
+  };
 
   const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
@@ -42,13 +53,14 @@ export default function Sessions() {
     } catch (e) { showToast(e.response?.data?.detail || "Failed.", false); }
   };
 
-  const handleLogoutAll = async () => {
-    if (!window.confirm("Terminate all your active sessions?")) return;
-    try {
-      await portalUserMgmtApi.logoutAllSessions(subdomain, token);
-      showToast("All sessions terminated.");
-      load();
-    } catch (e) { showToast(e.response?.data?.detail || "Failed.", false); }
+  const handleLogoutAll = () => {
+    askConfirm("Terminate All Sessions", "Terminate all your active sessions? You will need to log in again.", async () => {
+      try {
+        await portalUserMgmtApi.logoutAllSessions(subdomain, token);
+        showToast("All sessions terminated.");
+        load();
+      } catch (e) { showToast(e.response?.data?.detail || "Failed.", false); }
+    });
   };
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -125,6 +137,16 @@ export default function Sessions() {
       </div>
 
       <Pagination page={page} totalPages={totalPages} onPage={setPage} total={total} pageSize={PAGE_SIZE} />
+      <ConfirmDialog
+        open={confirmDlg.open}
+        title={confirmDlg.title}
+        message={confirmDlg.message}
+        confirmLabel="Terminate"
+        confirmVariant="danger"
+        loading={confirmDlg.loading}
+        onConfirm={runConfirm}
+        onCancel={closeConfirm}
+      />
     </UserManagementLayout>
   );
 }

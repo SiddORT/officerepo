@@ -5,6 +5,7 @@ import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PortalLayout from "../PortalLayout";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 function Field({ label, value }) {
   return (
@@ -34,6 +35,16 @@ export default function EmployeeDocDetails() {
   const [replaceNotes, setReplaceNotes] = useState("");
   const [acting, setActing] = useState(false);
   const [actError, setActError] = useState("");
+
+  // Confirm dialog
+  const [confirmDlg, setConfirmDlg] = useState({ open: false, title: "", message: "", fn: null, loading: false });
+  const askConfirm = (title, message, fn) => setConfirmDlg({ open: true, title, message, fn, loading: false });
+  const closeConfirm = () => setConfirmDlg(d => ({ ...d, open: false, fn: null }));
+  const runConfirm = async () => {
+    if (!confirmDlg.fn) return;
+    setConfirmDlg(d => ({ ...d, loading: true }));
+    try { await confirmDlg.fn(); } finally { setConfirmDlg(d => ({ ...d, open: false, loading: false, fn: null })); }
+  };
 
   const load = () => {
     portalEmpDocApi.get(subdomain, token, docId).then(r => setDoc(r.data?.data || null)).catch(() => {}).finally(() => setLoading(false));
@@ -77,10 +88,11 @@ export default function EmployeeDocDetails() {
     } catch (e) { setActError(e.response?.data?.message || "Replace failed."); } finally { setActing(false); }
   };
 
-  const doDelete = async () => {
-    if (!window.confirm("Delete this document? This cannot be undone.")) return;
-    await doAction(() => portalEmpDocApi.remove(subdomain, token, docId));
-    navigate(`/portal/${subdomain}/employee-documents`);
+  const doDelete = () => {
+    askConfirm("Delete Document", "Delete this document? This cannot be undone.", async () => {
+      await doAction(() => portalEmpDocApi.remove(subdomain, token, docId));
+      navigate(`/portal/${subdomain}/employee-documents`);
+    });
   };
 
   if (loading) return <PortalLayout title="Document"><p className="t-muted" style={{ padding: 32 }}>Loading…</p></PortalLayout>;
@@ -259,6 +271,16 @@ export default function EmployeeDocDetails() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={confirmDlg.open}
+        title={confirmDlg.title}
+        message={confirmDlg.message}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        loading={confirmDlg.loading}
+        onConfirm={runConfirm}
+        onCancel={closeConfirm}
+      />
     </PortalLayout>
   );
 }

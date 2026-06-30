@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalAttendanceApi } from "../../../services/apiClient";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 export default function ShiftList() {
   const { subdomain, token } = usePortalAuth();
@@ -10,6 +11,16 @@ export default function ShiftList() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(null);
   const [error, setError]     = useState("");
+
+  // Confirm dialog
+  const [confirmDlg, setConfirmDlg] = useState({ open: false, title: "", message: "", fn: null, loading: false });
+  const askConfirm = (title, message, fn) => setConfirmDlg({ open: true, title, message, fn, loading: false });
+  const closeConfirm = () => setConfirmDlg(d => ({ ...d, open: false, fn: null }));
+  const runConfirm = async () => {
+    if (!confirmDlg.fn) return;
+    setConfirmDlg(d => ({ ...d, loading: true }));
+    try { await confirmDlg.fn(); } finally { setConfirmDlg(d => ({ ...d, open: false, loading: false, fn: null })); }
+  };
 
   const base = `/portal/${subdomain}/hrms/attendance`;
 
@@ -23,17 +34,18 @@ export default function ShiftList() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleDelete = async (id, name) => {
-    if (!window.confirm(`Delete shift "${name}"?`)) return;
-    setDeleting(id);
-    try {
-      await portalAttendanceApi.deleteShift(subdomain, token, id);
-      setShifts(prev => prev.filter(s => s.id !== id));
-    } catch (e) {
-      setError(e.response?.data?.detail || "Delete failed.");
-    } finally {
-      setDeleting(null);
-    }
+  const handleDelete = (id, name) => {
+    askConfirm("Delete Shift", `Delete shift "${name}"? This cannot be undone.`, async () => {
+      setDeleting(id);
+      try {
+        await portalAttendanceApi.deleteShift(subdomain, token, id);
+        setShifts(prev => prev.filter(s => s.id !== id));
+      } catch (e) {
+        setError(e.response?.data?.detail || "Delete failed.");
+      } finally {
+        setDeleting(null);
+      }
+    });
   };
 
   return (
@@ -96,6 +108,16 @@ export default function ShiftList() {
           </table>
         )}
       </div>
+      <ConfirmDialog
+        open={confirmDlg.open}
+        title={confirmDlg.title}
+        message={confirmDlg.message}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        loading={confirmDlg.loading}
+        onConfirm={runConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

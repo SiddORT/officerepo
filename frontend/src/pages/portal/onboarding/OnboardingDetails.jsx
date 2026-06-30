@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { portalOnboardingApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const TABS = ["Overview", "Checklist", "Documents", "Assets", "Accounts", "Training", "Activities"];
 
@@ -69,6 +70,16 @@ export default function OnboardingDetails() {
   const [editAcct,     setEditAcct]     = useState(null);
   const [editTrain,    setEditTrain]    = useState(null);
 
+  // Confirm dialog
+  const [confirmDlg, setConfirmDlg] = useState({ open: false, title: "", message: "", fn: null, loading: false });
+  const askConfirm = (title, message, fn) => setConfirmDlg({ open: true, title, message, fn, loading: false });
+  const closeConfirm = () => setConfirmDlg(d => ({ ...d, open: false, fn: null }));
+  const runConfirm = async () => {
+    if (!confirmDlg.fn) return;
+    setConfirmDlg(d => ({ ...d, loading: true }));
+    try { await confirmDlg.fn(); } finally { setConfirmDlg(d => ({ ...d, open: false, loading: false, fn: null })); }
+  };
+
   const load = useCallback(() => {
     setLoading(true);
     portalOnboardingApi.get(subdomain, token, onboardingId)
@@ -95,7 +106,6 @@ export default function OnboardingDetails() {
   useEffect(() => { if (tab === "Overview") loadReadiness(); }, [tab, onboardingId]);
 
   const doActivate = async () => {
-    if (!window.confirm("Activate this employee? Their status will change to Active.")) return;
     setActing(true); setError(""); setSuccess("");
     try {
       await portalOnboardingApi.activate(subdomain, token, onboardingId);
@@ -151,7 +161,6 @@ export default function OnboardingDetails() {
   };
 
   const doDeleteAccount = async (accountId) => {
-    if (!window.confirm("Remove this account?")) return;
     try {
       await portalOnboardingApi.deleteAccount(subdomain, token, onboardingId, accountId);
       setAccounts(a => a.filter(x => x.id !== accountId));
@@ -178,7 +187,6 @@ export default function OnboardingDetails() {
   };
 
   const doDeleteTraining = async (trainingId) => {
-    if (!window.confirm("Remove this training?")) return;
     try {
       await portalOnboardingApi.deleteTraining(subdomain, token, onboardingId, trainingId);
       setTraining(t => t.filter(x => x.id !== trainingId));
@@ -205,7 +213,7 @@ export default function OnboardingDetails() {
         actions={
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {canActivate && (
-              <button onClick={doActivate} disabled={acting} className="btn-primary"
+              <button onClick={() => askConfirm("Activate Employee", "Activate this employee? Their status will change to Active.", doActivate)} disabled={acting} className="btn-primary"
                 style={{ background: "#22c55e", borderColor: "#22c55e" }}>
                 {acting ? "Activating…" : "✓ Activate Employee"}
               </button>
@@ -593,7 +601,7 @@ export default function OnboardingDetails() {
                     {isActive && (
                       <div style={{ display: "flex", gap: 6 }}>
                         <button onClick={() => setEditAcct({ ...a })} className="btn-secondary" style={{ padding: "3px 10px", fontSize: 11 }}>Edit</button>
-                        <button onClick={() => doDeleteAccount(a.id)} style={{ padding: "3px 10px", fontSize: 11, background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 6, cursor: "pointer" }}>✕</button>
+                        <button onClick={() => askConfirm("Remove Account", "Remove this account?", () => doDeleteAccount(a.id))} style={{ padding: "3px 10px", fontSize: 11, background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 6, cursor: "pointer" }}>✕</button>
                       </div>
                     )}
                   </div>
@@ -697,7 +705,7 @@ export default function OnboardingDetails() {
                     {isActive && (
                       <div style={{ display: "flex", gap: 6 }}>
                         <button onClick={() => setEditTrain({ ...tr })} className="btn-secondary" style={{ padding: "3px 10px", fontSize: 11 }}>Edit</button>
-                        <button onClick={() => doDeleteTraining(tr.id)} style={{ padding: "3px 10px", fontSize: 11, background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 6, cursor: "pointer" }}>✕</button>
+                        <button onClick={() => askConfirm("Remove Training", "Remove this training record?", () => doDeleteTraining(tr.id))} style={{ padding: "3px 10px", fontSize: 11, background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 6, cursor: "pointer" }}>✕</button>
                       </div>
                     )}
                   </div>
@@ -740,6 +748,16 @@ export default function OnboardingDetails() {
           )}
         </div>
       )}
+      <ConfirmDialog
+        open={confirmDlg.open}
+        title={confirmDlg.title}
+        message={confirmDlg.message}
+        confirmLabel="Confirm"
+        confirmVariant="danger"
+        loading={confirmDlg.loading}
+        onConfirm={runConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }
