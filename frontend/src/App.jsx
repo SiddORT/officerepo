@@ -289,7 +289,7 @@ function AppRoutes() {
         path="/superadmin/settings/industries"
         element={
           <ProtectedRoute requireRole="superadmin">
-            <Layout><IndustryMasterPage /></Layout>
+            <Layout><SettingsLayout><IndustryMasterPage /></SettingsLayout></Layout>
           </ProtectedRoute>
         }
       />

@@ -1,27 +1,80 @@
 import React, { useEffect, useState } from "react";
 import { industryMasterApi } from "../../../services/apiClient";
-import SettingsLayout from "./SettingsLayout";
+import Table from "../../../components/ui/Table";
+import Badge from "../../../components/ui/Badge";
+import Modal from "../../../components/ui/Modal";
+import Pagination from "../../../components/ui/Pagination";
 
 const PAGE_SIZE = 15;
 
+function StatCard({ label, value }) {
+  return (
+    <div className="rounded-xl p-4" style={{ border: "1px solid var(--c-border)", background: "var(--c-surface2)" }}>
+      <p className="text-xs uppercase tracking-widest t-muted">{label}</p>
+      <p className="text-2xl font-bold t-heading mt-1">{value}</p>
+    </div>
+  );
+}
+
+function IconBtn({ onClick, title, danger, children }) {
+  const [hovered, setHovered] = React.useState(false);
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: 30, height: 30, borderRadius: 7, border: "1px solid",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        cursor: "pointer", transition: "all 0.15s ease",
+        background: danger
+          ? hovered ? "rgba(239,68,68,0.15)" : "rgba(239,68,68,0.06)"
+          : hovered ? "rgba(0,174,236,0.13)" : "var(--c-surface2)",
+        borderColor: danger
+          ? hovered ? "rgba(239,68,68,0.5)" : "rgba(239,68,68,0.2)"
+          : hovered ? "rgba(0,174,236,0.45)" : "var(--c-border)",
+        color: danger ? "#f87171" : hovered ? "#00aeec" : "var(--c-muted)",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+const EditIcon = () => (
+  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
+
 export default function IndustryMasterPage() {
-  const [rows, setRows]         = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [search, setSearch]     = useState("");
-  const [page, setPage]         = useState(1);
+  const [rows, setRows]       = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch]   = useState("");
+  const [page, setPage]       = useState(1);
 
   const [showAdd, setShowAdd]   = useState(false);
   const [newName, setNewName]   = useState("");
   const [addErr, setAddErr]     = useState("");
   const [saving, setSaving]     = useState(false);
 
-  const [editId, setEditId]     = useState(null);
-  const [editName, setEditName] = useState("");
-  const [editErr, setEditErr]   = useState("");
+  const [editRow, setEditRow]     = useState(null);
+  const [editName, setEditName]   = useState("");
+  const [editErr, setEditErr]     = useState("");
   const [editSaving, setEditSaving] = useState(false);
 
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState("");
 
   const [toast, setToast] = useState(null);
 
@@ -52,10 +105,6 @@ export default function IndustryMasterPage() {
   const safePage   = Math.min(page, totalPages);
   const pageRows   = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  const globalIndex = (i) => (safePage - 1) * PAGE_SIZE + i + 1;
-
-  const resetPage = () => setPage(1);
-
   const handleAdd = async () => {
     if (!newName.trim()) { setAddErr("Name is required."); return; }
     setSaving(true); setAddErr("");
@@ -63,22 +112,20 @@ export default function IndustryMasterPage() {
       await industryMasterApi.create({ name: newName.trim(), sort_order: 0 });
       setNewName(""); setShowAdd(false);
       showToast("Industry added.");
-      load(); resetPage();
+      load(); setPage(1);
     } catch (e) {
       setAddErr(e?.response?.data?.detail || "Failed to add.");
     } finally { setSaving(false); }
   };
 
-  const startEdit = (row) => {
-    setEditId(row.id); setEditName(row.name); setEditErr("");
-  };
+  const openEdit = (row) => { setEditRow(row); setEditName(row.name); setEditErr(""); };
 
   const handleEdit = async () => {
     if (!editName.trim()) { setEditErr("Name is required."); return; }
     setEditSaving(true); setEditErr("");
     try {
-      await industryMasterApi.update(editId, { name: editName.trim() });
-      setEditId(null);
+      await industryMasterApi.update(editRow.id, { name: editName.trim() });
+      setEditRow(null);
       showToast("Industry updated.");
       load();
     } catch (e) {
@@ -96,299 +143,202 @@ export default function IndustryMasterPage() {
 
   const handleDelete = async () => {
     if (!confirmDelete) return;
-    setDeleting(true);
+    setDeleting(true); setDeleteErr("");
     try {
       await industryMasterApi.remove(confirmDelete.id);
       setConfirmDelete(null);
       showToast("Industry deleted.");
-      load(); resetPage();
+      load(); setPage(1);
     } catch (e) {
-      showToast(e?.response?.data?.detail || "Delete failed.", "error");
-      setConfirmDelete(null);
+      setDeleteErr(e?.response?.data?.detail || "Delete failed.");
     } finally { setDeleting(false); }
   };
 
-  const counterStyle = (color) => ({
-    background: `rgba(${color},0.08)`,
-    border: `1px solid rgba(${color},0.2)`,
-    borderRadius: 10, padding: "10px 18px", textAlign: "center", minWidth: 100,
-  });
+  const columns = [
+    {
+      key: "_sr",
+      label: "#",
+      width: 48,
+      render: (_v, _row, i) => (
+        <span className="t-muted text-xs">{(safePage - 1) * PAGE_SIZE + i + 1}</span>
+      ),
+    },
+    {
+      key: "name",
+      label: "Industry Name",
+      render: (v) => <span className="font-medium t-body">{v}</span>,
+    },
+    {
+      key: "is_active",
+      label: "Status",
+      width: 110,
+      render: (_v, row) => (
+        <button onClick={() => toggleActive(row)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+          <Badge variant={row.is_active ? "active" : "inactive"} label={row.is_active ? "Active" : "Inactive"} />
+        </button>
+      ),
+    },
+    {
+      key: "actions",
+      label: "",
+      width: 90,
+      render: (_v, row) => (
+        <div className="flex items-center justify-end gap-1.5">
+          <IconBtn onClick={() => openEdit(row)} title="Edit">
+            <EditIcon />
+          </IconBtn>
+          <IconBtn onClick={() => { setConfirmDelete(row); setDeleteErr(""); }} title="Delete" danger>
+            <TrashIcon />
+          </IconBtn>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <SettingsLayout>
-      <div style={{ maxWidth: 760 }}>
+    <div className="p-6 max-w-4xl mx-auto">
 
-        {/* Header */}
-        <div className="flex items-center justify-between" style={{ marginBottom: 18 }}>
-          <div>
-            <h2 className="text-xl font-semibold t-heading" style={{ marginBottom: 4 }}>Industry Master</h2>
-            <p className="text-sm t-muted">Platform-wide industry list used in company forms across all workspaces.</p>
-          </div>
-          <button
-            onClick={() => { setShowAdd(true); setNewName(""); setAddErr(""); }}
-            className="btn-primary"
-            style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Industry
-          </button>
+      {/* Header */}
+      <div className="mb-6 flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-xl font-bold t-heading">Industry Master</h2>
+          <p className="text-sm t-muted mt-1">Platform-wide industry list used in company forms across all workspaces.</p>
         </div>
-
-        {/* Summary counters */}
-        <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
-          <div style={counterStyle("99,102,241")}>
-            <div className="text-xl font-bold" style={{ color: "rgb(129,140,248)", lineHeight: 1.2 }}>{totalCount}</div>
-            <div className="text-xs t-muted" style={{ marginTop: 2 }}>Total</div>
-          </div>
-          <div style={counterStyle("34,197,94")}>
-            <div className="text-xl font-bold" style={{ color: "rgb(74,222,128)", lineHeight: 1.2 }}>{activeCount}</div>
-            <div className="text-xs t-muted" style={{ marginTop: 2 }}>Active</div>
-          </div>
-          <div style={counterStyle("156,163,175")}>
-            <div className="text-xl font-bold" style={{ color: "rgb(156,163,175)", lineHeight: 1.2 }}>{inactiveCount}</div>
-            <div className="text-xs t-muted" style={{ marginTop: 2 }}>Inactive</div>
-          </div>
-        </div>
-
-        {/* Toast */}
-        {toast && (
-          <div style={{
-            padding: "10px 14px", borderRadius: 8, marginBottom: 14, fontSize: 13,
-            background: toast.type === "error" ? "rgba(239,68,68,0.1)" : "rgba(34,197,94,0.1)",
-            border: `1px solid ${toast.type === "error" ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}`,
-            color: toast.type === "error" ? "#f87171" : "#4ade80",
-          }}>
-            {toast.msg}
-          </div>
-        )}
-
-        {/* Add form */}
-        {showAdd && (
-          <div className="card" style={{ marginBottom: 16, padding: "16px 18px" }}>
-            <div className="text-sm font-semibold t-body" style={{ marginBottom: 12 }}>New Industry</div>
-            <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
-              <div style={{ flex: "1 1 240px" }}>
-                <input
-                  autoFocus
-                  value={newName}
-                  onChange={e => { setNewName(e.target.value); setAddErr(""); }}
-                  onKeyDown={e => e.key === "Enter" && handleAdd()}
-                  placeholder="Industry name"
-                  className="input-field"
-                  style={{ borderColor: addErr ? "#f87171" : undefined }}
-                />
-                {addErr && <p style={{ fontSize: 11, color: "#f87171", marginTop: 3 }}>{addErr}</p>}
-              </div>
-              <button onClick={handleAdd} disabled={saving} className="btn-primary" style={{ height: 38 }}>
-                {saving ? "Saving…" : "Add"}
-              </button>
-              <button onClick={() => setShowAdd(false)} className="btn-secondary" style={{ height: 38 }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Search bar */}
-        <div style={{ marginBottom: 14, display: "flex", gap: 10, alignItems: "center" }}>
-          <div style={{ position: "relative", flex: 1 }}>
-            <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 t-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-            </svg>
-            <input
-              value={search}
-              onChange={e => { setSearch(e.target.value); resetPage(); }}
-              placeholder="Search industries…"
-              className="input-field"
-              style={{ paddingLeft: 34 }}
-            />
-          </div>
-          <span className="text-xs t-muted" style={{ whiteSpace: "nowrap" }}>
-            {filtered.length} {filtered.length === 1 ? "industry" : "industries"}
-          </span>
-        </div>
-
-        {/* Table */}
-        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-          {loading ? (
-            <div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</div>
-          ) : filtered.length === 0 ? (
-            <div style={{ padding: 40, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>
-              {search ? "No industries match your search." : "No industries yet. Add one above."}
-            </div>
-          ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--c-border)" }}>
-                  {["#", "Industry Name", "Status", ""].map((h, i) => (
-                    <th key={i} style={{
-                      padding: "10px 14px", fontSize: 11, fontWeight: 600,
-                      textAlign: i === 3 ? "right" : "left",
-                      color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em",
-                      whiteSpace: "nowrap", background: "var(--c-surface)",
-                      width: i === 0 ? 48 : undefined,
-                    }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {pageRows.map((row, i) => (
-                  <tr key={row.id} style={{ borderBottom: "1px solid var(--c-border)" }}>
-                    <td style={{ padding: "10px 14px", color: "var(--c-muted)", fontSize: 12, width: 48 }}>
-                      {globalIndex(i)}
-                    </td>
-                    <td style={{ padding: "10px 14px" }}>
-                      {editId === row.id ? (
-                        <div>
-                          <input
-                            autoFocus
-                            value={editName}
-                            onChange={e => { setEditName(e.target.value); setEditErr(""); }}
-                            onKeyDown={e => { if (e.key === "Enter") handleEdit(); if (e.key === "Escape") setEditId(null); }}
-                            className="input-field"
-                            style={{ maxWidth: 300, borderColor: editErr ? "#f87171" : undefined }}
-                          />
-                          {editErr && <p style={{ fontSize: 11, color: "#f87171", marginTop: 2 }}>{editErr}</p>}
-                        </div>
-                      ) : (
-                        <span className="text-sm t-body font-medium">{row.name}</span>
-                      )}
-                    </td>
-                    <td style={{ padding: "10px 14px" }}>
-                      <button
-                        onClick={() => toggleActive(row)}
-                        style={{
-                          fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 99,
-                          border: "none", cursor: "pointer",
-                          background: row.is_active ? "rgba(34,197,94,0.12)" : "rgba(156,163,175,0.15)",
-                          color: row.is_active ? "#4ade80" : "var(--c-muted)",
-                        }}
-                      >
-                        {row.is_active ? "Active" : "Inactive"}
-                      </button>
-                    </td>
-                    <td style={{ padding: "10px 14px", textAlign: "right" }}>
-                      <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                        {editId === row.id ? (
-                          <>
-                            <button onClick={handleEdit} disabled={editSaving} className="btn-primary" style={{ fontSize: 12, padding: "4px 12px", height: "auto" }}>
-                              {editSaving ? "…" : "Save"}
-                            </button>
-                            <button onClick={() => setEditId(null)} className="btn-secondary" style={{ fontSize: 12, padding: "4px 10px", height: "auto" }}>
-                              Cancel
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button onClick={() => startEdit(row)} className="btn-secondary" style={{ fontSize: 12, padding: "4px 10px", height: "auto" }}>
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => setConfirmDelete(row)}
-                              style={{
-                                fontSize: 12, padding: "4px 10px", height: "auto",
-                                background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)",
-                                color: "#f87171", borderRadius: 6, cursor: "pointer",
-                              }}
-                            >
-                              Delete
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
-            <span className="text-xs t-muted">
-              Page {safePage} of {totalPages} · {filtered.length} total
-            </span>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button
-                onClick={() => setPage(1)}
-                disabled={safePage === 1}
-                className="btn-secondary"
-                style={{ fontSize: 12, padding: "4px 10px", height: "auto", opacity: safePage === 1 ? 0.4 : 1 }}
-              >«</button>
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={safePage === 1}
-                className="btn-secondary"
-                style={{ fontSize: 12, padding: "4px 10px", height: "auto", opacity: safePage === 1 ? 0.4 : 1 }}
-              >‹</button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
-                .reduce((acc, p, idx, arr) => {
-                  if (idx > 0 && p - arr[idx - 1] > 1) acc.push("…");
-                  acc.push(p);
-                  return acc;
-                }, [])
-                .map((p, i) =>
-                  p === "…" ? (
-                    <span key={`e${i}`} style={{ padding: "4px 6px", fontSize: 12, color: "var(--c-muted)" }}>…</span>
-                  ) : (
-                    <button
-                      key={p}
-                      onClick={() => setPage(p)}
-                      className={p === safePage ? "btn-primary" : "btn-secondary"}
-                      style={{ fontSize: 12, padding: "4px 10px", height: "auto", minWidth: 32 }}
-                    >{p}</button>
-                  )
-                )}
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={safePage === totalPages}
-                className="btn-secondary"
-                style={{ fontSize: 12, padding: "4px 10px", height: "auto", opacity: safePage === totalPages ? 0.4 : 1 }}
-              >›</button>
-              <button
-                onClick={() => setPage(totalPages)}
-                disabled={safePage === totalPages}
-                className="btn-secondary"
-                style={{ fontSize: 12, padding: "4px 10px", height: "auto", opacity: safePage === totalPages ? 0.4 : 1 }}
-              >»</button>
-            </div>
-          </div>
-        )}
-
-        {/* Delete confirm modal */}
-        {confirmDelete && (
-          <div style={{
-            position: "fixed", inset: 0, zIndex: 1000,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: "rgba(0,0,0,0.5)",
-          }}>
-            <div className="card" style={{ padding: 24, maxWidth: 380, width: "90%" }}>
-              <h3 className="text-base font-semibold t-heading" style={{ marginBottom: 10 }}>Delete industry?</h3>
-              <p className="text-sm t-muted" style={{ marginBottom: 18 }}>
-                <strong style={{ color: "var(--c-text)" }}>{confirmDelete.name}</strong> will be permanently removed.
-                Companies that already use this industry will keep it as text.
-              </p>
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                <button onClick={() => setConfirmDelete(null)} className="btn-secondary">Cancel</button>
-                <button
-                  onClick={handleDelete} disabled={deleting}
-                  style={{
-                    padding: "8px 18px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 13,
-                    background: "#ef4444", color: "#fff", fontWeight: 600,
-                  }}
-                >
-                  {deleting ? "Deleting…" : "Delete"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <button
+          onClick={() => { setShowAdd(true); setNewName(""); setAddErr(""); }}
+          className="btn-primary flex items-center gap-2"
+        >
+          <span className="text-lg leading-none">+</span> Add Industry
+        </button>
       </div>
-    </SettingsLayout>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <StatCard label="Total"    value={totalCount}    />
+        <StatCard label="Active"   value={activeCount}   />
+        <StatCard label="Inactive" value={inactiveCount} />
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          padding: "10px 14px", borderRadius: 8, marginBottom: 14, fontSize: 13,
+          background: toast.type === "error" ? "rgba(239,68,68,0.1)" : "rgba(34,197,94,0.1)",
+          border: `1px solid ${toast.type === "error" ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}`,
+          color: toast.type === "error" ? "#f87171" : "#4ade80",
+        }}>
+          {toast.msg}
+        </div>
+      )}
+
+      {/* Search */}
+      <div className="flex items-center gap-3 mb-4">
+        <input
+          value={search}
+          onChange={e => { setSearch(e.target.value); setPage(1); }}
+          placeholder="Search industries…"
+          className="input-field max-w-xs"
+        />
+        <span className="text-xs t-muted">{filtered.length} {filtered.length === 1 ? "industry" : "industries"}</span>
+      </div>
+
+      {/* Table */}
+      <Table
+        columns={columns}
+        data={pageRows}
+        loading={loading}
+        emptyMessage={search ? "No industries match your search." : "No industries yet. Click Add Industry to get started."}
+      />
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination page={safePage} totalPages={totalPages} onChange={setPage} total={filtered.length} />
+      )}
+
+      {/* Add modal */}
+      <Modal
+        open={showAdd}
+        onClose={() => setShowAdd(false)}
+        title="Add Industry"
+        size="sm"
+        footer={
+          <>
+            <button onClick={() => setShowAdd(false)} className="btn-secondary">Cancel</button>
+            <button onClick={handleAdd} disabled={saving} className="btn-primary">
+              {saving ? "Saving…" : "Add"}
+            </button>
+          </>
+        }
+      >
+        <div>
+          <label className="block text-xs font-semibold t-muted uppercase tracking-wider mb-1.5">
+            Industry Name <span style={{ color: "#f87171" }}>*</span>
+          </label>
+          <input
+            autoFocus
+            value={newName}
+            onChange={e => { setNewName(e.target.value); setAddErr(""); }}
+            onKeyDown={e => e.key === "Enter" && handleAdd()}
+            placeholder="e.g. Technology"
+            className="input-field w-full"
+            style={{ borderColor: addErr ? "#f87171" : undefined }}
+          />
+          {addErr && <p className="text-xs mt-1.5" style={{ color: "#f87171" }}>{addErr}</p>}
+        </div>
+      </Modal>
+
+      {/* Edit modal */}
+      <Modal
+        open={!!editRow}
+        onClose={() => setEditRow(null)}
+        title="Edit Industry"
+        size="sm"
+        footer={
+          <>
+            <button onClick={() => setEditRow(null)} className="btn-secondary">Cancel</button>
+            <button onClick={handleEdit} disabled={editSaving} className="btn-primary">
+              {editSaving ? "Saving…" : "Save"}
+            </button>
+          </>
+        }
+      >
+        <div>
+          <label className="block text-xs font-semibold t-muted uppercase tracking-wider mb-1.5">
+            Industry Name <span style={{ color: "#f87171" }}>*</span>
+          </label>
+          <input
+            autoFocus
+            value={editName}
+            onChange={e => { setEditName(e.target.value); setEditErr(""); }}
+            onKeyDown={e => { if (e.key === "Enter") handleEdit(); if (e.key === "Escape") setEditRow(null); }}
+            className="input-field w-full"
+            style={{ borderColor: editErr ? "#f87171" : undefined }}
+          />
+          {editErr && <p className="text-xs mt-1.5" style={{ color: "#f87171" }}>{editErr}</p>}
+        </div>
+      </Modal>
+
+      {/* Delete confirm modal */}
+      <Modal
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        title="Delete industry?"
+        size="sm"
+        footer={
+          <>
+            <button onClick={() => setConfirmDelete(null)} className="btn-secondary">Cancel</button>
+            <button onClick={handleDelete} disabled={deleting} className="btn-danger">
+              {deleting ? "Deleting…" : "Delete"}
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm t-body">
+          <strong>{confirmDelete?.name}</strong> will be permanently removed.
+          Companies that already use this industry will keep it as text.
+        </p>
+        {deleteErr && <p className="text-xs mt-3" style={{ color: "#f87171" }}>{deleteErr}</p>}
+      </Modal>
+    </div>
   );
 }
