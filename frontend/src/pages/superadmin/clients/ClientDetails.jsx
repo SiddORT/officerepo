@@ -1145,6 +1145,7 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
   const [replaceSaving, setReplaceSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteErr, setDeleteErr] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(null);
   const replaceInputRef = React.useRef(null);
 
@@ -1193,11 +1194,14 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
   const confirmDelete = (doc) => { setDeleteTarget(doc); setDeleteErr(""); };
 
   const doDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
       await clientsApi.deleteDocument(clientId, deleteTarget.id);
       setDeleteTarget(null);
       onChange();
     } catch (e) { setDeleteErr(e.response?.data?.detail || "Delete failed."); }
+    finally { setDeleting(false); }
   };
 
   return (
@@ -1244,7 +1248,7 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
                   )}
                   <button onClick={() => download(doc)} className="text-xs t-muted hover:text-[var(--c-accent)]">Download</button>
                   <button onClick={() => openReplace(doc)} className="text-xs t-muted hover:text-[var(--c-accent)]">Replace</button>
-                  <DeleteIconBtn onClick={() => confirmDelete(doc)} title="Delete document" />
+                  <DeleteIconBtn onClick={() => confirmDelete(doc)} title="Delete document" disabled={deleting} />
                 </div>
               </div>
             </div>
@@ -1286,6 +1290,7 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
         confirmVariant="danger"
         onConfirm={doDelete}
         onCancel={() => { setDeleteTarget(null); setDeleteErr(""); }}
+        loading={deleting}
         error={deleteErr}
       />
     </Card>

@@ -397,7 +397,7 @@ function NotesTab({ enquiry, onMutate }) {
                 <p className="text-sm t-body whitespace-pre-wrap break-words">{n.note}</p>
                 <p className="text-xs t-muted mt-1">User #{n.created_by} · {formatDateTime(n.created_at)}</p>
               </div>
-              <DeleteIconBtn onClick={() => confirmDelete(n)} title="Delete note" />
+              <DeleteIconBtn onClick={() => confirmDelete(n)} title="Delete note" disabled={deleting} />
             </div>
           ))}
         </div>
