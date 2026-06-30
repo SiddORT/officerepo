@@ -16,6 +16,57 @@ from backend.app.modules.client_management import constants as c
 from backend.app.modules.client_management import validators as v
 
 
+# ── Document Types (master) ──────────────────────────────────────────────────
+class DocTypeCreateRequest(BaseModel):
+    name: str = Field(..., max_length=100)
+    category: str = Field(default=c.DOC_CATEGORY_GENERAL)
+    description: Optional[str] = Field(None, max_length=500)
+    is_active: Optional[bool] = True
+    sort_order: Optional[int] = Field(0, ge=0)
+
+    @field_validator("name")
+    @classmethod
+    def _name(cls, val):
+        return v.validate_length(val.strip(), field="name", min_len=2, max_len=100, required=True)
+
+    @field_validator("category")
+    @classmethod
+    def _cat(cls, val):
+        return v.validate_choice(val, c.DOC_CATEGORIES, field="category", required=True)
+
+    @field_validator("description")
+    @classmethod
+    def _desc(cls, val):
+        return v.clean_text(val)
+
+
+class DocTypeUpdateRequest(BaseModel):
+    name: Optional[str] = Field(None, max_length=100)
+    category: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=500)
+    is_active: Optional[bool] = None
+    sort_order: Optional[int] = Field(None, ge=0)
+
+    @field_validator("name")
+    @classmethod
+    def _name(cls, val):
+        if val is None:
+            return None
+        return v.validate_length(val.strip(), field="name", min_len=2, max_len=100)
+
+    @field_validator("category")
+    @classmethod
+    def _cat(cls, val):
+        if val is None:
+            return None
+        return v.validate_choice(val, c.DOC_CATEGORIES, field="category")
+
+    @field_validator("description")
+    @classmethod
+    def _desc(cls, val):
+        return v.clean_text(val)
+
+
 # ── Contacts (nested input for client create/update) ─────────────────────────
 class ContactInput(BaseModel):
     id: Optional[str] = Field(None, max_length=36)

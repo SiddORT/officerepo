@@ -1003,18 +1003,57 @@ function SubscriptionTab({ clientId, subscription, options, onChange }) {
 }
 
 // ── Documents ─────────────────────────────────────────────────────────────────
+const IMG_EXTS = ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"];
+const PDF_EXT  = "pdf";
+
+function fileExt(name) { return (name || "").split(".").pop().toLowerCase(); }
+function isImage(name) { return IMG_EXTS.includes(fileExt(name)); }
+function isPdf(name)   { return fileExt(name) === PDF_EXT; }
+
+function DocFileIcon({ name }) {
+  const ext = fileExt(name);
+  if (isPdf(name)) return (
+    <div className="w-10 h-10 flex items-center justify-center rounded-lg text-white text-[10px] font-bold"
+         style={{ background: "rgba(239,68,68,0.18)", color: "#ef4444" }}>PDF</div>
+  );
+  if (isImage(name)) return (
+    <div className="w-10 h-10 flex items-center justify-center rounded-lg"
+         style={{ background: "rgba(0,174,236,0.1)" }}>
+      <svg className="w-5 h-5 text-[var(--c-accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="18" height="18" rx="2" strokeWidth={1.8} />
+        <circle cx="8.5" cy="8.5" r="1.5" strokeWidth={1.8} />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M21 15l-5-5L5 21" />
+      </svg>
+    </div>
+  );
+  return (
+    <div className="w-10 h-10 flex items-center justify-center rounded-lg text-white text-[10px] font-bold uppercase"
+         style={{ background: "rgba(100,116,139,0.15)", color: "#64748b" }}>{ext || "?"}</div>
+  );
+}
+
 function DocumentsTab({ clientId, documents = [], options, onChange }) {
   const [file, setFile] = useState(null);
-  const [docType, setDocType] = useState("Other");
+  const [docTypeId, setDocTypeId] = useState("");
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState("");
+  const [replacing, setReplacing] = useState(null);
+  const [replaceFile, setReplaceFile] = useState(null);
+  const [replaceErr, setReplaceErr] = useState("");
+  const [replaceSaving, setReplaceSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteErr, setDeleteErr] = useState("");
+  const replaceInputRef = React.useRef(null);
+
+  const docTypeMaster = options?.document_type_master || [];
 
   const upload = async () => {
     if (!file) { setErr("Choose a file first."); return; }
     setUploading(true); setErr("");
     try {
-      await clientsApi.uploadDocument(clientId, file, docType);
-      setFile(null);
+      const selected = docTypeMaster.find((t) => t.id === docTypeId);
+      await clientsApi.uploadDocument(clientId, file, docTypeId || null, selected?.name || "Other");
+      setFile(null); setDocTypeId("");
       onChange();
     } catch (e) { setErr(e.response?.data?.detail || "Upload failed."); }
     finally { setUploading(false); }
@@ -1031,37 +1070,111 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
     } catch (e) { alert(e.response?.data?.detail || "Download failed."); }
   };
 
-  const remove = async (doc) => {
-    if (!window.confirm(`Delete ${doc.file_name}?`)) return;
-    try { await clientsApi.deleteDocument(clientId, doc.id); onChange(); }
-    catch (e) { alert(e.response?.data?.detail || "Failed."); }
+  const openReplace = (doc) => {
+    setReplacing(doc);
+    setReplaceFile(null);
+    setReplaceErr("");
+  };
+
+  const doReplace = async () => {
+    if (!replaceFile) { setReplaceErr("Choose a replacement file first."); return; }
+    setReplaceSaving(true); setReplaceErr("");
+    try {
+      await clientsApi.replaceDocument(clientId, replacing.id, replaceFile);
+      setReplacing(null);
+      onChange();
+    } catch (e) { setReplaceErr(e.response?.data?.detail || "Replace failed."); }
+    finally { setReplaceSaving(false); }
+  };
+
+  const confirmDelete = (doc) => { setDeleteTarget(doc); setDeleteErr(""); };
+
+  const doDelete = async () => {
+    try {
+      await clientsApi.deleteDocument(clientId, deleteTarget.id);
+      setDeleteTarget(null);
+      onChange();
+    } catch (e) { setDeleteErr(e.response?.data?.detail || "Delete failed."); }
   };
 
   return (
     <Card title="Documents">
-      <div className="flex flex-wrap items-end gap-3 mb-4">
-        <Select label="Type" value={docType} onChange={(e) => setDocType(e.target.value)} options={toOptions(options.document_types)} className="w-40" />
+      {/* Upload form */}
+      <div className="flex flex-wrap items-end gap-3 mb-4 pb-4" style={{ borderBottom: "1px solid var(--c-border)" }}>
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium t-body">File</label>
-          <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} className="text-sm t-body" />
+          <label className="text-xs font-medium t-muted">Document Type</label>
+          <select
+            value={docTypeId}
+            onChange={(e) => setDocTypeId(e.target.value)}
+            className="rounded-lg px-3 py-2 text-sm w-48"
+            style={{ background: "var(--c-surface2)", border: "1px solid var(--c-border)", color: "var(--c-text)" }}
+          >
+            <option value="">— Select type —</option>
+            {docTypeMaster.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
         </div>
-        <button onClick={upload} disabled={uploading} className="btn-primary">{uploading ? "Uploading..." : "Upload"}</button>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium t-muted">File</label>
+          <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)}
+                 className="text-sm t-body file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-[var(--c-accent)] file:text-white" />
+        </div>
+        <button onClick={upload} disabled={uploading} className="btn-primary text-sm">
+          {uploading ? "Uploading…" : "Upload"}
+        </button>
       </div>
       {err && <div className="rounded-lg px-3 py-2 text-sm text-red-400 mb-3" style={{ background: "rgba(239,68,68,0.08)" }}>{err}</div>}
+
       {documents.length === 0 ? <Empty>No documents yet.</Empty> : (
-        <div className="space-y-2">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {documents.map((doc) => (
-            <div key={doc.id} className="flex items-center justify-between rounded-lg p-3" style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)" }}>
-              <div className="min-w-0">
-                <span className="text-sm font-medium t-heading block truncate">{doc.file_name}</span>
-                <span className="text-xs t-muted">{doc.document_type} · {formatDate(doc.created_at)}</span>
-              </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <button onClick={() => download(doc)} className="text-xs t-muted hover:text-[var(--c-accent)]">Download</button>
-                <button onClick={() => remove(doc)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
+            <div key={doc.id} className="rounded-xl p-3 flex gap-3" style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)" }}>
+              <DocFileIcon name={doc.file_name} />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium t-heading truncate" title={doc.file_name}>{doc.file_name}</p>
+                <p className="text-xs t-muted mt-0.5">{doc.document_type || "—"}</p>
+                <p className="text-xs t-muted">{formatDate(doc.created_at)}</p>
+                <div className="flex items-center gap-3 mt-2">
+                  <button onClick={() => download(doc)} className="text-xs t-muted hover:text-[var(--c-accent)]">Download</button>
+                  <button onClick={() => openReplace(doc)} className="text-xs t-muted hover:text-[var(--c-accent)]">Replace</button>
+                  <button onClick={() => confirmDelete(doc)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
+                </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Replace modal */}
+      {replacing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
+          <div className="rounded-xl p-6 w-full max-w-md" style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)" }}>
+            <h3 className="text-base font-semibold t-heading mb-1">Replace File</h3>
+            <p className="text-sm t-muted mb-4">Replacing: <span className="font-medium t-body">{replacing.file_name}</span>. The document type and metadata will be kept.</p>
+            {replaceErr && <div className="rounded-lg px-3 py-2 text-sm text-red-400 mb-3" style={{ background: "rgba(239,68,68,0.08)" }}>{replaceErr}</div>}
+            <input ref={replaceInputRef} type="file" onChange={(e) => setReplaceFile(e.target.files?.[0] || null)}
+                   className="text-sm t-body mb-4 block file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-[var(--c-accent)] file:text-white" />
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setReplacing(null)} className="btn-secondary text-sm">Cancel</button>
+              <button onClick={doReplace} disabled={replaceSaving} className="btn-primary text-sm">{replaceSaving ? "Replacing…" : "Replace"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirm modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
+          <div className="rounded-xl p-6 w-full max-w-md" style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)" }}>
+            <h3 className="text-base font-semibold t-heading mb-1">Delete Document</h3>
+            <p className="text-sm t-muted mb-4">Delete <span className="font-medium t-body">{deleteTarget.file_name}</span>? This cannot be undone.</p>
+            {deleteErr && <div className="rounded-lg px-3 py-2 text-sm text-red-400 mb-3" style={{ background: "rgba(239,68,68,0.08)" }}>{deleteErr}</div>}
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setDeleteTarget(null)} className="btn-secondary text-sm">Cancel</button>
+              <button onClick={doDelete} className="btn-primary text-sm" style={{ background: "#ef4444" }}>Delete</button>
+            </div>
+          </div>
         </div>
       )}
     </Card>

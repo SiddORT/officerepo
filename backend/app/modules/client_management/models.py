@@ -181,6 +181,22 @@ class ClientModule(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
 
+class ClientDocumentType(Base):
+    """Platform-managed document type master — operators define types here."""
+    __tablename__ = "client_document_types"
+
+    id = Column(String(36), primary_key=True, default=_uuid)
+    name = Column(String(100), nullable=False, unique=True)
+    category = Column(String(20), nullable=False, default="general")
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True, index=True)
+    sort_order = Column(Integer, nullable=False, default=0)
+    is_system = Column(Boolean, nullable=False, default=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
 class ClientDocument(Base):
     """Client documents — stored PRIVATE; DB keeps only the rootless storage key."""
     __tablename__ = "client_documents"
@@ -188,7 +204,8 @@ class ClientDocument(Base):
     id = Column(String(36), primary_key=True, default=_uuid)
     client_id = Column(String(36), ForeignKey("clients.id"), nullable=False, index=True)
 
-    document_type = Column(String(40), nullable=False, default="Other")
+    document_type = Column(String(100), nullable=False, default="Other")
+    document_type_id = Column(String(36), ForeignKey("client_document_types.id"), nullable=True, index=True)
     file_name = Column(String(255), nullable=False)
     file_path = Column(String(500), nullable=False)
     uploaded_by = Column(Integer, nullable=True)

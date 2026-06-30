@@ -280,17 +280,35 @@ export const clientsApi = {
   activities: (id) => apiClient.get(`${CLIENTS}/${id}/activities`),
 
   documents: (id) => apiClient.get(`${CLIENTS}/${id}/documents`),
-  uploadDocument: (id, file, documentType) => {
+  uploadDocument: (id, file, documentTypeId, documentType) => {
     const fd = new FormData();
     fd.append("file", file);
+    if (documentTypeId) fd.append("document_type_id", documentTypeId);
     fd.append("document_type", documentType || "Other");
     return apiClient.post(`${CLIENTS}/${id}/documents`, fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  replaceDocument: (id, docId, file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return apiClient.put(`${CLIENTS}/${id}/documents/${docId}`, fd, {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
   downloadDocument: (id, docId) =>
     apiClient.get(`${CLIENTS}/${id}/documents/${docId}/download`, { responseType: "blob" }),
   deleteDocument: (id, docId) => apiClient.delete(`${CLIENTS}/${id}/documents/${docId}`),
+};
+
+// ── Client Document Types (superadmin settings) ───────────────────────────────
+const CLIENT_DOC_TYPES = "/superadmin/settings/document-types";
+
+export const clientDocTypeApi = {
+  list: (activeOnly = false) => apiClient.get(CLIENT_DOC_TYPES, { params: { active_only: activeOnly } }),
+  create: (data) => apiClient.post(CLIENT_DOC_TYPES, data),
+  update: (id, data) => apiClient.patch(`${CLIENT_DOC_TYPES}/${id}`, data),
+  delete: (id) => apiClient.delete(`${CLIENT_DOC_TYPES}/${id}`),
 };
 
 // ── Notification Management (superadmin) ──────────────────────────────────────

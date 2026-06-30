@@ -23,14 +23,15 @@ from backend.app.modules.client_management import repository as repo
 from backend.app.modules.client_management import validators as v
 from backend.app.modules.client_management.models import (
     Client, ClientContact, ClientBillingProfile, ClientDbConnection,
-    ClientSubscription, ClientModule, ClientDocument, ClientActivityLog,
-    ClientDomain, ClientAdminUser,
+    ClientSubscription, ClientModule, ClientDocument, ClientDocumentType,
+    ClientActivityLog, ClientDomain, ClientAdminUser,
 )
 from backend.app.modules.client_management.schemas import (
     ClientCreateRequest, ClientUpdateRequest, StatusUpdateRequest,
     ContactCreateRequest, ContactUpdateRequest, BillingProfileRequest,
     SubscriptionRequest, ModuleToggleRequest, DbConnectionRequest,
     DomainCreateRequest, AdminUserCreateRequest, AdminUserUpdateRequest,
+    DocTypeCreateRequest, DocTypeUpdateRequest,
 )
 from backend.shared.audit.audit_logger import record_audit, mask_email, mask_value
 from backend.shared.security.encryption import encrypt_value, decrypt_value
@@ -212,11 +213,26 @@ def document_to_dict(doc: ClientDocument) -> dict:
     return {
         "id": doc.id,
         "document_type": doc.document_type,
+        "document_type_id": doc.document_type_id,
         "file_name": doc.file_name,
         "has_file": bool(doc.file_path),
         "url": f"/api/v1/superadmin/clients/{doc.client_id}/documents/{doc.id}/download",
         "uploaded_by": doc.uploaded_by,
         "created_at": doc.created_at,
+    }
+
+
+def doc_type_to_dict(dt: ClientDocumentType) -> dict:
+    return {
+        "id": dt.id,
+        "name": dt.name,
+        "category": dt.category,
+        "description": dt.description,
+        "is_active": dt.is_active,
+        "sort_order": dt.sort_order,
+        "is_system": dt.is_system,
+        "created_at": dt.created_at,
+        "updated_at": dt.updated_at,
     }
 
 
@@ -768,6 +784,82 @@ def list_modules_nested(db: Session, client_id: str) -> list:
 
 
 # ════════════════════════════════════════════════════════════════════════════
+# Document type master
+# ════════════════════════════════════════════════════════════════════════════
+def seed_document_types(db: Session) -> None:
+    """Idempotent startup seed — inserts system doc types that don't exist yet."""
+    for entry in c.DEFAULT_DOCUMENT_TYPES:
+        existing = repo.get_document_type_by_name(db, entry["name"])
+        if not existing:
+            repo.add(db, ClientDocumentType(
+                name=entry["name"],
+                category=entry["category"],
+                sort_order=entry["sort_order"],
+                is_system=entry["is_system"],
+                is_active=True,
+            ))
+    db.commit()
+
+
+def list_doc_types(db: Session, *, active_only: bool = False) -> list:
+    return [doc_type_to_dict(x) for x in repo.list_document_types(db, active_only=active_only)]
+
+
+def create_doc_type(db: Session, payload: DocTypeCreateRequest, *, actor) -> dict:
+    existing = repo.get_document_type_by_name(db, payload.name)
+    if existing:
+        raise HTTPException(status_code=409, detail="A document type with this name already exists.")
+    dt = ClientDocumentType(
+        name=payload.name,
+        category=payload.category,
+        description=payload.description,
+        is_active=payload.is_active if payload.is_active is not None else True,
+        sort_order=payload.sort_order or 0,
+        is_system=False,
+    )
+    repo.add(db, dt)
+    record_audit(db, c.AUDIT_DOC_TYPE_CREATED, "DocType", dt.name, actor=actor,
+                 metadata={"name": dt.name, "category": dt.category})
+    db.commit()
+    db.refresh(dt)
+    return doc_type_to_dict(dt)
+
+
+def update_doc_type(db: Session, type_id: str, payload: DocTypeUpdateRequest, *, actor) -> dict:
+    dt = repo.get_document_type(db, type_id)
+    if not dt:
+        raise HTTPException(status_code=404, detail="Document type not found.")
+    data = payload.model_dump(exclude_unset=True)
+    if "name" in data and data["name"] != dt.name:
+        clash = repo.get_document_type_by_name(db, data["name"])
+        if clash:
+            raise HTTPException(status_code=409, detail="A document type with this name already exists.")
+    for field, value in data.items():
+        setattr(dt, field, value)
+    dt.updated_at = datetime.utcnow()
+    record_audit(db, c.AUDIT_DOC_TYPE_UPDATED, "DocType", dt.name, actor=actor,
+                 metadata={"fields": list(data.keys())})
+    db.commit()
+    db.refresh(dt)
+    return doc_type_to_dict(dt)
+
+
+def delete_doc_type(db: Session, type_id: str, *, actor) -> None:
+    dt = repo.get_document_type(db, type_id)
+    if not dt:
+        raise HTTPException(status_code=404, detail="Document type not found.")
+    if dt.is_system:
+        raise HTTPException(status_code=403, detail="System document types cannot be deleted.")
+    if repo.document_type_in_use(db, type_id):
+        raise HTTPException(status_code=409,
+                            detail="This document type is in use by one or more documents and cannot be deleted.")
+    record_audit(db, c.AUDIT_DOC_TYPE_DELETED, "DocType", dt.name, actor=actor,
+                 metadata={"name": dt.name})
+    db.delete(dt)
+    db.commit()
+
+
+# ════════════════════════════════════════════════════════════════════════════
 # Documents
 # ════════════════════════════════════════════════════════════════════════════
 def list_documents(db: Session, client_id: str) -> list:
@@ -775,11 +867,11 @@ def list_documents(db: Session, client_id: str) -> list:
     return [document_to_dict(x) for x in repo.list_documents(db, client_id)]
 
 
-def add_document(db: Session, client_id: str, *, document_type: str, file_name: str,
-                 file_path: str, actor_id, actor) -> dict:
+def add_document(db: Session, client_id: str, *, document_type: str, document_type_id: Optional[str] = None,
+                 file_name: str, file_path: str, actor_id, actor) -> dict:
     _require_client(db, client_id)
     doc = ClientDocument(
-        client_id=client_id, document_type=document_type,
+        client_id=client_id, document_type=document_type, document_type_id=document_type_id,
         file_name=file_name, file_path=file_path, uploaded_by=actor_id,
     )
     repo.add(db, doc)
@@ -789,6 +881,25 @@ def add_document(db: Session, client_id: str, *, document_type: str, file_name: 
     db.commit()
     db.refresh(doc)
     return document_to_dict(doc)
+
+
+def replace_document(db: Session, client_id: str, document_id: str, *,
+                     file_name: str, file_path: str, actor_id, actor) -> Tuple[str, dict]:
+    """Replace a document's file. Returns (old_file_key, updated_doc_dict)."""
+    _require_client(db, client_id)
+    doc = repo.get_document(db, client_id, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+    old_key = doc.file_path
+    doc.file_name = file_name
+    doc.file_path = file_path
+    doc.uploaded_by = actor_id
+    _journal(db, client_id, c.ACT_DOCUMENT_REPLACED, remarks=file_name)
+    record_audit(db, c.AUDIT_DOCUMENT_REPLACED, c.AUDIT_ENTITY, client_id, actor=actor,
+                 metadata={"document_id": document_id, "file_name": file_name})
+    db.commit()
+    db.refresh(doc)
+    return old_key, document_to_dict(doc)
 
 
 def get_document_file(db: Session, client_id: str, document_id: str) -> Tuple[str, str]:

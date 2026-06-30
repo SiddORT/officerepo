@@ -25,8 +25,8 @@ from backend.app.modules.lead_management.models import (
 )
 from backend.app.modules.client_management.models import (
     Client, ClientContact, ClientBillingProfile, ClientDbConnection,
-    ClientSubscription, ClientModule, ClientDocument, ClientActivityLog,
-    ClientDomain, ClientAdminUser,
+    ClientSubscription, ClientModule, ClientDocument, ClientDocumentType,
+    ClientActivityLog, ClientDomain, ClientAdminUser,
 )
 from backend.shared.audit.models import AuditLog
 from backend.app.modules.cors_report.models import CorsRejection
@@ -64,7 +64,7 @@ from backend.app.modules.cors_report.router import router as cors_report_router
 from backend.app.modules.enquiry.router import router as enquiry_router
 from backend.app.modules.enquiry.admin_router import router as enquiry_admin_router
 from backend.app.modules.lead_management.router import router as lead_router
-from backend.app.modules.client_management.router import router as client_router
+from backend.app.modules.client_management.router import router as client_router, doc_type_router as client_doc_type_router
 from backend.app.modules.currency_management.router import router as currency_router
 from backend.app.modules.organization.router import router as org_router
 from backend.app.modules.notification_management.router import router as notif_router
@@ -359,6 +359,7 @@ def init_database() -> None:
     _seed_module_catalog()
     _seed_asset_defaults()
     _seed_industry_master()
+    _seed_document_types()
 
 
 def _seed_rbac_data() -> None:
@@ -409,6 +410,20 @@ _INDUSTRY_SEED = [
     "Construction & Infrastructure",
     # ↓ Add new industries here — backend restart picks them up automatically
 ]
+
+
+def _seed_document_types() -> None:
+    """Idempotently seed system document types (adds missing rows only)."""
+    from backend.app.modules.client_management.service import seed_document_types
+    db = SessionLocal()
+    try:
+        seed_document_types(db)
+        print("Client document types seeded.")
+    except Exception as e:
+        print(f"Client document types seed error: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 
 def _seed_industry_master() -> None:
@@ -532,6 +547,7 @@ def create_app(app_settings=settings) -> FastAPI:
 
     # Client Management Module (superadmin — Client IS the tenant)
     app.include_router(client_router, prefix=f"{prefix}/superadmin/clients", tags=["client management"])
+    app.include_router(client_doc_type_router, prefix=f"{prefix}/superadmin/settings/document-types", tags=["client document types"])
 
     # Currency Management Module (superadmin — global platform settings)
     app.include_router(currency_router, prefix=f"{prefix}/superadmin/currencies", tags=["currency management"])

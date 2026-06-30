@@ -281,17 +281,44 @@ CLIENT_MODULES = (
        MODULE_WF_NOTIFICATIONS, MODULE_WF_ESCALATIONS]
 )
 
-# ── Documents ────────────────────────────────────────────────────────────────
-DOCUMENT_TYPES = [
-    "Proposal",
-    "Agreement",
-    "NDA",
-    "Purchase Order",
-    "Contract",
-    "Invoice",
-    "Receipt",
-    "Other",
+# ── Document type master ──────────────────────────────────────────────────────
+DOC_CATEGORY_COMPLIANCE = "compliance"
+DOC_CATEGORY_BRANDING = "branding"
+DOC_CATEGORY_GENERAL = "general"
+DOC_CATEGORIES = [DOC_CATEGORY_COMPLIANCE, DOC_CATEGORY_BRANDING, DOC_CATEGORY_GENERAL]
+
+# System-seeded default document types (seeded on startup if not present)
+DEFAULT_DOCUMENT_TYPES = [
+    # Compliance
+    {"name": "MSME Certificate", "category": DOC_CATEGORY_COMPLIANCE, "sort_order": 10, "is_system": True},
+    {"name": "GST Certificate", "category": DOC_CATEGORY_COMPLIANCE, "sort_order": 20, "is_system": True},
+    {"name": "Incorporation Certificate", "category": DOC_CATEGORY_COMPLIANCE, "sort_order": 30, "is_system": True},
+    {"name": "PAN Card", "category": DOC_CATEGORY_COMPLIANCE, "sort_order": 40, "is_system": True},
+    {"name": "Trade License", "category": DOC_CATEGORY_COMPLIANCE, "sort_order": 50, "is_system": True},
+    # Branding
+    {"name": "Logo", "category": DOC_CATEGORY_BRANDING, "sort_order": 60, "is_system": True},
+    {"name": "Brand Guidelines", "category": DOC_CATEGORY_BRANDING, "sort_order": 70, "is_system": True},
+    {"name": "Letterhead", "category": DOC_CATEGORY_BRANDING, "sort_order": 80, "is_system": True},
+    # General
+    {"name": "Proposal", "category": DOC_CATEGORY_GENERAL, "sort_order": 90, "is_system": True},
+    {"name": "Agreement", "category": DOC_CATEGORY_GENERAL, "sort_order": 100, "is_system": True},
+    {"name": "NDA", "category": DOC_CATEGORY_GENERAL, "sort_order": 110, "is_system": True},
+    {"name": "Purchase Order", "category": DOC_CATEGORY_GENERAL, "sort_order": 120, "is_system": True},
+    {"name": "Contract", "category": DOC_CATEGORY_GENERAL, "sort_order": 130, "is_system": True},
+    {"name": "Invoice", "category": DOC_CATEGORY_GENERAL, "sort_order": 140, "is_system": True},
+    {"name": "Receipt", "category": DOC_CATEGORY_GENERAL, "sort_order": 150, "is_system": True},
+    {"name": "Other", "category": DOC_CATEGORY_GENERAL, "sort_order": 160, "is_system": True},
 ]
+
+# Legacy string list (kept for backward-compat validation on old upload endpoint)
+DOCUMENT_TYPES = [dt["name"] for dt in DEFAULT_DOCUMENT_TYPES]
+
+# ── Document type audit actions ──────────────────────────────────────────────
+AUDIT_DOC_TYPE_CREATED = "CLIENT_DOC_TYPE_CREATED"
+AUDIT_DOC_TYPE_UPDATED = "CLIENT_DOC_TYPE_UPDATED"
+AUDIT_DOC_TYPE_DELETED = "CLIENT_DOC_TYPE_DELETED"
+AUDIT_DOCUMENT_REPLACED = "CLIENT_DOCUMENT_REPLACED"
+ACT_DOCUMENT_REPLACED = "Document Replaced"
 
 # ── Payment terms (commercials) ──────────────────────────────────────────────
 PAYMENT_TERMS = ["Net 15", "Net 30", "Net 45", "Net 60", "Due on Receipt", "Advance"]

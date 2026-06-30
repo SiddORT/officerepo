@@ -22,6 +22,7 @@ from backend.app.modules.client_management.schemas import (
     ContactCreateRequest, ContactUpdateRequest, BillingProfileRequest,
     SubscriptionRequest, ModuleToggleRequest, DbConnectionRequest,
     DomainCreateRequest, AdminUserCreateRequest, AdminUserUpdateRequest,
+    DocTypeCreateRequest, DocTypeUpdateRequest,
 )
 from backend.shared.response import ApiResponse
 from backend.shared.storage.file_handler import (
@@ -49,9 +50,47 @@ def _current_admin(
         raise HTTPException(status_code=401, detail="Invalid or expired token.")
 
 
+# ── Document type master (settings) ──────────────────────────────────────────
+doc_type_router = APIRouter()
+
+
+@doc_type_router.get("", summary="List all document types")
+def list_doc_types(
+    active_only: bool = Query(False),
+    db: Session = Depends(get_platform_db),
+    _admin: dict = Depends(_current_admin),
+):
+    return ApiResponse.ok(service.list_doc_types(db, active_only=active_only)).model_dump()
+
+
+@doc_type_router.post("", summary="Create a document type")
+def create_doc_type(payload: DocTypeCreateRequest, db: Session = Depends(get_platform_db),
+                    admin: dict = Depends(_current_admin)):
+    return ApiResponse.ok(service.create_doc_type(db, payload, actor=admin["email"]),
+                          "Document type created.").model_dump()
+
+
+@doc_type_router.patch("/{type_id}", summary="Update a document type")
+def update_doc_type(type_id: str, payload: DocTypeUpdateRequest, db: Session = Depends(get_platform_db),
+                    admin: dict = Depends(_current_admin)):
+    return ApiResponse.ok(service.update_doc_type(db, type_id, payload, actor=admin["email"]),
+                          "Document type updated.").model_dump()
+
+
+@doc_type_router.delete("/{type_id}", summary="Delete an unused document type")
+def delete_doc_type(type_id: str, db: Session = Depends(get_platform_db),
+                    admin: dict = Depends(_current_admin)):
+    service.delete_doc_type(db, type_id, actor=admin["email"])
+    return ApiResponse.ok(None, "Document type deleted.").model_dump()
+
+
 # ── Metadata / options ───────────────────────────────────────────────────────
 @router.get("/meta/options", summary="Controlled vocabularies for client forms")
-def get_options(_admin: dict = Depends(_current_admin)):
+def get_options(
+    db: Session = Depends(get_platform_db),
+    _admin: dict = Depends(_current_admin),
+):
+    doc_types = service.list_doc_types(db, active_only=True)
     return ApiResponse.ok({
         "statuses": c.CLIENT_STATUSES,
         "contact_types": c.CONTACT_TYPES,
@@ -61,6 +100,7 @@ def get_options(_admin: dict = Depends(_current_admin)):
         "billing_cycles": c.BILLING_CYCLES,
         "modules": c.CLIENT_MODULES,
         "document_types": c.DOCUMENT_TYPES,
+        "document_type_master": doc_types,
         "payment_terms": c.PAYMENT_TERMS,
         "currencies": c.CURRENCY_CODES,
     }).model_dump()
@@ -305,17 +345,48 @@ def list_documents(client_id: str, db: Session = Depends(get_platform_db), _admi
 @router.post("/{client_id}/documents")
 def upload_document(
     client_id: str,
+    document_type_id: Optional[str] = Form(None),
     document_type: str = Form("Other"),
     file: UploadFile = File(...),
     db: Session = Depends(get_platform_db),
     admin: dict = Depends(_current_admin),
 ):
-    if document_type not in c.DOCUMENT_TYPES:
-        raise HTTPException(status_code=422, detail="Invalid document_type.")
+    # Resolve label from the master if a type_id was provided
+    resolved_label = document_type
+    resolved_id = None
+    if document_type_id:
+        dt = service.repo.get_document_type(db, document_type_id)
+        if not dt:
+            raise HTTPException(status_code=422, detail="Invalid document_type_id.")
+        resolved_label = dt.name
+        resolved_id = dt.id
     key, original = save_document(file, c.CLIENT_STORAGE_SCOPE, c.CLIENT_DOCUMENTS_MODULE)
-    data = service.add_document(db, client_id, document_type=document_type, file_name=original,
-                                file_path=key, actor_id=admin["user_id"], actor=admin["email"])
+    data = service.add_document(
+        db, client_id,
+        document_type=resolved_label, document_type_id=resolved_id,
+        file_name=original, file_path=key,
+        actor_id=admin["user_id"], actor=admin["email"],
+    )
     return ApiResponse.ok(data, "Document uploaded.").model_dump()
+
+
+@router.put("/{client_id}/documents/{document_id}")
+def replace_document(
+    client_id: str,
+    document_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_platform_db),
+    admin: dict = Depends(_current_admin),
+):
+    """Replace the file for an existing document row (keeps type/metadata unchanged)."""
+    key, original = save_document(file, c.CLIENT_STORAGE_SCOPE, c.CLIENT_DOCUMENTS_MODULE)
+    old_key, data = service.replace_document(
+        db, client_id, document_id,
+        file_name=original, file_path=key,
+        actor_id=admin["user_id"], actor=admin["email"],
+    )
+    delete_file(old_key, Visibility.PRIVATE)
+    return ApiResponse.ok(data, "Document replaced.").model_dump()
 
 
 @router.get("/{client_id}/documents/{document_id}/download")

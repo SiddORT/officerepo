@@ -14,8 +14,8 @@ from sqlalchemy.orm import Session
 
 from backend.app.modules.client_management.models import (
     Client, ClientContact, ClientBillingProfile, ClientDbConnection,
-    ClientSubscription, ClientModule, ClientDocument, ClientActivityLog,
-    ClientDomain, ClientAdminUser,
+    ClientSubscription, ClientModule, ClientDocument, ClientDocumentType,
+    ClientActivityLog, ClientDomain, ClientAdminUser,
 )
 
 
@@ -213,6 +213,31 @@ def get_module(db: Session, client_id: str, module_name: str) -> Optional[Client
         .filter(ClientModule.client_id == client_id, ClientModule.module_name == module_name)
         .first()
     )
+
+
+# ── Document types (master) ──────────────────────────────────────────────────
+def list_document_types(db: Session, *, active_only: bool = False) -> List[ClientDocumentType]:
+    q = db.query(ClientDocumentType)
+    if active_only:
+        q = q.filter(ClientDocumentType.is_active.is_(True))
+    return q.order_by(ClientDocumentType.sort_order.asc(), ClientDocumentType.name.asc()).all()
+
+
+def get_document_type(db: Session, type_id: str) -> Optional[ClientDocumentType]:
+    return db.query(ClientDocumentType).filter(ClientDocumentType.id == type_id).first()
+
+
+def get_document_type_by_name(db: Session, name: str) -> Optional[ClientDocumentType]:
+    return db.query(ClientDocumentType).filter(ClientDocumentType.name == name).first()
+
+
+def document_type_in_use(db: Session, type_id: str) -> bool:
+    """Return True if any non-deleted client document references this type."""
+    return (
+        db.query(ClientDocument)
+        .filter(ClientDocument.document_type_id == type_id, ClientDocument.is_deleted.is_(False))
+        .first()
+    ) is not None
 
 
 # ── Documents ────────────────────────────────────────────────────────────────
