@@ -183,7 +183,7 @@ def _branch_dict(b, company_name: Optional[str] = None, total_employees: int = 0
         "company_name": company_name,
         "branch_code": b.branch_code, "branch_name": b.branch_name,
         "branch_type": b.branch_type,
-        "email": b.email, "phone": b.phone,
+        "email": b.email, "phone": b.phone, "phone_country_code": getattr(b, "phone_country_code", None),
         "address_line_1": b.address_line_1, "address_line_2": b.address_line_2,
         "city": b.city, "district": getattr(b, "district", None),
         "state": b.state, "country": b.country, "postal_code": b.postal_code,

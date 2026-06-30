@@ -6,26 +6,38 @@ import OrgLayout from "./OrgLayout";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
+import PhoneInput from "../../../components/ui/PhoneInput";
 import usePincodeLookup from "../../../hooks/usePincodeLookup";
+
+function genBranchCode(name) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "";
+  if (words.length === 1) return words[0].slice(0, 4).toUpperCase();
+  const head = words[0].slice(0, 3).toUpperCase();
+  const tail = words.slice(1).map(w => w[0].toUpperCase()).join("");
+  return `${head}-${tail}`;
+}
 
 function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved }) {
   const isEdit = !!editBranch;
   const [form, setForm] = useState({
-    company_id:   editBranch?.company_id  || (companies[0]?.id || ""),
-    branch_code:  editBranch?.branch_code  || "",
-    branch_name:  editBranch?.branch_name  || "",
-    branch_type:  editBranch?.branch_type  || "",
-    postal_code:   editBranch?.postal_code  || "",
-    address_line1: editBranch?.address_line1 || "",
-    address_line2: editBranch?.address_line2 || "",
-    city:          editBranch?.city         || "",
-    district:      editBranch?.district     || "",
-    state:         editBranch?.state        || "",
-    country:       editBranch?.country      || "",
-    phone:         editBranch?.phone        || "",
-    email:         editBranch?.email        || "",
-    description:   editBranch?.description  || "",
+    company_id:        editBranch?.company_id         || (companies[0]?.id || ""),
+    branch_code:       editBranch?.branch_code         || "",
+    branch_name:       editBranch?.branch_name         || "",
+    branch_type:       editBranch?.branch_type         || "",
+    postal_code:       editBranch?.postal_code         || "",
+    address_line1:     editBranch?.address_line1       || "",
+    address_line2:     editBranch?.address_line2       || "",
+    city:              editBranch?.city                || "",
+    district:          editBranch?.district            || "",
+    state:             editBranch?.state               || "",
+    country:           editBranch?.country             || "",
+    phone:             editBranch?.phone               || "",
+    phone_country_code: editBranch?.phone_country_code || "+91",
+    email:             editBranch?.email               || "",
+    description:       editBranch?.description         || "",
   });
+  const [autoCode, setAutoCode] = useState(!isEdit && !editBranch?.branch_code);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -83,8 +95,40 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
             </select>
           </div>
           <div className="portal-form-row">
-            <div><label className="portal-form-label">Branch Name</label><input value={form.branch_name} onChange={e => set("branch_name", e.target.value)} className="input-field" placeholder="Mumbai Head Office" /></div>
-            <div><label className="portal-form-label">Branch Code</label><input value={form.branch_code} onChange={e => set("branch_code", e.target.value)} className="input-field" placeholder="MUM-HO" /></div>
+            <div>
+              <label className="portal-form-label">Branch Name</label>
+              <input
+                value={form.branch_name}
+                onChange={e => {
+                  const name = e.target.value;
+                  setForm(f => ({
+                    ...f,
+                    branch_name: name,
+                    branch_code: autoCode ? genBranchCode(name) : f.branch_code,
+                  }));
+                }}
+                className="input-field"
+                placeholder="Mumbai Head Office"
+              />
+            </div>
+            <div>
+              <label className="portal-form-label">
+                Branch Code
+                {autoCode && !isEdit && (
+                  <span style={{ fontSize: 10, color: "var(--c-accent)", marginLeft: 6, fontWeight: 400 }}>auto</span>
+                )}
+              </label>
+              <input
+                value={form.branch_code}
+                onChange={e => {
+                  setAutoCode(false);
+                  set("branch_code", e.target.value.toUpperCase());
+                }}
+                className="input-field"
+                placeholder="MUM-HO"
+                style={{ textTransform: "uppercase" }}
+              />
+            </div>
           </div>
           <div>
             <label className="portal-form-label">Branch Type</label>
@@ -104,9 +148,13 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
             <div><label className="portal-form-label">State</label><input value={form.state} onChange={e => set("state", e.target.value)} className="input-field" placeholder="Maharashtra" /></div>
             <div><label className="portal-form-label">Country</label><input value={form.country} onChange={e => set("country", e.target.value)} className="input-field" placeholder="India" /></div>
           </div>
-          <div className="portal-form-row">
-            <div><label className="portal-form-label">Phone</label><input value={form.phone} onChange={e => set("phone", e.target.value)} className="input-field" placeholder="+91 22 1234 5678" /></div>
-          </div>
+          <PhoneInput
+            label="Phone"
+            dialCode={form.phone_country_code}
+            onDialCodeChange={v => set("phone_country_code", v)}
+            number={form.phone}
+            onNumberChange={v => set("phone", v)}
+          />
           <div><label className="portal-form-label">Email</label><input type="email" value={form.email} onChange={e => set("email", e.target.value)} className="input-field" placeholder="mumbai@acmetech.in" /></div>
           <div><label className="portal-form-label">Description</label><textarea value={form.description} onChange={e => set("description", e.target.value)} className="input-field" style={{ height: 72, resize: "vertical" }} placeholder="Optional notes about this branch…" /></div>
         </div>

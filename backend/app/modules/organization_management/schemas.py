@@ -65,6 +65,7 @@ class BranchCreate(BaseModel):
     branch_type:   Optional[str] = None
     email:         Optional[str] = None
     phone:         Optional[str] = None
+    phone_country_code: Optional[str] = None
     address_line_1: Optional[str] = None
     address_line_2: Optional[str] = None
     city:          Optional[str] = None
@@ -84,6 +85,7 @@ class BranchUpdate(BaseModel):
     branch_type:   Optional[str] = None
     email:         Optional[str] = None
     phone:         Optional[str] = None
+    phone_country_code: Optional[str] = None
     address_line_1: Optional[str] = None
     address_line_2: Optional[str] = None
     city:          Optional[str] = None

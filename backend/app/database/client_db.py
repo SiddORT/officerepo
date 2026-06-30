@@ -132,6 +132,8 @@ _COLUMN_MIGRATIONS = [
     ("org_companies", "industry",            "VARCHAR(200)"),
     ("org_companies", "sub_industry",        "VARCHAR(200)"),
     ("org_companies", "phone_country_code",  "VARCHAR(10)"),
+    # Phone country code on branches
+    ("org_branches",   "phone_country_code", "VARCHAR(10)"),
     # District field added to address tables
     ("org_companies",  "district",           "VARCHAR(100)"),
     ("org_branches",   "district",           "VARCHAR(100)"),

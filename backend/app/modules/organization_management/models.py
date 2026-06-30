@@ -79,6 +79,7 @@ class OrgBranch(ClientBase):
     # Contact
     email               = Column(String(254), nullable=True)
     phone               = Column(String(30),  nullable=True)
+    phone_country_code  = Column(String(10),  nullable=True)
 
     # Address
     address_line_1      = Column(String(255), nullable=True)
