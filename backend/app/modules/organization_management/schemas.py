@@ -17,6 +17,7 @@ class CompanyCreate(BaseModel):
     tax_number:          Optional[str] = None
     email:               Optional[str] = None
     phone:               Optional[str] = None
+    phone_country_code:  Optional[str] = None
     website:             Optional[str] = None
     address_line_1:      Optional[str] = None
     address_line_2:      Optional[str] = None
@@ -25,7 +26,6 @@ class CompanyCreate(BaseModel):
     country:             Optional[str] = None
     postal_code:         Optional[str] = None
     industry:            Optional[str] = None
-    sub_industry:        Optional[str] = None
     logo_url:            Optional[str] = None
 
     @field_validator("company_code")
@@ -42,6 +42,7 @@ class CompanyUpdate(BaseModel):
     tax_number:          Optional[str] = None
     email:               Optional[str] = None
     phone:               Optional[str] = None
+    phone_country_code:  Optional[str] = None
     website:             Optional[str] = None
     address_line_1:      Optional[str] = None
     address_line_2:      Optional[str] = None
@@ -50,7 +51,6 @@ class CompanyUpdate(BaseModel):
     country:             Optional[str] = None
     postal_code:         Optional[str] = None
     industry:            Optional[str] = None
-    sub_industry:        Optional[str] = None
     logo_url:            Optional[str] = None
 
 

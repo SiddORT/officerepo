@@ -4,6 +4,7 @@ import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
 import PageHeader from "../shared/PageHeader";
+import PhoneInput from "../../../components/ui/PhoneInput";
 
 const DOC_TYPES = [
   "Certificate of Incorporation", "GST Certificate", "PAN Copy", "TAN Certificate",
@@ -33,9 +34,9 @@ function generateCode(name) {
 const API_EMPTY = {
   company_code: "", company_name: "", legal_name: "", display_name: "",
   registration_number: "", tax_number: "", website: "",
-  email: "", phone: "",
+  email: "", phone: "", phone_country_code: "+91",
   address_line_1: "", address_line_2: "", city: "", state: "", country: "", postal_code: "",
-  industry: "", sub_industry: "",
+  industry: "",
 };
 
 const EXTRA_EMPTY = {
@@ -53,9 +54,9 @@ const EXTRA_EMPTY = {
 const EMPTY_DOC = { doc_type: "", doc_number: "", issue_date: "", expiry_date: "", remarks: "", file: null, fileName: "" };
 
 const TAB_FIELDS = {
-  general:    ["company_code", "company_name", "legal_name", "display_name", "company_type", "industry", "sub_industry", "date_of_incorporation", "company_description", "status"],
+  general:    ["company_code", "company_name", "legal_name", "display_name", "company_type", "industry", "date_of_incorporation", "company_description", "status"],
   compliance: ["registration_number", "cin_number", "pan_number", "tan_number", "msme_number", "tax_number", "gst_registration_date", "tax_identification_number"],
-  contact:    ["primary_contact_person", "phone", "email", "website", "support_email", "hr_email", "accounts_email", "address_line_1", "address_line_2", "city", "state", "country", "postal_code", "off_address_line_1", "off_address_line_2", "off_city", "off_state", "off_country", "off_postal_code"],
+  contact:    ["primary_contact_person", "phone", "phone_country_code", "email", "website", "support_email", "hr_email", "accounts_email", "address_line_1", "address_line_2", "city", "state", "country", "postal_code", "off_address_line_1", "off_address_line_2", "off_city", "off_state", "off_country", "off_postal_code"],
   branding:   [],
 };
 
@@ -151,7 +152,7 @@ export default function CompanyForm({ editMode }) {
     portalOrgApi.getCompany(subdomain, token, companyId)
       .then(r => {
         const d = r.data.data;
-        setForm(Object.fromEntries(Object.keys(API_EMPTY).map(k => [k, d[k] ?? ""])));
+        setForm(Object.fromEntries(Object.keys(API_EMPTY).map(k => [k, d[k] ?? (k === "phone_country_code" ? "+91" : "")])));
         setExtra(ex => ({ ...ex, status: d.status || "Active" }));
       })
       .catch(() => setError("Failed to load company."))
@@ -169,14 +170,6 @@ export default function CompanyForm({ editMode }) {
 
   // Derived industry options
   const industryNames = industries.map(i => i.name);
-  const subOptions    = industries.find(i => i.name === form.industry)?.sub_industries || [];
-
-  // When industry changes clear sub_industry if it no longer belongs to the new selection
-  useEffect(() => {
-    if (form.sub_industry && subOptions.length && !subOptions.includes(form.sub_industry)) {
-      set("sub_industry", "");
-    }
-  }, [form.industry]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Shared props passed to every field() call
   const fp = { form, extra, fieldErrors, set, setX };
@@ -306,8 +299,7 @@ export default function CompanyForm({ editMode }) {
                 {field({ ...fp, k: "legal_name",    label: "Legal / Registered Name", required: true, placeholder: "Acme Private Limited" })}
                 {field({ ...fp, k: "display_name",  label: "Display Name",            placeholder: "Acme", note: "Short name shown in the portal" })}
                 {field({ ...fp, k: "company_type",  label: "Company Type",            placeholder: "Select type", as: "select", options: COMPANY_TYPES })}
-                {field({ ...fp, k: "industry",     label: "Industry",    as: "select", placeholder: "Select industry…",     options: industryNames })}
-                {field({ ...fp, k: "sub_industry", label: "Sub-Industry", as: "select", placeholder: form.industry ? "Select sub-industry…" : "Select industry first", options: subOptions })}
+                {field({ ...fp, k: "industry", label: "Industry", as: "select", placeholder: "Select industry…", options: industryNames })}
                 {field({ ...fp, k: "date_of_incorporation", label: "Date of Incorporation", type: "date" })}
               </div>
               {field({ ...fp, k: "company_description", label: "Company Description", placeholder: "Brief overview of what the company does…", as: "textarea", rows: 3, full: true })}
@@ -378,7 +370,16 @@ export default function CompanyForm({ editMode }) {
               <div className="portal-form-title">📞 Contact Information</div>
               <div className="portal-form-row">
                 {field({ ...fp, k: "primary_contact_person", label: "Primary Contact Person", placeholder: "Full name" })}
-                {field({ ...fp, k: "phone",         label: "Phone",         placeholder: "+91 98765 43210" })}
+                <div>
+                  <PhoneInput
+                    label="Phone"
+                    dialCode={form.phone_country_code || "+91"}
+                    onDialCodeChange={v => set("phone_country_code", v)}
+                    number={form.phone}
+                    onNumberChange={v => set("phone", v)}
+                    error={fieldErrors.phone}
+                  />
+                </div>
                 {field({ ...fp, k: "email",         label: "Primary Email", placeholder: "contact@acme.com", type: "email" })}
                 {field({ ...fp, k: "website",       label: "Website",       placeholder: "https://acme.com", note: "Include https://" })}
                 {field({ ...fp, k: "support_email", label: "Support Email", placeholder: "support@acme.com", type: "email" })}

@@ -134,7 +134,7 @@ def list_industries(
         .all()
     )
     return ApiResponse.ok([
-        {"id": r.id, "name": r.name, "sub_industries": r.sub_industries or []}
+        {"id": r.id, "name": r.name}
         for r in rows
     ]).model_dump()
 

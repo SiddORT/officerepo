@@ -39,6 +39,7 @@ class OrgCompany(ClientBase):
     # Contact
     email               = Column(String(254), nullable=True)
     phone               = Column(String(30),  nullable=True)
+    phone_country_code  = Column(String(10),  nullable=True)
     website             = Column(String(255), nullable=True)
 
     # Address

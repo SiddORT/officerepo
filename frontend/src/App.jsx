@@ -30,6 +30,7 @@ import CurrencyDetails from "./pages/superadmin/settings/currency/CurrencyDetail
 import CurrencyHistory from "./pages/superadmin/settings/currency/CurrencyHistory";
 import SyncLogs from "./pages/superadmin/settings/currency/SyncLogs";
 import NotificationsPage from "./pages/superadmin/settings/notifications/NotificationsPage";
+import IndustryMasterPage from "./pages/superadmin/settings/IndustryMasterPage";
 import SecuritySettingsPage from "./pages/superadmin/settings/security/SecuritySettingsPage";
 import ModuleRegistryPage from "./pages/superadmin/settings/modules/ModuleRegistryPage";
 import Layout from "./components/Layout";
@@ -281,6 +282,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requireRole="superadmin">
             <Layout><SettingsLayout><NotificationsPage /></SettingsLayout></Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/superadmin/settings/industries"
+        element={
+          <ProtectedRoute requireRole="superadmin">
+            <Layout><IndustryMasterPage /></Layout>
           </ProtectedRoute>
         }
       />

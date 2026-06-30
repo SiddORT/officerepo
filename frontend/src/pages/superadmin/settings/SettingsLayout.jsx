@@ -75,6 +75,16 @@ const GROUPS = [
         ),
       },
       {
+        key: "industries",
+        label: "Industries",
+        path: "/superadmin/settings/industries",
+        icon: (
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16M3 21h18M9 21v-4a1 1 0 011-1h4a1 1 0 011 1v4" />
+          </svg>
+        ),
+      },
+      {
         key: "notifications",
         label: "Notifications",
         path: "/superadmin/settings/notifications",

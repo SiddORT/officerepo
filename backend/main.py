@@ -95,6 +95,7 @@ from backend.app.modules.expense_management.router import router as portal_expen
 from backend.app.modules.exit_management.router import router as portal_exit_router
 from backend.app.platform.superadmin.rotation_router import router as rotation_router
 from backend.app.platform.superadmin.rotation_status_router import router as rotation_status_router
+from backend.app.modules.industry_master.router import router as industry_master_router
 
 _startup_log = logging.getLogger(__name__)
 
@@ -386,26 +387,26 @@ def _seed_module_catalog() -> None:
 
 
 _INDUSTRY_SEED = [
-    ("Information Technology",       ["SaaS", "Software Development", "IT Consulting", "Cybersecurity", "Cloud Services", "AI & Machine Learning", "Data Analytics", "IT Infrastructure", "ERP & CRM"]),
-    ("Banking & Finance",            ["Retail Banking", "Investment Banking", "Insurance", "Asset Management", "FinTech", "Microfinance", "NBFC", "Wealth Management", "Payment Services"]),
-    ("Healthcare",                   ["Hospitals & Clinics", "Pharmaceuticals", "Medical Devices", "Health Insurance", "Diagnostics & Labs", "Telemedicine", "Biotechnology", "Wellness & Fitness"]),
-    ("Manufacturing",                ["Automotive Parts", "Electronics Manufacturing", "Textiles & Apparel", "FMCG", "Chemicals", "Steel & Metals", "Food Processing", "Plastics & Rubber", "Heavy Machinery"]),
-    ("Real Estate",                  ["Residential Development", "Commercial Real Estate", "Retail Spaces", "Construction", "Property Management", "PropTech", "Warehousing & Logistics Parks"]),
-    ("Education",                    ["K-12 Schools", "Higher Education", "EdTech", "Vocational Training", "Online Learning", "Coaching & Test Prep", "Corporate Training"]),
-    ("Retail & E-Commerce",          ["Fashion & Apparel", "Electronics Retail", "Grocery & FMCG", "D2C Brands", "Marketplace", "Luxury Goods", "Sports & Outdoors"]),
-    ("Logistics & Supply Chain",     ["Freight & Cargo", "Last-Mile Delivery", "Warehousing", "3PL & 4PL", "Cold Chain", "Fleet Management", "Customs & Compliance"]),
-    ("Media & Entertainment",        ["Film & OTT", "Publishing", "Gaming", "Music & Audio", "Advertising & PR", "Social Media", "Live Events"]),
-    ("Telecommunications",           ["Mobile Services", "Broadband & ISP", "Enterprise Connectivity", "Tower & Infrastructure", "Satellite Communications"]),
-    ("Energy & Utilities",           ["Oil & Gas", "Renewable Energy", "Power Generation & Distribution", "Utilities", "Energy Storage", "Clean Tech"]),
-    ("Agriculture",                  ["AgriTech", "Crop Production", "Livestock & Poultry", "Food Processing", "Horticulture", "Agri-Export & Trading", "Irrigation & Water Management"]),
-    ("Hospitality & Tourism",        ["Hotels & Resorts", "Restaurants & Food Service", "Travel Agencies", "Aviation", "Cruise & Leisure", "Event Management"]),
-    ("Legal & Compliance",           ["Law Firms", "Compliance Consulting", "Arbitration & Mediation", "Intellectual Property", "Corporate & M&A Law"]),
-    ("Human Resources",              ["Staffing & Recruitment", "HR Consulting", "Payroll & Benefits", "Training & Development", "HR Tech"]),
-    ("Consulting",                   ["Management Consulting", "Strategy", "Operations", "Business Process", "Risk & Advisory", "Digital Transformation"]),
-    ("Non-Profit & NGO",             ["Social Services", "Environmental", "Education NGO", "Healthcare NGO", "Disaster Relief", "Community Development"]),
-    ("Government & Public Sector",   ["Defence & Security", "Infrastructure", "Public Health", "Municipal Services", "Regulatory Bodies"]),
-    ("Automotive",                   ["OEM", "Auto Parts & Components", "Electric Vehicles", "Auto Retail & Dealership", "Fleet Services"]),
-    ("Construction & Infrastructure",["Civil Engineering", "Roads & Bridges", "Smart Cities", "Water & Sanitation", "Real Estate Development", "Interior Design"]),
+    "Information Technology",
+    "Banking & Finance",
+    "Healthcare",
+    "Manufacturing",
+    "Real Estate",
+    "Education",
+    "Retail & E-Commerce",
+    "Logistics & Supply Chain",
+    "Media & Entertainment",
+    "Telecommunications",
+    "Energy & Utilities",
+    "Agriculture",
+    "Hospitality & Tourism",
+    "Legal & Compliance",
+    "Human Resources",
+    "Consulting",
+    "Non-Profit & NGO",
+    "Government & Public Sector",
+    "Automotive",
+    "Construction & Infrastructure",
     # ↓ Add new industries here — backend restart picks them up automatically
 ]
 
@@ -417,9 +418,9 @@ def _seed_industry_master() -> None:
     try:
         existing = {r.name for r in db.query(IndustryMaster.name).all()}
         added = 0
-        for i, (name, subs) in enumerate(_INDUSTRY_SEED):
+        for i, name in enumerate(_INDUSTRY_SEED):
             if name not in existing:
-                db.add(IndustryMaster(name=name, sub_industries=subs, sort_order=i))
+                db.add(IndustryMaster(name=name, sort_order=i))
                 added += 1
         if added:
             db.commit()
@@ -575,6 +576,9 @@ def create_app(app_settings=settings) -> FastAPI:
     app.include_router(portal_loan_router,        prefix=f"{prefix}/portal", tags=["portal loan management"])
     app.include_router(portal_expense_router,     prefix=f"{prefix}/portal", tags=["portal expense management"])
     app.include_router(portal_exit_router,        prefix=f"{prefix}/portal", tags=["portal exit management"])
+
+    # Industry Master (superadmin — platform-level reference data)
+    app.include_router(industry_master_router, prefix=f"{prefix}/superadmin/industry-master", tags=["industry master"])
 
     # Asset Management Setup (superadmin — global platform definitions)
     app.include_router(asset_router, prefix=f"{prefix}/superadmin/assets", tags=["asset management"])

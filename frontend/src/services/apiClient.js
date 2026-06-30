@@ -1222,6 +1222,16 @@ export const portalExitApi = {
   listActivities: (sd, id) => axios.get(_exitUrl(sd, `/resignations/${id}/activities`), _exith(sd)),
 };
 
+// ── Industry Master (superadmin — platform reference data) ────────────────────
+const INDUSTRY_MASTER = "/superadmin/industry-master";
+
+export const industryMasterApi = {
+  list:   ()             => apiClient.get(INDUSTRY_MASTER),
+  create: (data)         => apiClient.post(INDUSTRY_MASTER, data),
+  update: (id, data)     => apiClient.patch(`${INDUSTRY_MASTER}/${id}`, data),
+  remove: (id)           => apiClient.delete(`${INDUSTRY_MASTER}/${id}`),
+};
+
 // ── Currency Management (superadmin — global platform settings) ───────────────
 const CURRENCIES = "/superadmin/currencies";
 

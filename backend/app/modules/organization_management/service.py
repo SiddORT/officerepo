@@ -42,9 +42,12 @@ def _company_dict(co) -> Dict[str, Any]:
         "company_code": co.company_code, "company_name": co.company_name,
         "legal_name": co.legal_name, "display_name": co.display_name,
         "registration_number": co.registration_number, "tax_number": co.tax_number,
-        "email": co.email, "phone": co.phone, "website": co.website,
+        "email": co.email, "phone": co.phone,
+        "phone_country_code": co.phone_country_code,
+        "website": co.website,
         "address_line_1": co.address_line_1, "address_line_2": co.address_line_2,
         "city": co.city, "state": co.state, "country": co.country, "postal_code": co.postal_code,
+        "industry": co.industry,
         "logo_url": co.logo_url,
         "is_active": co.is_active, "created_at": co.created_at, "updated_at": co.updated_at,
     }

@@ -128,9 +128,10 @@ _COLUMN_MIGRATIONS = [
     ("attendance_policies", "max_wfh_days_per_month",   "INTEGER DEFAULT 10"),
     ("attendance_policies", "require_wfh_approval",     "BOOLEAN DEFAULT FALSE"),
     ("attendance_policies", "allow_hybrid_override",    "BOOLEAN DEFAULT TRUE"),
-    # OrgCompany — industry classification
-    ("org_companies", "industry",     "VARCHAR(200)"),
-    ("org_companies", "sub_industry", "VARCHAR(200)"),
+    # OrgCompany — industry classification + phone country code
+    ("org_companies", "industry",            "VARCHAR(200)"),
+    ("org_companies", "sub_industry",        "VARCHAR(200)"),
+    ("org_companies", "phone_country_code",  "VARCHAR(10)"),
 ]
 
 
