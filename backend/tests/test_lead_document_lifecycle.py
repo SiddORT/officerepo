@@ -6,6 +6,7 @@ Covers:
 - delete_document (service): DB row soft-deleted, storage key returned
 - replace_document (router): delete_file called with old key after successful replace
 - replace_document (router): newly saved file cleaned up when document_id is invalid (404)
+- replace_document (router): newly saved file cleaned up when db.commit() fails mid-replace
 - delete_document (router): delete_file called with the key from the service
 """
 import unittest
@@ -260,6 +261,31 @@ class TestReplaceDocumentRouter(unittest.TestCase):
         )
         mock_del.assert_called_once_with(new_key, Visibility.PRIVATE)
         self.assertEqual(exc.status_code, 404)
+
+    def test_newly_saved_file_deleted_when_db_commit_fails(self):
+        """
+        Partial-failure guard: if db.commit() raises inside service.replace_document
+        (e.g. a DB timeout), the new file is already persisted to storage but the DB
+        row still holds the old key.  The router's except block must call delete_file
+        on the *newly* saved key so it doesn't become an orphan, and must re-raise so
+        the caller receives the error.
+        """
+        from backend.shared.storage.file_handler import Visibility
+
+        new_key = "platform/lead_documents/new.pdf"
+
+        # Simulate a DB commit timeout propagating out of service.replace_document.
+        db_commit_error = RuntimeError("DB timeout during commit")
+
+        mock_save, mock_del, exc = self._invoke_router(
+            service_side_effect=db_commit_error
+        )
+
+        # The newly uploaded file must be cleaned up.
+        mock_del.assert_called_once_with(new_key, Visibility.PRIVATE)
+
+        # The original exception must be re-raised (not swallowed).
+        self.assertIs(exc, db_commit_error)
 
 
 # ---------------------------------------------------------------------------
