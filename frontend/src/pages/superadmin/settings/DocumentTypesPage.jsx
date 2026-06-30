@@ -34,23 +34,30 @@ function StatCard({ label, value, color }) {
   );
 }
 
-function IconBtn({ onClick, title, danger, children }) {
-  const [hov, setHov] = React.useState(false);
+function IconBtn({ onClick, title, danger, disabled, children }) {
+  const [hovered, setHovered] = React.useState(false);
   return (
     <button
-      onClick={onClick} title={title}
-      onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      onClick={disabled ? undefined : onClick}
+      title={title}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         width: 30, height: 30, borderRadius: 7, border: "1px solid",
         display: "inline-flex", alignItems: "center", justifyContent: "center",
-        cursor: "pointer", transition: "all 0.15s",
-        background: danger
-          ? hov ? "rgba(239,68,68,0.15)" : "rgba(239,68,68,0.06)"
-          : hov ? "rgba(0,174,236,0.13)" : "var(--c-surface2)",
-        borderColor: danger
-          ? hov ? "rgba(239,68,68,0.5)" : "rgba(239,68,68,0.2)"
-          : hov ? "rgba(0,174,236,0.45)" : "var(--c-border)",
-        color: danger ? "#f87171" : hov ? "#00aeec" : "var(--c-muted)",
+        cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.15s ease",
+        opacity: disabled ? 0.35 : 1,
+        background: disabled
+          ? "var(--c-surface2)"
+          : danger
+            ? hovered ? "rgba(239,68,68,0.15)" : "rgba(239,68,68,0.06)"
+            : hovered ? "rgba(0,174,236,0.13)" : "var(--c-surface2)",
+        borderColor: disabled
+          ? "var(--c-border)"
+          : danger
+            ? hovered ? "rgba(239,68,68,0.5)" : "rgba(239,68,68,0.2)"
+            : hovered ? "rgba(0,174,236,0.45)" : "var(--c-border)",
+        color: disabled ? "var(--c-muted)" : danger ? "#f87171" : hovered ? "#00aeec" : "var(--c-muted)",
       }}
     >{children}</button>
   );
@@ -191,15 +198,20 @@ export default function DocumentTypesPage() {
       ),
     },
     {
-      key: "actions", label: "", width: 80,
+      key: "actions", label: "", width: 90,
       render: (_v, row) => (
         <div className="flex items-center justify-end gap-1.5">
-          <IconBtn onClick={() => openEdit(row)} title="Edit"><EditIcon /></IconBtn>
-          {!row.is_system && (
-            <IconBtn onClick={() => { setConfirmDelete(row); setDeleteErr(""); }} title="Delete" danger>
-              <TrashIcon />
-            </IconBtn>
-          )}
+          <IconBtn onClick={() => openEdit(row)} title="Edit">
+            <EditIcon />
+          </IconBtn>
+          <IconBtn
+            onClick={() => { setConfirmDelete(row); setDeleteErr(""); }}
+            title={row.is_system ? "System types cannot be deleted" : "Delete"}
+            danger
+            disabled={row.is_system}
+          >
+            <TrashIcon />
+          </IconBtn>
         </div>
       ),
     },
