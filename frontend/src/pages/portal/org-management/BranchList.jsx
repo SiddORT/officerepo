@@ -6,6 +6,7 @@ import OrgLayout from "./OrgLayout";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
+import usePincodeLookup from "../../../hooks/usePincodeLookup";
 
 function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved }) {
   const isEdit = !!editBranch;
@@ -14,12 +15,13 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
     branch_code:  editBranch?.branch_code  || "",
     branch_name:  editBranch?.branch_name  || "",
     branch_type:  editBranch?.branch_type  || "",
+    postal_code:   editBranch?.postal_code  || "",
     address_line1: editBranch?.address_line1 || "",
     address_line2: editBranch?.address_line2 || "",
     city:          editBranch?.city         || "",
+    district:      editBranch?.district     || "",
     state:         editBranch?.state        || "",
     country:       editBranch?.country      || "",
-    postal_code:   editBranch?.postal_code  || "",
     phone:         editBranch?.phone        || "",
     email:         editBranch?.email        || "",
     description:   editBranch?.description  || "",
@@ -27,6 +29,24 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const { lookup } = usePincodeLookup();
+
+  const handlePincodeChange = async (e) => {
+    const raw = e.target.value;
+    set("postal_code", raw);
+    const code = raw.trim();
+    if (code.length < 5) return;
+    const cc = (form.country || "IN").slice(0, 2).toUpperCase();
+    const result = await lookup(code, cc);
+    if (!result) return;
+    setForm(f => ({
+      ...f,
+      city:     f.city     || result.city,
+      district: f.district || result.district,
+      state:    f.state    || result.state,
+      country:  f.country  || result.country,
+    }));
+  };
 
   const handleSave = async () => {
     if (!form.branch_name.trim()) { setError("Branch name is required."); return; }
@@ -73,15 +93,18 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
               {BRANCH_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
+          <div className="portal-form-row">
+            <div><label className="portal-form-label">Postal Code</label><input value={form.postal_code} onChange={handlePincodeChange} className="input-field" placeholder="400001" /></div>
+          </div>
           <div><label className="portal-form-label">Address Line 1</label><input value={form.address_line1} onChange={e => set("address_line1", e.target.value)} className="input-field" placeholder="123 Business Park" /></div>
           <div><label className="portal-form-label">Address Line 2</label><input value={form.address_line2} onChange={e => set("address_line2", e.target.value)} className="input-field" placeholder="Floor 5, Tower B" /></div>
-          <div className="portal-form-row" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
+          <div className="portal-form-row" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
             <div><label className="portal-form-label">City</label><input value={form.city} onChange={e => set("city", e.target.value)} className="input-field" placeholder="Mumbai" /></div>
+            <div><label className="portal-form-label">District</label><input value={form.district} onChange={e => set("district", e.target.value)} className="input-field" placeholder="Mumbai Suburban" /></div>
             <div><label className="portal-form-label">State</label><input value={form.state} onChange={e => set("state", e.target.value)} className="input-field" placeholder="Maharashtra" /></div>
-            <div><label className="portal-form-label">Postal Code</label><input value={form.postal_code} onChange={e => set("postal_code", e.target.value)} className="input-field" placeholder="400001" /></div>
+            <div><label className="portal-form-label">Country</label><input value={form.country} onChange={e => set("country", e.target.value)} className="input-field" placeholder="India" /></div>
           </div>
           <div className="portal-form-row">
-            <div><label className="portal-form-label">Country</label><input value={form.country} onChange={e => set("country", e.target.value)} className="input-field" placeholder="India" /></div>
             <div><label className="portal-form-label">Phone</label><input value={form.phone} onChange={e => set("phone", e.target.value)} className="input-field" placeholder="+91 22 1234 5678" /></div>
           </div>
           <div><label className="portal-form-label">Email</label><input type="email" value={form.email} onChange={e => set("email", e.target.value)} className="input-field" placeholder="mumbai@acmetech.in" /></div>
@@ -241,7 +264,7 @@ export default function BranchList() {
                   </td>
                   <td className="t-body">{b.company_name || <span style={{ opacity: 0.4 }}>—</span>}</td>
                   <td className="t-muted" style={{ fontSize: 12 }}>
-                    {[b.city, b.state, b.country].filter(Boolean).join(", ") || <span style={{ opacity: 0.4 }}>—</span>}
+                    {[b.city, b.district, b.state, b.country].filter(Boolean).join(", ") || <span style={{ opacity: 0.4 }}>—</span>}
                   </td>
                   <td>
                     {b.total_employees != null && <span className="badge-info">👥 {b.total_employees}</span>}

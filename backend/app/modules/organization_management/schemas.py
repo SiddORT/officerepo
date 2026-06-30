@@ -22,6 +22,7 @@ class CompanyCreate(BaseModel):
     address_line_1:      Optional[str] = None
     address_line_2:      Optional[str] = None
     city:                Optional[str] = None
+    district:            Optional[str] = None
     state:               Optional[str] = None
     country:             Optional[str] = None
     postal_code:         Optional[str] = None
@@ -47,6 +48,7 @@ class CompanyUpdate(BaseModel):
     address_line_1:      Optional[str] = None
     address_line_2:      Optional[str] = None
     city:                Optional[str] = None
+    district:            Optional[str] = None
     state:               Optional[str] = None
     country:             Optional[str] = None
     postal_code:         Optional[str] = None
@@ -66,6 +68,7 @@ class BranchCreate(BaseModel):
     address_line_1: Optional[str] = None
     address_line_2: Optional[str] = None
     city:          Optional[str] = None
+    district:      Optional[str] = None
     state:         Optional[str] = None
     country:       Optional[str] = None
     postal_code:   Optional[str] = None
@@ -84,6 +87,7 @@ class BranchUpdate(BaseModel):
     address_line_1: Optional[str] = None
     address_line_2: Optional[str] = None
     city:          Optional[str] = None
+    district:      Optional[str] = None
     state:         Optional[str] = None
     country:       Optional[str] = None
     postal_code:   Optional[str] = None

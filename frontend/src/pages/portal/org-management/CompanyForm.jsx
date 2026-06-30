@@ -5,6 +5,7 @@ import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
 import PageHeader from "../shared/PageHeader";
 import PhoneInput from "../../../components/ui/PhoneInput";
+import usePincodeLookup from "../../../hooks/usePincodeLookup";
 
 const DOC_TYPES = [
   "Certificate of Incorporation", "GST Certificate", "PAN Copy", "TAN Certificate",
@@ -35,7 +36,7 @@ const API_EMPTY = {
   company_code: "", company_name: "", legal_name: "", display_name: "",
   registration_number: "", tax_number: "", website: "",
   email: "", phone: "", phone_country_code: "+91",
-  address_line_1: "", address_line_2: "", city: "", state: "", country: "", postal_code: "",
+  address_line_1: "", address_line_2: "", postal_code: "", city: "", district: "", state: "", country: "",
   industry: "",
 };
 
@@ -47,7 +48,7 @@ const EXTRA_EMPTY = {
   gst_registered: false, gst_registration_date: "", tax_identification_number: "",
   primary_contact_person: "", support_email: "", hr_email: "", accounts_email: "",
   office_same: false,
-  off_address_line_1: "", off_address_line_2: "", off_city: "", off_state: "", off_country: "", off_postal_code: "",
+  off_address_line_1: "", off_address_line_2: "", off_postal_code: "", off_city: "", off_district: "", off_state: "", off_country: "",
   status: "Active",
 };
 
@@ -56,7 +57,7 @@ const EMPTY_DOC = { doc_type: "", doc_number: "", issue_date: "", expiry_date: "
 const TAB_FIELDS = {
   general:    ["company_code", "company_name", "legal_name", "display_name", "company_type", "industry", "date_of_incorporation", "company_description", "status"],
   compliance: ["registration_number", "cin_number", "pan_number", "tan_number", "msme_number", "tax_number", "gst_registration_date", "tax_identification_number"],
-  contact:    ["primary_contact_person", "phone", "phone_country_code", "email", "website", "support_email", "hr_email", "accounts_email", "address_line_1", "address_line_2", "city", "state", "country", "postal_code", "off_address_line_1", "off_address_line_2", "off_city", "off_state", "off_country", "off_postal_code"],
+  contact:    ["primary_contact_person", "phone", "phone_country_code", "email", "website", "support_email", "hr_email", "accounts_email", "address_line_1", "address_line_2", "postal_code", "city", "district", "state", "country", "off_address_line_1", "off_address_line_2", "off_postal_code", "off_city", "off_district", "off_state", "off_country"],
   branding:   [],
 };
 
@@ -71,7 +72,7 @@ const TABS = [
 // (Keeping it as a component causes React to remount on every re-render,
 //  losing input focus after each keystroke.)
 function field({ k, label, placeholder, type = "text", mono, full, required, note, as, rows, options,
-                 form, extra, fieldErrors, set, setX, onChangeOverride, suffix }) {
+                 form, extra, fieldErrors, set, setX, onChangeOverride, suffix, onBlur }) {
   const isForm = k in API_EMPTY;
   const value  = isForm ? form[k] : extra[k];
   const setter = isForm ? set : setX;
@@ -99,6 +100,7 @@ function field({ k, label, placeholder, type = "text", mono, full, required, not
         ) : (
           <input type={type} value={value}
             onChange={handleChange}
+            onBlur={onBlur}
             placeholder={placeholder} className="input-field"
             style={{
               ...(mono ? { fontFamily: "monospace" } : {}),
@@ -161,6 +163,7 @@ export default function CompanyForm({ editMode }) {
 
   const set  = (k, v) => setForm(f  => ({ ...f, [k]: v }));
   const setX = (k, v) => setExtra(f => ({ ...f, [k]: v }));
+  const { lookup } = usePincodeLookup();
 
   // Auto-generate company code from company name (only while code hasn't been manually touched)
   useEffect(() => {
@@ -391,13 +394,32 @@ export default function CompanyForm({ editMode }) {
             <div className="portal-form-card">
               <div className="portal-form-title">📍 Registered Address</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div className="portal-form-row">
+                  {field({ ...fp, k: "postal_code", label: "Postal Code", placeholder: "400001",
+                    onChangeOverride: async (e) => {
+                      const raw = e.target.value;
+                      set("postal_code", raw);
+                      const code = raw.trim();
+                      if (code.length < 5) return;
+                      const cc = (form.country || "IN").slice(0, 2).toUpperCase();
+                      const result = await lookup(code, cc);
+                      if (!result) return;
+                      setForm(f => ({ ...f,
+                        city:     f.city     || result.city,
+                        district: f.district || result.district,
+                        state:    f.state    || result.state,
+                        country:  f.country  || result.country,
+                      }));
+                    },
+                  })}
+                </div>
                 {field({ ...fp, k: "address_line_1", label: "Address Line 1", placeholder: "Street / Plot / Building", full: true })}
                 {field({ ...fp, k: "address_line_2", label: "Address Line 2", placeholder: "Area / Landmark / Floor",  full: true })}
                 <div className="portal-form-row">
-                  {field({ ...fp, k: "city",        label: "City",        placeholder: "Mumbai" })}
-                  {field({ ...fp, k: "state",       label: "State",       placeholder: "Maharashtra" })}
-                  {field({ ...fp, k: "country",     label: "Country",     placeholder: "India" })}
-                  {field({ ...fp, k: "postal_code", label: "Postal Code", placeholder: "400001" })}
+                  {field({ ...fp, k: "city",     label: "City",     placeholder: "Mumbai" })}
+                  {field({ ...fp, k: "district",  label: "District", placeholder: "Mumbai Suburban" })}
+                  {field({ ...fp, k: "state",    label: "State",    placeholder: "Maharashtra" })}
+                  {field({ ...fp, k: "country",  label: "Country",  placeholder: "India" })}
                 </div>
               </div>
             </div>
@@ -415,14 +437,33 @@ export default function CompanyForm({ editMode }) {
               {!extra.office_same && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 12 }}>
                   <div className="portal-form-row">
+                    {field({ ...fp, k: "off_postal_code", label: "Postal Code", placeholder: "400001",
+                      onChangeOverride: async (e) => {
+                        const raw = e.target.value;
+                        setX("off_postal_code", raw);
+                        const code = raw.trim();
+                        if (code.length < 5) return;
+                        const cc = (extra.off_country || "IN").slice(0, 2).toUpperCase();
+                        const result = await lookup(code, cc);
+                        if (!result) return;
+                        setExtra(ex => ({ ...ex,
+                          off_city:     ex.off_city     || result.city,
+                          off_district: ex.off_district || result.district,
+                          off_state:    ex.off_state    || result.state,
+                          off_country:  ex.off_country  || result.country,
+                        }));
+                      },
+                    })}
+                  </div>
+                  <div className="portal-form-row">
                     {field({ ...fp, k: "off_address_line_1", label: "Address Line 1", placeholder: "Street / Plot / Building" })}
                     {field({ ...fp, k: "off_address_line_2", label: "Address Line 2", placeholder: "Area / Landmark / Floor" })}
                   </div>
                   <div className="portal-form-row">
-                    {field({ ...fp, k: "off_city",        label: "City",        placeholder: "Mumbai" })}
-                    {field({ ...fp, k: "off_state",       label: "State",       placeholder: "Maharashtra" })}
-                    {field({ ...fp, k: "off_country",     label: "Country",     placeholder: "India" })}
-                    {field({ ...fp, k: "off_postal_code", label: "Postal Code", placeholder: "400001" })}
+                    {field({ ...fp, k: "off_city",      label: "City",     placeholder: "Mumbai" })}
+                    {field({ ...fp, k: "off_district",  label: "District", placeholder: "Mumbai Suburban" })}
+                    {field({ ...fp, k: "off_state",     label: "State",    placeholder: "Maharashtra" })}
+                    {field({ ...fp, k: "off_country",   label: "Country",  placeholder: "India" })}
                   </div>
                 </div>
               )}

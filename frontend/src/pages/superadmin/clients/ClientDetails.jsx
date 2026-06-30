@@ -224,9 +224,11 @@ function OverviewTab({ client }) {
       </Card>
       <Card title="Location">
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Country" value={client.country} />
-          <Field label="State" value={client.state} />
+          <Field label="Postal Code" value={client.postal_code} />
           <Field label="City" value={client.city} />
+          <Field label="District" value={client.district} />
+          <Field label="State" value={client.state} />
+          <Field label="Country" value={client.country} />
           <Field label="Timezone" value={client.timezone} />
         </div>
       </Card>
@@ -335,7 +337,7 @@ function ContactsTab({ clientId, contacts = [], options, onChange }) {
 const BILLING_FIELDS = [
   ["gst_number", "GST Number"], ["pan_number", "PAN Number"], ["tax_registration_number", "Tax Reg. Number"],
   ["billing_email", "Billing Email"], ["billing_address_1", "Address Line 1"], ["billing_address_2", "Address Line 2"],
-  ["city", "City"], ["state", "State"], ["country", "Country"], ["postal_code", "Postal Code"],
+  ["city", "City"], ["district", "District"], ["state", "State"], ["country", "Country"], ["postal_code", "Postal Code"],
   ["bank_account_name", "Account Name"], ["bank_account_number", "Account Number"], ["bank_name", "Bank Name"],
   ["bank_branch_name", "Branch"], ["bank_ifsc_code", "IFSC"], ["bank_swift_code", "SWIFT"],
   ["bank_iban", "IBAN"], ["bank_upi_id", "UPI ID"],

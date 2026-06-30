@@ -42,6 +42,8 @@ class Client(Base):
     country = Column(String(100), nullable=True)
     state = Column(String(100), nullable=True)
     city = Column(String(100), nullable=True)
+    district = Column(String(50), nullable=True)
+    postal_code = Column(String(20), nullable=True)
     timezone = Column(String(60), nullable=True)
 
     status = Column(String(30), nullable=False, default="Prospective", index=True)
@@ -109,6 +111,7 @@ class ClientBillingProfile(Base):
     billing_address_1 = Column(String(255), nullable=True)
     billing_address_2 = Column(String(255), nullable=True)
     city = Column(String(100), nullable=True)
+    district = Column(String(50), nullable=True)
     state = Column(String(100), nullable=True)
     country = Column(String(100), nullable=True)
     postal_code = Column(String(20), nullable=True)

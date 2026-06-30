@@ -521,15 +521,18 @@ export default function EmployeeDetails() {
             <Card>
               <CardHeader icon="📍" title="Current Address" />
               <div style={{ padding: 20, display: "grid", gap: 16 }}>
+                <Grid2>
+                  <div><Label>Postal Code</Label><Val>{doc.current_postal_code}</Val></div>
+                </Grid2>
                 <div><Label>Address Line 1</Label><Val>{doc.current_address_line_1}</Val></div>
                 <div><Label>Address Line 2</Label><Val>{doc.current_address_line_2}</Val></div>
                 <Grid2>
                   <div><Label>City</Label><Val>{doc.current_city}</Val></div>
-                  <div><Label>State</Label><Val>{doc.current_state}</Val></div>
+                  <div><Label>District</Label><Val>{doc.current_district}</Val></div>
                 </Grid2>
                 <Grid2>
+                  <div><Label>State</Label><Val>{doc.current_state}</Val></div>
                   <div><Label>Country</Label><Val>{doc.current_country}</Val></div>
-                  <div><Label>Postal Code</Label><Val>{doc.current_postal_code}</Val></div>
                 </Grid2>
               </div>
             </Card>
@@ -541,15 +544,18 @@ export default function EmployeeDetails() {
                   <div style={{ padding: 12, borderRadius: 8, background: "var(--c-surface2)", fontSize: 13, textAlign: "center" }}>Same as current address</div>
                 ) : (
                   <>
+                    <Grid2>
+                      <div><Label>Postal Code</Label><Val>{doc.permanent_postal_code}</Val></div>
+                    </Grid2>
                     <div><Label>Address Line 1</Label><Val>{doc.permanent_address_line_1}</Val></div>
                     <div><Label>Address Line 2</Label><Val>{doc.permanent_address_line_2}</Val></div>
                     <Grid2>
                       <div><Label>City</Label><Val>{doc.permanent_city}</Val></div>
-                      <div><Label>State</Label><Val>{doc.permanent_state}</Val></div>
+                      <div><Label>District</Label><Val>{doc.permanent_district}</Val></div>
                     </Grid2>
                     <Grid2>
+                      <div><Label>State</Label><Val>{doc.permanent_state}</Val></div>
                       <div><Label>Country</Label><Val>{doc.permanent_country}</Val></div>
-                      <div><Label>Postal Code</Label><Val>{doc.permanent_postal_code}</Val></div>
                     </Grid2>
                   </>
                 )}

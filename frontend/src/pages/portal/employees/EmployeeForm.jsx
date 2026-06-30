@@ -6,6 +6,7 @@ import { portalEmployeeApi, portalOrgApi } from "../../../services/apiClient";
 import EmployeeLayout from "./EmployeeLayout";
 import PageHeader from "../shared/PageHeader";
 import Toggle from "../../../components/ui/Toggle";
+import usePincodeLookup from "../../../hooks/usePincodeLookup";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const Grid2 = ({ children }) => (
@@ -127,17 +128,34 @@ export default function EmployeeForm({ editMode = false }) {
     landline_number: "",
     resume_url: "", resume_filename: "",
     current_address_line_1: "", current_address_line_2: "",
-    current_city: "", current_state: "", current_country: "", current_postal_code: "",
+    current_postal_code: "", current_city: "", current_district: "", current_state: "", current_country: "",
     permanent_same_as_current: true,
     permanent_address_line_1: "", permanent_address_line_2: "",
-    permanent_city: "", permanent_state: "", permanent_country: "", permanent_postal_code: "",
+    permanent_postal_code: "", permanent_city: "", permanent_district: "", permanent_state: "", permanent_country: "",
     employee_category: "", employment_type: "", employment_status: "Draft",
     joining_date: "", confirmation_date: "", relieving_date: "",
     reporting_manager_id: "", functional_manager_id: "",
   };
   const [form, setForm] = useState(blank);
+  const { lookup } = usePincodeLookup();
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handlePincodeChange = async (postalCode, prefix) => {
+    const code = (postalCode || "").trim();
+    set(`${prefix}_postal_code`, postalCode);
+    if (code.length < 5) return;
+    const cc = (form[`${prefix}_country`] || "IN").slice(0, 2).toUpperCase();
+    const result = await lookup(code, cc);
+    if (!result) return;
+    setForm(f => ({
+      ...f,
+      [`${prefix}_city`]:     f[`${prefix}_city`]     || result.city,
+      [`${prefix}_district`]: f[`${prefix}_district`] || result.district,
+      [`${prefix}_state`]:    f[`${prefix}_state`]    || result.state,
+      [`${prefix}_country`]:  f[`${prefix}_country`]  || result.country,
+    }));
+  };
 
   useEffect(() => {
     portalOrgApi.listCompanies(subdomain, token, { page_size: 200, is_active: true })
@@ -172,12 +190,12 @@ export default function EmployeeForm({ editMode = false }) {
         landline_number: e.landline_number || "",
         resume_url: e.resume_url || "", resume_filename: e.resume_filename || "",
         current_address_line_1: e.current_address_line_1 || "", current_address_line_2: e.current_address_line_2 || "",
-        current_city: e.current_city || "", current_state: e.current_state || "",
-        current_country: e.current_country || "", current_postal_code: e.current_postal_code || "",
+        current_postal_code: e.current_postal_code || "", current_city: e.current_city || "",
+        current_district: e.current_district || "", current_state: e.current_state || "", current_country: e.current_country || "",
         permanent_same_as_current: e.permanent_same_as_current ?? true,
         permanent_address_line_1: e.permanent_address_line_1 || "", permanent_address_line_2: e.permanent_address_line_2 || "",
-        permanent_city: e.permanent_city || "", permanent_state: e.permanent_state || "",
-        permanent_country: e.permanent_country || "", permanent_postal_code: e.permanent_postal_code || "",
+        permanent_postal_code: e.permanent_postal_code || "", permanent_city: e.permanent_city || "",
+        permanent_district: e.permanent_district || "", permanent_state: e.permanent_state || "", permanent_country: e.permanent_country || "",
         branch_id: e.branch_id || "", work_mode: e.work_mode || "",
         employee_category: e.employee_category || "", employment_type: e.employment_type || "",
         employment_status: e.employment_status || "Draft",
@@ -391,6 +409,12 @@ export default function EmployeeForm({ editMode = false }) {
           </Section>
 
           <Section icon="🏠" title="Current Address">
+            <Grid2>
+              <div>
+                <Label>Postal Code</Label>
+                <input value={form.current_postal_code} onChange={e => handlePincodeChange(e.target.value, "current")} className="input-field" placeholder="400001" />
+              </div>
+            </Grid2>
             <div>
               <Label>Address Line 1</Label>
               <input value={form.current_address_line_1} onChange={e => set("current_address_line_1", e.target.value)} className="input-field" placeholder="Flat / House / Building" />
@@ -401,9 +425,9 @@ export default function EmployeeForm({ editMode = false }) {
             </div>
             <Grid3>
               <div><Label>City</Label><input value={form.current_city} onChange={e => set("current_city", e.target.value)} className="input-field" placeholder="Mumbai" /></div>
+              <div><Label>District</Label><input value={form.current_district} onChange={e => set("current_district", e.target.value)} className="input-field" placeholder="Mumbai Suburban" /></div>
               <div><Label>State</Label><input value={form.current_state} onChange={e => set("current_state", e.target.value)} className="input-field" placeholder="Maharashtra" /></div>
               <div><Label>Country</Label><input value={form.current_country} onChange={e => set("current_country", e.target.value)} className="input-field" placeholder="India" /></div>
-              <div><Label>Postal Code</Label><input value={form.current_postal_code} onChange={e => set("current_postal_code", e.target.value)} className="input-field" placeholder="400001" /></div>
             </Grid3>
           </Section>
 
@@ -415,13 +439,19 @@ export default function EmployeeForm({ editMode = false }) {
             />
             {!form.permanent_same_as_current && (
               <>
+                <Grid2>
+                  <div>
+                    <Label>Postal Code</Label>
+                    <input value={form.permanent_postal_code} onChange={e => handlePincodeChange(e.target.value, "permanent")} className="input-field" placeholder="110001" />
+                  </div>
+                </Grid2>
                 <div><Label>Address Line 1</Label><input value={form.permanent_address_line_1} onChange={e => set("permanent_address_line_1", e.target.value)} className="input-field" placeholder="Flat / House / Building" /></div>
                 <div><Label>Address Line 2</Label><input value={form.permanent_address_line_2} onChange={e => set("permanent_address_line_2", e.target.value)} className="input-field" placeholder="Street / Area / Locality" /></div>
                 <Grid3>
                   <div><Label>City</Label><input value={form.permanent_city} onChange={e => set("permanent_city", e.target.value)} className="input-field" placeholder="Delhi" /></div>
+                  <div><Label>District</Label><input value={form.permanent_district} onChange={e => set("permanent_district", e.target.value)} className="input-field" placeholder="New Delhi" /></div>
                   <div><Label>State</Label><input value={form.permanent_state} onChange={e => set("permanent_state", e.target.value)} className="input-field" placeholder="Delhi" /></div>
                   <div><Label>Country</Label><input value={form.permanent_country} onChange={e => set("permanent_country", e.target.value)} className="input-field" placeholder="India" /></div>
-                  <div><Label>Postal Code</Label><input value={form.permanent_postal_code} onChange={e => set("permanent_postal_code", e.target.value)} className="input-field" placeholder="110001" /></div>
                 </Grid3>
               </>
             )}

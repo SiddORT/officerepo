@@ -122,6 +122,8 @@ class ClientCreateRequest(BaseModel):
     country: Optional[str] = Field(None, max_length=100)
     state: Optional[str] = Field(None, max_length=100)
     city: Optional[str] = Field(None, max_length=100)
+    district: Optional[str] = Field(None, max_length=50)
+    postal_code: Optional[str] = Field(None, max_length=20)
     timezone: Optional[str] = Field(None, max_length=60)
     status: Optional[str] = Field(default=c.STATUS_PROSPECTIVE)
     contacts: Optional[List[ContactInput]] = None
@@ -131,7 +133,7 @@ class ClientCreateRequest(BaseModel):
     def _company(cls, val):
         return v.validate_length(val, field="company_name", min_len=2, max_len=150, required=True)
 
-    @field_validator("legal_name", "industry", "company_size", "country", "state", "city", "timezone")
+    @field_validator("legal_name", "industry", "company_size", "country", "state", "city", "district", "postal_code", "timezone")
     @classmethod
     def _opt_text(cls, val):
         return v.clean_text(val)
@@ -158,6 +160,8 @@ class ClientUpdateRequest(BaseModel):
     country: Optional[str] = Field(None, max_length=100)
     state: Optional[str] = Field(None, max_length=100)
     city: Optional[str] = Field(None, max_length=100)
+    district: Optional[str] = Field(None, max_length=50)
+    postal_code: Optional[str] = Field(None, max_length=20)
     timezone: Optional[str] = Field(None, max_length=60)
 
     @field_validator("company_name")
@@ -165,7 +169,7 @@ class ClientUpdateRequest(BaseModel):
     def _company(cls, val):
         return v.validate_length(val, field="company_name", min_len=2, max_len=150)
 
-    @field_validator("legal_name", "industry", "company_size", "country", "state", "city", "timezone")
+    @field_validator("legal_name", "industry", "company_size", "country", "state", "city", "district", "postal_code", "timezone")
     @classmethod
     def _opt_text(cls, val):
         return v.clean_text(val)
@@ -244,6 +248,7 @@ class BillingProfileRequest(BaseModel):
     billing_address_1: Optional[str] = Field(None, max_length=255)
     billing_address_2: Optional[str] = Field(None, max_length=255)
     city: Optional[str] = Field(None, max_length=100)
+    district: Optional[str] = Field(None, max_length=50)
     state: Optional[str] = Field(None, max_length=100)
     country: Optional[str] = Field(None, max_length=100)
     postal_code: Optional[str] = Field(None, max_length=20)
@@ -282,7 +287,7 @@ class BillingProfileRequest(BaseModel):
 
     @field_validator(
         "pan_number", "tax_registration_number", "billing_address_1", "billing_address_2",
-        "city", "state", "country", "postal_code", "bank_account_name", "bank_account_number",
+        "city", "district", "state", "country", "postal_code", "bank_account_name", "bank_account_number",
         "bank_name", "bank_branch_name", "bank_ifsc_code", "bank_swift_code", "bank_iban", "bank_upi_id",
     )
     @classmethod

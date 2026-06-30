@@ -5,6 +5,7 @@ import Select from "../../../../components/ui/Select";
 import CountryCodeSelect from "../../../../components/ui/CountryCodeSelect";
 import { clientsApi } from "../../../../services/apiClient";
 import { toOptions } from "../constants";
+import usePincodeLookup from "../../../../hooks/usePincodeLookup";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const URL_RE = /^https?:\/\/.+/i;
@@ -16,9 +17,11 @@ const EMPTY = {
   industry: "",
   website: "",
   company_size: "",
+  postal_code: "",
   country: "",
   state: "",
   city: "",
+  district: "",
   timezone: "",
   status: "",
 };
@@ -35,6 +38,7 @@ const EMPTY_CONTACT = {
 export default function ClientForm({ initial, isEdit = false, submitLabel = "Save Client", onSubmit }) {
   const navigate = useNavigate();
   const [form, setForm] = useState(EMPTY);
+  const { lookup } = usePincodeLookup();
   const [contact, setContact] = useState(EMPTY_CONTACT);
   const [errors, setErrors] = useState({});
   const [cErrors, setCErrors] = useState({});
@@ -96,7 +100,7 @@ export default function ClientForm({ initial, isEdit = false, submitLabel = "Sav
   const buildPayload = () => {
     const trim = (v) => (typeof v === "string" ? v.trim() : v);
     const payload = { company_name: trim(form.company_name) };
-    const optionalText = ["legal_name", "industry", "website", "company_size", "country", "state", "city", "timezone"];
+    const optionalText = ["legal_name", "industry", "website", "company_size", "postal_code", "country", "state", "city", "district", "timezone"];
     optionalText.forEach((k) => {
       const v = trim(form[k]);
       if (v) payload[k] = v;
@@ -159,9 +163,28 @@ export default function ClientForm({ initial, isEdit = false, submitLabel = "Sav
       </Section>
 
       <Section title="Location">
-        <Input label="Country" value={form.country} onChange={(e) => setField("country", e.target.value)} placeholder="United States" maxLength={100} />
-        <Input label="State" value={form.state} onChange={(e) => setField("state", e.target.value)} placeholder="California" maxLength={100} />
+        <Input label="Postal Code" value={form.postal_code} placeholder="400001" maxLength={20}
+          onChange={async (e) => {
+            const raw = e.target.value;
+            setField("postal_code", raw);
+            const code = raw.trim();
+            if (code.length < 5) return;
+            const cc = (form.country || "IN").slice(0, 2).toUpperCase();
+            const result = await lookup(code, cc);
+            if (!result) return;
+            setForm(f => ({
+              ...f,
+              city:     f.city     || result.city,
+              district: f.district || result.district,
+              state:    f.state    || result.state,
+              country:  f.country  || result.country,
+            }));
+          }}
+        />
         <Input label="City" value={form.city} onChange={(e) => setField("city", e.target.value)} placeholder="San Francisco" maxLength={100} />
+        <Input label="District" value={form.district} onChange={(e) => setField("district", e.target.value)} placeholder="District / County" maxLength={50} />
+        <Input label="State" value={form.state} onChange={(e) => setField("state", e.target.value)} placeholder="California" maxLength={100} />
+        <Input label="Country" value={form.country} onChange={(e) => setField("country", e.target.value)} placeholder="United States" maxLength={100} />
         <Input label="Timezone" value={form.timezone} onChange={(e) => setField("timezone", e.target.value)} placeholder="America/Los_Angeles" maxLength={60} />
       </Section>
 

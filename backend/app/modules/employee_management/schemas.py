@@ -39,6 +39,7 @@ class EmployeeCreate(BaseModel):
     current_address_line_1: Optional[str] = None
     current_address_line_2: Optional[str] = None
     current_city:           Optional[str] = None
+    current_district:       Optional[str] = None
     current_state:          Optional[str] = None
     current_country:        Optional[str] = None
     current_postal_code:    Optional[str] = None
@@ -47,6 +48,7 @@ class EmployeeCreate(BaseModel):
     permanent_address_line_1:  Optional[str] = None
     permanent_address_line_2:  Optional[str] = None
     permanent_city:            Optional[str] = None
+    permanent_district:        Optional[str] = None
     permanent_state:           Optional[str] = None
     permanent_country:         Optional[str] = None
     permanent_postal_code:     Optional[str] = None
@@ -97,6 +99,7 @@ class EmployeeUpdate(BaseModel):
     current_address_line_1: Optional[str] = None
     current_address_line_2: Optional[str] = None
     current_city:           Optional[str] = None
+    current_district:       Optional[str] = None
     current_state:          Optional[str] = None
     current_country:        Optional[str] = None
     current_postal_code:    Optional[str] = None
@@ -105,6 +108,7 @@ class EmployeeUpdate(BaseModel):
     permanent_address_line_1:  Optional[str] = None
     permanent_address_line_2:  Optional[str] = None
     permanent_city:            Optional[str] = None
+    permanent_district:        Optional[str] = None
     permanent_state:           Optional[str] = None
     permanent_country:         Optional[str] = None
     permanent_postal_code:     Optional[str] = None
