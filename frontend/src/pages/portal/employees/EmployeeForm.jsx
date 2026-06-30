@@ -150,10 +150,10 @@ export default function EmployeeForm({ editMode = false }) {
     if (!result) return;
     setForm(f => ({
       ...f,
-      [`${prefix}_city`]:     f[`${prefix}_city`]     || result.city,
-      [`${prefix}_district`]: f[`${prefix}_district`] || result.district,
-      [`${prefix}_state`]:    f[`${prefix}_state`]    || result.state,
-      [`${prefix}_country`]:  f[`${prefix}_country`]  || result.country,
+      [`${prefix}_city`]:     result.city     || f[`${prefix}_city`],
+      [`${prefix}_district`]: result.district || f[`${prefix}_district`],
+      [`${prefix}_state`]:    result.state    || f[`${prefix}_state`],
+      [`${prefix}_country`]:  result.country  || f[`${prefix}_country`],
     }));
   };
 

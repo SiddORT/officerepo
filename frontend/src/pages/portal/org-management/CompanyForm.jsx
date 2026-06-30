@@ -405,10 +405,10 @@ export default function CompanyForm({ editMode }) {
                       const result = await lookup(code, cc);
                       if (!result) return;
                       setForm(f => ({ ...f,
-                        city:     f.city     || result.city,
-                        district: f.district || result.district,
-                        state:    f.state    || result.state,
-                        country:  f.country  || result.country,
+                        city:     result.city     || f.city,
+                        district: result.district || f.district,
+                        state:    result.state    || f.state,
+                        country:  result.country  || f.country,
                       }));
                     },
                   })}
@@ -447,10 +447,10 @@ export default function CompanyForm({ editMode }) {
                         const result = await lookup(code, cc);
                         if (!result) return;
                         setExtra(ex => ({ ...ex,
-                          off_city:     ex.off_city     || result.city,
-                          off_district: ex.off_district || result.district,
-                          off_state:    ex.off_state    || result.state,
-                          off_country:  ex.off_country  || result.country,
+                          off_city:     result.city     || ex.off_city,
+                          off_district: result.district || ex.off_district,
+                          off_state:    result.state    || ex.off_state,
+                          off_country:  result.country  || ex.off_country,
                         }));
                       },
                     })}

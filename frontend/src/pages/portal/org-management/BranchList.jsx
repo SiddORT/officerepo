@@ -41,10 +41,10 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
     if (!result) return;
     setForm(f => ({
       ...f,
-      city:     f.city     || result.city,
-      district: f.district || result.district,
-      state:    f.state    || result.state,
-      country:  f.country  || result.country,
+      city:     result.city     || f.city,
+      district: result.district || f.district,
+      state:    result.state    || f.state,
+      country:  result.country  || f.country,
     }));
   };
 
