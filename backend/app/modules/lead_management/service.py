@@ -975,6 +975,23 @@ def get_proposal_file(db: Session, lead_id: str, proposal_id: str) -> tuple[str,
     return p.proposal_document_path, os.path.basename(p.proposal_document_path)
 
 
+def replace_proposal(db: Session, lead_id: str, proposal_id: str, *,
+                     file_name: str, file_path: str, actor_id) -> tuple[Optional[str], dict]:
+    """Replace a proposal's document file. Returns (old_file_key, updated_proposal_dict).
+
+    old_file_key may be None if the proposal had no prior document.
+    """
+    lead = _require_lead(db, lead_id)
+    proposal = repo.get_child(db, LeadProposal, proposal_id, lead.id)
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found.")
+    old_key = proposal.proposal_document_path
+    proposal.proposal_document_path = file_path
+    db.commit()
+    db.refresh(proposal)
+    return old_key, proposal_to_dict(proposal)
+
+
 # ════════════════════════════════════════════════════════════════════════════
 # Proposals
 # ════════════════════════════════════════════════════════════════════════════

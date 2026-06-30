@@ -426,9 +426,38 @@ def add_proposal(
     file_path = file_name = None
     if file is not None and (file.filename or ""):
         file_path, file_name = save_document(file, c.LEAD_STORAGE_SCOPE, c.LEAD_PROPOSALS_MODULE)
-    data = service.add_proposal(db, lead_id, payload, file_name=file_name, file_path=file_path,
-                                actor_id=admin["user_id"], actor=admin["email"])
+    try:
+        data = service.add_proposal(db, lead_id, payload, file_name=file_name, file_path=file_path,
+                                    actor_id=admin["user_id"], actor=admin["email"])
+    except Exception:
+        if file_path:
+            delete_file(file_path, Visibility.PRIVATE)
+        raise
     return ApiResponse.ok(data, "Proposal created.").model_dump()
+
+
+@router.put("/{lead_id}/proposals/{proposal_id}")
+def replace_proposal(
+    lead_id: str,
+    proposal_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_platform_db),
+    admin: dict = Depends(_current_admin),
+):
+    """Replace the document file for an existing proposal row (keeps metadata unchanged)."""
+    key, original = save_document(file, c.LEAD_STORAGE_SCOPE, c.LEAD_PROPOSALS_MODULE)
+    try:
+        old_key, data = service.replace_proposal(
+            db, lead_id, proposal_id,
+            file_name=original, file_path=key,
+            actor_id=admin["user_id"],
+        )
+    except Exception:
+        delete_file(key, Visibility.PRIVATE)
+        raise
+    if old_key:
+        delete_file(old_key, Visibility.PRIVATE)
+    return ApiResponse.ok(data, "Proposal document replaced.").model_dump()
 
 
 @router.get("/{lead_id}/proposals/{proposal_id}/download")
