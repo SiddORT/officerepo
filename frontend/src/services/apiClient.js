@@ -196,11 +196,19 @@ export const leadsApi = {
   deleteNote: (id, nid) => apiClient.delete(`${LEADS}/${id}/notes/${nid}`),
 
   documents: (id) => apiClient.get(`${LEADS}/${id}/documents`),
-  uploadDocument: (id, file, documentType) => {
+  uploadDocument: (id, file, documentTypeId, documentType) => {
     const fd = new FormData();
     fd.append("file", file);
+    if (documentTypeId) fd.append("document_type_id", documentTypeId);
     fd.append("document_type", documentType || "Other");
     return apiClient.post(`${LEADS}/${id}/documents`, fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  replaceDocument: (id, docId, file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return apiClient.put(`${LEADS}/${id}/documents/${docId}`, fd, {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },

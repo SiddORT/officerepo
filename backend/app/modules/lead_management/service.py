@@ -265,7 +265,9 @@ def note_to_dict(n: LeadNote) -> dict:
 
 def document_to_dict(d: LeadDocument) -> dict:
     return {
-        "id": d.id, "lead_id": d.lead_id, "document_type": d.document_type,
+        "id": d.id, "lead_id": d.lead_id,
+        "document_type": d.document_type,
+        "document_type_id": d.document_type_id,
         "file_name": d.file_name,
         "uploaded_by": d.uploaded_by, "created_at": d.created_at,
         "has_file": bool(d.file_path),
@@ -910,16 +912,32 @@ def list_notes(db: Session, lead_id: str) -> list[dict]:
 # Documents (file persistence handled in the router via storage helper)
 # ════════════════════════════════════════════════════════════════════════════
 def add_document(db: Session, lead_id: str, *, document_type: str, file_name: str,
-                 file_path: str, actor_id) -> dict:
+                 file_path: str, actor_id, document_type_id: Optional[str] = None) -> dict:
     lead = _require_lead(db, lead_id)
     doc = LeadDocument(
-        lead_id=lead.id, document_type=document_type, file_name=file_name,
-        file_path=file_path, uploaded_by=actor_id,
+        lead_id=lead.id, document_type=document_type, document_type_id=document_type_id,
+        file_name=file_name, file_path=file_path, uploaded_by=actor_id,
     )
     repo.add(db, doc)
     db.commit()
     db.refresh(doc)
     return document_to_dict(doc)
+
+
+def replace_document(db: Session, lead_id: str, document_id: str, *,
+                     file_name: str, file_path: str, actor_id) -> tuple:
+    """Replace a document's file. Returns (old_file_key, updated_doc_dict)."""
+    _require_lead(db, lead_id)
+    doc = repo.get_child(db, LeadDocument, document_id, lead_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+    old_key = doc.file_path
+    doc.file_name = file_name
+    doc.file_path = file_path
+    doc.uploaded_by = actor_id
+    db.commit()
+    db.refresh(doc)
+    return old_key, document_to_dict(doc)
 
 
 def delete_document(db: Session, lead_id: str, document_id: str) -> Optional[str]:

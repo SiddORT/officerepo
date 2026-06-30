@@ -196,7 +196,8 @@ class LeadDocument(Base):
 
     id = Column(String(36), primary_key=True, default=_uuid)
     lead_id = Column(String(36), ForeignKey("leads.id"), nullable=False, index=True)
-    document_type = Column(String(40), nullable=False, default="Other")
+    document_type = Column(String(100), nullable=False, default="Other")
+    document_type_id = Column(String(36), ForeignKey("client_document_types.id"), nullable=True, index=True)
     file_name = Column(String(255), nullable=False)
     file_path = Column(String(500), nullable=False)
     uploaded_by = Column(Integer, nullable=True)

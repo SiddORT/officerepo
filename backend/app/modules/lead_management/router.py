@@ -19,6 +19,7 @@ from backend.app.core.security import decode_access_token
 from backend.app.database.platform import get_platform_db
 from backend.app.modules.lead_management import constants as c
 from backend.app.modules.lead_management import service
+from backend.app.modules.client_management import service as cm_service
 from backend.app.modules.lead_management.schemas import (
     LeadCreateRequest, LeadUpdateRequest, StageUpdateRequest, LeadLostRequest,
     ActivityCreateRequest, ActivityUpdateRequest,
@@ -56,7 +57,8 @@ def _current_admin(
 
 # ── Metadata / options ───────────────────────────────────────────────────────
 @router.get("/meta/options", summary="Controlled vocabularies for lead forms")
-def get_options(_admin: dict = Depends(_current_admin)):
+def get_options(db: Session = Depends(get_platform_db), _admin: dict = Depends(_current_admin)):
+    doc_types = cm_service.list_doc_types(db, active_only=True)
     return ApiResponse.ok({
         "stages": c.LEAD_STAGES,
         "statuses": c.LEAD_STATUSES,
@@ -68,6 +70,7 @@ def get_options(_admin: dict = Depends(_current_admin)):
         "followup_priorities": c.FOLLOWUP_PRIORITIES,
         "followup_statuses": c.FOLLOWUP_STATUSES,
         "document_types": c.DOCUMENT_TYPES,
+        "document_type_master": doc_types,
         "proposal_statuses": c.PROPOSAL_STATUSES,
         "negotiation_statuses": c.NEGOTIATION_STATUSES,
         "loss_reasons": c.LOSS_REASONS,
@@ -337,17 +340,43 @@ def list_documents(lead_id: str, db: Session = Depends(get_platform_db), _admin:
 @router.post("/{lead_id}/documents")
 def upload_document(
     lead_id: str,
+    document_type_id: Optional[str] = Form(None),
     document_type: str = Form("Other"),
     file: UploadFile = File(...),
     db: Session = Depends(get_platform_db),
     admin: dict = Depends(_current_admin),
 ):
-    if document_type not in c.DOCUMENT_TYPES:
-        raise HTTPException(status_code=422, detail="Invalid document_type.")
+    from backend.app.modules.client_management import repository as cm_repo
+    resolved_label = document_type
+    if document_type_id:
+        dt = cm_repo.get_document_type(db, document_type_id)
+        if not dt or not dt.is_active:
+            raise HTTPException(status_code=422, detail="Invalid document_type_id.")
+        resolved_label = dt.name
     key, original = save_document(file, c.LEAD_STORAGE_SCOPE, c.LEAD_DOCUMENTS_MODULE)
-    data = service.add_document(db, lead_id, document_type=document_type, file_name=original,
-                                file_path=key, actor_id=admin["user_id"])
+    data = service.add_document(
+        db, lead_id, document_type=resolved_label, file_name=original,
+        file_path=key, actor_id=admin["user_id"], document_type_id=document_type_id,
+    )
     return ApiResponse.ok(data, "Document uploaded.").model_dump()
+
+
+@router.put("/{lead_id}/documents/{document_id}")
+def replace_document(
+    lead_id: str,
+    document_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_platform_db),
+    admin: dict = Depends(_current_admin),
+):
+    """Replace the file for an existing document row (keeps type/metadata unchanged)."""
+    key, original = save_document(file, c.LEAD_STORAGE_SCOPE, c.LEAD_DOCUMENTS_MODULE)
+    old_key, data = service.replace_document(
+        db, lead_id, document_id,
+        file_name=original, file_path=key, actor_id=admin["user_id"],
+    )
+    delete_file(old_key, Visibility.PRIVATE)
+    return ApiResponse.ok(data, "Document replaced.").model_dump()
 
 
 @router.get("/{lead_id}/documents/{document_id}/download")

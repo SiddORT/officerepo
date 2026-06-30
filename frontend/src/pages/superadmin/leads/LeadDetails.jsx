@@ -834,46 +834,140 @@ function NotesTab({ leadId }) {
 /* ── Documents ───────────────────────────────────────────────────────────── */
 function DocumentsTab({ leadId, options }) {
   const [items, loading, reload] = useList(() => leadsApi.documents(leadId), [leadId]);
-  const [docType, setDocType] = useState("Other");
+  const [file, setFile] = useState(null);
+  const [docTypeId, setDocTypeId] = useState("");
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState("");
+  const [replacing, setReplacing] = useState(null);
+  const [replaceFile, setReplaceFile] = useState(null);
+  const [replaceErr, setReplaceErr] = useState("");
+  const [replaceSaving, setReplaceSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteErr, setDeleteErr] = useState("");
 
-  const upload = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  const docTypeMaster = options?.document_type_master || [];
+
+  const upload = async () => {
+    if (!file) { setErr("Choose a file first."); return; }
     setUploading(true); setErr("");
-    try { await leadsApi.uploadDocument(leadId, file, docType); reload(); }
-    catch (er) { setErr(er.response?.data?.detail || "Upload failed."); }
+    try {
+      const selected = docTypeMaster.find((t) => t.id === docTypeId);
+      await leadsApi.uploadDocument(leadId, file, docTypeId || null, selected?.name || "Other");
+      setFile(null); setDocTypeId("");
+      reload();
+    } catch (er) { setErr(er.response?.data?.detail || "Upload failed."); }
     finally { setUploading(false); }
   };
-  const remove = async (d) => { if (window.confirm("Delete this document?")) { await leadsApi.deleteDocument(leadId, d.id); reload(); } };
+
+  const download = async (d) => {
+    try { await saveBlob(leadsApi.downloadDocument(leadId, d.id), d.file_name); }
+    catch (e) { alert(e.response?.data?.detail || "Download failed."); }
+  };
+
+  const openReplace = (d) => { setReplacing(d); setReplaceFile(null); setReplaceErr(""); };
+
+  const doReplace = async () => {
+    if (!replaceFile) { setReplaceErr("Choose a replacement file first."); return; }
+    setReplaceSaving(true); setReplaceErr("");
+    try {
+      await leadsApi.replaceDocument(leadId, replacing.id, replaceFile);
+      setReplacing(null);
+      reload();
+    } catch (e) { setReplaceErr(e.response?.data?.detail || "Replace failed."); }
+    finally { setReplaceSaving(false); }
+  };
+
+  const confirmDelete = (d) => { setDeleteTarget(d); setDeleteErr(""); };
+
+  const doDelete = async () => {
+    try {
+      await leadsApi.deleteDocument(leadId, deleteTarget.id);
+      setDeleteTarget(null);
+      reload();
+    } catch (e) { setDeleteErr(e.response?.data?.detail || "Delete failed."); }
+  };
 
   return (
     <TabShell title="Documents">
-      <div className="flex flex-wrap items-end gap-3 mb-4">
-        <Select label="Document Type" value={docType} onChange={(e) => setDocType(e.target.value)} options={toOptions(options.document_types)} placeholder="Type" className="w-48" />
-        <label className="btn-primary text-sm cursor-pointer">
-          {uploading ? "Uploading..." : "Upload File"}
-          <input type="file" className="hidden" onChange={upload} disabled={uploading} />
-        </label>
+      {/* Upload form */}
+      <div className="flex flex-wrap items-end gap-3 mb-4 pb-4" style={{ borderBottom: "1px solid var(--c-border)" }}>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium t-muted">Document Type</label>
+          <select
+            value={docTypeId}
+            onChange={(e) => setDocTypeId(e.target.value)}
+            className="rounded-lg px-3 py-2 text-sm w-48"
+            style={{ background: "var(--c-surface2)", border: "1px solid var(--c-border)", color: "var(--c-text)" }}
+          >
+            <option value="">— Select type —</option>
+            {docTypeMaster.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-medium t-muted">File</label>
+          <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)}
+                 className="text-sm t-body file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-[var(--c-accent)] file:text-white" />
+        </div>
+        <button onClick={upload} disabled={uploading} className="btn-primary text-sm">
+          {uploading ? "Uploading…" : "Upload"}
+        </button>
       </div>
-      {err && <p className="text-xs text-red-400 mb-3">{err}</p>}
+      {err && <div className="rounded-lg px-3 py-2 text-sm text-red-400 mb-3" style={{ background: "rgba(239,68,68,0.08)" }}>{err}</div>}
+
       {loading ? <Empty text="Loading…" /> : items.length === 0 ? <Empty text="No documents uploaded." /> : (
         <ul className="space-y-2">
           {items.map((d) => (
             <li key={d.id} className="flex items-center justify-between gap-3 p-3 rounded-lg" style={{ background: "var(--c-surface2)", border: "1px solid var(--c-border)" }}>
               <div className="min-w-0">
                 <p className="text-sm font-medium t-heading truncate">{d.file_name}</p>
-                <p className="text-xs t-muted">{d.document_type} · {formatDateTime(d.created_at)}</p>
+                <p className="text-xs t-muted">{d.document_type || "—"} · {formatDateTime(d.created_at)}</p>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
-                {d.has_file && <button onClick={() => saveBlob(leadsApi.downloadDocument(leadId, d.id), d.file_name)} className="text-xs t-accent hover:underline">Download</button>}
-                <button onClick={() => remove(d)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
+                {d.has_file && <button onClick={() => download(d)} className="text-xs t-muted hover:text-[var(--c-accent)]">Download</button>}
+                <button onClick={() => openReplace(d)} className="text-xs t-muted hover:text-[var(--c-accent)]">Replace</button>
+                <button onClick={() => confirmDelete(d)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
               </div>
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Replace modal */}
+      {replacing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
+          <div className="rounded-xl p-6 w-full max-w-md" style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)" }}>
+            <h3 className="text-base font-semibold t-heading mb-1">Replace File</h3>
+            <p className="text-sm t-muted mb-4">Replacing: <span className="font-medium t-body">{replacing.file_name}</span>. The document type and metadata will be kept.</p>
+            <input type="file" onChange={(e) => setReplaceFile(e.target.files?.[0] || null)}
+                   className="text-sm t-body file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-[var(--c-accent)] file:text-white mb-3 w-full" />
+            {replaceErr && <p className="text-xs text-red-400 mb-3">{replaceErr}</p>}
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setReplacing(null)} className="btn-ghost text-sm">Cancel</button>
+              <button onClick={doReplace} disabled={replaceSaving} className="btn-primary text-sm">
+                {replaceSaving ? "Replacing…" : "Replace File"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirm modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
+          <div className="rounded-xl p-6 w-full max-w-sm" style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)" }}>
+            <h3 className="text-base font-semibold t-heading mb-2">Delete Document?</h3>
+            <p className="text-sm t-muted mb-4">
+              "<span className="font-medium t-body">{deleteTarget.file_name}</span>" will be permanently removed.
+            </p>
+            {deleteErr && <p className="text-xs text-red-400 mb-3">{deleteErr}</p>}
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setDeleteTarget(null)} className="btn-ghost text-sm">Cancel</button>
+              <button onClick={doDelete} className="text-sm px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium">Delete</button>
+            </div>
+          </div>
+        </div>
       )}
     </TabShell>
   );
