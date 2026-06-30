@@ -169,7 +169,7 @@ export default function ClientForm({ initial, isEdit = false, submitLabel = "Sav
             setField("postal_code", raw);
             const code = raw.trim();
             if (code.length < 5) return;
-            const cc = (form.country || "IN").slice(0, 2).toUpperCase();
+            const cc = form.country || "IN";
             const result = await lookup(code, cc);
             if (!result) return;
             setForm(f => ({

@@ -145,7 +145,7 @@ export default function EmployeeForm({ editMode = false }) {
     const code = (postalCode || "").trim();
     set(`${prefix}_postal_code`, postalCode);
     if (code.length < 5) return;
-    const cc = (form[`${prefix}_country`] || "IN").slice(0, 2).toUpperCase();
+    const cc = form[`${prefix}_country`] || "IN";
     const result = await lookup(code, cc);
     if (!result) return;
     setForm(f => ({
