@@ -1278,20 +1278,16 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
         </div>
       )}
 
-      {/* Delete confirm modal */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <div className="rounded-xl p-6 w-full max-w-md" style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)" }}>
-            <h3 className="text-base font-semibold t-heading mb-1">Delete Document</h3>
-            <p className="text-sm t-muted mb-4">Delete <span className="font-medium t-body">{deleteTarget.file_name}</span>? This cannot be undone.</p>
-            {deleteErr && <div className="rounded-lg px-3 py-2 text-sm text-red-400 mb-3" style={{ background: "rgba(239,68,68,0.08)" }}>{deleteErr}</div>}
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setDeleteTarget(null)} className="btn-secondary text-sm">Cancel</button>
-              <button onClick={doDelete} className="btn-primary text-sm" style={{ background: "#ef4444" }}>Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Document"
+        message={`Delete "${deleteTarget?.file_name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={doDelete}
+        onCancel={() => { setDeleteTarget(null); setDeleteErr(""); }}
+        error={deleteErr}
+      />
     </Card>
   );
 }

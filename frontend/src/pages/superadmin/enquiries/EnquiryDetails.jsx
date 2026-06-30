@@ -5,6 +5,8 @@ import { useAuth } from "../../../contexts/AuthContext";
 import Modal from "../../../components/ui/Modal";
 import Select from "../../../components/ui/Select";
 import Textarea from "../../../components/ui/Textarea";
+import { DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import {
   STATUS_COLORS, ACTIVITY_COLORS, toOptions, formatDate, formatDateTime, activityLabel,
 } from "./constants";
@@ -327,6 +329,9 @@ function Overview({ enquiry }) {
 function NotesTab({ enquiry, onMutate }) {
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteErr, setDeleteErr] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const notes = enquiry.notes || [];
 
   const add = async () => {
@@ -344,12 +349,19 @@ function NotesTab({ enquiry, onMutate }) {
     }
   };
 
-  const remove = async (noteId) => {
+  const confirmDelete = (n) => { setDeleteTarget(n); setDeleteErr(""); };
+
+  const doDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await enquiryInboxApi.deleteNote(enquiry.id, noteId);
+      await enquiryInboxApi.deleteNote(enquiry.id, deleteTarget.id);
+      setDeleteTarget(null);
       onMutate();
     } catch (e) {
-      alert(e.response?.data?.detail || "Failed to delete note.");
+      setDeleteErr(e.response?.data?.detail || "Failed to delete note.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -385,11 +397,23 @@ function NotesTab({ enquiry, onMutate }) {
                 <p className="text-sm t-body whitespace-pre-wrap break-words">{n.note}</p>
                 <p className="text-xs t-muted mt-1">User #{n.created_by} · {formatDateTime(n.created_at)}</p>
               </div>
-              <button onClick={() => remove(n.id)} className="text-xs text-red-400 hover:text-red-300 flex-shrink-0">Delete</button>
+              <DeleteIconBtn onClick={() => confirmDelete(n)} title="Delete note" />
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Note"
+        message="Delete this note? This cannot be undone."
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={doDelete}
+        onCancel={() => { setDeleteTarget(null); setDeleteErr(""); }}
+        loading={deleting}
+        error={deleteErr}
+      />
     </div>
   );
 }
