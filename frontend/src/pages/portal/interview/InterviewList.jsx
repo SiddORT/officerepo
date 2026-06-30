@@ -5,6 +5,7 @@ import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const PAGE_SIZE = 20;
 
@@ -54,8 +55,14 @@ export default function InterviewList() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const doAction = async (fn, msg) => {
-    if (msg && !window.confirm(msg)) return;
+  const [confirmDlg, setConfirmDlg] = useState({ open: false, fn: null, message: "" });
+  const doAction = (fn, msg) => {
+    if (msg) { setConfirmDlg({ open: true, fn, message: msg }); return; }
+    fn().then(() => load()).catch(e => alert(e.response?.data?.message || "Action failed."));
+  };
+  const confirmAction = async () => {
+    const fn = confirmDlg.fn;
+    setConfirmDlg({ open: false, fn: null, message: "" });
     try { await fn(); load(); } catch (e) { alert(e.response?.data?.message || "Action failed."); }
   };
 
@@ -92,6 +99,15 @@ export default function InterviewList() {
         </select>
       </div>
 
+      <ConfirmDialog
+        open={confirmDlg.open}
+        title="Confirm Action"
+        message={confirmDlg.message}
+        confirmLabel="Confirm"
+        confirmVariant="warning"
+        onConfirm={confirmAction}
+        onCancel={() => setConfirmDlg({ open: false, fn: null, message: "" })}
+      />
       <div className="portal-table-wrap" style={{ overflowX: "auto" }}>
         <table className="portal-table">
           <thead><tr>
@@ -154,12 +170,12 @@ export default function InterviewList() {
                         style={{ background: "none", border: "none", color: "#8b5cf6", cursor: "pointer", fontSize: 12, marginLeft: 10 }}>
                         Reschedule
                       </button>
-                      <button onClick={() => doAction(() => portalInterviewApi.noShow(subdomain, token, r.id), "Mark as No Show?")}
-                        style={{ background: "none", border: "none", color: "#f59e0b", cursor: "pointer", fontSize: 12, marginLeft: 10 }}>
+                      <button onClick={() => doAction(() => portalInterviewApi.noShow(subdomain, token, r.id), "Mark this interview as No Show?")}
+                        style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.35)", color: "#f59e0b", cursor: "pointer", fontSize: 11, fontWeight: 600, padding: "2px 9px", borderRadius: 20, marginLeft: 8 }}>
                         No Show
                       </button>
-                      <button onClick={() => doAction(() => portalInterviewApi.cancel(subdomain, token, r.id, {}), "Cancel this interview?")}
-                        style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 12, marginLeft: 10 }}>
+                      <button onClick={() => doAction(() => portalInterviewApi.cancel(subdomain, token, r.id, {}), "Cancel this interview? This cannot be undone.")}
+                        style={{ background: "rgba(239,68,68,0.10)", border: "1px solid rgba(239,68,68,0.30)", color: "#ef4444", cursor: "pointer", fontSize: 11, fontWeight: 600, padding: "2px 9px", borderRadius: 20, marginLeft: 8 }}>
                         Cancel
                       </button>
                     </>}

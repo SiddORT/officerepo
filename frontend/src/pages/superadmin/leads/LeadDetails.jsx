@@ -5,6 +5,8 @@ import Modal from "../../../components/ui/Modal";
 import Input from "../../../components/ui/Input";
 import Select from "../../../components/ui/Select";
 import Textarea from "../../../components/ui/Textarea";
+import { EditIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { StageBadge, StatusBadge } from "./components/StageBadge";
 import ScoreBadge from "./components/ScoreBadge";
 import Timeline from "./components/Timeline";
@@ -538,9 +540,11 @@ function SpokespersonsTab({ leadId }) {
     } catch (e) { setErr(e.response?.data?.detail || "Failed."); } finally { setSaving(false); }
   };
 
-  const remove = async (sid) => {
-    if (!window.confirm("Delete this spokesperson?")) return;
-    await leadsApi.deleteSpokesperson(leadId, sid); reload();
+  const [confirmSpk, setConfirmSpk] = useState({ open: false, id: null });
+  const remove = (sid) => setConfirmSpk({ open: true, id: sid });
+  const confirmRemove = async () => {
+    await leadsApi.deleteSpokesperson(leadId, confirmSpk.id);
+    setConfirmSpk({ open: false, id: null }); reload();
   };
 
   const setField = (k, v) => {
@@ -567,14 +571,22 @@ function SpokespersonsTab({ leadId }) {
                   {s.phone ? ` · ${s.country_code ? `${s.country_code} ` : ""}${s.phone}` : ""}
                 </p>
               </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <button onClick={() => openEdit(s)} className="text-xs t-muted hover:t-accent">Edit</button>
-                <button onClick={() => remove(s.id)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <EditIconBtn onClick={() => openEdit(s)} title="Edit spokesperson" />
+                <DeleteIconBtn onClick={() => remove(s.id)} title="Delete spokesperson" />
               </div>
             </li>
           ))}
         </ul>
       )}
+      <ConfirmDialog
+        open={confirmSpk.open}
+        title="Delete Spokesperson"
+        message="Are you sure you want to delete this spokesperson? This cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={confirmRemove}
+        onCancel={() => setConfirmSpk({ open: false, id: null })}
+      />
       <Modal open={open} onClose={() => setOpen(false)} title={editing ? "Edit Spokesperson" : "Add Spokesperson"} size="md"
         footer={<><button className="btn-secondary" onClick={() => setOpen(false)}>Cancel</button><button className="btn-primary" disabled={saving} onClick={submit}>{saving ? "Saving..." : "Save"}</button></>}>
         <div className="space-y-4">
@@ -623,9 +635,11 @@ function ActivitiesTab({ leadId, options, onMutate }) {
     } catch (e) { setErr(e.response?.data?.detail || "Failed."); } finally { setSaving(false); }
   };
 
-  const remove = async (aid) => {
-    if (!window.confirm("Delete this activity?")) return;
-    await leadsApi.deleteActivity(leadId, aid); reload();
+  const [confirmAct, setConfirmAct] = useState({ open: false, id: null });
+  const remove = (aid) => setConfirmAct({ open: true, id: aid });
+  const confirmRemove = async () => {
+    await leadsApi.deleteActivity(leadId, confirmAct.id);
+    setConfirmAct({ open: false, id: null }); reload();
   };
 
   return (
@@ -643,11 +657,19 @@ function ActivitiesTab({ leadId, options, onMutate }) {
                   </p>
                 )}
               </div>
-              <button onClick={() => remove(a.id)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
+              <DeleteIconBtn onClick={() => remove(a.id)} title="Delete activity" />
             </li>
           ))}
         </ul>
       )}
+      <ConfirmDialog
+        open={confirmAct.open}
+        title="Delete Activity"
+        message="Are you sure you want to delete this activity? This cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={confirmRemove}
+        onCancel={() => setConfirmAct({ open: false, id: null })}
+      />
       <Modal open={open} onClose={() => setOpen(false)} title="Log Activity" size="md"
         footer={<><button className="btn-secondary" onClick={() => setOpen(false)}>Cancel</button><button className="btn-primary" disabled={saving} onClick={submit}>{saving ? "Saving..." : "Save"}</button></>}>
         <div className="space-y-4">
@@ -752,8 +774,13 @@ function FollowupsTab({ leadId, options }) {
     } catch (e) { setErr(e.response?.data?.detail || "Failed."); } finally { setSaving(false); }
   };
 
+  const [confirmFup, setConfirmFup] = useState({ open: false, id: null });
   const complete = async (f) => { await leadsApi.updateFollowup(leadId, f.id, { status: "Completed" }); reload(); };
-  const remove = async (f) => { if (window.confirm("Delete this follow-up?")) { await leadsApi.deleteFollowup(leadId, f.id); reload(); } };
+  const remove = (f) => setConfirmFup({ open: true, id: f.id });
+  const confirmRemove = async () => {
+    await leadsApi.deleteFollowup(leadId, confirmFup.id);
+    setConfirmFup({ open: false, id: null }); reload();
+  };
 
   const statusColor = (s) => s === "Completed" ? "#10b981" : s === "Overdue" ? "#ef4444" : "#f59e0b";
 
@@ -773,12 +800,20 @@ function FollowupsTab({ leadId, options }) {
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 {f.status !== "Completed" && <button onClick={() => complete(f)} className="text-xs t-accent hover:underline">Complete</button>}
-                <button onClick={() => remove(f)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
+                <DeleteIconBtn onClick={() => remove(f)} title="Delete follow-up" />
               </div>
             </li>
           ))}
         </ul>
       )}
+      <ConfirmDialog
+        open={confirmFup.open}
+        title="Delete Follow-up"
+        message="Are you sure you want to delete this follow-up? This cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={confirmRemove}
+        onCancel={() => setConfirmFup({ open: false, id: null })}
+      />
       <Modal open={open} onClose={() => setOpen(false)} title="Add Follow-up" size="md"
         footer={<><button className="btn-secondary" onClick={() => setOpen(false)}>Cancel</button><button className="btn-primary" disabled={saving} onClick={submit}>{saving ? "Saving..." : "Save"}</button></>}>
         <div className="space-y-4">
@@ -805,7 +840,12 @@ function NotesTab({ leadId }) {
     try { await leadsApi.addNote(leadId, { note: note.trim() }); setNote(""); reload(); }
     finally { setSaving(false); }
   };
-  const remove = async (n) => { if (window.confirm("Delete this note?")) { await leadsApi.deleteNote(leadId, n.id); reload(); } };
+  const [confirmNote, setConfirmNote] = useState({ open: false, id: null });
+  const remove = (n) => setConfirmNote({ open: true, id: n.id });
+  const confirmRemove = async () => {
+    await leadsApi.deleteNote(leadId, confirmNote.id);
+    setConfirmNote({ open: false, id: null }); reload();
+  };
 
   return (
     <TabShell title="Notes">
@@ -822,11 +862,19 @@ function NotesTab({ leadId }) {
                 <p className="text-sm t-body whitespace-pre-wrap break-words">{n.note}</p>
                 <p className="text-xs t-muted mt-1">{formatDateTime(n.created_at)}</p>
               </div>
-              <button onClick={() => remove(n)} className="text-xs text-red-400 hover:text-red-300 flex-shrink-0">Delete</button>
+              <DeleteIconBtn onClick={() => remove(n)} title="Delete note" />
             </li>
           ))}
         </ul>
       )}
+      <ConfirmDialog
+        open={confirmNote.open}
+        title="Delete Note"
+        message="Are you sure you want to delete this note? This cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={confirmRemove}
+        onCancel={() => setConfirmNote({ open: false, id: null })}
+      />
     </TabShell>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { notificationsApi } from "../../../../services/apiClient";
+import ConfirmDialog from "../../../../components/ui/ConfirmDialog";
 
 const QUILL_MODULES_EMAIL = {
   toolbar: [
@@ -604,6 +605,7 @@ function TemplatesTab() {
   const [modal, setModal] = useState({ open: false, initial: null });
   const [deleting, setDeleting] = useState(null);
   const [toast, setToast] = useState(null);
+  const [confirmDlg, setConfirmDlg] = useState({ open: false, template: null });
 
   const showToast = (msg, ok = true) => {
     setToast({ msg, ok });
@@ -632,8 +634,10 @@ function TemplatesTab() {
     load();
   };
 
-  const handleDelete = async (t) => {
-    if (!window.confirm(`Delete template "${t.name}"? This cannot be undone.`)) return;
+  const handleDelete = (t) => setConfirmDlg({ open: true, template: t });
+  const confirmDelete = async () => {
+    const t = confirmDlg.template;
+    setConfirmDlg({ open: false, template: null });
     setDeleting(t.id);
     try {
       await notificationsApi.deleteTemplate(t.id);
@@ -734,6 +738,14 @@ function TemplatesTab() {
         onClose={() => setModal({ open: false, initial: null })}
         initial={modal.initial}
         onSave={handleSave}
+      />
+      <ConfirmDialog
+        open={confirmDlg.open}
+        title="Delete Template"
+        message={confirmDlg.template ? `Delete template "${confirmDlg.template.name}"? This cannot be undone.` : ""}
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setConfirmDlg({ open: false, template: null })}
       />
     </div>
   );
