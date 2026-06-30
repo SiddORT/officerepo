@@ -2,37 +2,28 @@ import React, { useEffect, useState } from "react";
 import { industryMasterApi } from "../../../services/apiClient";
 import SettingsLayout from "./SettingsLayout";
 
-function SortIcon({ dir }) {
-  return (
-    <svg className="w-3 h-3 inline ml-1 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d={dir === "asc" ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-    </svg>
-  );
-}
+const PAGE_SIZE = 15;
 
 export default function IndustryMasterPage() {
   const [rows, setRows]         = useState([]);
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState("");
-  const [sortDir, setSortDir]   = useState("asc");
+  const [page, setPage]         = useState(1);
 
   const [showAdd, setShowAdd]   = useState(false);
   const [newName, setNewName]   = useState("");
-  const [newOrder, setNewOrder] = useState("");
   const [addErr, setAddErr]     = useState("");
   const [saving, setSaving]     = useState(false);
 
   const [editId, setEditId]     = useState(null);
   const [editName, setEditName] = useState("");
-  const [editOrder, setEditOrder] = useState("");
   const [editErr, setEditErr]   = useState("");
   const [editSaving, setEditSaving] = useState(false);
 
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  const [toast, setToast]       = useState(null);
+  const [toast, setToast] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -49,35 +40,44 @@ export default function IndustryMasterPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const totalCount    = rows.length;
+  const activeCount   = rows.filter(r => r.is_active).length;
+  const inactiveCount = totalCount - activeCount;
+
   const filtered = rows
     .filter(r => !search || r.name.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => {
-      const cmp = a.sort_order - b.sort_order || a.name.localeCompare(b.name);
-      return sortDir === "asc" ? cmp : -cmp;
-    });
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage   = Math.min(page, totalPages);
+  const pageRows   = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const globalIndex = (i) => (safePage - 1) * PAGE_SIZE + i + 1;
+
+  const resetPage = () => setPage(1);
 
   const handleAdd = async () => {
     if (!newName.trim()) { setAddErr("Name is required."); return; }
     setSaving(true); setAddErr("");
     try {
-      await industryMasterApi.create({ name: newName.trim(), sort_order: newOrder ? parseInt(newOrder) : 0 });
-      setNewName(""); setNewOrder(""); setShowAdd(false);
+      await industryMasterApi.create({ name: newName.trim(), sort_order: 0 });
+      setNewName(""); setShowAdd(false);
       showToast("Industry added.");
-      load();
+      load(); resetPage();
     } catch (e) {
       setAddErr(e?.response?.data?.detail || "Failed to add.");
     } finally { setSaving(false); }
   };
 
   const startEdit = (row) => {
-    setEditId(row.id); setEditName(row.name); setEditOrder(String(row.sort_order)); setEditErr("");
+    setEditId(row.id); setEditName(row.name); setEditErr("");
   };
 
   const handleEdit = async () => {
     if (!editName.trim()) { setEditErr("Name is required."); return; }
     setEditSaving(true); setEditErr("");
     try {
-      await industryMasterApi.update(editId, { name: editName.trim(), sort_order: editOrder !== "" ? parseInt(editOrder) : 0 });
+      await industryMasterApi.update(editId, { name: editName.trim() });
       setEditId(null);
       showToast("Industry updated.");
       load();
@@ -101,33 +101,55 @@ export default function IndustryMasterPage() {
       await industryMasterApi.remove(confirmDelete.id);
       setConfirmDelete(null);
       showToast("Industry deleted.");
-      load();
+      load(); resetPage();
     } catch (e) {
       showToast(e?.response?.data?.detail || "Delete failed.", "error");
       setConfirmDelete(null);
     } finally { setDeleting(false); }
   };
 
+  const counterStyle = (color) => ({
+    background: `rgba(${color},0.08)`,
+    border: `1px solid rgba(${color},0.2)`,
+    borderRadius: 10, padding: "10px 18px", textAlign: "center", minWidth: 100,
+  });
+
   return (
     <SettingsLayout>
       <div style={{ maxWidth: 760 }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
+        <div className="flex items-center justify-between" style={{ marginBottom: 18 }}>
           <div>
             <h2 className="text-xl font-semibold t-heading" style={{ marginBottom: 4 }}>Industry Master</h2>
             <p className="text-sm t-muted">Platform-wide industry list used in company forms across all workspaces.</p>
           </div>
           <button
-            onClick={() => { setShowAdd(true); setNewName(""); setNewOrder(""); setAddErr(""); }}
+            onClick={() => { setShowAdd(true); setNewName(""); setAddErr(""); }}
             className="btn-primary"
-            style={{ display: "flex", alignItems: "center", gap: 6 }}
+            style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Add Industry
           </button>
+        </div>
+
+        {/* Summary counters */}
+        <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+          <div style={counterStyle("99,102,241")}>
+            <div className="text-xl font-bold" style={{ color: "rgb(129,140,248)", lineHeight: 1.2 }}>{totalCount}</div>
+            <div className="text-xs t-muted" style={{ marginTop: 2 }}>Total</div>
+          </div>
+          <div style={counterStyle("34,197,94")}>
+            <div className="text-xl font-bold" style={{ color: "rgb(74,222,128)", lineHeight: 1.2 }}>{activeCount}</div>
+            <div className="text-xs t-muted" style={{ marginTop: 2 }}>Active</div>
+          </div>
+          <div style={counterStyle("156,163,175")}>
+            <div className="text-xl font-bold" style={{ color: "rgb(156,163,175)", lineHeight: 1.2 }}>{inactiveCount}</div>
+            <div className="text-xs t-muted" style={{ marginTop: 2 }}>Inactive</div>
+          </div>
         </div>
 
         {/* Toast */}
@@ -147,7 +169,7 @@ export default function IndustryMasterPage() {
           <div className="card" style={{ marginBottom: 16, padding: "16px 18px" }}>
             <div className="text-sm font-semibold t-body" style={{ marginBottom: 12 }}>New Industry</div>
             <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
-              <div style={{ flex: "1 1 200px" }}>
+              <div style={{ flex: "1 1 240px" }}>
                 <input
                   autoFocus
                   value={newName}
@@ -159,15 +181,6 @@ export default function IndustryMasterPage() {
                 />
                 {addErr && <p style={{ fontSize: 11, color: "#f87171", marginTop: 3 }}>{addErr}</p>}
               </div>
-              <div style={{ width: 100 }}>
-                <input
-                  type="number"
-                  value={newOrder}
-                  onChange={e => setNewOrder(e.target.value)}
-                  placeholder="Order"
-                  className="input-field"
-                />
-              </div>
               <button onClick={handleAdd} disabled={saving} className="btn-primary" style={{ height: 38 }}>
                 {saving ? "Saving…" : "Add"}
               </button>
@@ -178,28 +191,23 @@ export default function IndustryMasterPage() {
           </div>
         )}
 
-        {/* Search + sort */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
+        {/* Search bar */}
+        <div style={{ marginBottom: 14, display: "flex", gap: 10, alignItems: "center" }}>
           <div style={{ position: "relative", flex: 1 }}>
             <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 t-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
             </svg>
             <input
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); resetPage(); }}
               placeholder="Search industries…"
               className="input-field"
               style={{ paddingLeft: 34 }}
             />
           </div>
-          <button
-            onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")}
-            className="btn-secondary"
-            style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, padding: "0 12px", height: 38 }}
-          >
-            Order {sortDir === "asc" ? <SortIcon dir="asc" /> : <SortIcon dir="desc" />}
-          </button>
-          <span className="text-xs t-muted">{filtered.length} {filtered.length === 1 ? "industry" : "industries"}</span>
+          <span className="text-xs t-muted" style={{ whiteSpace: "nowrap" }}>
+            {filtered.length} {filtered.length === 1 ? "industry" : "industries"}
+          </span>
         </div>
 
         {/* Table */}
@@ -214,18 +222,23 @@ export default function IndustryMasterPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--c-border)" }}>
-                  {["Industry Name", "Order", "Status", ""].map(h => (
-                    <th key={h} style={{
-                      padding: "10px 14px", fontSize: 11, fontWeight: 600, textAlign: "left",
+                  {["#", "Industry Name", "Status", ""].map((h, i) => (
+                    <th key={i} style={{
+                      padding: "10px 14px", fontSize: 11, fontWeight: 600,
+                      textAlign: i === 3 ? "right" : "left",
                       color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em",
                       whiteSpace: "nowrap", background: "var(--c-surface)",
+                      width: i === 0 ? 48 : undefined,
                     }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(row => (
+                {pageRows.map((row, i) => (
                   <tr key={row.id} style={{ borderBottom: "1px solid var(--c-border)" }}>
+                    <td style={{ padding: "10px 14px", color: "var(--c-muted)", fontSize: 12, width: 48 }}>
+                      {globalIndex(i)}
+                    </td>
                     <td style={{ padding: "10px 14px" }}>
                       {editId === row.id ? (
                         <div>
@@ -235,25 +248,12 @@ export default function IndustryMasterPage() {
                             onChange={e => { setEditName(e.target.value); setEditErr(""); }}
                             onKeyDown={e => { if (e.key === "Enter") handleEdit(); if (e.key === "Escape") setEditId(null); }}
                             className="input-field"
-                            style={{ maxWidth: 280, borderColor: editErr ? "#f87171" : undefined }}
+                            style={{ maxWidth: 300, borderColor: editErr ? "#f87171" : undefined }}
                           />
                           {editErr && <p style={{ fontSize: 11, color: "#f87171", marginTop: 2 }}>{editErr}</p>}
                         </div>
                       ) : (
                         <span className="text-sm t-body font-medium">{row.name}</span>
-                      )}
-                    </td>
-                    <td style={{ padding: "10px 14px" }}>
-                      {editId === row.id ? (
-                        <input
-                          type="number"
-                          value={editOrder}
-                          onChange={e => setEditOrder(e.target.value)}
-                          className="input-field"
-                          style={{ width: 70 }}
-                        />
-                      ) : (
-                        <span className="text-xs t-muted">{row.sort_order}</span>
                       )}
                     </td>
                     <td style={{ padding: "10px 14px" }}>
@@ -282,11 +282,7 @@ export default function IndustryMasterPage() {
                           </>
                         ) : (
                           <>
-                            <button
-                              onClick={() => startEdit(row)}
-                              className="btn-secondary"
-                              style={{ fontSize: 12, padding: "4px 10px", height: "auto" }}
-                            >
+                            <button onClick={() => startEdit(row)} className="btn-secondary" style={{ fontSize: 12, padding: "4px 10px", height: "auto" }}>
                               Edit
                             </button>
                             <button
@@ -310,10 +306,65 @@ export default function IndustryMasterPage() {
           )}
         </div>
 
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
+            <span className="text-xs t-muted">
+              Page {safePage} of {totalPages} · {filtered.length} total
+            </span>
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                onClick={() => setPage(1)}
+                disabled={safePage === 1}
+                className="btn-secondary"
+                style={{ fontSize: 12, padding: "4px 10px", height: "auto", opacity: safePage === 1 ? 0.4 : 1 }}
+              >«</button>
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="btn-secondary"
+                style={{ fontSize: 12, padding: "4px 10px", height: "auto", opacity: safePage === 1 ? 0.4 : 1 }}
+              >‹</button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                .reduce((acc, p, idx, arr) => {
+                  if (idx > 0 && p - arr[idx - 1] > 1) acc.push("…");
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, i) =>
+                  p === "…" ? (
+                    <span key={`e${i}`} style={{ padding: "4px 6px", fontSize: 12, color: "var(--c-muted)" }}>…</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p)}
+                      className={p === safePage ? "btn-primary" : "btn-secondary"}
+                      style={{ fontSize: 12, padding: "4px 10px", height: "auto", minWidth: 32 }}
+                    >{p}</button>
+                  )
+                )}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="btn-secondary"
+                style={{ fontSize: 12, padding: "4px 10px", height: "auto", opacity: safePage === totalPages ? 0.4 : 1 }}
+              >›</button>
+              <button
+                onClick={() => setPage(totalPages)}
+                disabled={safePage === totalPages}
+                className="btn-secondary"
+                style={{ fontSize: 12, padding: "4px 10px", height: "auto", opacity: safePage === totalPages ? 0.4 : 1 }}
+              >»</button>
+            </div>
+          </div>
+        )}
+
         {/* Delete confirm modal */}
         {confirmDelete && (
           <div style={{
-            position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center",
+            position: "fixed", inset: 0, zIndex: 1000,
+            display: "flex", alignItems: "center", justifyContent: "center",
             background: "rgba(0,0,0,0.5)",
           }}>
             <div className="card" style={{ padding: 24, maxWidth: 380, width: "90%" }}>
