@@ -7,6 +7,8 @@ Covers:
 - replace_document (router): delete_file called with old key after successful replace
 - replace_document (router): newly saved file cleaned up when document_id is invalid (404)
 - replace_document (router): newly saved file cleaned up when db.commit() fails mid-replace
+- replace_document (router): newly saved file cleaned up on any service error
+- replace_document (router): original exception re-raised after cleanup
 - delete_document (router): delete_file called with the key from the service
 """
 import unittest
@@ -197,9 +199,14 @@ class TestDeleteDocumentService(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestReplaceDocumentRouter(unittest.TestCase):
-    """Router calls delete_file with the old key after a successful replace."""
+    """Router calls delete_file with the old key after a successful replace,
+    and cleans up the newly saved file if the service raises."""
 
     def _invoke_router(self, service_side_effect=None, service_return=None):
+        """
+        Drive the router function directly (bypasses HTTP stack).
+        Returns the (mock_save, mock_del, result_or_exception) triple.
+        """
         from backend.app.modules.lead_management import router as r
         from backend.shared.storage.file_handler import Visibility
 
@@ -260,6 +267,7 @@ class TestReplaceDocumentRouter(unittest.TestCase):
             service_side_effect=HTTPException(status_code=404, detail="Document not found.")
         )
         mock_del.assert_called_once_with(new_key, Visibility.PRIVATE)
+        self.assertIsInstance(exc, HTTPException)
         self.assertEqual(exc.status_code, 404)
 
     def test_newly_saved_file_deleted_when_db_commit_fails(self):
@@ -286,6 +294,23 @@ class TestReplaceDocumentRouter(unittest.TestCase):
 
         # The original exception must be re-raised (not swallowed).
         self.assertIs(exc, db_commit_error)
+
+    def test_newly_saved_file_deleted_when_service_raises_generic_error(self):
+        """Any service exception (DB error, etc.) triggers new-file cleanup."""
+        from backend.shared.storage.file_handler import Visibility
+
+        new_key = "platform/lead_documents/new.pdf"
+        mock_save, mock_del, exc = self._invoke_router(
+            service_side_effect=RuntimeError("DB error")
+        )
+        mock_del.assert_called_once_with(new_key, Visibility.PRIVATE)
+        self.assertIsInstance(exc, RuntimeError)
+
+    def test_exception_is_reraised_after_cleanup(self):
+        """The original exception must propagate to the caller after cleanup."""
+        original = HTTPException(status_code=500, detail="Internal error")
+        _, _, exc = self._invoke_router(service_side_effect=original)
+        self.assertIs(exc, original)
 
 
 # ---------------------------------------------------------------------------
