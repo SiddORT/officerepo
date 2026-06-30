@@ -259,6 +259,23 @@ class TestReplaceDocumentRouter(unittest.TestCase):
         mock_del.assert_called_once_with(new_key, Visibility.PRIVATE)
         self.assertEqual(exc.status_code, 404)
 
+    def test_newly_saved_file_deleted_when_db_commit_raises(self):
+        """
+        If db.commit() raises inside service.replace_document (e.g. a transient
+        DB error), the router must delete the *newly* saved file with
+        Visibility.PRIVATE to prevent it being orphaned, and then re-raise the
+        original exception.
+        """
+        from backend.shared.storage.file_handler import Visibility
+
+        new_key = "platform/client_documents/new.pdf"
+        mock_save, mock_del, exc = self._invoke_router(
+            service_side_effect=RuntimeError("DB commit failed")
+        )
+        mock_del.assert_called_once_with(new_key, Visibility.PRIVATE)
+        self.assertIsInstance(exc, RuntimeError)
+        self.assertEqual(str(exc), "DB commit failed")
+
 
 class TestDeleteDocumentRouter(unittest.TestCase):
     """Router calls delete_file with the key returned by service.delete_document."""
