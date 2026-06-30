@@ -68,7 +68,7 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div className="portal-form-card" style={{ width: "100%", maxWidth: 560, maxHeight: "90vh", overflow: "auto" }}>
+      <div className="portal-form-card" style={{ width: "100%", maxWidth: 780, maxHeight: "90vh", overflow: "auto" }}>
         <div style={{ paddingBottom: 10, borderBottom: "1px solid var(--c-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontWeight: 700, color: "var(--c-text)", fontSize: 15 }}>{isEdit ? "Edit Branch" : "Add Branch"}</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-muted)", fontSize: 20, lineHeight: 1 }}>×</button>
