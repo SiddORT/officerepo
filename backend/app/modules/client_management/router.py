@@ -380,11 +380,15 @@ def replace_document(
 ):
     """Replace the file for an existing document row (keeps type/metadata unchanged)."""
     key, original = save_document(file, c.CLIENT_STORAGE_SCOPE, c.CLIENT_DOCUMENTS_MODULE)
-    old_key, data = service.replace_document(
-        db, client_id, document_id,
-        file_name=original, file_path=key,
-        actor_id=admin["user_id"], actor=admin["email"],
-    )
+    try:
+        old_key, data = service.replace_document(
+            db, client_id, document_id,
+            file_name=original, file_path=key,
+            actor_id=admin["user_id"], actor=admin["email"],
+        )
+    except Exception:
+        delete_file(key, Visibility.PRIVATE)
+        raise
     delete_file(old_key, Visibility.PRIVATE)
     return ApiResponse.ok(data, "Document replaced.").model_dump()
 
