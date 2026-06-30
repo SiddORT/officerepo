@@ -1023,6 +1023,20 @@ def update_proposal(db: Session, lead_id: str, proposal_id: str, payload: Propos
     return proposal_to_dict(proposal)
 
 
+def replace_proposal(db: Session, lead_id: str, proposal_id: str, *,
+                     file_name: str, file_path: str, actor_id) -> tuple[str, dict]:
+    """Replace a proposal's attached file. Returns (old_file_key, updated_proposal_dict)."""
+    lead = _require_lead(db, lead_id)
+    proposal = repo.get_child(db, LeadProposal, proposal_id, lead.id)
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found.")
+    old_key = proposal.proposal_document_path
+    proposal.proposal_document_path = file_path
+    db.commit()
+    db.refresh(proposal)
+    return old_key, proposal_to_dict(proposal)
+
+
 def list_proposals(db: Session, lead_id: str) -> list[dict]:
     _require_lead(db, lead_id)
     return [proposal_to_dict(p) for p in repo.list_proposals(db, lead_id)]

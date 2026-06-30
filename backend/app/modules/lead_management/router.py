@@ -441,6 +441,30 @@ def download_proposal(lead_id: str, proposal_id: str, db: Session = Depends(get_
     return FileResponse(str(path), filename=name)
 
 
+@router.put("/{lead_id}/proposals/{proposal_id}")
+def replace_proposal(
+    lead_id: str,
+    proposal_id: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_platform_db),
+    admin: dict = Depends(_current_admin),
+):
+    """Replace the attached file for an existing proposal row (keeps all metadata unchanged)."""
+    key, original = save_document(file, c.LEAD_STORAGE_SCOPE, c.LEAD_PROPOSALS_MODULE)
+    try:
+        old_key, data = service.replace_proposal(
+            db, lead_id, proposal_id,
+            file_name=original, file_path=key,
+            actor_id=admin["user_id"],
+        )
+    except Exception:
+        delete_file(key, Visibility.PRIVATE)
+        raise
+    if old_key:
+        delete_file(old_key, Visibility.PRIVATE)
+    return ApiResponse.ok(data, "Proposal file replaced.").model_dump()
+
+
 @router.patch("/{lead_id}/proposals/{proposal_id}")
 def update_proposal(lead_id: str, proposal_id: str, payload: ProposalUpdateRequest,
                     db: Session = Depends(get_platform_db), admin: dict = Depends(_current_admin)):

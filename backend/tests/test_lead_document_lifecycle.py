@@ -1,5 +1,5 @@
 """
-Tests for lead document Replace and Delete file lifecycle.
+Tests for lead document and proposal Replace/Delete file lifecycle.
 
 Covers:
 - replace_document (service): new file saved, old storage key returned, DB row updated
@@ -10,6 +10,10 @@ Covers:
 - replace_document (router): newly saved file cleaned up on any service error
 - replace_document (router): original exception re-raised after cleanup
 - delete_document (router): delete_file called with the key from the service
+- replace_proposal (service): new file saved, old storage key returned, DB row updated
+- replace_proposal (router): delete_file called with old key after successful replace
+- replace_proposal (router): newly saved file cleaned up when proposal_id is invalid (404)
+- replace_proposal (router): newly saved file cleaned up when db.commit() fails mid-replace
 """
 import unittest
 from datetime import datetime
@@ -344,6 +348,213 @@ class TestDeleteDocumentRouter(unittest.TestCase):
     def test_returns_ok_response(self):
         _, result = self._invoke_router()
         self.assertEqual(result["success"], True)
+
+
+# ---------------------------------------------------------------------------
+# Helpers for proposal tests
+# ---------------------------------------------------------------------------
+
+class _FakeProposal:
+    """Minimal stand-in for a LeadProposal ORM row."""
+
+    def __init__(self, proposal_id, proposal_document_path):
+        self.id = proposal_id
+        self.lead_id = "lead-1"
+        self.proposal_document_path = proposal_document_path
+        self.proposal_version = 1
+        self.proposal_date = datetime(2026, 1, 1)
+        self.quoted_amount = None
+        self.modules_included = None
+        self.status = "Draft"
+        self.created_by = None
+        self.is_deleted = False
+        self.deleted_at = None
+        self.created_at = datetime(2026, 1, 1)
+        self.updated_at = datetime(2026, 1, 2)
+
+    def __repr__(self):
+        return f"<_FakeProposal id={self.id}>"
+
+
+# ---------------------------------------------------------------------------
+# Service-level tests — replace_proposal
+# ---------------------------------------------------------------------------
+
+class TestReplaceProposalService(unittest.TestCase):
+    """service.replace_proposal updates the DB row and returns the old key."""
+
+    def _run(self, proposal, new_file_path="platform/lead_proposals/new.pdf",
+             new_file_name="new.pdf"):
+        from backend.app.modules.lead_management import service
+
+        db = _make_db()
+        fake_lead = _FakeLead()
+
+        with (
+            patch.object(service, "_require_lead", return_value=fake_lead),
+            patch.object(service.repo, "get_child", return_value=proposal),
+            patch("backend.app.modules.lead_management.service.proposal_to_dict",
+                  side_effect=lambda p: {"id": p.id,
+                                         "proposal_document_path": p.proposal_document_path}),
+        ):
+            return service.replace_proposal(
+                db, "lead-1", proposal.id,
+                file_name=new_file_name,
+                file_path=new_file_path,
+                actor_id=99,
+            )
+
+    def test_returns_old_key(self):
+        old_key = "platform/lead_proposals/old_abc.pdf"
+        proposal = _FakeProposal("prop-1", old_key)
+        old_returned, _ = self._run(proposal)
+        self.assertEqual(old_returned, old_key)
+
+    def test_db_row_updated_with_new_path(self):
+        proposal = _FakeProposal("prop-1", "platform/lead_proposals/old.pdf")
+        new_key = "platform/lead_proposals/new_xyz.pdf"
+        _, result = self._run(proposal, new_file_path=new_key)
+        self.assertEqual(proposal.proposal_document_path, new_key)
+
+    def test_result_dict_reflects_new_file(self):
+        proposal = _FakeProposal("prop-2", "platform/lead_proposals/old.pdf")
+        new_key = "platform/lead_proposals/replaced.pdf"
+        _, result = self._run(proposal, new_file_path=new_key)
+        self.assertEqual(result["proposal_document_path"], new_key)
+
+    def test_404_when_proposal_not_found(self):
+        from backend.app.modules.lead_management import service
+
+        db = _make_db()
+        fake_lead = _FakeLead()
+
+        with (
+            patch.object(service, "_require_lead", return_value=fake_lead),
+            patch.object(service.repo, "get_child", return_value=None),
+        ):
+            with self.assertRaises(Exception) as ctx:
+                service.replace_proposal(
+                    db, "lead-1", "nonexistent-prop",
+                    file_name="x.pdf",
+                    file_path="platform/lead_proposals/x.pdf",
+                    actor_id=1,
+                )
+        self.assertEqual(ctx.exception.status_code, 404)
+
+    def test_commit_called_once(self):
+        proposal = _FakeProposal("prop-3", "platform/lead_proposals/old.pdf")
+        from backend.app.modules.lead_management import service
+
+        db = _make_db()
+        fake_lead = _FakeLead()
+
+        with (
+            patch.object(service, "_require_lead", return_value=fake_lead),
+            patch.object(service.repo, "get_child", return_value=proposal),
+            patch("backend.app.modules.lead_management.service.proposal_to_dict",
+                  return_value={}),
+        ):
+            service.replace_proposal(
+                db, "lead-1", proposal.id,
+                file_name="new.pdf",
+                file_path="platform/lead_proposals/new.pdf",
+                actor_id=1,
+            )
+        db.commit.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Router-level tests — replace_proposal
+# ---------------------------------------------------------------------------
+
+class TestReplaceProposalRouter(unittest.TestCase):
+    """Router calls delete_file with the old key after a successful proposal replace."""
+
+    def _invoke_router(self, service_side_effect=None, service_return=None):
+        from backend.app.modules.lead_management import router as r
+        from backend.shared.storage.file_handler import Visibility
+
+        fake_file = MagicMock()
+        old_key = "platform/lead_proposals/old.pdf"
+        new_key = "platform/lead_proposals/new.pdf"
+
+        with (
+            patch("backend.app.modules.lead_management.router.save_document",
+                  return_value=(new_key, "new.pdf")) as mock_save,
+            patch("backend.app.modules.lead_management.router.service") as mock_svc,
+            patch("backend.app.modules.lead_management.router.delete_file") as mock_del,
+        ):
+            if service_side_effect:
+                mock_svc.replace_proposal.side_effect = service_side_effect
+            else:
+                mock_svc.replace_proposal.return_value = (
+                    old_key,
+                    service_return or {"id": "prop-7",
+                                       "proposal_document_path": new_key},
+                )
+
+            db = MagicMock()
+            admin = {"user_id": 1, "email": "admin@example.com"}
+
+            if service_side_effect:
+                with self.assertRaises(Exception) as ctx:
+                    r.replace_proposal("lead-1", "prop-7", file=fake_file,
+                                       db=db, admin=admin)
+                return mock_save, mock_del, ctx.exception
+            else:
+                result = r.replace_proposal("lead-1", "prop-7", file=fake_file,
+                                            db=db, admin=admin)
+                return mock_save, mock_del, result
+
+    def test_old_file_deleted_after_successful_replace(self):
+        from backend.shared.storage.file_handler import Visibility
+
+        mock_save, mock_del, _ = self._invoke_router()
+        mock_del.assert_called_once_with(
+            "platform/lead_proposals/old.pdf", Visibility.PRIVATE
+        )
+
+    def test_new_file_saved_before_db_update(self):
+        """save_document must be called so the new file lands on disk."""
+        mock_save, mock_del, _ = self._invoke_router()
+        mock_save.assert_called_once()
+
+    def test_newly_saved_file_deleted_when_proposal_not_found(self):
+        """
+        If the service raises 404 (invalid proposal_id), the router must delete
+        the *newly* saved file to prevent it from being orphaned on disk.
+        The old file is untouched — only the new upload is cleaned up.
+        """
+        from fastapi import HTTPException
+        from backend.shared.storage.file_handler import Visibility
+
+        new_key = "platform/lead_proposals/new.pdf"
+        mock_save, mock_del, exc = self._invoke_router(
+            service_side_effect=HTTPException(status_code=404, detail="Proposal not found.")
+        )
+        mock_del.assert_called_once_with(new_key, Visibility.PRIVATE)
+        self.assertEqual(exc.status_code, 404)
+
+    def test_newly_saved_file_deleted_when_db_commit_fails(self):
+        """
+        Partial-failure guard: if db.commit() raises inside service.replace_proposal
+        (e.g. a DB timeout), the new file is already persisted to storage but the DB
+        row still holds the old key.  The router's except block must call delete_file
+        on the *newly* saved key so it doesn't become an orphan, and must re-raise so
+        the caller receives the error.
+        """
+        from backend.shared.storage.file_handler import Visibility
+
+        new_key = "platform/lead_proposals/new.pdf"
+
+        db_commit_error = RuntimeError("DB timeout during commit")
+
+        mock_save, mock_del, exc = self._invoke_router(
+            service_side_effect=db_commit_error
+        )
+
+        mock_del.assert_called_once_with(new_key, Visibility.PRIVATE)
+        self.assertIs(exc, db_commit_error)
 
 
 if __name__ == "__main__":
