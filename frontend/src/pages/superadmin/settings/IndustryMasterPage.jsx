@@ -196,7 +196,7 @@ export default function IndustryMasterPage() {
   ];
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-6xl mx-auto">
 
       {/* Header */}
       <div className="mb-6 flex items-start justify-between gap-3 flex-wrap">
