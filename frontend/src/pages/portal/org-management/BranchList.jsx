@@ -140,6 +140,7 @@ export default function BranchList() {
   const [actionLoading, setActionLoading] = useState(null);
   const [toast, setToast] = useState(null);
   const [modal, setModal] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
   const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
@@ -250,41 +251,94 @@ export default function BranchList() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((b, i) => (
-                <tr key={b.id}>
-                  <td style={{ width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
-                  <td>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>{b.branch_name}</div>
-                    {b.branch_code && <div className="t-muted" style={{ fontSize: 11, fontFamily: "monospace" }}>{b.branch_code}</div>}
-                  </td>
-                  <td>
-                    {b.branch_type
-                      ? <span className="badge-purple">{b.branch_type}</span>
-                      : <span className="t-muted" style={{ opacity: 0.4 }}>—</span>}
-                  </td>
-                  <td className="t-body">{b.company_name || <span style={{ opacity: 0.4 }}>—</span>}</td>
-                  <td className="t-muted" style={{ fontSize: 12 }}>
-                    {[b.city, b.district, b.state, b.country].filter(Boolean).join(", ") || <span style={{ opacity: 0.4 }}>—</span>}
-                  </td>
-                  <td>
-                    {b.total_employees != null && <span className="badge-info">👥 {b.total_employees}</span>}
-                  </td>
-                  <td>
-                    <Badge status={b.is_active ? "Active" : "Inactive"} />
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                      <button onClick={() => setModal(b)} className="t-accent" style={{ fontSize: 12, fontWeight: 600, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Edit</button>
-                      <button
-                        onClick={() => handleToggle(b)}
-                        disabled={actionLoading === b.id}
-                        style={{ fontSize: 12, color: b.is_active ? "#f87171" : "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
-                        {actionLoading === b.id ? "…" : b.is_active ? "Deactivate" : "Activate"}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {rows.map((b, i) => {
+                const isExpanded = expandedId === b.id;
+                return (
+                  <React.Fragment key={b.id}>
+                    <tr>
+                      <td style={{ width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
+                      <td>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>{b.branch_name}</div>
+                        {b.branch_code && <div className="t-muted" style={{ fontSize: 11, fontFamily: "monospace" }}>{b.branch_code}</div>}
+                      </td>
+                      <td>
+                        {b.branch_type
+                          ? <span className="badge-purple">{b.branch_type}</span>
+                          : <span className="t-muted" style={{ opacity: 0.4 }}>—</span>}
+                      </td>
+                      <td className="t-body">{b.company_name || <span style={{ opacity: 0.4 }}>—</span>}</td>
+                      <td className="t-muted" style={{ fontSize: 12 }}>
+                        {[b.city, b.state, b.country].filter(Boolean).join(", ") || <span style={{ opacity: 0.4 }}>—</span>}
+                      </td>
+                      <td>
+                        {b.total_employees != null && <span className="badge-info">👥 {b.total_employees}</span>}
+                      </td>
+                      <td>
+                        <Badge status={b.is_active ? "Active" : "Inactive"} />
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                          <button
+                            onClick={() => setExpandedId(isExpanded ? null : b.id)}
+                            className="t-accent"
+                            style={{ fontSize: 12, fontWeight: 600, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                            {isExpanded ? "Close" : "View"}
+                          </button>
+                          <button onClick={() => setModal(b)} className="t-accent" style={{ fontSize: 12, fontWeight: 600, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Edit</button>
+                          <button
+                            onClick={() => handleToggle(b)}
+                            disabled={actionLoading === b.id}
+                            style={{ fontSize: 12, color: b.is_active ? "#f87171" : "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
+                            {actionLoading === b.id ? "…" : b.is_active ? "Deactivate" : "Activate"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr style={{ background: "var(--c-surface2)" }}>
+                        <td colSpan={8} style={{ padding: "16px 20px", borderBottom: "1px solid var(--c-border)" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
+                            <div>
+                              <div className="portal-form-label" style={{ marginBottom: 3 }}>Postal Code</div>
+                              <div style={{ fontSize: 13, color: b.postal_code ? "var(--c-text)" : "var(--c-muted)", opacity: b.postal_code ? 1 : 0.5 }}>{b.postal_code || "—"}</div>
+                            </div>
+                            <div>
+                              <div className="portal-form-label" style={{ marginBottom: 3 }}>Address Line 1</div>
+                              <div style={{ fontSize: 13, color: b.address_line1 ? "var(--c-text)" : "var(--c-muted)", opacity: b.address_line1 ? 1 : 0.5 }}>{b.address_line1 || "—"}</div>
+                            </div>
+                            <div>
+                              <div className="portal-form-label" style={{ marginBottom: 3 }}>Address Line 2</div>
+                              <div style={{ fontSize: 13, color: b.address_line2 ? "var(--c-text)" : "var(--c-muted)", opacity: b.address_line2 ? 1 : 0.5 }}>{b.address_line2 || "—"}</div>
+                            </div>
+                            <div>
+                              <div className="portal-form-label" style={{ marginBottom: 3 }}>City</div>
+                              <div style={{ fontSize: 13, color: b.city ? "var(--c-text)" : "var(--c-muted)", opacity: b.city ? 1 : 0.5 }}>{b.city || "—"}</div>
+                            </div>
+                            <div>
+                              <div className="portal-form-label" style={{ marginBottom: 3 }}>District</div>
+                              <div style={{ fontSize: 13, color: b.district ? "var(--c-text)" : "var(--c-muted)", opacity: b.district ? 1 : 0.5 }}>{b.district || "—"}</div>
+                            </div>
+                            <div>
+                              <div className="portal-form-label" style={{ marginBottom: 3 }}>State</div>
+                              <div style={{ fontSize: 13, color: b.state ? "var(--c-text)" : "var(--c-muted)", opacity: b.state ? 1 : 0.5 }}>{b.state || "—"}</div>
+                            </div>
+                            <div>
+                              <div className="portal-form-label" style={{ marginBottom: 3 }}>Country</div>
+                              <div style={{ fontSize: 13, color: b.country ? "var(--c-text)" : "var(--c-muted)", opacity: b.country ? 1 : 0.5 }}>{b.country || "—"}</div>
+                            </div>
+                            {(b.phone || b.email) && (
+                              <div style={{ gridColumn: "1 / -1", paddingTop: 12, borderTop: "1px solid var(--c-border)", display: "flex", gap: 24 }}>
+                                {b.phone && <div><span className="portal-form-label">Phone: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.phone}</span></div>}
+                                {b.email && <div><span className="portal-form-label">Email: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.email}</span></div>}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         )}

@@ -148,6 +148,7 @@ import AMCList from "./assets/AMCList";
 
 // Organization Management pages
 import CompanyList from "./org-management/CompanyList";
+import CompanyDetails from "./org-management/CompanyDetails";
 import CompanyForm from "./org-management/CompanyForm";
 import DepartmentList from "./org-management/DepartmentList";
 import DepartmentForm from "./org-management/DepartmentForm";
@@ -245,6 +246,7 @@ function PortalRoutes() {
       {/* ── Organization Management ──────────────────────────────────── */}
       <Route path="/org/companies"                       element={<Protected><CompanyList /></Protected>} />
       <Route path="/org/companies/new"                   element={<Protected><CompanyForm editMode={false} /></Protected>} />
+      <Route path="/org/companies/:companyId"            element={<Protected><CompanyDetails /></Protected>} />
       <Route path="/org/companies/:companyId/edit"       element={<Protected><CompanyForm editMode={true} /></Protected>} />
       <Route path="/org/branches"                        element={<Protected><BranchList /></Protected>} />
       <Route path="/org/departments"                     element={<Protected><DepartmentList /></Protected>} />

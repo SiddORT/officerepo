@@ -136,6 +136,8 @@ export default function CompanyList() {
                   <td><Badge status={co.is_active ? "Active" : "Inactive"} /></td>
                   <td>
                     <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                      <Link to={`/portal/${subdomain}/org/companies/${co.id}`}
+                        className="t-accent" style={{ fontSize: 12, fontWeight: 500, textDecoration: "none" }}>View</Link>
                       <Link to={`/portal/${subdomain}/org/companies/${co.id}/edit`}
                         className="t-accent" style={{ fontSize: 12, fontWeight: 500, textDecoration: "none" }}>Edit</Link>
                       <button onClick={() => toggleStatus(co)} disabled={acting === co.id}
