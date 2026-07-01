@@ -457,7 +457,7 @@ export const portalOrgApi = {
   getDeptEmployees: (sd, tk, id, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/employees`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
   getDeptDesigs:    (sd, tk, id, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/designations`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
   getDeptActivities:(sd, tk, id, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/activities`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
-  listActiveEmployees:(sd, tk) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/employees/active`, { headers: { Authorization: `Bearer ${tk}` } }),
+  listActiveEmployees:(sd, tk, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/employees/active`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
   seedDepts:        (sd, tk, companyId) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/seed/${companyId}`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
 
   // Designations

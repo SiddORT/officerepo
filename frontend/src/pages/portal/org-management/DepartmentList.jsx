@@ -35,10 +35,13 @@ function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) 
   }, [subdomain, token, form.company_id, editDept]);
 
   useEffect(() => {
-    portalOrgApi.listActiveEmployees(subdomain, token)
+    if (!form.company_id) { setEmployees([]); return; }
+    const params = { company_id: form.company_id };
+    if (editDept?.id) params.department_id = editDept.id;
+    portalOrgApi.listActiveEmployees(subdomain, token, params)
       .then(r => setEmployees(r.data.data?.data || []))
       .catch(() => {});
-  }, [subdomain, token]);
+  }, [subdomain, token, form.company_id, editDept]);
 
   const handleSubmit = async () => {
     if (!form.company_id) { setError("Select a company."); return; }

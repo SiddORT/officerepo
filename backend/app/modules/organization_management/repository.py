@@ -289,15 +289,21 @@ def get_head_employee(db: Session, client_id: str, employee_id: str):
         return None
 
 
-def list_active_employees(db: Session, client_id: str, *, page_size: int = 500) -> list:
-    """Return all active employees (for dept-head picker)."""
+def list_active_employees(db: Session, client_id: str, *, company_id: str = None,
+                           department_id: str = None, page_size: int = 500) -> list:
+    """Return active employees (for dept-head picker), optionally scoped to a company/department."""
     try:
         from backend.app.modules.employee_management.models import Employee
-        return db.query(Employee).filter(
+        q = db.query(Employee).filter(
             Employee.client_id == client_id,
             Employee.is_deleted.is_(False),
             Employee.is_active.is_(True),
-        ).order_by(Employee.first_name).limit(page_size).all()
+        )
+        if company_id:
+            q = q.filter(Employee.company_id == company_id)
+        if department_id:
+            q = q.filter(Employee.department_id == department_id)
+        return q.order_by(Employee.first_name).limit(page_size).all()
     except Exception:
         return []
 

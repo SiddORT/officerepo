@@ -354,9 +354,10 @@ def get_dept_stats(client_db: Session, client_id: str, dept_id: str) -> Dict:
     return repo.get_dept_stats(client_db, client_id, dept_id)
 
 
-def list_active_employees(client_db: Session, client_id: str) -> Dict:
+def list_active_employees(client_db: Session, client_id: str, *, company_id: str = None,
+                           department_id: str = None) -> Dict:
     """Return active employees for use in pickers (e.g. dept head)."""
-    rows = repo.list_active_employees(client_db, client_id)
+    rows = repo.list_active_employees(client_db, client_id, company_id=company_id, department_id=department_id)
     return {"data": [_emp_mini(e) for e in rows], "total": len(rows)}
 
 

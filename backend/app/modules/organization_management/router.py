@@ -305,12 +305,17 @@ def dept_hierarchy(
 @router.get("/{subdomain}/org/employees/active")
 def list_active_employees(
     subdomain: str,
+    company_id: str = None,
+    department_id: str = None,
     portal_user: dict = Depends(_portal_jwt),
     client_db: Session = Depends(_client_db_dep),
 ):
-    """Return active employees for pickers (e.g. department head selector)."""
+    """Return active employees for pickers (e.g. department head selector).
+    Optionally scoped to a company and/or department via query params."""
     _subdomain_check(portal_user, subdomain)
-    return ApiResponse.ok(svc.list_active_employees(client_db, portal_user["client_id"])).model_dump()
+    return ApiResponse.ok(svc.list_active_employees(
+        client_db, portal_user["client_id"], company_id=company_id, department_id=department_id,
+    )).model_dump()
 
 
 @router.post("/{subdomain}/org/departments/seed/{company_id}")
