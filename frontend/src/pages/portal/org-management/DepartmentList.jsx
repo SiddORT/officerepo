@@ -6,6 +6,7 @@ import OrgLayout from "./OrgLayout";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 // ── Dept Create / Edit Modal ──────────────────────────────────────────────────
 function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) {
@@ -183,6 +184,7 @@ export default function DepartmentList() {
   const [seeding, setSeeding] = useState(false);
   const [toast, setToast] = useState(null);
   const [modal, setModal] = useState(null);
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3500); };
 
@@ -213,11 +215,24 @@ export default function DepartmentList() {
   useEffect(() => { load(); }, [load]);
 
   const toggleStatus = async (d) => {
+    if (d.is_active) { setConfirmTarget(d); return; }
     setActing(d.id);
     try {
-      if (d.is_active) await portalOrgApi.deactivateDept(subdomain, token, d.id);
-      else await portalOrgApi.activateDept(subdomain, token, d.id);
-      showToast(d.is_active ? "Department deactivated." : "Department activated.");
+      await portalOrgApi.activateDept(subdomain, token, d.id);
+      showToast("Department activated.");
+      load();
+    } catch (e) { showToast(e?.response?.data?.detail || "Action failed.", false); }
+    finally { setActing(null); }
+  };
+
+  const confirmDeactivate = async () => {
+    const d = confirmTarget;
+    if (!d) return;
+    setActing(d.id);
+    try {
+      await portalOrgApi.deactivateDept(subdomain, token, d.id);
+      showToast("Department deactivated.");
+      setConfirmTarget(null);
       load();
     } catch (e) { showToast(e?.response?.data?.detail || "Action failed.", false); }
     finally { setActing(null); }
@@ -380,6 +395,10 @@ export default function DepartmentList() {
                     <td><Badge status={d.is_active ? "Active" : "Inactive"} /></td>
                     <td>
                       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                        <button onClick={() => navigate(`/portal/${subdomain}/org/departments/${d.id}`)}
+                          className="t-accent" style={{ fontSize: 12, fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                          View
+                        </button>
                         <button onClick={() => setModal({ editDept: d })} className="t-accent" style={{ fontSize: 12, fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                           Edit
                         </button>
@@ -398,6 +417,17 @@ export default function DepartmentList() {
       </div>
 
       <Pagination page={page} totalPages={Math.ceil(total / PAGE_SIZE)} onPage={setPage} total={total} pageSize={PAGE_SIZE} />
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title="Deactivate Department"
+        message={`Are you sure you want to deactivate "${confirmTarget?.department_name}"? Employees and designations linked to it will remain but the department will be marked inactive.`}
+        confirmLabel="Deactivate"
+        confirmVariant="danger"
+        loading={acting === confirmTarget?.id}
+        onConfirm={confirmDeactivate}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </OrgLayout>
   );
 }

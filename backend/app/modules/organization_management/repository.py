@@ -1,6 +1,7 @@
 """Repository — thin DB access layer for Organization Management (client DB)."""
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import datetime
 from typing import List, Optional, Tuple
@@ -10,6 +11,8 @@ from sqlalchemy.orm import Session
 from backend.app.modules.organization_management.models import (
     OrgBranch, OrgCompany, OrgDepartment, OrgDesignation,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _uuid() -> str:
@@ -156,8 +159,45 @@ def get_branch_employee_count(db: Session, client_id: str, branch_id: str) -> di
             Employee.is_active.is_(True),
         ).scalar() or 0
     except Exception:
+        logger.warning("get_branch_employee_count failed for branch %s", branch_id, exc_info=True)
         total = active = 0
     return {"total_employees": total, "active_employees": active}
+
+
+def get_branch_employee_counts_batch(db: Session, client_id: str, branch_ids: List[str]) -> dict:
+    """Batch version of get_branch_employee_count — one query per metric instead of N."""
+    result = {bid: {"total_employees": 0, "active_employees": 0} for bid in branch_ids}
+    if not branch_ids:
+        return result
+    try:
+        from backend.app.modules.employee_management.models import Employee
+        from sqlalchemy import func as sqlfunc
+        totals = (
+            db.query(Employee.branch_id, sqlfunc.count(Employee.id))
+            .filter(
+                Employee.client_id == client_id,
+                Employee.branch_id.in_(branch_ids),
+                Employee.is_deleted.is_(False),
+            )
+            .group_by(Employee.branch_id).all()
+        )
+        actives = (
+            db.query(Employee.branch_id, sqlfunc.count(Employee.id))
+            .filter(
+                Employee.client_id == client_id,
+                Employee.branch_id.in_(branch_ids),
+                Employee.is_deleted.is_(False),
+                Employee.is_active.is_(True),
+            )
+            .group_by(Employee.branch_id).all()
+        )
+        for bid, cnt in totals:
+            result.setdefault(bid, {"total_employees": 0, "active_employees": 0})["total_employees"] = cnt
+        for bid, cnt in actives:
+            result.setdefault(bid, {"total_employees": 0, "active_employees": 0})["active_employees"] = cnt
+    except Exception:
+        logger.warning("get_branch_employee_counts_batch failed", exc_info=True)
+    return result
 
 
 # ── Departments ────────────────────────────────────────────────────────────────
@@ -261,6 +301,7 @@ def get_dept_stats(db: Session, client_id: str, dept_id: str) -> dict:
             Employee.is_active.is_(True),
         ).scalar() or 0
     except Exception:
+        logger.warning("get_dept_stats failed for department %s", dept_id, exc_info=True)
         total_emp = active_emp = 0
     desig_count = db.query(OrgDesignation).filter(
         OrgDesignation.client_id == client_id,
@@ -272,6 +313,72 @@ def get_dept_stats(db: Session, client_id: str, dept_id: str) -> dict:
         "active_employees": active_emp,
         "designations_count": desig_count,
     }
+
+
+def get_dept_stats_batch(db: Session, client_id: str, dept_ids: List[str]) -> dict:
+    """Batch version of get_dept_stats — avoids N+1 across a department list."""
+    result = {did: {"total_employees": 0, "active_employees": 0, "designations_count": 0} for did in dept_ids}
+    if not dept_ids:
+        return result
+    try:
+        from backend.app.modules.employee_management.models import Employee
+        from sqlalchemy import func as sqlfunc
+        totals = (
+            db.query(Employee.department_id, sqlfunc.count(Employee.id))
+            .filter(
+                Employee.client_id == client_id,
+                Employee.department_id.in_(dept_ids),
+                Employee.is_deleted.is_(False),
+            )
+            .group_by(Employee.department_id).all()
+        )
+        actives = (
+            db.query(Employee.department_id, sqlfunc.count(Employee.id))
+            .filter(
+                Employee.client_id == client_id,
+                Employee.department_id.in_(dept_ids),
+                Employee.is_deleted.is_(False),
+                Employee.is_active.is_(True),
+            )
+            .group_by(Employee.department_id).all()
+        )
+        for did, cnt in totals:
+            result.setdefault(did, {"total_employees": 0, "active_employees": 0, "designations_count": 0})["total_employees"] = cnt
+        for did, cnt in actives:
+            result.setdefault(did, {"total_employees": 0, "active_employees": 0, "designations_count": 0})["active_employees"] = cnt
+    except Exception:
+        logger.warning("get_dept_stats_batch employee counts failed", exc_info=True)
+    from sqlalchemy import func as sqlfunc
+    desig_counts = (
+        db.query(OrgDesignation.department_id, sqlfunc.count(OrgDesignation.id))
+        .filter(
+            OrgDesignation.client_id == client_id,
+            OrgDesignation.department_id.in_(dept_ids),
+            OrgDesignation.is_deleted.is_(False),
+        )
+        .group_by(OrgDesignation.department_id).all()
+    )
+    for did, cnt in desig_counts:
+        result.setdefault(did, {"total_employees": 0, "active_employees": 0, "designations_count": 0})["designations_count"] = cnt
+    return result
+
+
+def get_heads_batch(db: Session, client_id: str, employee_ids: List[str]) -> dict:
+    """Batch-fetch multiple Employee rows for department heads (id -> Employee)."""
+    ids = [e for e in employee_ids if e]
+    if not ids:
+        return {}
+    try:
+        from backend.app.modules.employee_management.models import Employee
+        rows = db.query(Employee).filter(
+            Employee.id.in_(ids),
+            Employee.client_id == client_id,
+            Employee.is_deleted.is_(False),
+        ).all()
+        return {r.id: r for r in rows}
+    except Exception:
+        logger.warning("get_heads_batch failed", exc_info=True)
+        return {}
 
 
 def get_head_employee(db: Session, client_id: str, employee_id: str):
@@ -467,8 +574,58 @@ def get_desig_stats(db: Session, client_id: str, desig_id: str) -> dict:
             Employee.is_active.is_(True),
         ).scalar() or 0
     except Exception:
+        logger.warning("get_desig_stats failed for designation %s", desig_id, exc_info=True)
         total = active = 0
     return {"total_employees": total, "active_employees": active}
+
+
+def get_desig_stats_batch(db: Session, client_id: str, desig_ids: List[str]) -> dict:
+    """Batch version of get_desig_stats — avoids N+1 across a designation list."""
+    result = {did: {"total_employees": 0, "active_employees": 0} for did in desig_ids}
+    if not desig_ids:
+        return result
+    try:
+        from backend.app.modules.employee_management.models import Employee
+        from sqlalchemy import func as sqlfunc
+        totals = (
+            db.query(Employee.designation_id, sqlfunc.count(Employee.id))
+            .filter(
+                Employee.client_id == client_id,
+                Employee.designation_id.in_(desig_ids),
+                Employee.is_deleted.is_(False),
+            )
+            .group_by(Employee.designation_id).all()
+        )
+        actives = (
+            db.query(Employee.designation_id, sqlfunc.count(Employee.id))
+            .filter(
+                Employee.client_id == client_id,
+                Employee.designation_id.in_(desig_ids),
+                Employee.is_deleted.is_(False),
+                Employee.is_active.is_(True),
+            )
+            .group_by(Employee.designation_id).all()
+        )
+        for did, cnt in totals:
+            result.setdefault(did, {"total_employees": 0, "active_employees": 0})["total_employees"] = cnt
+        for did, cnt in actives:
+            result.setdefault(did, {"total_employees": 0, "active_employees": 0})["active_employees"] = cnt
+    except Exception:
+        logger.warning("get_desig_stats_batch failed", exc_info=True)
+    return result
+
+
+def get_departments_batch(db: Session, client_id: str, dept_ids: List[str]) -> dict:
+    """Batch-fetch multiple departments by id (id -> OrgDepartment)."""
+    ids = [d for d in dept_ids if d]
+    if not ids:
+        return {}
+    rows = db.query(OrgDepartment).filter(
+        OrgDepartment.client_id == client_id,
+        OrgDepartment.id.in_(ids),
+        OrgDepartment.is_deleted.is_(False),
+    ).all()
+    return {r.id: r for r in rows}
 
 
 def list_desig_employees(

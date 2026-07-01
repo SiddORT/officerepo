@@ -8,6 +8,7 @@ import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
 import PhoneInput from "../../../components/ui/PhoneInput";
 import usePincodeLookup from "../../../hooks/usePincodeLookup";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 function genBranchCode(name) {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -190,6 +191,7 @@ export default function BranchList() {
   const [toast, setToast] = useState(null);
   const [modal, setModal] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
@@ -217,15 +219,24 @@ export default function BranchList() {
   useEffect(() => { load(); }, [load]);
 
   const handleToggle = async (b) => {
+    if (b.is_active) { setConfirmTarget(b); return; }
     setActionLoading(b.id);
     try {
-      if (b.is_active) {
-        await portalOrgApi.deactivateBranch(subdomain, token, b.id);
-        showToast("Branch deactivated.");
-      } else {
-        await portalOrgApi.activateBranch(subdomain, token, b.id);
-        showToast("Branch activated.");
-      }
+      await portalOrgApi.activateBranch(subdomain, token, b.id);
+      showToast("Branch activated.");
+      load();
+    } catch (e) { showToast(e?.response?.data?.detail || "Action failed.", false); }
+    finally { setActionLoading(null); }
+  };
+
+  const confirmDeactivate = async () => {
+    const b = confirmTarget;
+    if (!b) return;
+    setActionLoading(b.id);
+    try {
+      await portalOrgApi.deactivateBranch(subdomain, token, b.id);
+      showToast("Branch deactivated.");
+      setConfirmTarget(null);
       load();
     } catch (e) { showToast(e?.response?.data?.detail || "Action failed.", false); }
     finally { setActionLoading(null); }
@@ -394,6 +405,17 @@ export default function BranchList() {
       </div>
 
       <Pagination page={page} totalPages={Math.ceil(total / PAGE_SIZE)} onPage={setPage} total={total} pageSize={PAGE_SIZE} />
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title="Deactivate Branch"
+        message={`Are you sure you want to deactivate "${confirmTarget?.branch_name}"? Employees assigned to it will remain but the branch will be marked inactive.`}
+        confirmLabel="Deactivate"
+        confirmVariant="danger"
+        loading={actionLoading === confirmTarget?.id}
+        onConfirm={confirmDeactivate}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </OrgLayout>
   );
 }

@@ -6,6 +6,7 @@ import OrgLayout from "./OrgLayout";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 // ── Level badge ───────────────────────────────────────────────────────────────
 const LEVEL_LABELS = { 1:"Executive",2:"Director",3:"Head of Dept",4:"Manager",5:"Team Lead",6:"Senior",7:"Employee" };
@@ -183,6 +184,7 @@ export default function DesignationList() {
   const [seeding, setSeeding] = useState(false);
   const [toast, setToast] = useState(null);
   const [modal, setModal] = useState(null);
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
@@ -222,11 +224,24 @@ export default function DesignationList() {
   useEffect(() => { load(); }, [load]);
 
   const toggleStatus = async (d) => {
+    if (d.is_active) { setConfirmTarget(d); return; }
     setActing(d.id);
     try {
-      if (d.is_active) await portalOrgApi.deactivateDesig(subdomain, token, d.id);
-      else await portalOrgApi.activateDesig(subdomain, token, d.id);
-      showToast(d.is_active ? "Designation deactivated." : "Designation activated.");
+      await portalOrgApi.activateDesig(subdomain, token, d.id);
+      showToast("Designation activated.");
+      load();
+    } catch (e) { showToast(e?.response?.data?.detail || "Action failed.", false); }
+    finally { setActing(null); }
+  };
+
+  const confirmDeactivate = async () => {
+    const d = confirmTarget;
+    if (!d) return;
+    setActing(d.id);
+    try {
+      await portalOrgApi.deactivateDesig(subdomain, token, d.id);
+      showToast("Designation deactivated.");
+      setConfirmTarget(null);
       load();
     } catch (e) { showToast(e?.response?.data?.detail || "Action failed.", false); }
     finally { setActing(null); }
@@ -372,6 +387,10 @@ export default function DesignationList() {
                     <td><Badge status={d.is_active ? "Active" : "Inactive"} /></td>
                     <td>
                       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                        <button onClick={() => navigate(`/portal/${subdomain}/org/designations/${d.id}`)}
+                          className="t-accent" style={{ fontSize: 12, fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                          View
+                        </button>
                         <button onClick={() => setModal({ editDesig: d })}
                           className="t-accent" style={{ fontSize: 12, fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                           Edit
@@ -391,6 +410,17 @@ export default function DesignationList() {
       </div>
 
       <Pagination page={page} totalPages={Math.ceil(total / PAGE_SIZE)} onPage={setPage} total={total} pageSize={PAGE_SIZE} />
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title="Deactivate Designation"
+        message={`Are you sure you want to deactivate "${confirmTarget?.designation_name}"? Employees assigned to it will remain but the designation will be marked inactive.`}
+        confirmLabel="Deactivate"
+        confirmVariant="danger"
+        loading={acting === confirmTarget?.id}
+        onConfirm={confirmDeactivate}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </OrgLayout>
   );
 }

@@ -50,6 +50,30 @@ def _company_dict(co) -> Dict[str, Any]:
         "state": co.state, "country": co.country, "postal_code": co.postal_code,
         "industry": co.industry,
         "logo_url": co.logo_url,
+        "company_type": getattr(co, "company_type", None),
+        "date_of_incorporation": getattr(co, "date_of_incorporation", None),
+        "company_description": getattr(co, "company_description", None),
+        "status": getattr(co, "status", None),
+        "cin_number": getattr(co, "cin_number", None),
+        "pan_number": getattr(co, "pan_number", None),
+        "tan_number": getattr(co, "tan_number", None),
+        "msme_registered": getattr(co, "msme_registered", None),
+        "msme_number": getattr(co, "msme_number", None),
+        "gst_registered": getattr(co, "gst_registered", None),
+        "gst_registration_date": getattr(co, "gst_registration_date", None),
+        "tax_identification_number": getattr(co, "tax_identification_number", None),
+        "primary_contact_person": getattr(co, "primary_contact_person", None),
+        "support_email": getattr(co, "support_email", None),
+        "hr_email": getattr(co, "hr_email", None),
+        "accounts_email": getattr(co, "accounts_email", None),
+        "office_same": getattr(co, "office_same", None),
+        "off_address_line_1": getattr(co, "off_address_line_1", None),
+        "off_address_line_2": getattr(co, "off_address_line_2", None),
+        "off_city": getattr(co, "off_city", None),
+        "off_district": getattr(co, "off_district", None),
+        "off_state": getattr(co, "off_state", None),
+        "off_country": getattr(co, "off_country", None),
+        "off_postal_code": getattr(co, "off_postal_code", None),
         "is_active": co.is_active, "created_at": co.created_at, "updated_at": co.updated_at,
     }
 
@@ -206,9 +230,10 @@ def _branch_company_names(client_db: Session, rows) -> Dict[str, str]:
 def list_branches(client_db: Session, client_id: str, **kwargs) -> Dict:
     rows, total = repo.list_branches(client_db, client_id, **kwargs)
     company_map = _branch_company_names(client_db, rows)
+    counts_map = repo.get_branch_employee_counts_batch(client_db, client_id, [b.id for b in rows])
     result = []
     for b in rows:
-        counts = repo.get_branch_employee_count(client_db, client_id, b.id)
+        counts = counts_map.get(b.id, {"total_employees": 0, "active_employees": 0})
         result.append(_branch_dict(b, company_name=company_map.get(b.company_id), **counts))
     return {"data": result, "total": total,
             "page": kwargs.get("page", 1), "page_size": kwargs.get("page_size", 50)}
@@ -295,12 +320,12 @@ def _check_no_cycle(client_db: Session, client_id: str, dept_id: str, new_parent
 
 def list_departments(client_db: Session, client_id: str, **kwargs) -> Dict:
     rows, total = repo.list_departments(client_db, client_id, **kwargs)
-    stats_map: dict = {}
-    for d in rows:
-        stats_map[d.id] = repo.get_dept_stats(client_db, client_id, d.id)
+    stats_map = repo.get_dept_stats_batch(client_db, client_id, [d.id for d in rows])
+    head_ids = [getattr(d, "head_employee_id", None) for d in rows]
+    heads_map = repo.get_heads_batch(client_db, client_id, head_ids)
     result = []
     for d in rows:
-        head = _resolve_head(client_db, client_id, d)
+        head = heads_map.get(getattr(d, "head_employee_id", None))
         item = _dept_dict(d, head_emp=head)
         item.update(stats_map.get(d.id, {}))
         result.append(item)
@@ -401,6 +426,8 @@ def create_department(
         head_emp = repo.get_head_employee(client_db, client_id, payload.head_employee_id)
         if not head_emp:
             raise HTTPException(404, "Head employee not found.")
+        if getattr(head_emp, "company_id", None) and head_emp.company_id != payload.company_id:
+            raise HTTPException(400, "Head employee must belong to the same company as the department.")
     data = payload.model_dump()
     d = repo.create_department(client_db, client_id, data)
     _log(client_db, client_id, c.ACTION_DEPT_CREATED, actor_id, ip,
@@ -433,6 +460,8 @@ def update_department(
         head_emp = repo.get_head_employee(client_db, client_id, data["head_employee_id"])
         if not head_emp:
             raise HTTPException(404, "Head employee not found.")
+        if getattr(head_emp, "company_id", None) and head_emp.company_id != d.company_id:
+            raise HTTPException(400, "Head employee must belong to the same company as the department.")
     repo.update_department(client_db, d, data)
     _log(client_db, client_id, c.ACTION_DEPT_UPDATED, actor_id, ip,
          {"department_name": d.department_name})
@@ -481,14 +510,8 @@ def seed_departments(
 
 def list_designations(client_db: Session, client_id: str, **kwargs) -> Dict:
     rows, total = repo.list_designations(client_db, client_id, **kwargs)
-    # Batch-fetch employee counts for all returned designations
-    emp_counts: Dict[str, int] = {}
-    try:
-        for r in rows:
-            stats = repo.get_desig_stats(client_db, client_id, r.id)
-            emp_counts[r.id] = stats.get("total_employees", 0)
-    except Exception:
-        pass
+    stats_map = repo.get_desig_stats_batch(client_db, client_id, [r.id for r in rows])
+    emp_counts = {rid: s.get("total_employees", 0) for rid, s in stats_map.items()}
     return {"data": [_desig_dict(r, emp_counts.get(r.id, 0)) for r in rows], "total": total,
             "page": kwargs.get("page", 1), "page_size": kwargs.get("page_size", 200)}
 
@@ -510,17 +533,13 @@ def get_desig_employees(
         raise HTTPException(404, "Designation not found.")
     rows, total = repo.list_desig_employees(client_db, client_id, desig_id,
                                             page=page, page_size=page_size)
+    dept_map = repo.get_departments_batch(
+        client_db, client_id, [emp.department_id for emp in rows if emp.department_id]
+    )
     data = []
     for emp in rows:
-        # Resolve department name if available
-        dept_name = None
-        try:
-            if emp.department_id:
-                dept = repo.get_department(client_db, client_id, emp.department_id)
-                if dept:
-                    dept_name = dept.department_name
-        except Exception:
-            pass
+        dept = dept_map.get(emp.department_id) if emp.department_id else None
+        dept_name = dept.department_name if dept else None
         data.append({
             "id": emp.id,
             "employee_code": emp.employee_code,

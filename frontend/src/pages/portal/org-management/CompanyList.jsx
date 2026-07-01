@@ -6,6 +6,7 @@ import OrgLayout from "./OrgLayout";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
+import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
 const PAGE_SIZE = 20;
 
@@ -22,6 +23,7 @@ export default function CompanyList() {
   const [error, setError] = useState("");
   const [acting, setActing] = useState(null);
   const [toast, setToast] = useState(null);
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
@@ -42,11 +44,24 @@ export default function CompanyList() {
   useEffect(() => { load(); }, [load]);
 
   const toggleStatus = async (co) => {
+    if (co.is_active) { setConfirmTarget(co); return; }
     setActing(co.id);
     try {
-      if (co.is_active) await portalOrgApi.deactivateCompany(subdomain, token, co.id);
-      else await portalOrgApi.activateCompany(subdomain, token, co.id);
-      showToast(co.is_active ? "Company deactivated." : "Company activated.");
+      await portalOrgApi.activateCompany(subdomain, token, co.id);
+      showToast("Company activated.");
+      load();
+    } catch (e) { showToast(e?.response?.data?.detail || "Action failed.", false); }
+    finally { setActing(null); }
+  };
+
+  const confirmDeactivate = async () => {
+    const co = confirmTarget;
+    if (!co) return;
+    setActing(co.id);
+    try {
+      await portalOrgApi.deactivateCompany(subdomain, token, co.id);
+      showToast("Company deactivated.");
+      setConfirmTarget(null);
       load();
     } catch (e) { showToast(e?.response?.data?.detail || "Action failed.", false); }
     finally { setActing(null); }
@@ -155,6 +170,17 @@ export default function CompanyList() {
 
       {/* Pagination */}
       <Pagination page={page} totalPages={totalPages} onPage={setPage} total={total} pageSize={PAGE_SIZE} />
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title="Deactivate Company"
+        message={`Are you sure you want to deactivate "${confirmTarget?.company_name}"? This may affect linked departments, designations and branches.`}
+        confirmLabel="Deactivate"
+        confirmVariant="danger"
+        loading={acting === confirmTarget?.id}
+        onConfirm={confirmDeactivate}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </OrgLayout>
   );
 }

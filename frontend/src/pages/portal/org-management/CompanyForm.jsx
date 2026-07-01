@@ -155,7 +155,11 @@ export default function CompanyForm({ editMode }) {
       .then(r => {
         const d = r.data.data;
         setForm(Object.fromEntries(Object.keys(API_EMPTY).map(k => [k, d[k] ?? (k === "phone_country_code" ? "+91" : "")])));
-        setExtra(ex => ({ ...ex, status: d.status || "Active" }));
+        setExtra(ex => Object.fromEntries(Object.keys(EXTRA_EMPTY).map(k => {
+          if (d[k] === undefined || d[k] === null) return [k, EXTRA_EMPTY[k]];
+          if (typeof EXTRA_EMPTY[k] === "boolean") return [k, !!d[k]];
+          return [k, String(d[k])];
+        })));
       })
       .catch(() => setError("Failed to load company."))
       .finally(() => setLoading(false));
@@ -222,6 +226,11 @@ export default function CompanyForm({ editMode }) {
       Object.entries(form).map(([k, v]) => [k, v === "" ? null : trimStr(v)])
     );
     payload.company_code = (payload.company_code || "").toUpperCase();
+    Object.entries(extra).forEach(([k, v]) => {
+      if (typeof v === "boolean") { payload[k] = v; return; }
+      payload[k] = v === "" ? null : trimStr(v);
+    });
+    if (payload.pan_number) payload.pan_number = payload.pan_number.toUpperCase();
     try {
       if (editMode) await portalOrgApi.updateCompany(subdomain, token, companyId, payload);
       else          await portalOrgApi.createCompany(subdomain, token, payload);

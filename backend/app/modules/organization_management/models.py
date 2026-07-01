@@ -58,6 +58,38 @@ class OrgCompany(ClientBase):
     # Branding
     logo_url            = Column(String(500), nullable=True)
 
+    # Classification / lifecycle
+    company_type        = Column(String(60),  nullable=True)   # Private Limited / LLP / …
+    date_of_incorporation = Column(Date, nullable=True)
+    company_description = Column(Text, nullable=True)
+    status              = Column(String(20),  nullable=False, default="Active")  # Draft/Active/Inactive/Suspended/Closed
+
+    # Compliance
+    cin_number          = Column(String(30),  nullable=True)
+    pan_number          = Column(String(20),  nullable=True)
+    tan_number          = Column(String(20),  nullable=True)
+    msme_registered     = Column(Boolean, nullable=False, default=False)
+    msme_number         = Column(String(30),  nullable=True)
+    gst_registered      = Column(Boolean, nullable=False, default=False)
+    gst_registration_date = Column(Date, nullable=True)
+    tax_identification_number = Column(String(50), nullable=True)
+
+    # Additional contacts
+    primary_contact_person = Column(String(200), nullable=True)
+    support_email       = Column(String(254), nullable=True)
+    hr_email            = Column(String(254), nullable=True)
+    accounts_email      = Column(String(254), nullable=True)
+
+    # Office (operating) address — distinct from registered address above
+    office_same         = Column(Boolean, nullable=False, default=True)
+    off_address_line_1  = Column(String(255), nullable=True)
+    off_address_line_2  = Column(String(255), nullable=True)
+    off_city            = Column(String(100), nullable=True)
+    off_district        = Column(String(50),  nullable=True)
+    off_state           = Column(String(100), nullable=True)
+    off_country         = Column(String(100), nullable=True)
+    off_postal_code     = Column(String(20),  nullable=True)
+
     is_active           = Column(Boolean, nullable=False, default=True)
     is_deleted          = Column(Boolean, nullable=False, default=False)
     deleted_at          = Column(DateTime, nullable=True)
