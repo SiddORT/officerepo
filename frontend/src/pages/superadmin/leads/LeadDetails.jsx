@@ -833,6 +833,7 @@ function NotesTab({ leadId }) {
   const [items, loading, reload] = useList(() => leadsApi.notes(leadId), [leadId]);
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const submit = async () => {
     if (!note.trim()) return;
@@ -843,8 +844,12 @@ function NotesTab({ leadId }) {
   const [confirmNote, setConfirmNote] = useState({ open: false, id: null });
   const remove = (n) => setConfirmNote({ open: true, id: n.id });
   const confirmRemove = async () => {
-    await leadsApi.deleteNote(leadId, confirmNote.id);
-    setConfirmNote({ open: false, id: null }); reload();
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      await leadsApi.deleteNote(leadId, confirmNote.id);
+      setConfirmNote({ open: false, id: null }); reload();
+    } finally { setDeleting(false); }
   };
 
   return (
@@ -862,7 +867,7 @@ function NotesTab({ leadId }) {
                 <p className="text-sm t-body whitespace-pre-wrap break-words">{n.note}</p>
                 <p className="text-xs t-muted mt-1">{formatDateTime(n.created_at)}</p>
               </div>
-              <DeleteIconBtn onClick={() => remove(n)} title="Delete note" />
+              <DeleteIconBtn onClick={() => remove(n)} title="Delete note" disabled={deleting} />
             </li>
           ))}
         </ul>
@@ -874,6 +879,7 @@ function NotesTab({ leadId }) {
         confirmLabel="Delete"
         onConfirm={confirmRemove}
         onCancel={() => setConfirmNote({ open: false, id: null })}
+        loading={deleting}
       />
     </TabShell>
   );
@@ -892,6 +898,7 @@ function DocumentsTab({ leadId, options }) {
   const [replaceSaving, setReplaceSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteErr, setDeleteErr] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const docTypeMaster = options?.document_type_master || [];
 
@@ -928,11 +935,14 @@ function DocumentsTab({ leadId, options }) {
   const confirmDelete = (d) => { setDeleteTarget(d); setDeleteErr(""); };
 
   const doDelete = async () => {
+    if (deleting || !deleteTarget) return;
+    setDeleting(true);
     try {
       await leadsApi.deleteDocument(leadId, deleteTarget.id);
       setDeleteTarget(null);
       reload();
     } catch (e) { setDeleteErr(e.response?.data?.detail || "Delete failed."); }
+    finally { setDeleting(false); }
   };
 
   return (
@@ -975,7 +985,7 @@ function DocumentsTab({ leadId, options }) {
               <div className="flex items-center gap-3 flex-shrink-0">
                 {d.has_file && <button onClick={() => download(d)} className="text-xs t-muted hover:text-[var(--c-accent)]">Download</button>}
                 <button onClick={() => openReplace(d)} className="text-xs t-muted hover:text-[var(--c-accent)]">Replace</button>
-                <button onClick={() => confirmDelete(d)} className="text-xs text-red-400 hover:text-red-300">Delete</button>
+                <button onClick={() => confirmDelete(d)} disabled={deleting} className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed">Delete</button>
               </div>
             </li>
           ))}
@@ -1011,8 +1021,10 @@ function DocumentsTab({ leadId, options }) {
             </p>
             {deleteErr && <p className="text-xs text-red-400 mb-3">{deleteErr}</p>}
             <div className="flex justify-end gap-2">
-              <button onClick={() => setDeleteTarget(null)} className="btn-ghost text-sm">Cancel</button>
-              <button onClick={doDelete} className="text-sm px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium">Delete</button>
+              <button onClick={() => setDeleteTarget(null)} disabled={deleting} className="btn-ghost text-sm disabled:opacity-50">Cancel</button>
+              <button onClick={doDelete} disabled={deleting} className="text-sm px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                {deleting ? "Deleting…" : "Delete"}
+              </button>
             </div>
           </div>
         </div>
