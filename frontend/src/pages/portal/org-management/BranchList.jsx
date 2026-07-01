@@ -26,8 +26,8 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
     branch_name:       editBranch?.branch_name         || "",
     branch_type:       editBranch?.branch_type         || "",
     postal_code:       editBranch?.postal_code         || "",
-    address_line1:     editBranch?.address_line1       || "",
-    address_line2:     editBranch?.address_line2       || "",
+    address_line1:     editBranch?.address_line_1      || "",
+    address_line2:     editBranch?.address_line_2      || "",
     city:              editBranch?.city                || "",
     district:          editBranch?.district            || "",
     state:             editBranch?.state               || "",
@@ -65,7 +65,8 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
     if (!form.company_id) { setError("Please select a company."); return; }
     setSaving(true); setError("");
     try {
-      const payload = { ...form };
+      const { address_line1, address_line2, ...rest } = form;
+      const payload = { ...rest, address_line_1: address_line1, address_line_2: address_line2 };
       Object.keys(payload).forEach(k => { if (payload[k] === "") payload[k] = null; });
       payload.branch_name = form.branch_name;
       payload.company_id = form.company_id;
@@ -352,11 +353,11 @@ export default function BranchList() {
                             </div>
                             <div>
                               <div className="portal-form-label" style={{ marginBottom: 3 }}>Address Line 1</div>
-                              <div style={{ fontSize: 13, color: b.address_line1 ? "var(--c-text)" : "var(--c-muted)", opacity: b.address_line1 ? 1 : 0.5 }}>{b.address_line1 || "—"}</div>
+                              <div style={{ fontSize: 13, color: b.address_line_1 ? "var(--c-text)" : "var(--c-muted)", opacity: b.address_line_1 ? 1 : 0.5 }}>{b.address_line_1 || "—"}</div>
                             </div>
                             <div>
                               <div className="portal-form-label" style={{ marginBottom: 3 }}>Address Line 2</div>
-                              <div style={{ fontSize: 13, color: b.address_line2 ? "var(--c-text)" : "var(--c-muted)", opacity: b.address_line2 ? 1 : 0.5 }}>{b.address_line2 || "—"}</div>
+                              <div style={{ fontSize: 13, color: b.address_line_2 ? "var(--c-text)" : "var(--c-muted)", opacity: b.address_line_2 ? 1 : 0.5 }}>{b.address_line_2 || "—"}</div>
                             </div>
                             <div>
                               <div className="portal-form-label" style={{ marginBottom: 3 }}>City</div>
