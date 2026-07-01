@@ -499,6 +499,7 @@ function SpokespersonsTab({ leadId }) {
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const openCreate = () => { setEditing(null); setForm(EMPTY_FORM); setErrors({}); setErr(""); setOpen(true); };
   const openEdit = (s) => {
@@ -543,8 +544,12 @@ function SpokespersonsTab({ leadId }) {
   const [confirmSpk, setConfirmSpk] = useState({ open: false, id: null });
   const remove = (sid) => setConfirmSpk({ open: true, id: sid });
   const confirmRemove = async () => {
-    await leadsApi.deleteSpokesperson(leadId, confirmSpk.id);
-    setConfirmSpk({ open: false, id: null }); reload();
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      await leadsApi.deleteSpokesperson(leadId, confirmSpk.id);
+      setConfirmSpk({ open: false, id: null }); reload();
+    } finally { setDeleting(false); }
   };
 
   const setField = (k, v) => {
@@ -573,7 +578,7 @@ function SpokespersonsTab({ leadId }) {
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <EditIconBtn onClick={() => openEdit(s)} title="Edit spokesperson" />
-                <DeleteIconBtn onClick={() => remove(s.id)} title="Delete spokesperson" />
+                <DeleteIconBtn onClick={() => remove(s.id)} title="Delete spokesperson" disabled={deleting} />
               </div>
             </li>
           ))}
@@ -586,6 +591,7 @@ function SpokespersonsTab({ leadId }) {
         confirmLabel="Delete"
         onConfirm={confirmRemove}
         onCancel={() => setConfirmSpk({ open: false, id: null })}
+        loading={deleting}
       />
       <Modal open={open} onClose={() => setOpen(false)} title={editing ? "Edit Spokesperson" : "Add Spokesperson"} size="md"
         footer={<><button className="btn-secondary" onClick={() => setOpen(false)}>Cancel</button><button className="btn-primary" disabled={saving} onClick={submit}>{saving ? "Saving..." : "Save"}</button></>}>
@@ -618,6 +624,7 @@ function ActivitiesTab({ leadId, options, onMutate }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const submit = async () => {
     if (!form.activity_type) { setErr("Activity type is required."); return; }
@@ -638,8 +645,12 @@ function ActivitiesTab({ leadId, options, onMutate }) {
   const [confirmAct, setConfirmAct] = useState({ open: false, id: null });
   const remove = (aid) => setConfirmAct({ open: true, id: aid });
   const confirmRemove = async () => {
-    await leadsApi.deleteActivity(leadId, confirmAct.id);
-    setConfirmAct({ open: false, id: null }); reload();
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      await leadsApi.deleteActivity(leadId, confirmAct.id);
+      setConfirmAct({ open: false, id: null }); reload();
+    } finally { setDeleting(false); }
   };
 
   return (
@@ -657,7 +668,7 @@ function ActivitiesTab({ leadId, options, onMutate }) {
                   </p>
                 )}
               </div>
-              <DeleteIconBtn onClick={() => remove(a.id)} title="Delete activity" />
+              <DeleteIconBtn onClick={() => remove(a.id)} title="Delete activity" disabled={deleting} />
             </li>
           ))}
         </ul>
@@ -669,6 +680,7 @@ function ActivitiesTab({ leadId, options, onMutate }) {
         confirmLabel="Delete"
         onConfirm={confirmRemove}
         onCancel={() => setConfirmAct({ open: false, id: null })}
+        loading={deleting}
       />
       <Modal open={open} onClose={() => setOpen(false)} title="Log Activity" size="md"
         footer={<><button className="btn-secondary" onClick={() => setOpen(false)}>Cancel</button><button className="btn-primary" disabled={saving} onClick={submit}>{saving ? "Saving..." : "Save"}</button></>}>
@@ -758,6 +770,7 @@ function FollowupsTab({ leadId, options }) {
   const [form, setForm] = useState({ followup_date: "", followup_type: "", priority: "Medium", remarks: "" });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const submit = async () => {
     if (!form.followup_date) { setErr("Follow-up date is required."); return; }
@@ -778,8 +791,12 @@ function FollowupsTab({ leadId, options }) {
   const complete = async (f) => { await leadsApi.updateFollowup(leadId, f.id, { status: "Completed" }); reload(); };
   const remove = (f) => setConfirmFup({ open: true, id: f.id });
   const confirmRemove = async () => {
-    await leadsApi.deleteFollowup(leadId, confirmFup.id);
-    setConfirmFup({ open: false, id: null }); reload();
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      await leadsApi.deleteFollowup(leadId, confirmFup.id);
+      setConfirmFup({ open: false, id: null }); reload();
+    } finally { setDeleting(false); }
   };
 
   const statusColor = (s) => s === "Completed" ? "#10b981" : s === "Overdue" ? "#ef4444" : "#f59e0b";
@@ -800,7 +817,7 @@ function FollowupsTab({ leadId, options }) {
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 {f.status !== "Completed" && <button onClick={() => complete(f)} className="text-xs t-accent hover:underline">Complete</button>}
-                <DeleteIconBtn onClick={() => remove(f)} title="Delete follow-up" />
+                <DeleteIconBtn onClick={() => remove(f)} title="Delete follow-up" disabled={deleting} />
               </div>
             </li>
           ))}
@@ -813,6 +830,7 @@ function FollowupsTab({ leadId, options }) {
         confirmLabel="Delete"
         onConfirm={confirmRemove}
         onCancel={() => setConfirmFup({ open: false, id: null })}
+        loading={deleting}
       />
       <Modal open={open} onClose={() => setOpen(false)} title="Add Follow-up" size="md"
         footer={<><button className="btn-secondary" onClick={() => setOpen(false)}>Cancel</button><button className="btn-primary" disabled={saving} onClick={submit}>{saving ? "Saving..." : "Save"}</button></>}>
