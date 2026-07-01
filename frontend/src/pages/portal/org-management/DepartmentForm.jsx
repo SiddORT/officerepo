@@ -5,6 +5,13 @@ import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
 import PageHeader from "../shared/PageHeader";
 
+function genDeptCode(name) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "";
+  if (words.length === 1) return words[0].slice(0, 4).toUpperCase();
+  return words.map(w => w[0].toUpperCase()).join("");
+}
+
 export default function DepartmentForm({ editMode }) {
   const { subdomain, deptId } = useParams();
   const [searchParams] = useSearchParams();
@@ -21,6 +28,7 @@ export default function DepartmentForm({ editMode }) {
   const [loading, setLoading] = useState(editMode);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [autoCode, setAutoCode] = useState(!editMode);
 
   useEffect(() => {
     portalOrgApi.listCompanies(subdomain, token, { page_size: 200 })
@@ -102,14 +110,35 @@ export default function DepartmentForm({ editMode }) {
 
           <div className="portal-form-row">
             <div>
-              <label className="portal-form-label">Code *</label>
-              <input value={form.department_code} onChange={e => set("department_code", e.target.value.toUpperCase())}
-                placeholder="e.g. HR" className="input-field" style={{ fontFamily: "monospace" }} />
+              <label className="portal-form-label">
+                Code *
+                {autoCode && !editMode && (
+                  <span style={{ fontSize: 10, color: "var(--c-accent)", marginLeft: 6, fontWeight: 400 }}>auto</span>
+                )}
+              </label>
+              <input
+                value={form.department_code}
+                onChange={e => {
+                  setAutoCode(false);
+                  set("department_code", e.target.value.toUpperCase());
+                }}
+                placeholder="e.g. HR" className="input-field" style={{ fontFamily: "monospace" }}
+              />
             </div>
             <div>
               <label className="portal-form-label">Department Name *</label>
-              <input value={form.department_name} onChange={e => set("department_name", e.target.value)}
-                placeholder="Human Resources" className="input-field" />
+              <input
+                value={form.department_name}
+                onChange={e => {
+                  const name = e.target.value;
+                  setForm(f => ({
+                    ...f,
+                    department_name: name,
+                    department_code: autoCode ? genDeptCode(name) : f.department_code,
+                  }));
+                }}
+                placeholder="Human Resources" className="input-field"
+              />
             </div>
           </div>
 
