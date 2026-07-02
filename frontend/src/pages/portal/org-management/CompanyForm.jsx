@@ -19,6 +19,9 @@ const isValidUrl   = v => !v || /^https?:\/\/.+/.test(v.trim());
 const isValidPhone = v => !v || /^[+\d\s\-().]{7,20}$/.test(v.trim());
 const isValidPAN   = v => !v || /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(v.trim().toUpperCase());
 const isValidGST   = v => !v || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(v.trim().toUpperCase());
+const isValidCIN   = v => !v || /^[LUlu][0-9]{5}[A-Za-z]{2}[0-9]{4}[A-Za-z]{3}[0-9]{6}$/.test(v.trim().toUpperCase());
+const isValidTAN   = v => !v || /^[A-Z]{4}[0-9]{5}[A-Z]$/.test(v.trim().toUpperCase());
+const isValidMSME  = v => !v || /^UDYAM-[A-Z]{2}-[0-9]{2}-[0-9]{7}$/.test(v.trim().toUpperCase());
 const trimStr      = v => typeof v === "string" ? v.replace(/\s+/g, " ").trim() : v;
 
 // Auto-generate a company code from the company name
@@ -205,6 +208,9 @@ export default function CompanyForm({ editMode }) {
     if (form.website          && !isValidUrl(form.website))            errs.website          = "Must start with https://";
     if (extra.pan_number      && !isValidPAN(extra.pan_number))        errs.pan_number       = "Invalid PAN (e.g. ABCDE1234F)";
     if (form.tax_number       && !isValidGST(form.tax_number))         errs.tax_number       = "Invalid GST number";
+    if (extra.cin_number      && !isValidCIN(extra.cin_number))        errs.cin_number       = "Invalid CIN (e.g. U12345MH2020PTC123456)";
+    if (extra.tan_number      && !isValidTAN(extra.tan_number))        errs.tan_number       = "Invalid TAN (e.g. MUMO12345A)";
+    if (extra.msme_registered && extra.msme_number && !isValidMSME(extra.msme_number)) errs.msme_number = "Invalid MSME (e.g. UDYAM-XX-00-0000000)";
     return errs;
   };
 

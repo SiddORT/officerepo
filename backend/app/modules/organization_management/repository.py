@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime
 from typing import List, Optional, Tuple
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from backend.app.modules.organization_management.models import (
@@ -82,6 +83,84 @@ def soft_delete_company(db: Session, company: OrgCompany) -> None:
     db.flush()
 
 
+def company_has_children(db: Session, client_id: str, company_id: str) -> bool:
+    """True if the company still has any non-deleted branches/departments/designations."""
+    if db.query(OrgBranch.id).filter(
+        OrgBranch.client_id == client_id, OrgBranch.company_id == company_id,
+        OrgBranch.is_deleted.is_(False),
+    ).first():
+        return True
+    if db.query(OrgDepartment.id).filter(
+        OrgDepartment.client_id == client_id, OrgDepartment.company_id == company_id,
+        OrgDepartment.is_deleted.is_(False),
+    ).first():
+        return True
+    if db.query(OrgDesignation.id).filter(
+        OrgDesignation.client_id == client_id, OrgDesignation.company_id == company_id,
+        OrgDesignation.is_deleted.is_(False),
+    ).first():
+        return True
+    return False
+
+
+def bulk_deactivate_branches_by_company(db: Session, client_id: str, company_id: str) -> None:
+    db.query(OrgBranch).filter(
+        OrgBranch.client_id == client_id, OrgBranch.company_id == company_id,
+        OrgBranch.is_deleted.is_(False), OrgBranch.is_active.is_(True),
+    ).update({"is_active": False, "updated_at": datetime.utcnow()}, synchronize_session=False)
+
+
+def get_department_ids_by_company(db: Session, client_id: str, company_id: str) -> List[str]:
+    rows = db.query(OrgDepartment.id).filter(
+        OrgDepartment.client_id == client_id, OrgDepartment.company_id == company_id,
+        OrgDepartment.is_deleted.is_(False),
+    ).all()
+    return [r[0] for r in rows]
+
+
+def bulk_deactivate_departments_by_ids(db: Session, client_id: str, dept_ids: List[str]) -> None:
+    if not dept_ids:
+        return
+    db.query(OrgDepartment).filter(
+        OrgDepartment.client_id == client_id, OrgDepartment.id.in_(dept_ids),
+        OrgDepartment.is_deleted.is_(False), OrgDepartment.is_active.is_(True),
+    ).update({"is_active": False, "updated_at": datetime.utcnow()}, synchronize_session=False)
+
+
+def bulk_deactivate_designations_by_company(db: Session, client_id: str, company_id: str) -> None:
+    db.query(OrgDesignation).filter(
+        OrgDesignation.client_id == client_id, OrgDesignation.company_id == company_id,
+        OrgDesignation.is_deleted.is_(False), OrgDesignation.is_active.is_(True),
+    ).update({"is_active": False, "updated_at": datetime.utcnow()}, synchronize_session=False)
+
+
+def bulk_deactivate_designations_by_departments(db: Session, client_id: str, dept_ids: List[str]) -> None:
+    if not dept_ids:
+        return
+    db.query(OrgDesignation).filter(
+        OrgDesignation.client_id == client_id, OrgDesignation.department_id.in_(dept_ids),
+        OrgDesignation.is_deleted.is_(False), OrgDesignation.is_active.is_(True),
+    ).update({"is_active": False, "updated_at": datetime.utcnow()}, synchronize_session=False)
+
+
+def get_all_department_descendant_ids(db: Session, client_id: str, dept_id: str) -> List[str]:
+    """Return ids of ALL descendant departments (children, grandchildren, ...) of dept_id."""
+    all_rows = db.query(OrgDepartment.id, OrgDepartment.parent_id).filter(
+        OrgDepartment.client_id == client_id, OrgDepartment.is_deleted.is_(False),
+    ).all()
+    children_map: dict = {}
+    for did, pid in all_rows:
+        if pid:
+            children_map.setdefault(pid, []).append(did)
+    descendants: List[str] = []
+    stack = list(children_map.get(dept_id, []))
+    while stack:
+        cur = stack.pop()
+        descendants.append(cur)
+        stack.extend(children_map.get(cur, []))
+    return descendants
+
+
 # ── Branches ───────────────────────────────────────────────────────────────────
 
 def list_branches(
@@ -142,6 +221,12 @@ def update_branch(db: Session, branch: OrgBranch, data: dict) -> OrgBranch:
     return branch
 
 
+def soft_delete_branch(db: Session, branch: OrgBranch) -> None:
+    branch.is_deleted = True
+    branch.deleted_at = datetime.utcnow()
+    db.flush()
+
+
 def get_branch_employee_count(db: Session, client_id: str, branch_id: str) -> dict:
     """Count active and total employees assigned to this branch."""
     try:
@@ -158,7 +243,7 @@ def get_branch_employee_count(db: Session, client_id: str, branch_id: str) -> di
             Employee.is_deleted.is_(False),
             Employee.is_active.is_(True),
         ).scalar() or 0
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         logger.warning("get_branch_employee_count failed for branch %s", branch_id, exc_info=True)
         total = active = 0
     return {"total_employees": total, "active_employees": active}
@@ -195,7 +280,7 @@ def get_branch_employee_counts_batch(db: Session, client_id: str, branch_ids: Li
             result.setdefault(bid, {"total_employees": 0, "active_employees": 0})["total_employees"] = cnt
         for bid, cnt in actives:
             result.setdefault(bid, {"total_employees": 0, "active_employees": 0})["active_employees"] = cnt
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         logger.warning("get_branch_employee_counts_batch failed", exc_info=True)
     return result
 
@@ -263,6 +348,27 @@ def update_department(db: Session, dept: OrgDepartment, data: dict) -> OrgDepart
     return dept
 
 
+def soft_delete_department(db: Session, dept: OrgDepartment) -> None:
+    dept.is_deleted = True
+    dept.deleted_at = datetime.utcnow()
+    db.flush()
+
+
+def department_has_children(db: Session, client_id: str, dept_id: str) -> bool:
+    """True if the department has non-deleted sub-departments or designations."""
+    if db.query(OrgDepartment.id).filter(
+        OrgDepartment.client_id == client_id, OrgDepartment.parent_id == dept_id,
+        OrgDepartment.is_deleted.is_(False),
+    ).first():
+        return True
+    if db.query(OrgDesignation.id).filter(
+        OrgDesignation.client_id == client_id, OrgDesignation.department_id == dept_id,
+        OrgDesignation.is_deleted.is_(False),
+    ).first():
+        return True
+    return False
+
+
 # ── Department employees / designations / activities ──────────────────────────
 
 def list_dept_employees(
@@ -280,7 +386,7 @@ def list_dept_employees(
         total = q.count()
         rows = q.order_by(Employee.first_name).offset((page - 1) * page_size).limit(page_size).all()
         return rows, total
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         return [], 0
 
 
@@ -300,7 +406,7 @@ def get_dept_stats(db: Session, client_id: str, dept_id: str) -> dict:
             Employee.is_deleted.is_(False),
             Employee.is_active.is_(True),
         ).scalar() or 0
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         logger.warning("get_dept_stats failed for department %s", dept_id, exc_info=True)
         total_emp = active_emp = 0
     desig_count = db.query(OrgDesignation).filter(
@@ -346,7 +452,7 @@ def get_dept_stats_batch(db: Session, client_id: str, dept_ids: List[str]) -> di
             result.setdefault(did, {"total_employees": 0, "active_employees": 0, "designations_count": 0})["total_employees"] = cnt
         for did, cnt in actives:
             result.setdefault(did, {"total_employees": 0, "active_employees": 0, "designations_count": 0})["active_employees"] = cnt
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         logger.warning("get_dept_stats_batch employee counts failed", exc_info=True)
     from sqlalchemy import func as sqlfunc
     desig_counts = (
@@ -376,7 +482,7 @@ def get_heads_batch(db: Session, client_id: str, employee_ids: List[str]) -> dic
             Employee.is_deleted.is_(False),
         ).all()
         return {r.id: r for r in rows}
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         logger.warning("get_heads_batch failed", exc_info=True)
         return {}
 
@@ -392,7 +498,7 @@ def get_head_employee(db: Session, client_id: str, employee_id: str):
             Employee.client_id == client_id,
             Employee.is_deleted.is_(False),
         ).first()
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         return None
 
 
@@ -411,7 +517,7 @@ def list_active_employees(db: Session, client_id: str, *, company_id: str = None
         if department_id:
             q = q.filter(Employee.department_id == department_id)
         return q.order_by(Employee.first_name).limit(page_size).all()
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         return []
 
 
@@ -431,7 +537,7 @@ def list_dept_activities(
         rows = (q.order_by(ClientPortalActivityLog.created_at.desc())
                  .offset((page - 1) * page_size).limit(page_size).all())
         return rows, total
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         return [], 0
 
 
@@ -488,7 +594,7 @@ def seed_sample_departments(db: Session, client_id: str, company_id: str) -> int
                 emp.department_id = random.choice(top_ids)
         if emps:
             db.flush()
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         pass
 
     return count
@@ -555,6 +661,12 @@ def update_designation(db: Session, desig: OrgDesignation, data: dict) -> OrgDes
     return desig
 
 
+def soft_delete_designation(db: Session, desig: OrgDesignation) -> None:
+    desig.is_deleted = True
+    desig.deleted_at = datetime.utcnow()
+    db.flush()
+
+
 # ── Designation employees / stats / activities / seed ─────────────────────────
 
 def get_desig_stats(db: Session, client_id: str, desig_id: str) -> dict:
@@ -573,7 +685,7 @@ def get_desig_stats(db: Session, client_id: str, desig_id: str) -> dict:
             Employee.is_deleted.is_(False),
             Employee.is_active.is_(True),
         ).scalar() or 0
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         logger.warning("get_desig_stats failed for designation %s", desig_id, exc_info=True)
         total = active = 0
     return {"total_employees": total, "active_employees": active}
@@ -610,7 +722,7 @@ def get_desig_stats_batch(db: Session, client_id: str, desig_ids: List[str]) -> 
             result.setdefault(did, {"total_employees": 0, "active_employees": 0})["total_employees"] = cnt
         for did, cnt in actives:
             result.setdefault(did, {"total_employees": 0, "active_employees": 0})["active_employees"] = cnt
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         logger.warning("get_desig_stats_batch failed", exc_info=True)
     return result
 
@@ -643,7 +755,7 @@ def list_desig_employees(
         total = q.count()
         rows = q.order_by(Employee.first_name).offset((page - 1) * page_size).limit(page_size).all()
         return rows, total
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         return [], 0
 
 
@@ -661,7 +773,7 @@ def list_desig_activities(
         rows = (q.order_by(ClientPortalActivityLog.created_at.desc())
                  .offset((page - 1) * page_size).limit(page_size).all())
         return rows, total
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         return [], 0
 
 
@@ -726,7 +838,7 @@ def seed_sample_designations(db: Session, client_id: str, company_id: str) -> in
             for emp in emps:
                 emp.designation_id = random.choice(created_ids)
             db.flush()
-    except Exception:
+    except (ImportError, SQLAlchemyError):
         pass
 
     return count

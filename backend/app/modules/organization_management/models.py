@@ -11,7 +11,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, Date, DateTime, Integer, String, Text
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text
 
 from backend.app.database.client_db import ClientBase
 
@@ -102,7 +102,7 @@ class OrgBranch(ClientBase):
 
     id                  = Column(String(36), primary_key=True, default=_uuid)
     client_id           = Column(String(36), nullable=False, index=True)
-    company_id          = Column(String(36), nullable=False, index=True)
+    company_id          = Column(String(36), ForeignKey("org_companies.id", ondelete="RESTRICT"), nullable=False, index=True)
 
     branch_code         = Column(String(60),  nullable=False)
     branch_name         = Column(String(200), nullable=False)
@@ -134,10 +134,10 @@ class OrgDepartment(ClientBase):
 
     id                  = Column(String(36), primary_key=True, default=_uuid)
     client_id           = Column(String(36), nullable=False, index=True)
-    company_id          = Column(String(36), nullable=False, index=True)   # OrgCompany (same client DB)
+    company_id          = Column(String(36), ForeignKey("org_companies.id", ondelete="RESTRICT"), nullable=False, index=True)   # OrgCompany (same client DB)
     department_code     = Column(String(60),  nullable=False)
     department_name     = Column(String(200), nullable=False)
-    parent_id           = Column(String(36), nullable=True, index=True)    # self-ref (no FK across tables needed — same DB)
+    parent_id           = Column(String(36), ForeignKey("org_departments.id", ondelete="RESTRICT"), nullable=True, index=True)    # self-ref
     head_user_id        = Column(String(36), nullable=True)                # ClientAdminUser in platform DB (legacy)
     head_employee_id    = Column(String(36), nullable=True)                # Employee in same client DB
     head_effective_from = Column(Date, nullable=True)
@@ -156,8 +156,8 @@ class OrgDesignation(ClientBase):
 
     id                  = Column(String(36), primary_key=True, default=_uuid)
     client_id           = Column(String(36), nullable=False, index=True)
-    company_id          = Column(String(36), nullable=False, index=True)
-    department_id       = Column(String(36), nullable=True,  index=True)   # optional
+    company_id          = Column(String(36), ForeignKey("org_companies.id", ondelete="RESTRICT"), nullable=False, index=True)
+    department_id       = Column(String(36), ForeignKey("org_departments.id", ondelete="SET NULL"), nullable=True,  index=True)   # optional
     designation_code    = Column(String(60),  nullable=False)
     designation_name    = Column(String(200), nullable=False)
     level               = Column(Integer, nullable=True)

@@ -24,6 +24,7 @@ export default function CompanyList() {
   const [acting, setActing] = useState(null);
   const [toast, setToast] = useState(null);
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
@@ -64,6 +65,19 @@ export default function CompanyList() {
       setConfirmTarget(null);
       load();
     } catch (e) { showToast(e?.response?.data?.detail || "Action failed.", false); }
+    finally { setActing(null); }
+  };
+
+  const confirmDelete = async () => {
+    const co = deleteTarget;
+    if (!co) return;
+    setActing(co.id);
+    try {
+      await portalOrgApi.deleteCompany(subdomain, token, co.id);
+      showToast("Company deleted.");
+      setDeleteTarget(null);
+      load();
+    } catch (e) { showToast(e?.response?.data?.detail || "Delete failed.", false); }
     finally { setActing(null); }
   };
 
@@ -159,6 +173,12 @@ export default function CompanyList() {
                         style={{ fontSize: 12, color: co.is_active ? "#f87171" : "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
                         {acting === co.id ? "…" : co.is_active ? "Deactivate" : "Activate"}
                       </button>
+                      {!co.is_active && (
+                        <button onClick={() => setDeleteTarget(co)} disabled={acting === co.id}
+                          style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -180,6 +200,17 @@ export default function CompanyList() {
         loading={acting === confirmTarget?.id}
         onConfirm={confirmDeactivate}
         onCancel={() => setConfirmTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Company"
+        message={`Permanently delete "${deleteTarget?.company_name}"? This cannot be undone. Only possible when it has no branches, departments, or designations.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        loading={acting === deleteTarget?.id}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
     </OrgLayout>
   );

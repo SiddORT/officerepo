@@ -213,6 +213,18 @@ def deactivate_company(
     return ApiResponse.ok(result, "Company deactivated.").model_dump()
 
 
+@router.delete("/{subdomain}/org/companies/{company_id}")
+def delete_company(
+    subdomain: str, company_id: str, request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    svc.delete_company(client_db, portal_user["client_id"], company_id,
+                       actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
+    return ApiResponse.ok(None, "Company deleted.").model_dump()
+
+
 # ── Branches ───────────────────────────────────────────────────────────────────
 
 @router.get("/{subdomain}/org/branches")
@@ -287,6 +299,18 @@ def deactivate_branch(
     result = svc.set_branch_status(client_db, portal_user["client_id"], branch_id, False,
                                    actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
     return ApiResponse.ok(result, "Branch deactivated.").model_dump()
+
+
+@router.delete("/{subdomain}/org/branches/{branch_id}")
+def delete_branch(
+    subdomain: str, branch_id: str, request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    svc.delete_branch(client_db, portal_user["client_id"], branch_id,
+                      actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
+    return ApiResponse.ok(None, "Branch deleted.").model_dump()
 
 
 # ── Departments — static routes FIRST to avoid {dept_id} clash ─────────────────
@@ -404,6 +428,18 @@ def deactivate_dept(
     result = svc.set_department_status(client_db, portal_user["client_id"], dept_id, False,
                                        actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
     return ApiResponse.ok(result, "Department deactivated.").model_dump()
+
+
+@router.delete("/{subdomain}/org/departments/{dept_id}")
+def delete_department(
+    subdomain: str, dept_id: str, request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    svc.delete_department(client_db, portal_user["client_id"], dept_id,
+                          actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
+    return ApiResponse.ok(None, "Department deleted.").model_dump()
 
 
 @router.get("/{subdomain}/org/departments/{dept_id}/employees")
@@ -543,6 +579,18 @@ def deactivate_desig(
     result = svc.set_designation_status(client_db, portal_user["client_id"], desig_id, False,
                                         actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
     return ApiResponse.ok(result, "Designation deactivated.").model_dump()
+
+
+@router.delete("/{subdomain}/org/designations/{desig_id}")
+def delete_designation(
+    subdomain: str, desig_id: str, request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    svc.delete_designation(client_db, portal_user["client_id"], desig_id,
+                           actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
+    return ApiResponse.ok(None, "Designation deleted.").model_dump()
 
 
 @router.get("/{subdomain}/org/designations/{desig_id}/employees")

@@ -192,6 +192,7 @@ export default function BranchList() {
   const [modal, setModal] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
@@ -239,6 +240,19 @@ export default function BranchList() {
       setConfirmTarget(null);
       load();
     } catch (e) { showToast(e?.response?.data?.detail || "Action failed.", false); }
+    finally { setActionLoading(null); }
+  };
+
+  const confirmDelete = async () => {
+    const b = deleteTarget;
+    if (!b) return;
+    setActionLoading(b.id);
+    try {
+      await portalOrgApi.deleteBranch(subdomain, token, b.id);
+      showToast("Branch deleted.");
+      setDeleteTarget(null);
+      load();
+    } catch (e) { showToast(e?.response?.data?.detail || "Delete failed.", false); }
     finally { setActionLoading(null); }
   };
 
@@ -351,6 +365,12 @@ export default function BranchList() {
                             style={{ fontSize: 12, color: b.is_active ? "#f87171" : "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
                             {actionLoading === b.id ? "…" : b.is_active ? "Deactivate" : "Activate"}
                           </button>
+                          {!b.is_active && (
+                            <button onClick={() => setDeleteTarget(b)} disabled={actionLoading === b.id}
+                              style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -415,6 +435,17 @@ export default function BranchList() {
         loading={actionLoading === confirmTarget?.id}
         onConfirm={confirmDeactivate}
         onCancel={() => setConfirmTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Branch"
+        message={`Permanently delete "${deleteTarget?.branch_name}"? This cannot be undone. Only possible when it has no employees assigned.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        loading={actionLoading === deleteTarget?.id}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
     </OrgLayout>
   );

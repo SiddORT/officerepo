@@ -185,6 +185,7 @@ export default function DesignationList() {
   const [toast, setToast] = useState(null);
   const [modal, setModal] = useState(null);
   const [confirmTarget, setConfirmTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const showToast = (msg, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 3000); };
 
@@ -244,6 +245,19 @@ export default function DesignationList() {
       setConfirmTarget(null);
       load();
     } catch (e) { showToast(e?.response?.data?.detail || "Action failed.", false); }
+    finally { setActing(null); }
+  };
+
+  const confirmDelete = async () => {
+    const d = deleteTarget;
+    if (!d) return;
+    setActing(d.id);
+    try {
+      await portalOrgApi.deleteDesig(subdomain, token, d.id);
+      showToast("Designation deleted.");
+      setDeleteTarget(null);
+      load();
+    } catch (e) { showToast(e?.response?.data?.detail || "Delete failed.", false); }
     finally { setActing(null); }
   };
 
@@ -399,6 +413,12 @@ export default function DesignationList() {
                           style={{ fontSize: 12, color: d.is_active ? "#f87171" : "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
                           {acting === d.id ? "…" : d.is_active ? "Deactivate" : "Activate"}
                         </button>
+                        {!d.is_active && (
+                          <button onClick={() => setDeleteTarget(d)} disabled={acting === d.id}
+                            style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -420,6 +440,17 @@ export default function DesignationList() {
         loading={acting === confirmTarget?.id}
         onConfirm={confirmDeactivate}
         onCancel={() => setConfirmTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Designation"
+        message={`Permanently delete "${deleteTarget?.designation_name}"? This cannot be undone. Only possible when it has no employees assigned.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        loading={acting === deleteTarget?.id}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
     </OrgLayout>
   );

@@ -153,6 +153,31 @@ def get_company(client_db: Session, client_id: str, company_id: str) -> Dict:
     return _company_dict(co)
 
 
+_OFFICE_ADDR_MAP = [
+    ("address_line_1", "off_address_line_1"),
+    ("address_line_2", "off_address_line_2"),
+    ("city", "off_city"),
+    ("district", "off_district"),
+    ("state", "off_state"),
+    ("country", "off_country"),
+    ("postal_code", "off_postal_code"),
+]
+
+
+def _apply_office_sync(data: Dict[str, Any], existing: Optional["OrgCompany"] = None) -> None:
+    """When office_same is True, mirror the registered address onto the off_* (operating
+    office) fields server-side, so the two never silently drift apart regardless of what
+    the client sends for the off_* fields."""
+    office_same = data.get("office_same", getattr(existing, "office_same", False) if existing else False)
+    if not office_same:
+        return
+    for src, dst in _OFFICE_ADDR_MAP:
+        if src in data:
+            data[dst] = data[src]
+        elif existing is not None:
+            data[dst] = getattr(existing, src, None)
+
+
 def create_company(
     client_db: Session, client_id: str, payload,
     actor_id: Optional[str], ip: Optional[str],
@@ -160,6 +185,7 @@ def create_company(
     if repo.get_company_by_code(client_db, client_id, payload.company_code):
         raise HTTPException(409, f"Company code '{payload.company_code}' already exists.")
     data = payload.model_dump()
+    _apply_office_sync(data)
     co = repo.create_company(client_db, client_id, data)
     _log(client_db, client_id, c.ACTION_COMPANY_CREATED, actor_id, ip,
          {"company_name": co.company_name})
@@ -175,6 +201,7 @@ def update_company(
     if not co:
         raise HTTPException(404, "Company not found.")
     data = {k: v for k, v in payload.model_dump(exclude_unset=True).items() if v is not None}
+    _apply_office_sync(data, existing=co)
     repo.update_company(client_db, co, data)
     _log(client_db, client_id, c.ACTION_COMPANY_UPDATED, actor_id, ip,
          {"company_name": co.company_name})
@@ -193,10 +220,33 @@ def set_company_status(
         raise HTTPException(400, f"Company is already {'active' if is_active else 'inactive'}.")
     co.is_active = is_active
     co.updated_at = datetime.utcnow()
+    if not is_active:
+        # Cascade: deactivating a company also deactivates its branches, departments
+        # and designations, so the UI never shows "active" children under an inactive company.
+        repo.bulk_deactivate_branches_by_company(client_db, client_id, company_id)
+        dept_ids = repo.get_department_ids_by_company(client_db, client_id, company_id)
+        repo.bulk_deactivate_departments_by_ids(client_db, client_id, dept_ids)
+        repo.bulk_deactivate_designations_by_company(client_db, client_id, company_id)
     action = c.ACTION_COMPANY_ACTIVATED if is_active else c.ACTION_COMPANY_DEACTIVATED
     _log(client_db, client_id, action, actor_id, ip, {"company_name": co.company_name})
     client_db.commit()
     return _company_dict(co)
+
+
+def delete_company(
+    client_db: Session, client_id: str, company_id: str,
+    actor_id: Optional[str], ip: Optional[str],
+) -> None:
+    co = repo.get_company(client_db, client_id, company_id)
+    if not co:
+        raise HTTPException(404, "Company not found.")
+    if co.is_active:
+        raise HTTPException(400, "Deactivate the company before deleting it.")
+    if repo.company_has_children(client_db, client_id, company_id):
+        raise HTTPException(409, "Cannot delete a company that still has branches, departments, or designations. Remove them first.")
+    repo.soft_delete_company(client_db, co)
+    _log(client_db, client_id, c.ACTION_COMPANY_DELETED, actor_id, ip, {"company_name": co.company_name})
+    client_db.commit()
 
 
 # ── Branches ───────────────────────────────────────────────────────────────────
@@ -292,6 +342,23 @@ def set_branch_status(
     _log(client_db, client_id, action, actor_id, ip, {"branch_name": b.branch_name})
     client_db.commit()
     return _branch_dict(b)
+
+
+def delete_branch(
+    client_db: Session, client_id: str, branch_id: str,
+    actor_id: Optional[str], ip: Optional[str],
+) -> None:
+    b = repo.get_branch(client_db, client_id, branch_id)
+    if not b:
+        raise HTTPException(404, "Branch not found.")
+    if b.is_active:
+        raise HTTPException(400, "Deactivate the branch before deleting it.")
+    counts = repo.get_branch_employee_count(client_db, client_id, branch_id)
+    if counts.get("total_employees", 0):
+        raise HTTPException(409, "Cannot delete a branch that still has employees assigned to it.")
+    repo.soft_delete_branch(client_db, b)
+    _log(client_db, client_id, c.ACTION_BRANCH_DELETED, actor_id, ip, {"branch_name": b.branch_name})
+    client_db.commit()
 
 
 # ── Departments ────────────────────────────────────────────────────────────────
@@ -398,12 +465,14 @@ def _build_tree(rows: list, parent_id=None) -> list:
 
 def get_department_hierarchy(client_db: Session, client_id: str, company_id: str) -> list:
     rows, _ = repo.list_departments(client_db, client_id, company_id=company_id, page_size=1000)
+    stats_map = repo.get_dept_stats_batch(client_db, client_id, [d.id for d in rows])
+    head_ids = [getattr(d, "head_employee_id", None) for d in rows]
+    heads_map = repo.get_heads_batch(client_db, client_id, head_ids)
     flat = []
     for d in rows:
-        head = _resolve_head(client_db, client_id, d)
-        stats = repo.get_dept_stats(client_db, client_id, d.id)
+        head = heads_map.get(getattr(d, "head_employee_id", None))
         item = _dept_dict(d, head_emp=head)
-        item.update(stats)
+        item.update(stats_map.get(d.id, {}))
         flat.append(item)
     return _build_tree(flat, parent_id=None)
 
@@ -483,10 +552,33 @@ def set_department_status(
         raise HTTPException(400, f"Department is already {'active' if is_active else 'inactive'}.")
     d.is_active = is_active
     d.updated_at = datetime.utcnow()
+    if not is_active:
+        # Cascade: deactivating a department also deactivates all of its sub-departments
+        # (recursively) and their designations.
+        descendant_ids = repo.get_all_department_descendant_ids(client_db, client_id, dept_id)
+        all_dept_ids = [dept_id] + descendant_ids
+        repo.bulk_deactivate_departments_by_ids(client_db, client_id, descendant_ids)
+        repo.bulk_deactivate_designations_by_departments(client_db, client_id, all_dept_ids)
     action = c.ACTION_DEPT_ACTIVATED if is_active else c.ACTION_DEPT_DEACTIVATED
     _log(client_db, client_id, action, actor_id, ip, {"department_name": d.department_name})
     client_db.commit()
     return get_department(client_db, client_id, dept_id)
+
+
+def delete_department(
+    client_db: Session, client_id: str, dept_id: str,
+    actor_id: Optional[str], ip: Optional[str],
+) -> None:
+    d = repo.get_department(client_db, client_id, dept_id)
+    if not d:
+        raise HTTPException(404, "Department not found.")
+    if d.is_active:
+        raise HTTPException(400, "Deactivate the department before deleting it.")
+    if repo.department_has_children(client_db, client_id, dept_id):
+        raise HTTPException(409, "Cannot delete a department that still has sub-departments or designations. Remove them first.")
+    repo.soft_delete_department(client_db, d)
+    _log(client_db, client_id, c.ACTION_DEPT_DELETED, actor_id, ip, {"department_name": d.department_name})
+    client_db.commit()
 
 
 def seed_departments(
@@ -624,3 +716,20 @@ def set_designation_status(
     _log(client_db, client_id, action, actor_id, ip, {"designation_name": desig.designation_name})
     client_db.commit()
     return _desig_dict(desig)
+
+
+def delete_designation(
+    client_db: Session, client_id: str, desig_id: str,
+    actor_id: Optional[str], ip: Optional[str],
+) -> None:
+    desig = repo.get_designation(client_db, client_id, desig_id)
+    if not desig:
+        raise HTTPException(404, "Designation not found.")
+    if desig.is_active:
+        raise HTTPException(400, "Deactivate the designation before deleting it.")
+    stats = repo.get_desig_stats(client_db, client_id, desig_id)
+    if stats.get("total_employees", 0):
+        raise HTTPException(409, "Cannot delete a designation that still has employees assigned to it.")
+    repo.soft_delete_designation(client_db, desig)
+    _log(client_db, client_id, c.ACTION_DESIG_DELETED, actor_id, ip, {"designation_name": desig.designation_name})
+    client_db.commit()

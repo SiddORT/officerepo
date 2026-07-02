@@ -180,6 +180,35 @@ def _migrate_columns(engine: Engine) -> None:
                 conn.rollback()
 
 
+# ── Foreign-key constraints for tables that pre-date the FK being added ──
+# Each entry: (constraint_name, table, column, ref_table, ref_column, on_delete)
+# Added NOT VALID so pre-existing orphan rows (if any) don't block the migration;
+# new writes are still enforced immediately.
+_FK_MIGRATIONS = [
+    ("fk_org_branches_company_id", "org_branches", "company_id", "org_companies", "id", "RESTRICT"),
+    ("fk_org_departments_company_id", "org_departments", "company_id", "org_companies", "id", "RESTRICT"),
+    ("fk_org_departments_parent_id", "org_departments", "parent_id", "org_departments", "id", "RESTRICT"),
+    ("fk_org_designations_company_id", "org_designations", "company_id", "org_companies", "id", "RESTRICT"),
+    ("fk_org_designations_department_id", "org_designations", "department_id", "org_departments", "id", "SET NULL"),
+]
+
+
+def _migrate_constraints(engine: Engine) -> None:
+    """Idempotently add FK constraints that may be missing on pre-existing tables."""
+    with engine.connect() as conn:
+        for name, table, column, ref_table, ref_column, on_delete in _FK_MIGRATIONS:
+            try:
+                conn.execute(text(
+                    f"ALTER TABLE {table} ADD CONSTRAINT {name} "
+                    f"FOREIGN KEY ({column}) REFERENCES {ref_table}({ref_column}) "
+                    f"ON DELETE {on_delete} NOT VALID"
+                ))
+                conn.commit()
+            except Exception:
+                # Constraint already exists, table/column missing, or orphan data — skip safely.
+                conn.rollback()
+
+
 def provision_portal_schema(url: str, *, force: bool = False) -> None:
     """Create all ClientBase tables on the client DB (idempotent — uses CREATE IF NOT EXISTS).
 
@@ -215,4 +244,5 @@ def provision_portal_schema(url: str, *, force: bool = False) -> None:
     if new_tables:
         ClientBase.metadata.create_all(engine, tables=new_tables)
     _migrate_columns(engine)
+    _migrate_constraints(engine)
     _provisioned.add(url)

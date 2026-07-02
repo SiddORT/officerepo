@@ -441,6 +441,7 @@ export const portalOrgApi = {
   updateCompany:    (sd, tk, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
   activateCompany:  (sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${id}/activate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
   deactivateCompany:(sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+  deleteCompany:    (sd, tk, id) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
 
   // Meta
   getIndustries: (sd, tk) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/meta/industries`, { headers: { Authorization: `Bearer ${tk}` } }),
@@ -452,6 +453,7 @@ export const portalOrgApi = {
   updateDept:       (sd, tk, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
   activateDept:     (sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/activate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
   deactivateDept:   (sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+  deleteDept:       (sd, tk, id) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
   deptHierarchy:    (sd, tk, companyId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/hierarchy/${companyId}`, { headers: { Authorization: `Bearer ${tk}` } }),
   getDeptStats:     (sd, tk, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/stats`, { headers: { Authorization: `Bearer ${tk}` } }),
   getDeptEmployees: (sd, tk, id, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/departments/${id}/employees`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
@@ -467,6 +469,7 @@ export const portalOrgApi = {
   updateDesig:   (sd, tk, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
   activateDesig: (sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}/activate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
   deactivateDesig:(sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+  deleteDesig:   (sd, tk, id) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
   getDesigEmployees: (sd, tk, id, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}/employees`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
   getDesigActivities: (sd, tk, id, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/${id}/activities`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
   seedDesigs: (sd, tk, companyId) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/designations/seed/${companyId}`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
@@ -478,6 +481,7 @@ export const portalOrgApi = {
   updateBranch:    (sd, tk, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/org/branches/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
   activateBranch:  (sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/branches/${id}/activate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
   deactivateBranch:(sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/branches/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
+  deleteBranch:    (sd, tk, id) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/org/branches/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
 
   // Full hierarchy (company + dept tree + designations)
   hierarchy: (sd, tk, companyId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/hierarchy/${companyId}`, { headers: { Authorization: `Bearer ${tk}` } }),

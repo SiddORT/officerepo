@@ -70,9 +70,10 @@ export default function OrgHierarchy() {
 
   useEffect(() => {
     setLoading(true);
+    setError("");
     portalOrgApi.hierarchy(subdomain, token, companyId)
       .then(r => setData(r.data.data))
-      .catch(() => setError("Failed to load hierarchy."))
+      .catch(e => setError(e?.response?.data?.detail || "Failed to load hierarchy."))
       .finally(() => setLoading(false));
   }, [subdomain, token, companyId]);
 
