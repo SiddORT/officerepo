@@ -9,6 +9,13 @@ import Pagination from "../shared/Pagination";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { ViewIconBtn, EditIconBtn, ToggleStatusIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
 
+function genDeptCode(name) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "";
+  if (words.length === 1) return words[0].slice(0, 4).toUpperCase();
+  return words.map(w => w[0].toUpperCase()).join("");
+}
+
 // ── Dept Create / Edit Modal ──────────────────────────────────────────────────
 function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) {
   const isEdit = !!editDept;
@@ -26,6 +33,7 @@ function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) 
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [autoCode, setAutoCode] = useState(!isEdit);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -100,13 +108,32 @@ function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) 
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label className="portal-form-label">Code *</label>
-              <input value={form.department_code} onChange={e => set("department_code", e.target.value.toUpperCase())}
+              <label className="portal-form-label">
+                Code *
+                {autoCode && !isEdit && (
+                  <span style={{ fontSize: 10, color: "var(--c-accent)", marginLeft: 6, fontWeight: 400 }}>auto</span>
+                )}
+              </label>
+              <input
+                value={form.department_code}
+                onChange={e => {
+                  setAutoCode(false);
+                  set("department_code", e.target.value.toUpperCase());
+                }}
                 placeholder="e.g. HR" disabled={isEdit} className="input-field" style={{ fontFamily: "monospace", cursor: isEdit ? "not-allowed" : "text" }} />
             </div>
             <div>
               <label className="portal-form-label">Department Name *</label>
-              <input value={form.department_name} onChange={e => set("department_name", e.target.value)}
+              <input
+                value={form.department_name}
+                onChange={e => {
+                  const name = e.target.value;
+                  setForm(f => ({
+                    ...f,
+                    department_name: name,
+                    department_code: autoCode ? genDeptCode(name) : f.department_code,
+                  }));
+                }}
                 placeholder="Human Resources" className="input-field" />
             </div>
           </div>
