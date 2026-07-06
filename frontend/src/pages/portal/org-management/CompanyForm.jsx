@@ -55,7 +55,7 @@ const EXTRA_EMPTY = {
   status: "Active",
 };
 
-const EMPTY_DOC = { doc_type: "", doc_number: "", issue_date: "", expiry_date: "", remarks: "", file: null, fileName: "" };
+const EMPTY_DOC = { doc_type: "", doc_number: "", issue_date: "", expiry_date: "", remarks: "", file: null, fileName: "", filePreview: null, fileIsImage: false };
 
 const TAB_FIELDS = {
   general:    ["company_code", "company_name", "legal_name", "display_name", "company_type", "industry", "date_of_incorporation", "company_description", "status"],
@@ -249,7 +249,15 @@ export default function CompanyForm({ editMode }) {
   const setDocField  = (k, v) => setNewDoc(d => ({ ...d, [k]: v }));
   const handleDocFile = (e) => {
     const file = e.target.files?.[0];
-    if (file) setNewDoc(d => ({ ...d, file, fileName: file.name }));
+    if (!file) return;
+    const isImage = file.type.startsWith("image/");
+    if (isImage) {
+      const reader = new FileReader();
+      reader.onload = ev => setNewDoc(d => ({ ...d, file, fileName: file.name, filePreview: ev.target.result, fileIsImage: true }));
+      reader.readAsDataURL(file);
+    } else {
+      setNewDoc(d => ({ ...d, file, fileName: file.name, filePreview: null, fileIsImage: false }));
+    }
   };
   const addDoc    = () => {
     if (!newDoc.doc_type) return;
@@ -258,6 +266,7 @@ export default function CompanyForm({ editMode }) {
     setAddingDoc(false);
   };
   const removeDoc = (id) => setDocs(d => d.filter(x => x.id !== id));
+  const docFileExt = (name) => (name || "").split(".").pop()?.toUpperCase().slice(0, 4) || "FILE";
 
   if (loading) return (
     <OrgLayout title="Company">
@@ -564,6 +573,7 @@ export default function CompanyForm({ editMode }) {
 
               {addingDoc ? (
                 <div style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 8, padding: 16, display: "grid", gap: 12 }}>
+                  {/* Row 1 — all text/date fields */}
                   <div className="portal-form-row">
                     <div>
                       <label className="portal-form-label portal-form-label-req">Document Type</label>
@@ -578,8 +588,6 @@ export default function CompanyForm({ editMode }) {
                       <input value={newDoc.doc_number} onChange={e => setDocField("doc_number", e.target.value)}
                         placeholder="Reg. No / ID" className="input-field" style={{ fontFamily: "monospace" }} />
                     </div>
-                  </div>
-                  <div className="portal-form-row">
                     <div>
                       <label className="portal-form-label">Issue Date</label>
                       <input type="date" value={newDoc.issue_date} onChange={e => setDocField("issue_date", e.target.value)} className="input-field" />
@@ -589,17 +597,54 @@ export default function CompanyForm({ editMode }) {
                       <input type="date" value={newDoc.expiry_date} onChange={e => setDocField("expiry_date", e.target.value)} className="input-field" />
                     </div>
                   </div>
-                  <div>
-                    <label className="portal-form-label">Attachment</label>
-                    <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                      <button type="button" onClick={() => document.getElementById("doc-file-input").click()}
-                        className="btn-secondary" style={{ padding: "6px 12px" }}>
-                        {newDoc.fileName ? "Change File" : "Choose File"}
-                      </button>
-                      <span style={{ fontSize: 12, color: "var(--c-muted)" }}>{newDoc.fileName || "No file chosen"}</span>
-                      <input id="doc-file-input" type="file" style={{ display: "none" }} onChange={handleDocFile} />
+
+                  {/* Row 2 — attachment + preview */}
+                  <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+                    <div style={{ flex: "1 1 220px", minWidth: 220 }}>
+                      <label className="portal-form-label">Attachment</label>
+                      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                        <button type="button" onClick={() => document.getElementById("doc-file-input").click()}
+                          className="btn-secondary" style={{ padding: "6px 12px" }}>
+                          {newDoc.fileName ? "Change File" : "Choose File"}
+                        </button>
+                        <span style={{ fontSize: 12, color: "var(--c-muted)" }}>{newDoc.fileName || "No file chosen"}</span>
+                        <input id="doc-file-input" type="file" style={{ display: "none" }} onChange={handleDocFile} />
+                      </div>
+                      {newDoc.fileName && (
+                        <button type="button"
+                          onClick={() => { setNewDoc(d => ({ ...d, file: null, fileName: "", filePreview: null, fileIsImage: false })); document.getElementById("doc-file-input").value = ""; }}
+                          style={{ fontSize: 11, color: "#f87171", background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 6 }}>
+                          ✕ Remove file
+                        </button>
+                      )}
                     </div>
+
+                    {newDoc.fileName && (
+                      <div>
+                        <label className="portal-form-label">Preview</label>
+                        <div style={{
+                          width: 120, height: 90, borderRadius: 8, overflow: "hidden",
+                          border: "1px solid var(--c-border)", background: "var(--c-surface, #0d1424)",
+                          display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 4,
+                        }}>
+                          {newDoc.fileIsImage
+                            ? <img src={newDoc.filePreview} alt="Document preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            : (
+                              <>
+                                <span style={{ fontSize: 22 }}>📄</span>
+                                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--c-muted)", letterSpacing: 0.5 }}>
+                                  {docFileExt(newDoc.fileName)}
+                                </span>
+                              </>
+                            )}
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 4, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={newDoc.fileName}>
+                          {newDoc.fileName}
+                        </div>
+                      </div>
+                    )}
                   </div>
+
                   <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
                     <button type="button" onClick={addDoc} className="btn-primary" style={{ padding: "6px 16px" }}>Add Document</button>
                     <button type="button" onClick={() => setAddingDoc(false)} className="btn-secondary" style={{ padding: "6px 16px" }}>Cancel</button>
