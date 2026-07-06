@@ -9,6 +9,7 @@ import Pagination from "../shared/Pagination";
 import PhoneInput from "../../../components/ui/PhoneInput";
 import usePincodeLookup from "../../../hooks/usePincodeLookup";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
+import { ViewIconBtn, EditIconBtn, ToggleStatusIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
 
 function genBranchCode(name) {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -351,25 +352,15 @@ export default function BranchList() {
                         <Badge status={b.is_active ? "Active" : "Inactive"} />
                       </td>
                       <td>
-                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                          <button
+                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                          <ViewIconBtn
                             onClick={() => setExpandedId(isExpanded ? null : b.id)}
-                            className="t-accent"
-                            style={{ fontSize: 12, fontWeight: 600, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                            {isExpanded ? "Close" : "View"}
-                          </button>
-                          <button onClick={() => setModal(b)} className="t-accent" style={{ fontSize: 12, fontWeight: 600, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Edit</button>
-                          <button
-                            onClick={() => handleToggle(b)}
-                            disabled={actionLoading === b.id}
-                            style={{ fontSize: 12, color: b.is_active ? "#f87171" : "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
-                            {actionLoading === b.id ? "…" : b.is_active ? "Deactivate" : "Activate"}
-                          </button>
+                            title={isExpanded ? "Close details" : "View details"} />
+                          <EditIconBtn onClick={() => setModal(b)} title="Edit branch" />
+                          <ToggleStatusIconBtn isActive={b.is_active} onClick={() => handleToggle(b)} disabled={actionLoading === b.id}
+                            title={b.is_active ? "Deactivate branch" : "Activate branch"} />
                           {!b.is_active && (
-                            <button onClick={() => setDeleteTarget(b)} disabled={actionLoading === b.id}
-                              style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
-                              Delete
-                            </button>
+                            <DeleteIconBtn onClick={() => setDeleteTarget(b)} disabled={actionLoading === b.id} title="Delete branch" />
                           )}
                         </div>
                       </td>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { EditIconBtn } from "../../../components/ui/ActionIcons";
+import { ViewIconBtn, EditIconBtn } from "../../../components/ui/ActionIcons";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalEmployeeApi, portalOrgApi } from "../../../services/apiClient";
@@ -213,9 +213,8 @@ export default function EmployeeList() {
                       </button>
                     </td>
                     <td>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <Link to={`/portal/${subdomain}/employees/${emp.id}`}
-                          className="t-accent" style={{background:"none",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>View</Link>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
+                        <ViewIconBtn onClick={() => navigate(`/portal/${subdomain}/employees/${emp.id}`)} title="View employee" />
                         <EditIconBtn onClick={() => navigate(`/portal/${subdomain}/employees/${emp.id}/edit`)} title="Edit employee" />
                       </div>
                     </td>

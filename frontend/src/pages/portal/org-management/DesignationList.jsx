@@ -7,6 +7,7 @@ import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
+import { ViewIconBtn, EditIconBtn, ToggleStatusIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
 
 // ── Level badge ───────────────────────────────────────────────────────────────
 const LEVEL_LABELS = { 1:"Executive",2:"Director",3:"Head of Dept",4:"Manager",5:"Team Lead",6:"Senior",7:"Employee" };
@@ -400,24 +401,13 @@ export default function DesignationList() {
                     </td>
                     <td><Badge status={d.is_active ? "Active" : "Inactive"} /></td>
                     <td>
-                      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                        <button onClick={() => navigate(`/portal/${subdomain}/org/designations/${d.id}`)}
-                          className="t-accent" style={{ fontSize: 12, fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                          View
-                        </button>
-                        <button onClick={() => setModal({ editDesig: d })}
-                          className="t-accent" style={{ fontSize: 12, fontWeight: 500, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                          Edit
-                        </button>
-                        <button onClick={() => toggleStatus(d)} disabled={acting === d.id}
-                          style={{ fontSize: 12, color: d.is_active ? "#f87171" : "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
-                          {acting === d.id ? "…" : d.is_active ? "Deactivate" : "Activate"}
-                        </button>
+                      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                        <ViewIconBtn onClick={() => navigate(`/portal/${subdomain}/org/designations/${d.id}`)} title="View designation" />
+                        <EditIconBtn onClick={() => setModal({ editDesig: d })} title="Edit designation" />
+                        <ToggleStatusIconBtn isActive={d.is_active} onClick={() => toggleStatus(d)} disabled={acting === d.id}
+                          title={d.is_active ? "Deactivate designation" : "Activate designation"} />
                         {!d.is_active && (
-                          <button onClick={() => setDeleteTarget(d)} disabled={acting === d.id}
-                            style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
-                            Delete
-                          </button>
+                          <DeleteIconBtn onClick={() => setDeleteTarget(d)} disabled={acting === d.id} title="Delete designation" />
                         )}
                       </div>
                     </td>

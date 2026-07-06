@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
@@ -7,11 +7,13 @@ import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
+import { ViewIconBtn, EditIconBtn, ToggleStatusIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
 
 const PAGE_SIZE = 20;
 
 export default function CompanyList() {
   const { subdomain } = useParams();
+  const navigate = useNavigate();
   const { token } = usePortalAuth();
 
   const [rows, setRows] = useState([]);
@@ -164,20 +166,13 @@ export default function CompanyList() {
                   </td>
                   <td><Badge status={co.is_active ? "Active" : "Inactive"} /></td>
                   <td>
-                    <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                      <Link to={`/portal/${subdomain}/org/companies/${co.id}`}
-                        className="t-accent" style={{ fontSize: 12, fontWeight: 500, textDecoration: "none" }}>View</Link>
-                      <Link to={`/portal/${subdomain}/org/companies/${co.id}/edit`}
-                        className="t-accent" style={{ fontSize: 12, fontWeight: 500, textDecoration: "none" }}>Edit</Link>
-                      <button onClick={() => toggleStatus(co)} disabled={acting === co.id}
-                        style={{ fontSize: 12, color: co.is_active ? "#f87171" : "#4ade80", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
-                        {acting === co.id ? "…" : co.is_active ? "Deactivate" : "Activate"}
-                      </button>
+                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                      <ViewIconBtn onClick={() => navigate(`/portal/${subdomain}/org/companies/${co.id}`)} title="View company" />
+                      <EditIconBtn onClick={() => navigate(`/portal/${subdomain}/org/companies/${co.id}/edit`)} title="Edit company" />
+                      <ToggleStatusIconBtn isActive={co.is_active} onClick={() => toggleStatus(co)} disabled={acting === co.id}
+                        title={co.is_active ? "Deactivate company" : "Activate company"} />
                       {!co.is_active && (
-                        <button onClick={() => setDeleteTarget(co)} disabled={acting === co.id}
-                          style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
-                          Delete
-                        </button>
+                        <DeleteIconBtn onClick={() => setDeleteTarget(co)} disabled={acting === co.id} title="Delete company" />
                       )}
                     </div>
                   </td>

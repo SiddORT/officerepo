@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { portalEmpDocApi } from "../../../services/apiClient";
+import { ViewIconBtn, EditIconBtn } from "../../../components/ui/ActionIcons";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PortalLayout from "../PortalLayout";
 import PageHeader from "../shared/PageHeader";
@@ -139,10 +140,10 @@ export default function EmployeeDocList() {
                     {r.version_number > 0 ? `v${r.version_number}` : "—"}
                   </td>
                   <td style={{ textAlign: "right" }} onClick={e => e.stopPropagation()}>
-                    <button onClick={() => navigate(`/portal/${subdomain}/employee-documents/${r.id}`)}
-                      className="t-accent" style={{background:"none",border:"none",cursor:"pointer",fontSize:12,fontWeight:600}}>View</button>
-                    <button onClick={() => navigate(`/portal/${subdomain}/employee-documents/${r.id}/edit`)}
-                      className="t-body" style={{background:"none",border:"none",cursor:"pointer",fontSize:12,marginLeft:10}}>Edit</button>
+                    <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                      <ViewIconBtn onClick={() => navigate(`/portal/${subdomain}/employee-documents/${r.id}`)} title="View document" />
+                      <EditIconBtn onClick={() => navigate(`/portal/${subdomain}/employee-documents/${r.id}/edit`)} title="Edit document" />
+                    </div>
                   </td>
                 </tr>
               ))}
