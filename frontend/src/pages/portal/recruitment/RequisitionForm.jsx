@@ -16,6 +16,7 @@ export default function RequisitionForm({ editMode = false }) {
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [branches, setBranches] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -39,6 +40,8 @@ export default function RequisitionForm({ editMode = false }) {
       .then(r => setDesignations(r.data.data?.data || [])).catch(() => {});
     portalOrgApi.listBranches(subdomain, token, { company_id: form.company_id, page_size: 200, status: "active" })
       .then(r => setBranches(r.data.data?.data || [])).catch(() => {});
+    portalOrgApi.listActiveEmployees(subdomain, token, { company_id: form.company_id })
+      .then(r => setEmployees(r.data.data?.data || [])).catch(() => {});
   }, [subdomain, token, form.company_id]);
 
   const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
@@ -103,7 +106,16 @@ export default function RequisitionForm({ editMode = false }) {
             </div>
           </div>
           <div className="portal-form-row">
-            <div><label className="portal-form-label">Hiring Manager</label><input value={form.hiring_manager} onChange={f("hiring_manager")} placeholder="Name" className="input-field" /></div>
+            <div>
+              <label className="portal-form-label">Hiring Manager</label>
+              <select value={form.hiring_manager} onChange={f("hiring_manager")} className="input-field" disabled={!form.company_id}>
+                <option value="">Select hiring manager…</option>
+                {employees.map(e => <option key={e.id} value={e.full_name}>{e.full_name}{e.employee_code ? ` (${e.employee_code})` : ""}</option>)}
+                {form.hiring_manager && !employees.some(e => e.full_name === form.hiring_manager) && (
+                  <option value={form.hiring_manager}>{form.hiring_manager}</option>
+                )}
+              </select>
+            </div>
             <div><label className="portal-form-label">No. of Positions</label><input type="number" min={1} value={form.number_of_positions} onChange={f("number_of_positions")} className="input-field" /></div>
           </div>
           <div className="portal-form-row">
