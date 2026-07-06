@@ -14,12 +14,15 @@ from fastapi import Request
 # its script/frame/endpoint unconditionally so the integration is deploy-ready.
 _TURNSTILE_ORIGIN = "https://challenges.cloudflare.com"
 
+# Zippopotam.us powers the portal's postal-code auto-fill lookup (city/state/country).
+_PINCODE_LOOKUP_ORIGIN = "https://api.zippopotam.us"
+
 CSP_POLICY: str = "; ".join([
     "default-src 'self'",
     f"script-src 'self' {_TURNSTILE_ORIGIN}",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
-    f"connect-src 'self' {_TURNSTILE_ORIGIN}",
+    f"connect-src 'self' {_TURNSTILE_ORIGIN} {_PINCODE_LOOKUP_ORIGIN}",
     "font-src 'self'",
     f"frame-src {_TURNSTILE_ORIGIN}",
     "object-src 'none'",

@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
+import { Country, State, City } from "country-state-city";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
@@ -10,6 +11,14 @@ import PhoneInput from "../../../components/ui/PhoneInput";
 import usePincodeLookup from "../../../hooks/usePincodeLookup";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { ViewIconBtn, EditIconBtn, ToggleStatusIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
+
+// Ensure the currently-set value always appears as a selectable option,
+// even if it doesn't exactly match an entry in the reference dataset
+// (e.g. a value that came from the pincode auto-fill lookup).
+function ensureOption(names, current) {
+  if (!current) return names;
+  return names.some(n => n.toLowerCase() === current.trim().toLowerCase()) ? names : [current, ...names];
+}
 
 function genBranchCode(name) {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -44,6 +53,31 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
   const [error, setError] = useState("");
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const { lookup } = usePincodeLookup();
+
+  // Cascading Country → State → City dropdowns
+  const countries = useMemo(() => Country.getAllCountries(), []);
+  const countryObj = useMemo(
+    () => countries.find(c => c.name.toLowerCase() === (form.country || "").trim().toLowerCase()),
+    [countries, form.country]
+  );
+  const states = useMemo(
+    () => (countryObj ? State.getStatesOfCountry(countryObj.isoCode) : []),
+    [countryObj]
+  );
+  const stateObj = useMemo(
+    () => states.find(s => s.name.toLowerCase() === (form.state || "").trim().toLowerCase()),
+    [states, form.state]
+  );
+  const cities = useMemo(
+    () => (countryObj && stateObj ? City.getCitiesOfState(countryObj.isoCode, stateObj.isoCode) : []),
+    [countryObj, stateObj]
+  );
+  const countryOptions = useMemo(() => ensureOption(countries.map(c => c.name), form.country), [countries, form.country]);
+  const stateOptions   = useMemo(() => ensureOption(states.map(s => s.name), form.state), [states, form.state]);
+  const cityOptions    = useMemo(() => ensureOption(cities.map(c => c.name), form.city), [cities, form.city]);
+
+  const handleCountryChange = (e) => setForm(f => ({ ...f, country: e.target.value, state: "", city: "" }));
+  const handleStateChange   = (e) => setForm(f => ({ ...f, state: e.target.value, city: "" }));
 
   const handlePincodeChange = async (e) => {
     const raw = e.target.value;
@@ -146,10 +180,30 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
           <div><label className="portal-form-label">Address Line 1</label><input value={form.address_line1} onChange={e => set("address_line1", e.target.value)} className="input-field" placeholder="123 Business Park" /></div>
           <div><label className="portal-form-label">Address Line 2</label><input value={form.address_line2} onChange={e => set("address_line2", e.target.value)} className="input-field" placeholder="Floor 5, Tower B" /></div>
           <div className="portal-form-row" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
-            <div><label className="portal-form-label">City</label><input value={form.city} onChange={e => set("city", e.target.value)} className="input-field" placeholder="Mumbai" /></div>
+            <div>
+              <label className="portal-form-label">City</label>
+              <select value={form.city} onChange={e => set("city", e.target.value)} className="input-field"
+                style={{ cursor: "pointer" }} disabled={!stateObj}>
+                <option value="">{stateObj ? "Select city…" : "Select state first"}</option>
+                {cityOptions.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
             <div><label className="portal-form-label">District</label><input value={form.district} onChange={e => set("district", e.target.value)} className="input-field" placeholder="Mumbai Suburban" /></div>
-            <div><label className="portal-form-label">State</label><input value={form.state} onChange={e => set("state", e.target.value)} className="input-field" placeholder="Maharashtra" /></div>
-            <div><label className="portal-form-label">Country</label><input value={form.country} onChange={e => set("country", e.target.value)} className="input-field" placeholder="India" /></div>
+            <div>
+              <label className="portal-form-label">State</label>
+              <select value={form.state} onChange={handleStateChange} className="input-field"
+                style={{ cursor: "pointer" }} disabled={!countryObj}>
+                <option value="">{countryObj ? "Select state…" : "Select country first"}</option>
+                {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="portal-form-label">Country</label>
+              <select value={form.country} onChange={handleCountryChange} className="input-field" style={{ cursor: "pointer" }}>
+                <option value="">Select country…</option>
+                {countryOptions.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
           </div>
           <PhoneInput
             label="Phone"

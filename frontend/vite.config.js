@@ -9,7 +9,7 @@ const DEV_CSP = [
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
-  "connect-src 'self' ws: wss:",
+  "connect-src 'self' ws: wss: https://api.zippopotam.us",
   "font-src 'self'",
   "object-src 'none'",
   "frame-ancestors *",

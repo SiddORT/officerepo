@@ -121,6 +121,7 @@ class OrgBranch(ClientBase):
     state               = Column(String(100), nullable=True)
     country             = Column(String(100), nullable=True)
     postal_code         = Column(String(20),  nullable=True)
+    description         = Column(Text, nullable=True)
 
     is_active           = Column(Boolean, nullable=False, default=True)
     is_deleted          = Column(Boolean, nullable=False, default=False)

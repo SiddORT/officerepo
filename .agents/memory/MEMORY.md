@@ -1,6 +1,7 @@
 # Project Memory — Office Repo
 
 - [Portal invite auth design](portal-invite-auth.md) — SHA-256 hash stored (never raw token); `create_portal_token` uses JWT_SECRET + `token_type:"portal_access"`; public routes use bare axios, not apiClient.
+- [Vite dev CSP is separate from backend CSP](vite-dev-csp-dual-header.md) — frontend fetches to new external origins need connect-src added to BOTH backend security_headers.py AND vite.config.js DEV_CSP.
 
 - [Alembic migration setup](alembic-setup.md) — alembic.ini at workspace root; env.py must import ALL model modules or autogenerate silently emits DROP TABLE for unknown tables; add imports to env.py + main.py for new models.
 - [Notification config encryption](notification-config-encryption.md) — sensitive channel config fields encrypted via Fernet; key derived from SESSION_SECRET (SHA-256 → urlsafe-b64); stored as config_enc; non-sensitive fields in plain config_plain JSON.
