@@ -262,7 +262,7 @@ class LeaveRequest(ClientBase):
     attachment_key  = Column(String(500), nullable=True)
     attachment_name = Column(String(255), nullable=True)
 
-    status          = Column(String(30),  nullable=False, default="Draft", index=True)
+    status          = Column(String(30),  nullable=False, default="Draft")
     applied_at      = Column(DateTime,    nullable=True)
     approved_at     = Column(DateTime,    nullable=True)
     rejected_at     = Column(DateTime,    nullable=True)

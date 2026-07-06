@@ -88,7 +88,7 @@ def meta_options(
     db: Session = Depends(_client_db_dep),
 ):
     _sub(portal_user, subdomain)
-    return ApiResponse.success(data={
+    return ApiResponse.ok(data={
         "statuses": DOCUMENT_STATUSES,
         "categories": DOCUMENT_CATEGORIES,
     })
@@ -104,7 +104,7 @@ def dashboard(
 ):
     _sub(portal_user, subdomain)
     stats = svc.get_dashboard(db, portal_user["client_id"])
-    return ApiResponse.success(data=stats)
+    return ApiResponse.ok(data=stats)
 
 
 # ── Document Types ─────────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ def list_doc_types(
 ):
     _sub(portal_user, subdomain)
     types = svc.list_doc_types(db, portal_user["client_id"], active_only)
-    return ApiResponse.success(data={"items": types, "total": len(types)})
+    return ApiResponse.ok(data={"items": types, "total": len(types)})
 
 
 @router.post("/{subdomain}/employee-documents/types")
@@ -130,7 +130,7 @@ def create_doc_type(
 ):
     _sub(portal_user, subdomain)
     t = svc.create_doc_type(db, portal_user["client_id"], body.model_dump())
-    return ApiResponse.success(data=t, message="Document type created.")
+    return ApiResponse.ok(data=t, message="Document type created.")
 
 
 @router.patch("/{subdomain}/employee-documents/types/{type_id}")
@@ -142,7 +142,7 @@ def update_doc_type(
 ):
     _sub(portal_user, subdomain)
     t = svc.update_doc_type(db, portal_user["client_id"], type_id, body.model_dump(exclude_none=True))
-    return ApiResponse.success(data=t, message="Document type updated.")
+    return ApiResponse.ok(data=t, message="Document type updated.")
 
 
 # ── Employee Documents ─────────────────────────────────────────────────────────
@@ -168,7 +168,7 @@ def list_documents(
         status=status, category=category,
         search=search, page=page, page_size=page_size,
     )
-    return ApiResponse.success(data=result)
+    return ApiResponse.ok(data=result)
 
 
 @router.post("/{subdomain}/employee-documents")
@@ -195,7 +195,7 @@ async def upload_document(
         issuing_authority=issuing_authority, remarks=remarks, file=file,
         employee_code=employee_code, employee_name=employee_name,
     )
-    return ApiResponse.success(data=doc, message="Document uploaded.")
+    return ApiResponse.ok(data=doc, message="Document uploaded.")
 
 
 @router.get("/{subdomain}/employee-documents/{doc_id}")
@@ -206,7 +206,7 @@ def get_document(
 ):
     _sub(portal_user, subdomain)
     doc = svc.get_document(db, portal_user["client_id"], doc_id)
-    return ApiResponse.success(data=doc)
+    return ApiResponse.ok(data=doc)
 
 
 @router.patch("/{subdomain}/employee-documents/{doc_id}")
@@ -218,7 +218,7 @@ def update_document(
 ):
     _sub(portal_user, subdomain)
     doc = svc.update_document(db, portal_user["client_id"], doc_id, body.model_dump(exclude_none=True), _actor(portal_user))
-    return ApiResponse.success(data=doc, message="Document updated.")
+    return ApiResponse.ok(data=doc, message="Document updated.")
 
 
 @router.delete("/{subdomain}/employee-documents/{doc_id}")
@@ -229,7 +229,7 @@ def delete_document(
 ):
     _sub(portal_user, subdomain)
     svc.delete_document(db, portal_user["client_id"], doc_id, _actor(portal_user))
-    return ApiResponse.success(message="Document deleted.")
+    return ApiResponse.ok(message="Document deleted.")
 
 
 @router.get("/{subdomain}/employee-documents/{doc_id}/download")
@@ -254,7 +254,7 @@ async def replace_file(
 ):
     _sub(portal_user, subdomain)
     doc = await svc.replace_file(db, portal_user["client_id"], doc_id, file, change_notes, _actor(portal_user))
-    return ApiResponse.success(data=doc, message="New version uploaded.")
+    return ApiResponse.ok(data=doc, message="New version uploaded.")
 
 
 @router.post("/{subdomain}/employee-documents/{doc_id}/submit")
@@ -265,7 +265,7 @@ def submit_for_review(
 ):
     _sub(portal_user, subdomain)
     doc = svc.submit_for_review(db, portal_user["client_id"], doc_id, _actor(portal_user))
-    return ApiResponse.success(data=doc, message="Submitted for review.")
+    return ApiResponse.ok(data=doc, message="Submitted for review.")
 
 
 @router.post("/{subdomain}/employee-documents/{doc_id}/verify")
@@ -281,7 +281,7 @@ def verify_document(
         actor_id=portal_user.get("user_id", ""), actor_name=_actor(portal_user),
         notes=body.notes,
     )
-    return ApiResponse.success(data=doc, message="Document verified.")
+    return ApiResponse.ok(data=doc, message="Document verified.")
 
 
 @router.post("/{subdomain}/employee-documents/{doc_id}/reject")
@@ -293,7 +293,7 @@ def reject_document(
 ):
     _sub(portal_user, subdomain)
     doc = svc.reject_document(db, portal_user["client_id"], doc_id, _actor(portal_user), body.rejection_reason)
-    return ApiResponse.success(data=doc, message="Document rejected.")
+    return ApiResponse.ok(data=doc, message="Document rejected.")
 
 
 @router.get("/{subdomain}/employee-documents/{doc_id}/versions")
@@ -304,7 +304,7 @@ def list_versions(
 ):
     _sub(portal_user, subdomain)
     versions = svc.list_versions(db, portal_user["client_id"], doc_id)
-    return ApiResponse.success(data={"items": versions, "total": len(versions)})
+    return ApiResponse.ok(data={"items": versions, "total": len(versions)})
 
 
 @router.get("/{subdomain}/employee-documents/{doc_id}/activities")
@@ -315,4 +315,4 @@ def list_activities(
 ):
     _sub(portal_user, subdomain)
     acts = svc.list_activities(db, portal_user["client_id"], doc_id)
-    return ApiResponse.success(data={"items": acts, "total": len(acts)})
+    return ApiResponse.ok(data={"items": acts, "total": len(acts)})

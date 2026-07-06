@@ -94,7 +94,7 @@ def _cid(portal_user: dict) -> str:
 @router.get("/{subdomain}/recruitment/meta/options")
 def meta_options(subdomain: str, portal_user: dict = Depends(_portal_jwt)):
     _sub(portal_user, subdomain)
-    return ApiResponse.success(data={
+    return ApiResponse.ok(data={
         "requisition_statuses": REQUISITION_STATUSES,
         "opening_statuses": OPENING_STATUSES,
         "candidate_statuses": CANDIDATE_STATUSES,
@@ -115,7 +115,7 @@ def dashboard(
     db: Session = Depends(_client_db_dep),
 ):
     _sub(portal_user, subdomain)
-    return ApiResponse.success(data=svc.dashboard(db, _cid(portal_user)))
+    return ApiResponse.ok(data=svc.dashboard(db, _cid(portal_user)))
 
 
 # ── Job Requisitions ──────────────────────────────────────────────────────────
@@ -134,7 +134,7 @@ def list_requisitions(
     _sub(portal_user, subdomain)
     result = svc.list_requisitions(db, _cid(portal_user), page=page, page_size=page_size,
                                    search=search, status=status, department_id=department_id)
-    return ApiResponse.success(data=result)
+    return ApiResponse.ok(data=result)
 
 
 @router.post("/{subdomain}/recruitment/requisitions")
@@ -146,7 +146,7 @@ def create_requisition(
 ):
     _sub(portal_user, subdomain)
     result = svc.create_requisition(db, _cid(portal_user), body.model_dump(exclude_none=True), _actor(portal_user))
-    return ApiResponse.success(data=result, message="Requisition created.")
+    return ApiResponse.ok(data=result, message="Requisition created.")
 
 
 @router.get("/{subdomain}/recruitment/requisitions/{req_id}")
@@ -156,7 +156,7 @@ def get_requisition(
     db: Session = Depends(_client_db_dep),
 ):
     _sub(portal_user, subdomain)
-    return ApiResponse.success(data=svc.get_requisition(db, _cid(portal_user), req_id))
+    return ApiResponse.ok(data=svc.get_requisition(db, _cid(portal_user), req_id))
 
 
 @router.patch("/{subdomain}/recruitment/requisitions/{req_id}")
@@ -167,7 +167,7 @@ def update_requisition(
 ):
     _sub(portal_user, subdomain)
     result = svc.update_requisition(db, _cid(portal_user), req_id, body.model_dump(exclude_none=True))
-    return ApiResponse.success(data=result, message="Requisition updated.")
+    return ApiResponse.ok(data=result, message="Requisition updated.")
 
 
 @router.post("/{subdomain}/recruitment/requisitions/{req_id}/submit")
@@ -177,7 +177,7 @@ def submit_requisition(
     db: Session = Depends(_client_db_dep),
 ):
     _sub(portal_user, subdomain)
-    return ApiResponse.success(data=svc.submit_requisition(db, _cid(portal_user), req_id), message="Submitted.")
+    return ApiResponse.ok(data=svc.submit_requisition(db, _cid(portal_user), req_id), message="Submitted.")
 
 
 @router.post("/{subdomain}/recruitment/requisitions/{req_id}/approve")
@@ -187,7 +187,7 @@ def approve_requisition(
     db: Session = Depends(_client_db_dep),
 ):
     _sub(portal_user, subdomain)
-    return ApiResponse.success(data=svc.approve_requisition(db, _cid(portal_user), req_id), message="Approved.")
+    return ApiResponse.ok(data=svc.approve_requisition(db, _cid(portal_user), req_id), message="Approved.")
 
 
 @router.post("/{subdomain}/recruitment/requisitions/{req_id}/reject")
@@ -198,7 +198,7 @@ def reject_requisition(
 ):
     _sub(portal_user, subdomain)
     result = svc.reject_requisition(db, _cid(portal_user), req_id, body.rejection_reason)
-    return ApiResponse.success(data=result, message="Rejected.")
+    return ApiResponse.ok(data=result, message="Rejected.")
 
 
 @router.delete("/{subdomain}/recruitment/requisitions/{req_id}")
@@ -209,7 +209,7 @@ def delete_requisition(
 ):
     _sub(portal_user, subdomain)
     svc.delete_requisition(db, _cid(portal_user), req_id)
-    return ApiResponse.success(message="Deleted.")
+    return ApiResponse.ok(message="Deleted.")
 
 
 # ── Job Openings ──────────────────────────────────────────────────────────────
@@ -228,7 +228,7 @@ def list_openings(
     _sub(portal_user, subdomain)
     result = svc.list_openings(db, _cid(portal_user), page=page, page_size=page_size,
                                search=search, status=status, department_id=department_id)
-    return ApiResponse.success(data=result)
+    return ApiResponse.ok(data=result)
 
 
 @router.post("/{subdomain}/recruitment/openings")
@@ -239,7 +239,7 @@ def create_opening(
 ):
     _sub(portal_user, subdomain)
     result = svc.create_opening(db, _cid(portal_user), body.model_dump(exclude_none=True), _actor(portal_user))
-    return ApiResponse.success(data=result, message="Opening created.")
+    return ApiResponse.ok(data=result, message="Opening created.")
 
 
 @router.get("/{subdomain}/recruitment/openings/{opening_id}")
@@ -249,7 +249,7 @@ def get_opening(
     db: Session = Depends(_client_db_dep),
 ):
     _sub(portal_user, subdomain)
-    return ApiResponse.success(data=svc.get_opening(db, _cid(portal_user), opening_id))
+    return ApiResponse.ok(data=svc.get_opening(db, _cid(portal_user), opening_id))
 
 
 @router.patch("/{subdomain}/recruitment/openings/{opening_id}")
@@ -260,7 +260,7 @@ def update_opening(
 ):
     _sub(portal_user, subdomain)
     result = svc.update_opening(db, _cid(portal_user), opening_id, body.model_dump(exclude_none=True))
-    return ApiResponse.success(data=result, message="Opening updated.")
+    return ApiResponse.ok(data=result, message="Opening updated.")
 
 
 @router.delete("/{subdomain}/recruitment/openings/{opening_id}")
@@ -271,7 +271,7 @@ def delete_opening(
 ):
     _sub(portal_user, subdomain)
     svc.delete_opening(db, _cid(portal_user), opening_id)
-    return ApiResponse.success(message="Deleted.")
+    return ApiResponse.ok(message="Deleted.")
 
 
 # ── Candidates ────────────────────────────────────────────────────────────────
@@ -291,7 +291,7 @@ def list_candidates(
     _sub(portal_user, subdomain)
     result = svc.list_candidates(db, _cid(portal_user), page=page, page_size=page_size,
                                  search=search, status=status, source=source, opening_id=opening_id)
-    return ApiResponse.success(data=result)
+    return ApiResponse.ok(data=result)
 
 
 @router.post("/{subdomain}/recruitment/candidates")
@@ -302,7 +302,7 @@ def create_candidate(
 ):
     _sub(portal_user, subdomain)
     result = svc.create_candidate(db, _cid(portal_user), body.model_dump(exclude_none=True), _actor(portal_user))
-    return ApiResponse.success(data=result, message="Candidate added.")
+    return ApiResponse.ok(data=result, message="Candidate added.")
 
 
 @router.get("/{subdomain}/recruitment/candidates/{cand_id}")
@@ -312,7 +312,7 @@ def get_candidate(
     db: Session = Depends(_client_db_dep),
 ):
     _sub(portal_user, subdomain)
-    return ApiResponse.success(data=svc.get_candidate(db, _cid(portal_user), cand_id))
+    return ApiResponse.ok(data=svc.get_candidate(db, _cid(portal_user), cand_id))
 
 
 @router.patch("/{subdomain}/recruitment/candidates/{cand_id}")
@@ -323,7 +323,7 @@ def update_candidate(
 ):
     _sub(portal_user, subdomain)
     result = svc.update_candidate(db, _cid(portal_user), cand_id, body.model_dump(exclude_none=True), _actor(portal_user))
-    return ApiResponse.success(data=result, message="Candidate updated.")
+    return ApiResponse.ok(data=result, message="Candidate updated.")
 
 
 @router.post("/{subdomain}/recruitment/candidates/{cand_id}/status")
@@ -334,7 +334,7 @@ def change_status(
 ):
     _sub(portal_user, subdomain)
     result = svc.change_status(db, _cid(portal_user), cand_id, body.status, body.notes, _actor(portal_user))
-    return ApiResponse.success(data=result, message="Status updated.")
+    return ApiResponse.ok(data=result, message="Status updated.")
 
 
 @router.delete("/{subdomain}/recruitment/candidates/{cand_id}")
@@ -345,7 +345,7 @@ def delete_candidate(
 ):
     _sub(portal_user, subdomain)
     svc.delete_candidate(db, _cid(portal_user), cand_id)
-    return ApiResponse.success(message="Deleted.")
+    return ApiResponse.ok(message="Deleted.")
 
 
 @router.post("/{subdomain}/recruitment/candidates/{cand_id}/resume")
@@ -357,7 +357,7 @@ async def upload_resume(
 ):
     _sub(portal_user, subdomain)
     result = svc.upload_resume(db, _cid(portal_user), cand_id, file, _actor(portal_user))
-    return ApiResponse.success(data=result, message="Resume uploaded.")
+    return ApiResponse.ok(data=result, message="Resume uploaded.")
 
 
 @router.get("/{subdomain}/recruitment/candidates/{cand_id}/resume/download")
@@ -378,7 +378,7 @@ def list_candidate_docs(
     db: Session = Depends(_client_db_dep),
 ):
     _sub(portal_user, subdomain)
-    return ApiResponse.success(data=svc.list_docs(db, _cid(portal_user), cand_id))
+    return ApiResponse.ok(data=svc.list_docs(db, _cid(portal_user), cand_id))
 
 
 @router.post("/{subdomain}/recruitment/candidates/{cand_id}/documents")
@@ -391,7 +391,7 @@ async def upload_candidate_doc(
 ):
     _sub(portal_user, subdomain)
     result = svc.upload_doc(db, _cid(portal_user), cand_id, file, document_type, _actor(portal_user))
-    return ApiResponse.success(data=result, message="Document uploaded.")
+    return ApiResponse.ok(data=result, message="Document uploaded.")
 
 
 @router.delete("/{subdomain}/recruitment/candidates/{cand_id}/documents/{doc_id}")
@@ -402,7 +402,7 @@ def delete_candidate_doc(
 ):
     _sub(portal_user, subdomain)
     svc.delete_doc(db, _cid(portal_user), cand_id, doc_id)
-    return ApiResponse.success(message="Deleted.")
+    return ApiResponse.ok(message="Deleted.")
 
 
 @router.get("/{subdomain}/recruitment/candidates/{cand_id}/documents/{doc_id}/download")
@@ -423,7 +423,7 @@ def candidate_activities(
     db: Session = Depends(_client_db_dep),
 ):
     _sub(portal_user, subdomain)
-    return ApiResponse.success(data=svc.list_activities(db, _cid(portal_user), cand_id))
+    return ApiResponse.ok(data=svc.list_activities(db, _cid(portal_user), cand_id))
 
 
 # ── Offers ────────────────────────────────────────────────────────────────────
@@ -441,7 +441,7 @@ def list_offers(
     _sub(portal_user, subdomain)
     result = svc.list_offers(db, _cid(portal_user), page=page, page_size=page_size,
                              candidate_id=candidate_id, status=status)
-    return ApiResponse.success(data=result)
+    return ApiResponse.ok(data=result)
 
 
 @router.post("/{subdomain}/recruitment/offers")
@@ -452,7 +452,7 @@ def create_offer(
 ):
     _sub(portal_user, subdomain)
     result = svc.create_offer(db, _cid(portal_user), body.model_dump(exclude_none=True), _actor(portal_user))
-    return ApiResponse.success(data=result, message="Offer created.")
+    return ApiResponse.ok(data=result, message="Offer created.")
 
 
 @router.get("/{subdomain}/recruitment/offers/{offer_id}")
@@ -462,7 +462,7 @@ def get_offer(
     db: Session = Depends(_client_db_dep),
 ):
     _sub(portal_user, subdomain)
-    return ApiResponse.success(data=svc.get_offer(db, _cid(portal_user), offer_id))
+    return ApiResponse.ok(data=svc.get_offer(db, _cid(portal_user), offer_id))
 
 
 @router.patch("/{subdomain}/recruitment/offers/{offer_id}")
@@ -473,7 +473,7 @@ def update_offer(
 ):
     _sub(portal_user, subdomain)
     result = svc.update_offer(db, _cid(portal_user), offer_id, body.model_dump(exclude_none=True))
-    return ApiResponse.success(data=result, message="Offer updated.")
+    return ApiResponse.ok(data=result, message="Offer updated.")
 
 
 @router.post("/{subdomain}/recruitment/offers/{offer_id}/send")
@@ -483,7 +483,7 @@ def send_offer(
     db: Session = Depends(_client_db_dep),
 ):
     _sub(portal_user, subdomain)
-    return ApiResponse.success(data=svc.send_offer(db, _cid(portal_user), offer_id, _actor(portal_user)), message="Offer sent.")
+    return ApiResponse.ok(data=svc.send_offer(db, _cid(portal_user), offer_id, _actor(portal_user)), message="Offer sent.")
 
 
 @router.post("/{subdomain}/recruitment/offers/{offer_id}/accept")
@@ -493,7 +493,7 @@ def accept_offer(
     db: Session = Depends(_client_db_dep),
 ):
     _sub(portal_user, subdomain)
-    return ApiResponse.success(data=svc.accept_offer(db, _cid(portal_user), offer_id, _actor(portal_user)), message="Offer accepted.")
+    return ApiResponse.ok(data=svc.accept_offer(db, _cid(portal_user), offer_id, _actor(portal_user)), message="Offer accepted.")
 
 
 @router.post("/{subdomain}/recruitment/offers/{offer_id}/reject")
@@ -504,4 +504,4 @@ def reject_offer(
 ):
     _sub(portal_user, subdomain)
     result = svc.reject_offer(db, _cid(portal_user), offer_id, body.rejection_reason, _actor(portal_user))
-    return ApiResponse.success(data=result, message="Offer rejected.")
+    return ApiResponse.ok(data=result, message="Offer rejected.")

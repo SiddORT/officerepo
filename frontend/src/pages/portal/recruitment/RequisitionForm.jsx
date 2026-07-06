@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { portalRecruitmentApi } from "../../../services/apiClient";
+import { portalRecruitmentApi, portalOrgApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
 
@@ -12,11 +12,17 @@ export default function RequisitionForm({ editMode = false }) {
   const navigate = useNavigate();
   const [form, setForm] = useState(BLANK);
   const [meta, setMeta] = useState({});
+  const [companies, setCompanies] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     portalRecruitmentApi.metaOptions(subdomain, token).then(r => setMeta(r.data?.data || {})).catch(() => {});
+    portalOrgApi.listCompanies(subdomain, token, { page_size: 200, is_active: true })
+      .then(r => setCompanies(r.data.data?.data || [])).catch(() => {});
     if (editMode && reqId) {
       portalRecruitmentApi.getRequisition(subdomain, token, reqId).then(r => {
         const d = r.data?.data || {};
@@ -24,6 +30,16 @@ export default function RequisitionForm({ editMode = false }) {
       }).catch(() => {});
     }
   }, []);
+
+  useEffect(() => {
+    if (!form.company_id) { setDepartments([]); setDesignations([]); setBranches([]); return; }
+    portalOrgApi.listDepts(subdomain, token, { company_id: form.company_id, page_size: 200 })
+      .then(r => setDepartments(r.data.data?.data || [])).catch(() => {});
+    portalOrgApi.listDesigs(subdomain, token, { company_id: form.company_id, page_size: 200 })
+      .then(r => setDesignations(r.data.data?.data || [])).catch(() => {});
+    portalOrgApi.listBranches(subdomain, token, { company_id: form.company_id, page_size: 200, status: "active" })
+      .then(r => setBranches(r.data.data?.data || [])).catch(() => {});
+  }, [subdomain, token, form.company_id]);
 
   const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
 
@@ -55,12 +71,36 @@ export default function RequisitionForm({ editMode = false }) {
         <div className="portal-form-card">
           <div className="portal-form-title">Position Details</div>
           <div className="portal-form-row">
-            <div><label className="portal-form-label portal-form-label-req">Department ID</label><input value={form.department_id} onChange={f("department_id")} placeholder="Department ID" className="input-field" /></div>
-            <div><label className="portal-form-label portal-form-label-req">Designation ID</label><input value={form.designation_id} onChange={f("designation_id")} placeholder="Designation ID" className="input-field" /></div>
+            <div>
+              <label className="portal-form-label">Company</label>
+              <select value={form.company_id} onChange={e => setForm(p => ({ ...p, company_id: e.target.value, department_id: "", designation_id: "", branch_id: "" }))} className="input-field">
+                <option value="">Select company…</option>
+                {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="portal-form-label portal-form-label-req">Department</label>
+              <select value={form.department_id} onChange={f("department_id")} className="input-field" disabled={!form.company_id}>
+                <option value="">Select department…</option>
+                {departments.map(d => <option key={d.id} value={d.id}>{d.department_name}</option>)}
+              </select>
+            </div>
           </div>
           <div className="portal-form-row">
-            <div><label className="portal-form-label">Company ID</label><input value={form.company_id} onChange={f("company_id")} placeholder="Company ID" className="input-field" /></div>
-            <div><label className="portal-form-label">Branch ID</label><input value={form.branch_id} onChange={f("branch_id")} placeholder="Branch ID" className="input-field" /></div>
+            <div>
+              <label className="portal-form-label portal-form-label-req">Designation</label>
+              <select value={form.designation_id} onChange={f("designation_id")} className="input-field" disabled={!form.company_id}>
+                <option value="">Select designation…</option>
+                {designations.map(d => <option key={d.id} value={d.id}>{d.designation_name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="portal-form-label">Branch</label>
+              <select value={form.branch_id} onChange={f("branch_id")} className="input-field" disabled={!form.company_id}>
+                <option value="">Select branch…</option>
+                {branches.map(b => <option key={b.id} value={b.id}>{b.branch_name}</option>)}
+              </select>
+            </div>
           </div>
           <div className="portal-form-row">
             <div><label className="portal-form-label">Hiring Manager</label><input value={form.hiring_manager} onChange={f("hiring_manager")} placeholder="Name" className="input-field" /></div>

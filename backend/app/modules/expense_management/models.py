@@ -137,8 +137,6 @@ class ExpenseClaim(ClientBase):
                                order_by="ExpenseActivity.created_at")
 
     __table_args__ = (
-        Index("ix_expense_claims_employee_id", "employee_id"),
-        Index("ix_expense_claims_status",      "status"),
         Index("ix_expense_claims_claim_number","claim_number"),
     )
 
@@ -163,10 +161,6 @@ class ExpenseClaimItem(ClientBase):
     claim    = relationship("ExpenseClaim",    back_populates="items")
     category = relationship("ExpenseCategory", back_populates="claim_items")
 
-    __table_args__ = (
-        Index("ix_expense_claim_items_claim_id", "claim_id"),
-    )
-
 
 # ── Expense Approvals ─────────────────────────────────────────────────────────
 class ExpenseApproval(ClientBase):
@@ -185,11 +179,6 @@ class ExpenseApproval(ClientBase):
     created_at      = Column(DateTime, default=_now, nullable=False)
 
     claim = relationship("ExpenseClaim", back_populates="approvals")
-
-    __table_args__ = (
-        Index("ix_expense_approvals_claim_id", "claim_id"),
-        Index("ix_expense_approvals_status",   "status"),
-    )
 
 
 # ── Expense Receipts ──────────────────────────────────────────────────────────
@@ -210,10 +199,6 @@ class ExpenseReceipt(ClientBase):
     deleted_at  = Column(DateTime, nullable=True)
 
     claim = relationship("ExpenseClaim", back_populates="receipts")
-
-    __table_args__ = (
-        Index("ix_expense_receipts_claim_id", "claim_id"),
-    )
 
 
 # ── Expense Reimbursements ────────────────────────────────────────────────────
@@ -237,12 +222,6 @@ class ExpenseReimbursement(ClientBase):
 
     claim = relationship("ExpenseClaim", back_populates="reimbursements")
 
-    __table_args__ = (
-        Index("ix_expense_reimbursements_claim_id",    "claim_id"),
-        Index("ix_expense_reimbursements_employee_id", "employee_id"),
-        Index("ix_expense_reimbursements_status",      "status"),
-    )
-
 
 # ── Mileage Claims ────────────────────────────────────────────────────────────
 class MileageClaim(ClientBase):
@@ -265,11 +244,6 @@ class MileageClaim(ClientBase):
     created_at      = Column(DateTime, default=_now, nullable=False)
     updated_at      = Column(DateTime, default=_now, onupdate=_now, nullable=False)
 
-    __table_args__ = (
-        Index("ix_mileage_claims_employee_id", "employee_id"),
-        Index("ix_mileage_claims_status",      "status"),
-    )
-
 
 # ── Expense Activities ────────────────────────────────────────────────────────
 class ExpenseActivity(ClientBase):
@@ -287,6 +261,3 @@ class ExpenseActivity(ClientBase):
 
     claim = relationship("ExpenseClaim", back_populates="activities")
 
-    __table_args__ = (
-        Index("ix_expense_activities_claim_id", "claim_id"),
-    )

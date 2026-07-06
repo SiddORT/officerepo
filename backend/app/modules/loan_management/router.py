@@ -96,7 +96,7 @@ def meta_options(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.get_meta_options(db, _client_id(jwt)))
+    return ApiResponse.ok(svc.get_meta_options(db, _client_id(jwt)))
 
 
 # ── Dashboard ──────────────────────────────────────────────────────────────────
@@ -108,7 +108,7 @@ def dashboard(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.get_dashboard(db, _client_id(jwt)))
+    return ApiResponse.ok(svc.get_dashboard(db, _client_id(jwt)))
 
 
 # ── Loan Types ─────────────────────────────────────────────────────────────────
@@ -120,7 +120,7 @@ def list_types(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.list_loan_types(db, _client_id(jwt)))
+    return ApiResponse.ok(svc.list_loan_types(db, _client_id(jwt)))
 
 
 @router.post(BASE + "/types")
@@ -131,7 +131,7 @@ def create_type(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.create_loan_type(db, _client_id(jwt), body.model_dump(), _actor(jwt)), status_code=201)
+    return ApiResponse.ok(svc.create_loan_type(db, _client_id(jwt), body.model_dump(), _actor(jwt)), status_code=201)
 
 
 @router.patch(BASE + "/types/{type_id}")
@@ -143,7 +143,7 @@ def update_type(
 ):
     _sub(jwt, subdomain)
     data = {k: v for k, v in body.model_dump().items() if v is not None}
-    return ApiResponse.success(svc.update_loan_type(db, _client_id(jwt), type_id, data, _actor(jwt)))
+    return ApiResponse.ok(svc.update_loan_type(db, _client_id(jwt), type_id, data, _actor(jwt)))
 
 
 @router.delete(BASE + "/types/{type_id}")
@@ -154,7 +154,7 @@ def delete_type(
 ):
     _sub(jwt, subdomain)
     svc.delete_loan_type(db, _client_id(jwt), type_id, _actor(jwt))
-    return ApiResponse.success({"deleted": True})
+    return ApiResponse.ok({"deleted": True})
 
 
 # ── Loan Policies ──────────────────────────────────────────────────────────────
@@ -167,7 +167,7 @@ def list_policies(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.list_loan_policies(db, _client_id(jwt), loan_type_id))
+    return ApiResponse.ok(svc.list_loan_policies(db, _client_id(jwt), loan_type_id))
 
 
 @router.post(BASE + "/policies")
@@ -178,7 +178,7 @@ def create_policy(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.create_loan_policy(db, _client_id(jwt), body.model_dump(), _actor(jwt)), status_code=201)
+    return ApiResponse.ok(svc.create_loan_policy(db, _client_id(jwt), body.model_dump(), _actor(jwt)), status_code=201)
 
 
 @router.patch(BASE + "/policies/{policy_id}")
@@ -190,7 +190,7 @@ def update_policy(
 ):
     _sub(jwt, subdomain)
     data = {k: v for k, v in body.model_dump().items() if v is not None}
-    return ApiResponse.success(svc.update_loan_policy(db, _client_id(jwt), policy_id, data, _actor(jwt)))
+    return ApiResponse.ok(svc.update_loan_policy(db, _client_id(jwt), policy_id, data, _actor(jwt)))
 
 
 @router.delete(BASE + "/policies/{policy_id}")
@@ -201,7 +201,7 @@ def delete_policy(
 ):
     _sub(jwt, subdomain)
     svc.delete_loan_policy(db, _client_id(jwt), policy_id, _actor(jwt))
-    return ApiResponse.success({"deleted": True})
+    return ApiResponse.ok({"deleted": True})
 
 
 # ── Loan Applications ──────────────────────────────────────────────────────────
@@ -219,7 +219,7 @@ def list_applications(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.list_applications(
+    return ApiResponse.ok(svc.list_applications(
         db, _client_id(jwt),
         employee_id=employee_id, loan_type_id=loan_type_id,
         status=status, search=search, page=page, page_size=page_size,
@@ -234,7 +234,7 @@ def create_application(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.create_application(db, _client_id(jwt), body.model_dump(), _actor(jwt)), status_code=201)
+    return ApiResponse.ok(svc.create_application(db, _client_id(jwt), body.model_dump(), _actor(jwt)), status_code=201)
 
 
 @router.get(BASE + "/applications/{app_id}")
@@ -244,7 +244,7 @@ def get_application(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.get_application_detail(db, _client_id(jwt), app_id))
+    return ApiResponse.ok(svc.get_application_detail(db, _client_id(jwt), app_id))
 
 
 @router.patch(BASE + "/applications/{app_id}")
@@ -256,7 +256,7 @@ def update_application(
 ):
     _sub(jwt, subdomain)
     data = {k: v for k, v in body.model_dump().items() if v is not None}
-    return ApiResponse.success(svc.update_application(db, _client_id(jwt), app_id, data, _actor(jwt)))
+    return ApiResponse.ok(svc.update_application(db, _client_id(jwt), app_id, data, _actor(jwt)))
 
 
 @router.post(BASE + "/applications/{app_id}/submit")
@@ -266,7 +266,7 @@ def submit_application(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.submit_application(db, _client_id(jwt), app_id, _actor(jwt)))
+    return ApiResponse.ok(svc.submit_application(db, _client_id(jwt), app_id, _actor(jwt)))
 
 
 @router.post(BASE + "/applications/{app_id}/approve")
@@ -277,7 +277,7 @@ def approve_application(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.approve_application(db, _client_id(jwt), app_id, body.model_dump(), _actor(jwt)))
+    return ApiResponse.ok(svc.approve_application(db, _client_id(jwt), app_id, body.model_dump(), _actor(jwt)))
 
 
 @router.post(BASE + "/applications/{app_id}/reject")
@@ -288,7 +288,7 @@ def reject_application(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.reject_application(db, _client_id(jwt), app_id, body.rejection_reason, _actor(jwt)))
+    return ApiResponse.ok(svc.reject_application(db, _client_id(jwt), app_id, body.rejection_reason, _actor(jwt)))
 
 
 @router.post(BASE + "/applications/{app_id}/cancel")
@@ -299,7 +299,7 @@ def cancel_application(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.cancel_application(db, _client_id(jwt), app_id, body.reason, _actor(jwt)))
+    return ApiResponse.ok(svc.cancel_application(db, _client_id(jwt), app_id, body.reason, _actor(jwt)))
 
 
 @router.post(BASE + "/applications/{app_id}/disburse")
@@ -311,7 +311,7 @@ def disburse_application(
 ):
     _sub(jwt, subdomain)
     data = body.model_dump()
-    return ApiResponse.success(svc.disburse_application(db, _client_id(jwt), app_id, data, _actor(jwt)))
+    return ApiResponse.ok(svc.disburse_application(db, _client_id(jwt), app_id, data, _actor(jwt)))
 
 
 # ── Repayment Schedule ─────────────────────────────────────────────────────────
@@ -323,7 +323,7 @@ def get_schedule(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.get_repayment_schedule(db, _client_id(jwt), app_id))
+    return ApiResponse.ok(svc.get_repayment_schedule(db, _client_id(jwt), app_id))
 
 
 @router.patch(BASE + "/applications/{app_id}/schedule/{inst_id}")
@@ -335,7 +335,7 @@ def update_installment(
 ):
     _sub(jwt, subdomain)
     data = {k: v for k, v in body.model_dump().items() if v is not None}
-    return ApiResponse.success(svc.update_installment(db, _client_id(jwt), app_id, inst_id, data, _actor(jwt)))
+    return ApiResponse.ok(svc.update_installment(db, _client_id(jwt), app_id, inst_id, data, _actor(jwt)))
 
 
 # ── Loan Closure ───────────────────────────────────────────────────────────────
@@ -348,7 +348,7 @@ def close_loan(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.close_loan(db, _client_id(jwt), app_id, body.model_dump(), _actor(jwt)))
+    return ApiResponse.ok(svc.close_loan(db, _client_id(jwt), app_id, body.model_dump(), _actor(jwt)))
 
 
 # ── Payroll Integration ────────────────────────────────────────────────────────
@@ -361,7 +361,7 @@ def active_emis(
     db:  Session = Depends(_client_db_dep),
 ):
     _sub(jwt, subdomain)
-    return ApiResponse.success(svc.get_active_emi_for_employee(db, _client_id(jwt), employee_id))
+    return ApiResponse.ok(svc.get_active_emi_for_employee(db, _client_id(jwt), employee_id))
 
 
 # ── Activities ─────────────────────────────────────────────────────────────────
@@ -374,4 +374,4 @@ def get_activities(
 ):
     _sub(jwt, subdomain)
     from . import repository as repo
-    return ApiResponse.success([svc._activity_dict(a) for a in repo.get_activities(db, "loan_application", app_id)])
+    return ApiResponse.ok([svc._activity_dict(a) for a in repo.get_activities(db, "loan_application", app_id)])

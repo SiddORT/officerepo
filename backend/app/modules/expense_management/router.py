@@ -79,7 +79,7 @@ def _actor(portal_user: dict) -> tuple[Optional[str], Optional[str]]:
 
 @router.get(BASE + "/meta/options")
 def get_options():
-    return ApiResponse.success({
+    return ApiResponse.ok({
         "statuses": C.ALL_STATUSES,
         "approval_statuses": C.ALL_APPROVAL_STATUSES,
         "reimbursement_methods": C.ALL_REIMB_METHODS,
@@ -97,7 +97,7 @@ def dashboard(
     portal_user: dict = Depends(_portal_jwt),
 ):
     svc.seed_default_categories(db)
-    return ApiResponse.success(svc.get_dashboard(db))
+    return ApiResponse.ok(svc.get_dashboard(db))
 
 
 # ── Expense Categories ─────────────────────────────────────────────────────────
@@ -109,7 +109,7 @@ def list_categories(
     portal_user: dict = Depends(_portal_jwt),
 ):
     svc.seed_default_categories(db)
-    return ApiResponse.success(svc.list_categories(db, include_inactive))
+    return ApiResponse.ok(svc.list_categories(db, include_inactive))
 
 
 @router.post(BASE + "/categories")
@@ -118,7 +118,7 @@ def create_category(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.create_category(db, payload), status_code=201)
+    return ApiResponse.ok(svc.create_category(db, payload), status_code=201)
 
 
 @router.patch(BASE + "/categories/{category_id}")
@@ -128,7 +128,7 @@ def update_category(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.update_category(db, category_id, payload))
+    return ApiResponse.ok(svc.update_category(db, category_id, payload))
 
 
 # ── Expense Policies ───────────────────────────────────────────────────────────
@@ -139,7 +139,7 @@ def list_policies(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.list_policies(db, include_inactive))
+    return ApiResponse.ok(svc.list_policies(db, include_inactive))
 
 
 @router.post(BASE + "/policies")
@@ -148,7 +148,7 @@ def create_policy(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.create_policy(db, payload), status_code=201)
+    return ApiResponse.ok(svc.create_policy(db, payload), status_code=201)
 
 
 @router.patch(BASE + "/policies/{policy_id}")
@@ -158,7 +158,7 @@ def update_policy(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.update_policy(db, policy_id, payload))
+    return ApiResponse.ok(svc.update_policy(db, policy_id, payload))
 
 
 @router.delete(BASE + "/policies/{policy_id}")
@@ -168,7 +168,7 @@ def delete_policy(
     portal_user: dict = Depends(_portal_jwt),
 ):
     svc.delete_policy(db, policy_id)
-    return ApiResponse.success({"deleted": True})
+    return ApiResponse.ok({"deleted": True})
 
 
 # ── Expense Claims ─────────────────────────────────────────────────────────────
@@ -183,7 +183,7 @@ def list_claims(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.list_claims(db, employee_id, status, search, page, page_size))
+    return ApiResponse.ok(svc.list_claims(db, employee_id, status, search, page, page_size))
 
 
 @router.post(BASE + "/claims")
@@ -192,7 +192,7 @@ def create_claim(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.create_claim(db, payload), status_code=201)
+    return ApiResponse.ok(svc.create_claim(db, payload), status_code=201)
 
 
 @router.get(BASE + "/claims/{claim_id}")
@@ -201,7 +201,7 @@ def get_claim(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.get_claim(db, claim_id))
+    return ApiResponse.ok(svc.get_claim(db, claim_id))
 
 
 @router.patch(BASE + "/claims/{claim_id}")
@@ -211,7 +211,7 @@ def update_claim(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.update_claim(db, claim_id, payload))
+    return ApiResponse.ok(svc.update_claim(db, claim_id, payload))
 
 
 @router.delete(BASE + "/claims/{claim_id}")
@@ -221,7 +221,7 @@ def delete_claim(
     portal_user: dict = Depends(_portal_jwt),
 ):
     svc.delete_claim(db, claim_id)
-    return ApiResponse.success({"deleted": True})
+    return ApiResponse.ok({"deleted": True})
 
 
 # ── Claim actions ──────────────────────────────────────────────────────────────
@@ -233,7 +233,7 @@ def submit_claim(
     portal_user: dict = Depends(_portal_jwt),
 ):
     _, actor_name = _actor(portal_user)
-    return ApiResponse.success(svc.submit_claim(db, claim_id, actor_name))
+    return ApiResponse.ok(svc.submit_claim(db, claim_id, actor_name))
 
 
 @router.post(BASE + "/claims/{claim_id}/approve")
@@ -244,7 +244,7 @@ def approve_claim(
     portal_user: dict = Depends(_portal_jwt),
 ):
     actor_id, _ = _actor(portal_user)
-    return ApiResponse.success(svc.approve_claim(db, claim_id, payload, actor_id))
+    return ApiResponse.ok(svc.approve_claim(db, claim_id, payload, actor_id))
 
 
 @router.post(BASE + "/claims/{claim_id}/reject")
@@ -255,7 +255,7 @@ def reject_claim(
     portal_user: dict = Depends(_portal_jwt),
 ):
     actor_id, _ = _actor(portal_user)
-    return ApiResponse.success(svc.reject_claim(db, claim_id, payload, actor_id))
+    return ApiResponse.ok(svc.reject_claim(db, claim_id, payload, actor_id))
 
 
 @router.post(BASE + "/claims/{claim_id}/cancel")
@@ -266,7 +266,7 @@ def cancel_claim(
     portal_user: dict = Depends(_portal_jwt),
 ):
     _, actor_name = _actor(portal_user)
-    return ApiResponse.success(svc.cancel_claim(db, claim_id, payload.reason, actor_name))
+    return ApiResponse.ok(svc.cancel_claim(db, claim_id, payload.reason, actor_name))
 
 
 @router.post(BASE + "/claims/{claim_id}/return")
@@ -277,7 +277,7 @@ def return_claim(
     portal_user: dict = Depends(_portal_jwt),
 ):
     _, actor_name = _actor(portal_user)
-    return ApiResponse.success(svc.return_claim(db, claim_id, payload, actor_name))
+    return ApiResponse.ok(svc.return_claim(db, claim_id, payload, actor_name))
 
 
 # ── Reimbursements ─────────────────────────────────────────────────────────────
@@ -291,7 +291,7 @@ def list_reimbursements(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.list_reimbursements(db, employee_id, status, page, page_size))
+    return ApiResponse.ok(svc.list_reimbursements(db, employee_id, status, page, page_size))
 
 
 @router.post(BASE + "/reimbursements")
@@ -301,7 +301,7 @@ def process_reimbursement(
     portal_user: dict = Depends(_portal_jwt),
 ):
     actor_id, _ = _actor(portal_user)
-    return ApiResponse.success(svc.process_reimbursement(db, payload, actor_id), status_code=201)
+    return ApiResponse.ok(svc.process_reimbursement(db, payload, actor_id), status_code=201)
 
 
 @router.patch(BASE + "/reimbursements/{reimb_id}")
@@ -311,7 +311,7 @@ def update_reimbursement(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.mark_reimbursement_paid(db, reimb_id, payload))
+    return ApiResponse.ok(svc.mark_reimbursement_paid(db, reimb_id, payload))
 
 
 @router.get(BASE + "/reimbursements/payroll/{employee_id}")
@@ -320,7 +320,7 @@ def get_payroll_reimbursements(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.get_pending_reimbursements_for_payroll(db, employee_id))
+    return ApiResponse.ok(svc.get_pending_reimbursements_for_payroll(db, employee_id))
 
 
 # ── Mileage Claims ─────────────────────────────────────────────────────────────
@@ -334,7 +334,7 @@ def list_mileage(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.list_mileage_claims(db, employee_id, status, page, page_size))
+    return ApiResponse.ok(svc.list_mileage_claims(db, employee_id, status, page, page_size))
 
 
 @router.post(BASE + "/mileage")
@@ -343,7 +343,7 @@ def create_mileage(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.create_mileage_claim(db, payload), status_code=201)
+    return ApiResponse.ok(svc.create_mileage_claim(db, payload), status_code=201)
 
 
 @router.patch(BASE + "/mileage/{mileage_id}")
@@ -353,7 +353,7 @@ def update_mileage(
     db: Session = Depends(_client_db_dep),
     portal_user: dict = Depends(_portal_jwt),
 ):
-    return ApiResponse.success(svc.update_mileage_claim(db, mileage_id, payload))
+    return ApiResponse.ok(svc.update_mileage_claim(db, mileage_id, payload))
 
 
 @router.delete(BASE + "/mileage/{mileage_id}")
@@ -363,4 +363,4 @@ def delete_mileage(
     portal_user: dict = Depends(_portal_jwt),
 ):
     svc.delete_mileage_claim(db, mileage_id)
-    return ApiResponse.success({"deleted": True})
+    return ApiResponse.ok({"deleted": True})
