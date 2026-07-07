@@ -159,7 +159,7 @@ def _resolve_org_names(db_client: Session, data: Dict[str, Any]) -> Dict[str, An
             from backend.app.modules.organization_management.models import OrgDepartment
             dept = db_client.query(OrgDepartment).filter(OrgDepartment.id == data["department_id"]).first()
             if dept:
-                data["department_name"] = dept.name
+                data["department_name"] = dept.department_name
     except Exception:
         pass
     try:
@@ -167,7 +167,7 @@ def _resolve_org_names(db_client: Session, data: Dict[str, Any]) -> Dict[str, An
             from backend.app.modules.organization_management.models import OrgDesignation
             desig = db_client.query(OrgDesignation).filter(OrgDesignation.id == data["designation_id"]).first()
             if desig:
-                data["designation_name"] = desig.name
+                data["designation_name"] = desig.designation_name
     except Exception:
         pass
     try:
@@ -175,7 +175,7 @@ def _resolve_org_names(db_client: Session, data: Dict[str, Any]) -> Dict[str, An
             from backend.app.modules.organization_management.models import OrgCompany
             co = db_client.query(OrgCompany).filter(OrgCompany.id == data["company_id"]).first()
             if co:
-                data["company_name"] = co.name
+                data["company_name"] = co.company_name
     except Exception:
         pass
     try:
@@ -183,7 +183,7 @@ def _resolve_org_names(db_client: Session, data: Dict[str, Any]) -> Dict[str, An
             from backend.app.modules.organization_management.models import OrgBranch
             br = db_client.query(OrgBranch).filter(OrgBranch.id == data["branch_id"]).first()
             if br:
-                data["branch_name"] = br.name
+                data["branch_name"] = br.branch_name
     except Exception:
         pass
     return data
