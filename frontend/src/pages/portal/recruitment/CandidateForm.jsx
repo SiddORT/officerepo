@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { portalRecruitmentApi } from "../../../services/apiClient";
+import { portalRecruitmentApi, portalOrgApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
 
@@ -13,12 +13,14 @@ export default function CandidateForm({ editMode = false }) {
   const [form, setForm] = useState(BLANK);
   const [meta, setMeta] = useState({});
   const [openings, setOpenings] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     portalRecruitmentApi.metaOptions(subdomain, token).then(r => setMeta(r.data?.data || {})).catch(() => {});
     portalRecruitmentApi.listOpenings(subdomain, token, { page_size: 100, status: "Open" }).then(r => setOpenings(r.data?.data?.items || [])).catch(() => {});
+    portalOrgApi.listActiveEmployees(subdomain, token, {}).then(r => setEmployees(r.data.data?.data || [])).catch(() => {});
     if (editMode && candId) {
       portalRecruitmentApi.getCandidate(subdomain, token, candId).then(r => {
         const d = r.data?.data || {};
@@ -114,7 +116,16 @@ export default function CandidateForm({ editMode = false }) {
                 {openings.map(o => <option key={o.id} value={o.id}>{o.job_title} ({o.opening_number})</option>)}
               </select>
             </div>
-            <div><label className="portal-form-label">Assigned Recruiter</label><input value={form.assigned_recruiter} onChange={f("assigned_recruiter")} placeholder="Recruiter name" className="input-field" /></div>
+            <div>
+              <label className="portal-form-label">Assigned Recruiter</label>
+              <select value={form.assigned_recruiter} onChange={f("assigned_recruiter")} className="input-field">
+                <option value="">Select recruiter…</option>
+                {employees.map(e => <option key={e.id} value={e.full_name}>{e.full_name}{e.employee_code ? ` (${e.employee_code})` : ""}</option>)}
+                {form.assigned_recruiter && !employees.some(e => e.full_name === form.assigned_recruiter) && (
+                  <option value={form.assigned_recruiter}>{form.assigned_recruiter}</option>
+                )}
+              </select>
+            </div>
           </div>
         </div>
       </div>
