@@ -11,7 +11,9 @@ export default function JobOpeningForm({ editMode = false }) {
   const [searchParams] = useSearchParams();
   const { token } = usePortalAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ ...BLANK, requisition_id: searchParams.get("requisition_id") || "" });
+  const fromRequisitionId = searchParams.get("requisition_id") || "";
+  const [form, setForm] = useState({ ...BLANK, requisition_id: fromRequisitionId });
+  const [requisitionRef, setRequisitionRef] = useState(null);
   const [meta, setMeta] = useState({});
   const [companies, setCompanies] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -28,6 +30,24 @@ export default function JobOpeningForm({ editMode = false }) {
       portalRecruitmentApi.getOpening(subdomain, token, openingId).then(r => {
         const d = r.data?.data || {};
         setForm({ job_title: d.job_title || "", requisition_id: d.requisition_id || "", company_id: d.company_id || "", branch_id: d.branch_id || "", department_id: d.department_id || "", designation_id: d.designation_id || "", number_of_vacancies: d.number_of_vacancies || 1, employment_type: d.employment_type || "", employee_category: d.employee_category || "", experience_required: d.experience_required || "", location: d.location || "", salary_min: d.salary_min || "", salary_max: d.salary_max || "", application_deadline: d.application_deadline || "" });
+      }).catch(() => {});
+    } else if (!editMode && fromRequisitionId) {
+      portalRecruitmentApi.getRequisition(subdomain, token, fromRequisitionId).then(r => {
+        const d = r.data?.data || {};
+        setRequisitionRef({ number: d.requisition_number, designation: d.designation_name });
+        setForm(prev => ({
+          ...prev,
+          requisition_id: fromRequisitionId,
+          company_id: d.company_id || "",
+          branch_id: d.branch_id || "",
+          department_id: d.department_id || "",
+          designation_id: d.designation_id || "",
+          employment_type: d.employment_type || "",
+          employee_category: d.employee_category || "",
+          number_of_vacancies: d.number_of_positions || 1,
+          salary_min: d.budget_min || "",
+          salary_max: d.budget_max || "",
+        }));
       }).catch(() => {});
     }
   }, []);
@@ -63,11 +83,20 @@ export default function JobOpeningForm({ editMode = false }) {
         breadcrumbs={[{ label: "Job Openings", path: `/portal/${subdomain}/recruitment/openings` }, { label: editMode ? "Edit" : "New" }]}
       />
       {error && <div style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: 13, border: "1px solid rgba(239,68,68,0.25)" }}>{error}</div>}
+      {requisitionRef && (
+        <div style={{ background: "rgba(6,182,212,0.08)", border: "1px solid rgba(6,182,212,0.25)", borderRadius: 8, padding: "10px 14px", marginBottom: 12, fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ color: "#06b6d4", fontWeight: 600 }}>⟵ Linked Requisition:</span>
+          <span className="t-heading">{requisitionRef.number}{requisitionRef.designation ? ` — ${requisitionRef.designation}` : ""}</span>
+          <span className="t-muted" style={{ fontSize: 11 }}>Fields pre-filled from requisition. You can still edit them.</span>
+        </div>
+      )}
       <div className="portal-form-card">
         <div className="portal-form-title">Opening Details</div>
         <div><label className="portal-form-label portal-form-label-req">Job Title</label><input value={form.job_title} onChange={f("job_title")} placeholder="e.g. Senior React Developer" className="input-field" /></div>
         <div className="portal-form-row">
-          <div><label className="portal-form-label">Linked Requisition ID</label><input value={form.requisition_id} onChange={f("requisition_id")} placeholder="Optional" className="input-field" /></div>
+          {!requisitionRef && (
+            <div><label className="portal-form-label">Linked Requisition ID</label><input value={form.requisition_id} onChange={f("requisition_id")} placeholder="Optional" className="input-field" /></div>
+          )}
           <div><label className="portal-form-label">No. of Vacancies</label><input type="number" min={1} value={form.number_of_vacancies} onChange={f("number_of_vacancies")} className="input-field" /></div>
           <div><label className="portal-form-label">Location</label><input value={form.location} onChange={f("location")} placeholder="City / Remote" className="input-field" /></div>
         </div>
