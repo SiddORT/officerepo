@@ -6,10 +6,11 @@ import PageHeader from "../shared/PageHeader";
 
 const BLANK = {
   job_title: "", requisition_id: "", company_id: "", branch_id: "",
-  department_id: "", designation_id: "", number_of_vacancies: 1,
-  employment_type: "", employee_category: "", experience_required: "",
-  salary_min: "", salary_max: "", application_deadline: "",
-  expected_joining_date: "", job_description: "", skills_required: "",
+  department_id: "", designation_id: "", hiring_manager: "",
+  number_of_vacancies: 1, employment_type: "", employee_category: "",
+  experience_required: "", salary_min: "", salary_max: "",
+  application_deadline: "", expected_joining_date: "",
+  job_description: "", skills_required: "",
 };
 
 const Label = ({ children, required }) => (
@@ -51,6 +52,7 @@ export default function JobOpeningForm({ editMode = false }) {
           job_title: d.job_title || "", requisition_id: d.requisition_id || "",
           company_id: d.company_id || "", branch_id: d.branch_id || "",
           department_id: d.department_id || "", designation_id: d.designation_id || "",
+          hiring_manager: d.hiring_manager || "",
           number_of_vacancies: d.number_of_vacancies || 1,
           employment_type: d.employment_type || "", employee_category: d.employee_category || "",
           experience_required: d.experience_required || "",
@@ -73,6 +75,7 @@ export default function JobOpeningForm({ editMode = false }) {
           designation_id: d.designation_id || "",
           employment_type: d.employment_type || "",
           employee_category: d.employee_category || "",
+          hiring_manager: d.hiring_manager || "",
           number_of_vacancies: d.number_of_positions || 1,
           salary_min: d.budget_min || "",
           salary_max: d.budget_max || "",
@@ -197,6 +200,14 @@ export default function JobOpeningForm({ editMode = false }) {
               <option value="">Select branch…</option>
               {branches.map(b => <option key={b.id} value={b.id}>{b.branch_name}</option>)}
             </select>
+          </div>
+        </Row4>
+
+        {/* Hiring Manager — spans first col */}
+        <Row4>
+          <div>
+            <Label>Hiring Manager</Label>
+            <input value={form.hiring_manager} onChange={f("hiring_manager")} placeholder="e.g. Ravi Kumar" className="input-field" />
           </div>
         </Row4>
 

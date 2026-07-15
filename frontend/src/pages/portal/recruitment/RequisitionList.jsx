@@ -57,7 +57,7 @@ export default function RequisitionList() {
             <th style={{ width: 48, textAlign: "center" }}>Sr No</th>
             <th>Req #</th><th>Department</th><th>Designation</th>
             <th>Positions</th><th>Type</th><th>Target Date</th>
-            <th>Status</th><th>Actions</th>
+            <th>Status</th><th style={{ textAlign: "center" }}>Actions</th>
           </tr></thead>
           <tbody>
             {loading
@@ -66,7 +66,7 @@ export default function RequisitionList() {
               ? <tr><td colSpan={9} style={{ textAlign: "center", padding: 48 }} className="t-muted">No requisitions found.</td></tr>
               : rows.map((r, idx) => (
                 <tr key={r.id} onClick={() => navigate(`/portal/${subdomain}/recruitment/requisitions/${r.id}`)}>
-                  <td style={{ textAlign: "center", color: "var(--c-muted)", fontSize: 12 }}>{(page - 1) * PAGE_SIZE + idx + 1}</td>
+                  <td style={{ textAlign: "center" }} className="t-muted">{(page - 1) * PAGE_SIZE + idx + 1}</td>
                   <td><span className="t-accent" style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700 }}>{r.requisition_number}</span></td>
                   <td>{r.department_name || "—"}</td>
                   <td>{r.designation_name || "—"}</td>
@@ -74,8 +74,9 @@ export default function RequisitionList() {
                   <td><span className="t-muted" style={{ fontSize: 12 }}>{r.employment_type || "—"}</span></td>
                   <td><span className="t-muted" style={{ fontSize: 12 }}>{r.target_joining_date || "—"}</span></td>
                   <td><Badge status={r.status} /></td>
-                  <td style={{ textAlign: "right" }} onClick={e => e.stopPropagation()}>
-                    <button onClick={() => navigate(`/portal/${subdomain}/recruitment/requisitions/${r.id}`)} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>View →</button>
+                  <td style={{ textAlign: "center" }} onClick={e => e.stopPropagation()}>
+                    <button onClick={() => navigate(`/portal/${subdomain}/recruitment/requisitions/${r.id}`)} title="View" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-accent)", fontSize: 15, padding: "2px 5px" }}>👁</button>
+                    <button onClick={() => navigate(`/portal/${subdomain}/recruitment/requisitions/${r.id}/edit`)} title="Edit" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-accent)", fontSize: 15, padding: "2px 5px" }}>✏️</button>
                   </td>
                 </tr>
               ))}

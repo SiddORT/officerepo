@@ -40,6 +40,10 @@ export default function JobOpeningList() {
     load();
   };
 
+  const iconBtn = (emoji, title, onClick, color = "var(--c-accent)") => (
+    <button onClick={onClick} title={title} style={{ background: "none", border: "none", cursor: "pointer", color, fontSize: 15, padding: "2px 5px", lineHeight: 1 }}>{emoji}</button>
+  );
+
   return (
     <div>
       <PageHeader
@@ -60,10 +64,10 @@ export default function JobOpeningList() {
       <div className="portal-table-wrap">
         <table className="portal-table">
           <thead><tr>
-            <th style={{ width: 48 }}>Sr No</th>
+            <th style={{ width: 48, textAlign: "center" }}>Sr No</th>
             <th>Opening #</th><th>Job Title</th><th>Department</th>
             <th>Vacancies</th><th>Deadline</th>
-            <th>Status</th><th>Actions</th>
+            <th>Status</th><th style={{ textAlign: "center" }}>Actions</th>
           </tr></thead>
           <tbody>
             {loading
@@ -79,11 +83,11 @@ export default function JobOpeningList() {
                   <td style={{ textAlign: "center" }}>{r.number_of_vacancies}</td>
                   <td><span className="t-muted" style={{ fontSize: 12 }}>{r.application_deadline || "—"}</span></td>
                   <td><Badge status={r.status} /></td>
-                  <td style={{ textAlign: "right" }} onClick={e => e.stopPropagation()}>
-                    <button onClick={() => navigate(`/portal/${subdomain}/recruitment/openings/${r.id}/edit`)} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Edit</button>
-                    {r.status === "Open" && <button onClick={e => updateStatus(r.id, "On Hold", e)} style={{ background: "none", border: "none", color: "#f59e0b", cursor: "pointer", fontSize: 12, marginLeft: 10 }}>Hold</button>}
-                    {r.status === "On Hold" && <button onClick={e => updateStatus(r.id, "Open", e)} style={{ background: "none", border: "none", color: "#22c55e", cursor: "pointer", fontSize: 12, marginLeft: 10 }}>Reopen</button>}
-                    {r.status !== "Closed" && r.status !== "Filled" && <button onClick={e => updateStatus(r.id, "Closed", e)} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 12, marginLeft: 10 }}>Close</button>}
+                  <td style={{ textAlign: "center" }} onClick={e => e.stopPropagation()}>
+                    {iconBtn("✏️", "Edit", () => navigate(`/portal/${subdomain}/recruitment/openings/${r.id}/edit`))}
+                    {r.status === "Open" && iconBtn("⏸", "Put on Hold", e => updateStatus(r.id, "On Hold", e), "#f59e0b")}
+                    {r.status === "On Hold" && iconBtn("▶️", "Reopen", e => updateStatus(r.id, "Open", e), "#22c55e")}
+                    {r.status !== "Closed" && r.status !== "Filled" && iconBtn("🚫", "Close", e => updateStatus(r.id, "Closed", e), "#ef4444")}
                   </td>
                 </tr>
               ))}

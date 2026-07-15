@@ -15,7 +15,7 @@ const Field = ({ label, value }) => (
 const InfoCard = ({ title, children }) => <div className="portal-form-card" style={{ gap: 14 }}>{title && <div className="portal-form-title">{title}</div>}{children}</div>;
 const Row = ({ children }) => <div className="portal-form-row">{children}</div>;
 
-const ALL_STATUSES = ["Applied","Screening","Shortlisted","Interview Scheduled","Selected","Offered","Joined","Rejected","Withdrawn"];
+const ALL_STATUSES = ["Applied","Under Review","Shortlisted","Interview Scheduled","Selected","Offered","Joined","Rejected","Withdrawn"];
 
 export default function CandidateDetails() {
   const { subdomain, candId } = useParams();

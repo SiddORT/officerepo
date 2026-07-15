@@ -82,15 +82,16 @@ class JobOpening(ClientBase):
     designation_id   = Column(String(36),  nullable=True)
     designation_name = Column(String(200), nullable=True)
 
+    hiring_manager       = Column(String(200), nullable=True)
     number_of_vacancies  = Column(Integer,  nullable=False, default=1)
     employment_type      = Column(String(50), nullable=True)
     employee_category    = Column(String(50), nullable=True)
     experience_required  = Column(String(100), nullable=True)
-    location             = Column(String(200), nullable=True)
 
-    salary_min           = Column(Numeric(14, 2), nullable=True)
-    salary_max           = Column(Numeric(14, 2), nullable=True)
-    application_deadline = Column(Date,    nullable=True)
+    salary_min            = Column(Numeric(14, 2), nullable=True)
+    salary_max            = Column(Numeric(14, 2), nullable=True)
+    application_deadline  = Column(Date,    nullable=True)
+    expected_joining_date = Column(Date,    nullable=True)
 
     status           = Column(String(30), nullable=False, default="Open", index=True)
 

@@ -33,7 +33,7 @@ OPENING_STATUSES = [
 
 # ── Candidate statuses ────────────────────────────────────────────────────────
 CAND_STATUS_APPLIED    = "Applied"
-CAND_STATUS_SCREENING  = "Screening"
+CAND_STATUS_SCREENING  = "Under Review"
 CAND_STATUS_SHORTLISTED= "Shortlisted"
 CAND_STATUS_INTERVIEW  = "Interview Scheduled"
 CAND_STATUS_SELECTED   = "Selected"

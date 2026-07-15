@@ -57,11 +57,12 @@ def _opening_dict(o) -> Dict[str, Any]:
         "number_of_vacancies": o.number_of_vacancies,
         "employment_type": o.employment_type,
         "employee_category": o.employee_category,
+        "hiring_manager": o.hiring_manager,
         "experience_required": o.experience_required,
-        "location": o.location,
         "salary_min": float(o.salary_min) if o.salary_min else None,
         "salary_max": float(o.salary_max) if o.salary_max else None,
         "application_deadline": o.application_deadline.isoformat() if o.application_deadline else None,
+        "expected_joining_date": o.expected_joining_date.isoformat() if o.expected_joining_date else None,
         "status": o.status,
         "created_by": o.created_by,
         "created_at": o.created_at.isoformat() if o.created_at else None,
@@ -263,6 +264,9 @@ def create_opening(db: Session, client_id: str, raw: Dict[str, Any], actor: str)
         req = repo.get_requisition(db, client_id, data["requisition_id"])
         if req and req.status != REQ_STATUS_APPROVED:
             raise HTTPException(400, "Job opening can only be created from an Approved requisition.")
+        existing = repo.get_opening_by_requisition(db, client_id, data["requisition_id"])
+        if existing:
+            raise HTTPException(400, f"A job opening ({existing.opening_number}) already exists for this requisition.")
     obj = repo.create_opening(db, client_id, data, actor)
     return _opening_dict(obj)
 

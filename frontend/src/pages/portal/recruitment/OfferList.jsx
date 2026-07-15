@@ -32,6 +32,10 @@ export default function OfferList() {
     try { await fn(); load(); } catch (e) { alert(e.response?.data?.message || "Action failed."); }
   };
 
+  const iconBtn = (emoji, title, onClick, color = "var(--c-accent)") => (
+    <button onClick={onClick} title={title} style={{ background: "none", border: "none", cursor: "pointer", color, fontSize: 15, padding: "2px 5px", lineHeight: 1 }}>{emoji}</button>
+  );
+
   return (
     <div>
       <PageHeader
@@ -51,17 +55,19 @@ export default function OfferList() {
       <div className="portal-table-wrap">
         <table className="portal-table">
           <thead><tr>
+            <th style={{ width: 48, textAlign: "center" }}>Sr No</th>
             <th>Offer #</th><th>Candidate</th><th>Designation</th>
             <th>Salary</th><th>Joining</th><th>Expiry</th>
-            <th>Status</th><th>Actions</th>
+            <th>Status</th><th style={{ textAlign: "center" }}>Actions</th>
           </tr></thead>
           <tbody>
             {loading
-              ? <tr><td colSpan={8} style={{ textAlign: "center", padding: 40 }} className="t-muted">Loading…</td></tr>
+              ? <tr><td colSpan={9} style={{ textAlign: "center", padding: 40 }} className="t-muted">Loading…</td></tr>
               : rows.length === 0
-              ? <tr><td colSpan={8} style={{ textAlign: "center", padding: 48 }} className="t-muted">No offers found.</td></tr>
-              : rows.map(r => (
+              ? <tr><td colSpan={9} style={{ textAlign: "center", padding: 48 }} className="t-muted">No offers found.</td></tr>
+              : rows.map((r, idx) => (
                 <tr key={r.id}>
+                  <td style={{ textAlign: "center" }} className="t-muted">{(page - 1) * PAGE_SIZE + idx + 1}</td>
                   <td><span className="t-accent" style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700 }}>{r.offer_number}</span></td>
                   <td><span style={{ fontWeight: 600 }}>{r.candidate_name || "—"}</span></td>
                   <td><span style={{ fontSize: 12 }}>{r.offered_designation_name || "—"}</span></td>
@@ -69,15 +75,16 @@ export default function OfferList() {
                   <td><span style={{ fontSize: 12 }}>{r.joining_date || "—"}</span></td>
                   <td><span style={{ fontSize: 12 }}>{r.offer_expiry_date || "—"}</span></td>
                   <td><Badge status={r.status} /></td>
-                  <td style={{ textAlign: "right" }}>
+                  <td style={{ textAlign: "center" }} onClick={e => e.stopPropagation()}>
                     {r.status === "Draft" && <>
-                      <button onClick={() => navigate(`/portal/${subdomain}/recruitment/offers/${r.id}/edit`)} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Edit</button>
-                      <button onClick={() => doAction(() => portalRecruitmentApi.sendOffer(subdomain, token, r.id))} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: "1px solid #22c55e", color: "#22c55e", background: "transparent", cursor: "pointer", fontWeight: 600 }}>Send</button>
+                      {iconBtn("✏️", "Edit", () => navigate(`/portal/${subdomain}/recruitment/offers/${r.id}/edit`))}
+                      {iconBtn("📤", "Send Offer", () => doAction(() => portalRecruitmentApi.sendOffer(subdomain, token, r.id)), "#22c55e")}
                     </>}
                     {r.status === "Sent" && <>
-                      <button onClick={() => doAction(() => portalRecruitmentApi.acceptOffer(subdomain, token, r.id))} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: "1px solid #22c55e", color: "#22c55e", background: "transparent", cursor: "pointer", fontWeight: 600 }}>✓ Accept</button>
-                      <button onClick={() => { const reason = window.prompt("Rejection reason:"); if (reason !== null) doAction(() => portalRecruitmentApi.rejectOffer(subdomain, token, r.id, { rejection_reason: reason })); }} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: "1px solid #ef4444", color: "#ef4444", background: "transparent", cursor: "pointer", fontWeight: 600 }}>✕ Reject</button>
+                      {iconBtn("✅", "Accept", () => doAction(() => portalRecruitmentApi.acceptOffer(subdomain, token, r.id)), "#22c55e")}
+                      {iconBtn("❌", "Reject", () => { const reason = window.prompt("Rejection reason:"); if (reason !== null) doAction(() => portalRecruitmentApi.rejectOffer(subdomain, token, r.id, { rejection_reason: reason })); }, "#ef4444")}
                     </>}
+                    {iconBtn("👁", "View", () => navigate(`/portal/${subdomain}/recruitment/offers/${r.id}`))}
                   </td>
                 </tr>
               ))}

@@ -35,6 +35,10 @@ export default function CandidateList() {
   useEffect(() => { load(); }, [page, search, status, source]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  const iconBtn = (label, onClick, color = "var(--c-accent)") => (
+    <button onClick={onClick} title={label} style={{ background: "none", border: "none", cursor: "pointer", color, fontSize: 15, padding: "2px 5px", lineHeight: 1 }}>{label}</button>
+  );
+
   return (
     <div>
       <PageHeader
@@ -59,17 +63,19 @@ export default function CandidateList() {
       <div className="portal-table-wrap" style={{ overflowX: "auto" }}>
         <table className="portal-table">
           <thead><tr>
+            <th style={{ width: 48, textAlign: "center" }}>Sr No</th>
             <th>Candidate</th><th>Applied For</th><th>Experience</th>
             <th>Current</th><th>Source</th><th>Resume</th>
-            <th>Status</th><th>Actions</th>
+            <th>Status</th><th style={{ textAlign: "center" }}>Actions</th>
           </tr></thead>
           <tbody>
             {loading
-              ? <tr><td colSpan={8} style={{ textAlign: "center", padding: 40 }} className="t-muted">Loading…</td></tr>
+              ? <tr><td colSpan={9} style={{ textAlign: "center", padding: 40 }} className="t-muted">Loading…</td></tr>
               : rows.length === 0
-              ? <tr><td colSpan={8} style={{ textAlign: "center", padding: 48 }} className="t-muted">No candidates found.</td></tr>
-              : rows.map(r => (
+              ? <tr><td colSpan={9} style={{ textAlign: "center", padding: 48 }} className="t-muted">No candidates found.</td></tr>
+              : rows.map((r, idx) => (
                 <tr key={r.id} onClick={() => navigate(`/portal/${subdomain}/recruitment/candidates/${r.id}`)}>
+                  <td style={{ textAlign: "center" }} className="t-muted">{(page - 1) * PAGE_SIZE + idx + 1}</td>
                   <td>
                     <div style={{ fontWeight: 600 }}>{r.full_name}</div>
                     <div className="t-muted" style={{ fontSize: 11 }}>{r.email}</div>
@@ -82,10 +88,11 @@ export default function CandidateList() {
                     {r.current_designation && <div className="t-muted" style={{ fontSize: 11 }}>{r.current_designation}</div>}
                   </td>
                   <td><span style={{ fontSize: 12 }}>{r.source || "—"}</span></td>
-                  <td style={{ textAlign: "center" }}>{r.has_resume ? "✅" : "—"}</td>
+                  <td style={{ textAlign: "center" }}>{r.has_resume ? "📄" : "—"}</td>
                   <td><Badge status={r.status} /></td>
-                  <td style={{ textAlign: "right" }} onClick={e => e.stopPropagation()}>
-                    <button onClick={() => navigate(`/portal/${subdomain}/recruitment/candidates/${r.id}`)} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>View →</button>
+                  <td style={{ textAlign: "center" }} onClick={e => e.stopPropagation()}>
+                    {iconBtn("👁", () => navigate(`/portal/${subdomain}/recruitment/candidates/${r.id}`))}
+                    {iconBtn("✏️", () => navigate(`/portal/${subdomain}/recruitment/candidates/${r.id}/edit`))}
                   </td>
                 </tr>
               ))}

@@ -57,14 +57,15 @@ class OpeningCreate(BaseModel):
     branch_id: Optional[str] = None
     department_id: Optional[str] = None
     designation_id: Optional[str] = None
+    hiring_manager: Optional[str] = None
     number_of_vacancies: int = 1
     employment_type: Optional[str] = None
     employee_category: Optional[str] = None
     experience_required: Optional[str] = None
-    location: Optional[str] = None
     salary_min: Optional[Decimal] = None
     salary_max: Optional[Decimal] = None
     application_deadline: Optional[date] = None
+    expected_joining_date: Optional[date] = None
 
 
 class OpeningUpdate(BaseModel):
@@ -73,14 +74,15 @@ class OpeningUpdate(BaseModel):
     branch_id: Optional[str] = None
     department_id: Optional[str] = None
     designation_id: Optional[str] = None
+    hiring_manager: Optional[str] = None
     number_of_vacancies: Optional[int] = None
     employment_type: Optional[str] = None
     employee_category: Optional[str] = None
     experience_required: Optional[str] = None
-    location: Optional[str] = None
     salary_min: Optional[Decimal] = None
     salary_max: Optional[Decimal] = None
     application_deadline: Optional[date] = None
+    expected_joining_date: Optional[date] = None
     status: Optional[str] = None
 
 

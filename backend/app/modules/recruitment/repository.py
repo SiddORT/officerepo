@@ -113,6 +113,14 @@ def get_opening(db: Session, client_id: str, opening_id: str) -> Optional[JobOpe
     ).first()
 
 
+def get_opening_by_requisition(db: Session, client_id: str, requisition_id: str) -> Optional[JobOpening]:
+    return db.query(JobOpening).filter(
+        JobOpening.client_id == client_id,
+        JobOpening.requisition_id == requisition_id,
+        JobOpening.is_deleted.is_(False),
+    ).first()
+
+
 def list_openings(
     db: Session, client_id: str,
     page: int = 1, page_size: int = 20,
