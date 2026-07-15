@@ -128,6 +128,8 @@ html.theme-light {
   }
   .input-field:focus { border-color: var(--c-accent); box-shadow: 0 0 0 3px var(--c-accent-dim); }
   .input-field::placeholder { color: var(--c-muted); }
+  .input-field.input-error { border-color: #f87171; }
+  .input-field.input-error:focus { border-color: #f87171; box-shadow: 0 0 0 3px rgba(248,113,113,0.2); }
 
   .card {
     background-color: var(--c-surface);

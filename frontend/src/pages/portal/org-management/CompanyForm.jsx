@@ -11,6 +11,9 @@ const DOC_TYPES = [
   "Certificate of Incorporation", "GST Certificate", "PAN Copy", "TAN Certificate",
   "MSME Certificate", "Trade License", "Shop & Establishment License", "Other",
 ];
+const EXPIRY_REQUIRED_TYPES = new Set([
+  "GST Certificate", "MSME Certificate", "Trade License", "Shop & Establishment License",
+]);
 const COMPANY_TYPES = ["Private Limited", "Public Limited", "LLP", "Partnership", "Proprietorship", "NGO", "Other"];
 const STATUSES = ["Draft", "Active", "Inactive", "Suspended", "Closed"];
 
@@ -379,8 +382,14 @@ export default function CompanyForm({ editMode }) {
       setNewDoc(d => ({ ...d, file, fileName: file.name, filePreview: null, fileIsImage: false }));
     }
   };
+  const [docError, setDocError] = useState("");
   const addDoc = () => {
     if (!newDoc.doc_type) return;
+    if (EXPIRY_REQUIRED_TYPES.has(newDoc.doc_type) && !newDoc.expiry_date) {
+      setDocError(`Expiry date is required for "${newDoc.doc_type}".`);
+      return;
+    }
+    setDocError("");
     setPendingDocs(d => [...d, { ...newDoc, _pendingId: Date.now() }]);
     setNewDoc(EMPTY_DOC);
     setAddingDoc(false);
@@ -414,12 +423,14 @@ export default function CompanyForm({ editMode }) {
     setAddingDoc(false);
   };
 
+  const [editDocError, setEditDocError] = useState("");
   const cancelEditDoc = () => {
     setEditingDocId(null);
     setEditDoc(EMPTY_EDIT_DOC);
+    setEditDocError("");
   };
 
-  const setEditField = (k, v) => setEditDoc(d => ({ ...d, [k]: v }));
+  const setEditField = (k, v) => { setEditDoc(d => ({ ...d, [k]: v })); setEditDocError(""); };
 
   const handleEditDocFile = (e) => {
     const file = e.target.files?.[0];
@@ -429,6 +440,11 @@ export default function CompanyForm({ editMode }) {
 
   const saveDocEdit = async () => {
     if (!editDoc.doc_type) return;
+    if (EXPIRY_REQUIRED_TYPES.has(editDoc.doc_type) && !editDoc.expiry_date) {
+      setEditDocError(`Expiry date is required for "${editDoc.doc_type}".`);
+      return;
+    }
+    setEditDocError("");
     setSavingDoc(true);
     try {
       const fd = new FormData();
@@ -834,8 +850,11 @@ export default function CompanyForm({ editMode }) {
                                         <input type="date" value={editDoc.issue_date} onChange={e => setEditField("issue_date", e.target.value)} className="input-field" />
                                       </div>
                                       <div>
-                                        <label className="portal-form-label">Expiry Date</label>
-                                        <input type="date" value={editDoc.expiry_date} onChange={e => setEditField("expiry_date", e.target.value)} className="input-field" />
+                                        <label className={`portal-form-label${EXPIRY_REQUIRED_TYPES.has(editDoc.doc_type) ? " portal-form-label-req" : ""}`}>
+                                          Expiry Date
+                                        </label>
+                                        <input type="date" value={editDoc.expiry_date} onChange={e => setEditField("expiry_date", e.target.value)}
+                                          className={`input-field${EXPIRY_REQUIRED_TYPES.has(editDoc.doc_type) && !editDoc.expiry_date ? " input-error" : ""}`} />
                                       </div>
                                     </div>
                                     <div>
@@ -857,6 +876,9 @@ export default function CompanyForm({ editMode }) {
                                         <input id={`edit-doc-file-${d.id}`} type="file" style={{ display: "none" }} onChange={handleEditDocFile} />
                                       </div>
                                     </div>
+                                    {editDocError && (
+                                      <p style={{ margin: "0 0 4px", fontSize: 12, color: "#f87171" }}>{editDocError}</p>
+                                    )}
                                     <div style={{ display: "flex", gap: 10 }}>
                                       <button type="button" onClick={saveDocEdit} disabled={savingDoc || !editDoc.doc_type}
                                         className="btn-primary" style={{ padding: "6px 18px", fontSize: 13 }}>
@@ -908,7 +930,7 @@ export default function CompanyForm({ editMode }) {
                   <div className="portal-form-row">
                     <div>
                       <label className="portal-form-label portal-form-label-req">Document Type</label>
-                      <select value={newDoc.doc_type} onChange={e => setDocField("doc_type", e.target.value)}
+                      <select value={newDoc.doc_type} onChange={e => { setDocField("doc_type", e.target.value); setDocError(""); }}
                         className="input-field" style={{ cursor: "pointer" }}>
                         <option value="">Select type…</option>
                         {DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
@@ -924,8 +946,11 @@ export default function CompanyForm({ editMode }) {
                       <input type="date" value={newDoc.issue_date} onChange={e => setDocField("issue_date", e.target.value)} className="input-field" />
                     </div>
                     <div>
-                      <label className="portal-form-label">Expiry Date</label>
-                      <input type="date" value={newDoc.expiry_date} onChange={e => setDocField("expiry_date", e.target.value)} className="input-field" />
+                      <label className={`portal-form-label${EXPIRY_REQUIRED_TYPES.has(newDoc.doc_type) ? " portal-form-label-req" : ""}`}>
+                        Expiry Date
+                      </label>
+                      <input type="date" value={newDoc.expiry_date} onChange={e => { setDocField("expiry_date", e.target.value); setDocError(""); }}
+                        className={`input-field${EXPIRY_REQUIRED_TYPES.has(newDoc.doc_type) && !newDoc.expiry_date ? " input-error" : ""}`} />
                     </div>
                   </div>
 
@@ -976,9 +1001,12 @@ export default function CompanyForm({ editMode }) {
                     )}
                   </div>
 
+                  {docError && (
+                    <p style={{ margin: "0 0 4px", fontSize: 12, color: "#f87171" }}>{docError}</p>
+                  )}
                   <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
                     <button type="button" onClick={addDoc} className="btn-primary" style={{ padding: "6px 16px" }}>Add Document</button>
-                    <button type="button" onClick={() => setAddingDoc(false)} className="btn-secondary" style={{ padding: "6px 16px" }}>Cancel</button>
+                    <button type="button" onClick={() => { setAddingDoc(false); setDocError(""); }} className="btn-secondary" style={{ padding: "6px 16px" }}>Cancel</button>
                   </div>
                 </div>
               ) : (

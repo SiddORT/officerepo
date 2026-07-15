@@ -264,6 +264,11 @@ def list_company_documents(
     return ApiResponse.ok(docs).model_dump()
 
 
+_EXPIRY_REQUIRED_DOC_TYPES = {
+    "GST Certificate", "MSME Certificate", "Trade License", "Shop & Establishment License",
+}
+
+
 @router.post("/{subdomain}/org/companies/{company_id}/documents")
 def upload_company_document(
     subdomain: str,
@@ -279,6 +284,11 @@ def upload_company_document(
     client_db: Session = Depends(_client_db_dep),
 ):
     _subdomain_check(portal_user, subdomain)
+    if doc_type in _EXPIRY_REQUIRED_DOC_TYPES and not expiry_date:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Expiry date is required for document type '{doc_type}'.",
+        )
     from backend.app.modules.organization_management.constants import ORG_STORAGE_SCOPE, ORG_DOCUMENTS_MODULE
     from backend.shared.storage.file_handler import Visibility, save_document, delete_file
 

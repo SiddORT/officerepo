@@ -825,6 +825,11 @@ def get_company_document_file(
     return doc.file_path, (doc.file_name or "document")
 
 
+_EXPIRY_REQUIRED_DOC_TYPES = {
+    "GST Certificate", "MSME Certificate", "Trade License", "Shop & Establishment License",
+}
+
+
 def update_company_document(
     client_db: Session,
     client_id: str,
@@ -845,6 +850,13 @@ def update_company_document(
     doc = _repo.get_company_document(client_db, client_id, company_id, doc_id)
     if not doc:
         raise HTTPException(404, "Document not found.")
+    effective_type = doc_type if doc_type is not None else doc.doc_type
+    effective_expiry = expiry_date if expiry_date is not None else doc.expiry_date
+    if effective_type in _EXPIRY_REQUIRED_DOC_TYPES and not effective_expiry:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Expiry date is required for document type '{effective_type}'.",
+        )
     old_file_key = doc.file_path if new_file_path else None
     _repo.update_company_document(
         client_db, doc,
