@@ -13,6 +13,19 @@ const F = ({ label, required, children, half }) => (
   </div>
 );
 
+const ReadOnly = ({ value }) => (
+  <div className="input-field" style={{ background: "var(--c-surface2)", color: "var(--c-text)", cursor: "default", userSelect: "none", minHeight: 38, display: "flex", alignItems: "center" }}>
+    {value || <span style={{ color: "var(--c-muted)", fontStyle: "italic" }}>—</span>}
+  </div>
+);
+
+const calcEndTime = (start, mins) => {
+  if (!start || !mins) return "";
+  const [h, m] = start.split(":").map(Number);
+  const total = h * 60 + m + Number(mins);
+  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+};
+
 export default function InterviewScheduleForm({ editMode = false }) {
   const { subdomain, interviewId } = useParams();
   const { token } = usePortalAuth();
@@ -74,23 +87,41 @@ export default function InterviewScheduleForm({ editMode = false }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handlePipelineChange = pid => {
-    set("pipeline_id", pid);
-    set("pipeline_stage_id", "");
-    set("round_type", "");
-    set("round_name", "");
+    setForm(f => ({ ...f, pipeline_id: pid, pipeline_stage_id: "", round_type: "", round_name: "" }));
     if (pid) loadStages(pid);
     else setStages([]);
   };
 
-  const handleStageChange = sid => {
-    set("pipeline_stage_id", sid);
-    if (sid) {
-      const s = stages.find(st => st.id === sid);
-      if (s) {
-        if (s.round_type) set("round_type", s.round_type);
-        set("round_name", s.stage_name);
-      }
+  const handleStageChange = (sid, currentStartTime, currentDurationMinutes) => {
+    if (!sid) {
+      set("pipeline_stage_id", "");
+      return;
     }
+    const s = stages.find(st => st.id === sid);
+    if (!s) { set("pipeline_stage_id", sid); return; }
+
+    const newDuration = s.duration_minutes ? String(s.duration_minutes) : currentDurationMinutes;
+    const newEnd = calcEndTime(currentStartTime, newDuration);
+
+    setForm(f => ({
+      ...f,
+      pipeline_stage_id: sid,
+      round_number: s.sequence || f.round_number,
+      round_type: s.round_type || f.round_type,
+      round_name: s.stage_name || f.round_name,
+      duration_minutes: newDuration || f.duration_minutes,
+      end_time: newEnd || f.end_time,
+    }));
+  };
+
+  const handleStartTimeChange = (val) => {
+    const newEnd = calcEndTime(val, form.duration_minutes);
+    setForm(f => ({ ...f, start_time: val, end_time: newEnd || f.end_time }));
+  };
+
+  const handleDurationChange = (val) => {
+    const newEnd = calcEndTime(form.start_time, val);
+    setForm(f => ({ ...f, duration_minutes: val, end_time: newEnd || f.end_time }));
   };
 
   const handleSubmit = async e => {
@@ -131,9 +162,6 @@ export default function InterviewScheduleForm({ editMode = false }) {
     }
   };
 
-  const inp = (k, type = "text", extra = {}) => (
-    <input type={type} value={form[k]} onChange={e => set(k, e.target.value)} className="input-field" {...extra} />
-  );
   const sel = (k, opts, placeholder = "Select…", special) => (
     <select value={form[k]} onChange={e => special ? special(e.target.value) : set(k, e.target.value)} className="input-field">
       <option value="">{placeholder}</option>
@@ -144,6 +172,8 @@ export default function InterviewScheduleForm({ editMode = false }) {
   );
 
   const GRID2 = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 };
+  const selectedStage = form.pipeline_stage_id ? stages.find(s => s.id === form.pipeline_stage_id) : null;
+  const roundFromPipeline = !!selectedStage;
 
   return (
     <div>
@@ -151,7 +181,7 @@ export default function InterviewScheduleForm({ editMode = false }) {
         title={editMode ? "Edit Interview" : "Schedule Interview"}
         breadcrumbs={[
           { label: "Interview Management", path: base },
-          { label: "All Interviews",       path: `${base}/list` },
+          { label: "All Interviews", path: `${base}/list` },
           { label: editMode ? "Edit" : "Schedule" },
         ]}
       />
@@ -199,7 +229,7 @@ export default function InterviewScheduleForm({ editMode = false }) {
           </F>
           {form.pipeline_id && stages.length > 0 && (
             <F label="Pipeline Stage">
-              <select value={form.pipeline_stage_id} onChange={e => handleStageChange(e.target.value)} className="input-field">
+              <select value={form.pipeline_stage_id} onChange={e => handleStageChange(e.target.value, form.start_time, form.duration_minutes)} className="input-field">
                 <option value="">Select stage…</option>
                 {stages.map(s => <option key={s.id} value={s.id}>{s.sequence}. {s.stage_name}{s.round_type ? ` (${s.round_type})` : ""}</option>)}
               </select>
@@ -210,13 +240,24 @@ export default function InterviewScheduleForm({ editMode = false }) {
         {/* Round details */}
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "20px 0 12px" }}>
           Round Details
+          {roundFromPipeline && <span style={{ marginLeft: 8, fontWeight: 400, fontSize: 11, color: "var(--c-accent)", textTransform: "none", letterSpacing: 0 }}>auto-filled from pipeline</span>}
         </div>
         <div style={GRID2}>
           <F label="Round Number" required>
-            <input type="number" min={1} value={form.round_number} onChange={e => set("round_number", e.target.value)} className="input-field" />
+            {roundFromPipeline
+              ? <ReadOnly value={`Round ${form.round_number}`} />
+              : <input type="number" min={1} value={form.round_number} onChange={e => set("round_number", e.target.value)} className="input-field" />}
           </F>
-          <F label="Round Type">{sel("round_type", meta.round_types || [], "Select type…")}</F>
-          <F label="Round Name (optional)">{inp("round_name", "text", { placeholder: "e.g. Technical Round 1" })}</F>
+          <F label="Round Type">
+            {roundFromPipeline
+              ? <ReadOnly value={form.round_type} />
+              : sel("round_type", meta.round_types || [], "Select type…")}
+          </F>
+          <F label="Round Name">
+            {roundFromPipeline
+              ? <ReadOnly value={form.round_name} />
+              : <input value={form.round_name} onChange={e => set("round_name", e.target.value)} className="input-field" placeholder="e.g. Technical Round 1" />}
+          </F>
           <F label="Interview Mode">{sel("mode", meta.interview_modes || [], "Select mode…")}</F>
         </div>
 
@@ -225,21 +266,33 @@ export default function InterviewScheduleForm({ editMode = false }) {
           Schedule
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-          <F label="Date" required>{inp("interview_date", "date")}</F>
-          <F label="Start Time">{inp("start_time", "time")}</F>
-          <F label="End Time">{inp("end_time", "time")}</F>
+          <F label="Date" required>
+            <input type="date" value={form.interview_date} onChange={e => set("interview_date", e.target.value)} className="input-field" />
+          </F>
+          <F label="Start Time">
+            <input type="time" value={form.start_time} onChange={e => handleStartTimeChange(e.target.value)} className="input-field" />
+          </F>
+          <F label="End Time">
+            <input type="time" value={form.end_time} onChange={e => set("end_time", e.target.value)} className="input-field" />
+          </F>
           <F label="Timezone">
             <input value={form.timezone} onChange={e => set("timezone", e.target.value)} className="input-field" placeholder="Asia/Kolkata" />
           </F>
-          <F label="Duration (minutes)">{inp("duration_minutes", "number", { min: 1, placeholder: "e.g. 60" })}</F>
+          <F label="Duration (minutes)">
+            {roundFromPipeline && selectedStage?.duration_minutes
+              ? <ReadOnly value={`${selectedStage.duration_minutes} min`} />
+              : <input type="number" min={1} value={form.duration_minutes} onChange={e => handleDurationChange(e.target.value)} className="input-field" placeholder="e.g. 60" />}
+          </F>
         </div>
 
-        {/* Location */}
+        {/* Location / Meeting (optional) */}
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "20px 0 12px" }}>
-          Location / Meeting
+          Location / Meeting <span style={{ fontWeight: 400, fontSize: 11, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
         </div>
         <div style={GRID2}>
-          <F label="Location / Room">{inp("location", "text", { placeholder: "e.g. Conference Room A, 3rd Floor" })}</F>
+          <F label="Location / Room">
+            <input value={form.location} onChange={e => set("location", e.target.value)} className="input-field" placeholder="e.g. Conference Room A, 3rd Floor" />
+          </F>
           <F label="Meeting URL">
             <input type="url" value={form.meeting_url} onChange={e => set("meeting_url", e.target.value)} className="input-field" placeholder="https://meet.google.com/…" />
           </F>
@@ -247,8 +300,13 @@ export default function InterviewScheduleForm({ editMode = false }) {
 
         {/* Instructions */}
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "20px 0 12px" }}>
-          Instructions for Candidate
+          Instructions for Candidate <span style={{ fontWeight: 400, fontSize: 11, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
         </div>
+        {roundFromPipeline && selectedStage?.instructions && !form.instructions && (
+          <div style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 8, padding: "8px 12px", marginBottom: 8, fontSize: 12, color: "var(--c-muted)" }}>
+            Pipeline hint: {selectedStage.instructions}
+          </div>
+        )}
         <textarea
           value={form.instructions}
           onChange={e => set("instructions", e.target.value)}

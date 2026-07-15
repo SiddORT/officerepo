@@ -118,6 +118,7 @@ import InterviewDetails from "./interview/InterviewDetails";
 import InterviewComplete from "./interview/InterviewComplete";
 import InterviewReschedule from "./interview/InterviewReschedule";
 import PipelineList from "./interview/PipelineList";
+import PipelineDetails from "./interview/PipelineDetails";
 import PipelineForm from "./interview/PipelineForm";
 import InterviewCalendar from "./interview/InterviewCalendar";
 
@@ -324,7 +325,7 @@ function PortalRoutes() {
       <Route path="/hrms/interviews/calendar"                element={<Protected><PortalLayout title="Interview Calendar"><InterviewCalendar /></PortalLayout></Protected>} />
       <Route path="/hrms/interviews/pipelines/new"           element={<Protected><PortalLayout title="New Pipeline"><PipelineForm editMode={false} /></PortalLayout></Protected>} />
       <Route path="/hrms/interviews/pipelines/:pipelineId/edit" element={<Protected><PortalLayout title="Edit Pipeline"><PipelineForm editMode={true} /></PortalLayout></Protected>} />
-      <Route path="/hrms/interviews/pipelines/:pipelineId"   element={<Protected><PortalLayout title="Pipeline Details"><PipelineList /></PortalLayout></Protected>} />
+      <Route path="/hrms/interviews/pipelines/:pipelineId"   element={<Protected><PortalLayout title="Pipeline Details"><PipelineDetails /></PortalLayout></Protected>} />
       <Route path="/hrms/interviews/pipelines"               element={<Protected><PortalLayout title="Interview Pipelines"><PipelineList /></PortalLayout></Protected>} />
       <Route path="/hrms/interviews/:interviewId/edit"       element={<Protected><PortalLayout title="Edit Interview"><InterviewScheduleForm editMode={true} /></PortalLayout></Protected>} />
       <Route path="/hrms/interviews/:interviewId/complete"   element={<Protected><PortalLayout title="Complete Interview"><InterviewComplete /></PortalLayout></Protected>} />
