@@ -14,8 +14,8 @@ const BLANK = {
 };
 
 const Label = ({ children, required }) => (
-  <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--c-text2)", marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-    {children}{required && <span style={{ color: "#f87171" }}> *</span>}
+  <label className={`portal-form-label${required ? " portal-form-label-req" : ""}`}>
+    {children}
   </label>
 );
 

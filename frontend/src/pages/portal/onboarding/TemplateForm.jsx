@@ -130,14 +130,14 @@ export default function TemplateForm({ editMode = false }) {
 
           <div className="form-grid-2">
             <div style={{ gridColumn: "1 / -1" }}>
-              <label className="t-muted" style={{ display: "block", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Template Name *</label>
+              <label className="portal-form-label portal-form-label-req">Template Name</label>
               <input value={form.template_name} onChange={e => setF("template_name", e.target.value)} required
                 placeholder="e.g. Full-Time Employee Onboarding"
                 style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 13, boxSizing: "border-box" }} />
             </div>
 
             <div>
-              <label className="t-muted" style={{ display: "block", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Employee Category</label>
+              <label className="portal-form-label">Employee Category</label>
               <select value={form.employee_category} onChange={e => setF("employee_category", e.target.value)}
                 style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 13 }}>
                 <option value="">— General (any) —</option>
@@ -146,14 +146,14 @@ export default function TemplateForm({ editMode = false }) {
             </div>
 
             <div>
-              <label className="t-muted" style={{ display: "block", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Designation</label>
+              <label className="portal-form-label">Designation</label>
               <input value={form.designation_name} onChange={e => setF("designation_name", e.target.value)}
                 placeholder="Optional"
                 style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 13, boxSizing: "border-box" }} />
             </div>
 
             <div style={{ gridColumn: "1 / -1" }}>
-              <label className="t-muted" style={{ display: "block", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Description</label>
+              <label className="portal-form-label">Description</label>
               <textarea value={form.description} onChange={e => setF("description", e.target.value)}
                 rows={2} placeholder="Optional description…"
                 style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 13, resize: "vertical", boxSizing: "border-box" }} />

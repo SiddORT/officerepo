@@ -26,7 +26,7 @@ const TASK_STATUS_COLOR = {
 
 const Field = ({ label, value }) => (
   <div style={{ marginBottom: 14 }}>
-    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3 }}>{label}</div>
+    <div className="portal-form-label">{label}</div>
     <div style={{ fontSize: 13 }} className="t-heading">{value || <span className="t-muted">—</span>}</div>
   </div>
 );
