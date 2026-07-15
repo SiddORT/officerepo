@@ -46,16 +46,41 @@ export default function CompanyDetails() {
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [docs, setDocs] = useState([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [downloadError, setDownloadError] = useState("");
 
   const load = useCallback(() => {
     setLoading(true);
-    portalOrgApi.getCompany(subdomain, token, companyId)
-      .then(r => setCompany(r.data.data))
+    setDocsLoading(true);
+    Promise.all([
+      portalOrgApi.getCompany(subdomain, token, companyId),
+      portalOrgApi.listCompanyDocs(subdomain, token, companyId).catch(() => ({ data: { data: [] } })),
+    ])
+      .then(([companyRes, docsRes]) => {
+        setCompany(companyRes.data.data);
+        setDocs(docsRes.data.data || []);
+      })
       .catch(() => setError("Failed to load company."))
-      .finally(() => setLoading(false));
+      .finally(() => { setLoading(false); setDocsLoading(false); });
   }, [subdomain, token, companyId]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleDownload = async (doc) => {
+    setDownloadError("");
+    try {
+      const res = await portalOrgApi.downloadCompanyDoc(subdomain, token, companyId, doc.id);
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = doc.file_name || "document";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setDownloadError("Download failed. Please try again.");
+    }
+  };
 
   if (loading) {
     return (
@@ -188,6 +213,53 @@ export default function CompanyDetails() {
               country={company.off_country}
             />
           )}
+
+          {/* Documents */}
+          <div className="portal-form-card">
+            <div className="portal-form-title">📁 Company Documents</div>
+            {downloadError && (
+              <div style={{ padding: "8px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 6, fontSize: 12, color: "#f87171", marginBottom: 10 }}>
+                {downloadError}
+              </div>
+            )}
+            {docsLoading ? (
+              <div style={{ fontSize: 13, color: "var(--c-muted)", opacity: 0.6 }}>Loading documents…</div>
+            ) : docs.length === 0 ? (
+              <div style={{ fontSize: 13, color: "var(--c-muted)", opacity: 0.5 }}>No documents on file.</div>
+            ) : (
+              <div className="portal-table-wrap">
+                <table className="portal-table">
+                  <thead>
+                    <tr>
+                      {["Type", "Doc. Number", "Issue Date", "Expiry Date", "File"].map(h => (
+                        <th key={h}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {docs.map(d => (
+                      <tr key={d.id}>
+                        <td style={{ fontSize: 12, fontWeight: 500 }}>{d.doc_type}</td>
+                        <td style={{ fontSize: 12, fontFamily: "monospace" }} className="t-muted">{d.doc_number || "—"}</td>
+                        <td style={{ fontSize: 12 }} className="t-muted">{d.issue_date ? String(d.issue_date).slice(0, 10) : "—"}</td>
+                        <td style={{ fontSize: 12 }} className="t-muted">{d.expiry_date ? String(d.expiry_date).slice(0, 10) : "—"}</td>
+                        <td style={{ fontSize: 12 }} className="t-muted">
+                          {d.has_file ? (
+                            <button
+                              type="button"
+                              onClick={() => handleDownload(d)}
+                              style={{ fontSize: 12, color: "var(--c-accent)", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 500 }}>
+                              📎 {d.file_name ? (d.file_name.length > 24 ? d.file_name.slice(0, 24) + "…" : d.file_name) : "Download"}
+                            </button>
+                          ) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
           {/* Timestamps */}
           <div style={{ display: "flex", gap: 24, fontSize: 11, color: "var(--c-muted)", paddingTop: 4 }}>
