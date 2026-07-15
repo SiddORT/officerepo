@@ -41,7 +41,7 @@ function Section({ icon, title, accent = "var(--c-accent)", children }) {
 
 // ── grid helpers ──────────────────────────────────────────────────────────────
 const Row4 = ({ children }) => (
-  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>{children}</div>
+  <div className="form-grid-4">{children}</div>
 );
 const Row3 = ({ children }) => (
   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>{children}</div>

@@ -20,9 +20,7 @@ const Label = ({ children, required }) => (
 );
 
 const Row4 = ({ children }) => (
-  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-    {children}
-  </div>
+  <div className="form-grid-4">{children}</div>
 );
 
 export default function JobOpeningForm({ editMode = false }) {

@@ -68,9 +68,7 @@ const BLANK = {
 };
 
 const Row4 = ({ children }) => (
-  <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-    {children}
-  </div>
+  <div className="form-grid-4">{children}</div>
 );
 
 const Label = ({ children, required }) => (
@@ -195,7 +193,7 @@ export default function CandidateForm({ editMode = false }) {
           </Row4>
 
           {/* Row 2: DOB | Gender */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginTop: 14 }}>
+          <div className="form-grid-4" style={{ marginTop: 14 }}>
             <div>
               <Label>Date of Birth</Label>
               <input type="date" value={form.date_of_birth} onChange={f("date_of_birth")} className="input-field" />
@@ -235,7 +233,7 @@ export default function CandidateForm({ editMode = false }) {
           </Row4>
 
           {/* Row 2: Current Designation | Current Salary | Expected Salary */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginTop: 14 }}>
+          <div className="form-grid-4" style={{ marginTop: 14 }}>
             <div>
               <Label>Current Designation</Label>
               <input value={form.current_designation} onChange={f("current_designation")} placeholder="Job title" className="input-field" />
