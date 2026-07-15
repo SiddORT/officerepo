@@ -5,6 +5,7 @@ import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
+import RejectReasonModal from "./RejectReasonModal";
 
 const PAGE_SIZE = 20;
 
@@ -17,6 +18,9 @@ export default function OfferList() {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
+  const [rejectModal, setRejectModal] = useState({ open: false, offerId: null });
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejecting, setRejecting] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -30,6 +34,29 @@ export default function OfferList() {
 
   const doAction = async (fn) => {
     try { await fn(); load(); } catch (e) { alert(e.response?.data?.message || "Action failed."); }
+  };
+
+  const openRejectModal = (offerId) => {
+    setRejectReason("");
+    setRejectModal({ open: true, offerId });
+  };
+
+  const closeRejectModal = () => {
+    if (rejecting) return;
+    setRejectModal({ open: false, offerId: null });
+  };
+
+  const confirmReject = async () => {
+    setRejecting(true);
+    try {
+      await portalRecruitmentApi.rejectOffer(subdomain, token, rejectModal.offerId, { rejection_reason: rejectReason });
+      setRejectModal({ open: false, offerId: null });
+      load();
+    } catch (e) {
+      alert(e.response?.data?.message || "Reject failed.");
+    } finally {
+      setRejecting(false);
+    }
   };
 
   const iconBtn = (emoji, title, onClick, color = "var(--c-accent)") => (
@@ -82,7 +109,7 @@ export default function OfferList() {
                     </>}
                     {r.status === "Sent" && <>
                       {iconBtn("✅", "Accept", () => doAction(() => portalRecruitmentApi.acceptOffer(subdomain, token, r.id)), "#22c55e")}
-                      {iconBtn("❌", "Reject", () => { const reason = window.prompt("Rejection reason:"); if (reason !== null) doAction(() => portalRecruitmentApi.rejectOffer(subdomain, token, r.id, { rejection_reason: reason })); }, "#ef4444")}
+                      {iconBtn("❌", "Reject", () => openRejectModal(r.id), "#ef4444")}
                     </>}
                     {iconBtn("👁", "View", () => navigate(`/portal/${subdomain}/recruitment/offers/${r.id}`))}
                   </td>
@@ -92,6 +119,15 @@ export default function OfferList() {
         </table>
         <Pagination page={page} totalPages={totalPages} onPage={setPage} total={total} pageSize={PAGE_SIZE} />
       </div>
+
+      <RejectReasonModal
+        open={rejectModal.open}
+        onClose={closeRejectModal}
+        onConfirm={confirmReject}
+        loading={rejecting}
+        reason={rejectReason}
+        onReasonChange={setRejectReason}
+      />
     </div>
   );
 }

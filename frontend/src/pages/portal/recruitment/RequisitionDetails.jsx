@@ -4,6 +4,7 @@ import { portalRecruitmentApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
+import RejectReasonModal from "./RejectReasonModal";
 
 const Field = ({ label, value }) => (
   <div>
@@ -26,6 +27,9 @@ export default function RequisitionDetails() {
   const [req, setReq] = useState(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState("");
+  const [rejectModal, setRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejecting, setRejecting] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -37,6 +41,21 @@ export default function RequisitionDetails() {
   const doAction = async (fn, label) => {
     setActing(label);
     try { await fn(); load(); } catch (e) { alert(e.response?.data?.message || `${label} failed.`); } finally { setActing(""); }
+  };
+
+  const openRejectModal = () => { setRejectReason(""); setRejectModal(true); };
+  const closeRejectModal = () => { if (rejecting) return; setRejectModal(false); };
+  const confirmReject = async () => {
+    setRejecting(true);
+    try {
+      await portalRecruitmentApi.rejectRequisition(subdomain, token, reqId, { rejection_reason: rejectReason });
+      setRejectModal(false);
+      load();
+    } catch (e) {
+      alert(e.response?.data?.message || "Reject failed.");
+    } finally {
+      setRejecting(false);
+    }
   };
 
   if (loading) return <div className="t-muted" style={{ padding: 32 }}>Loading…</div>;
@@ -56,7 +75,7 @@ export default function RequisitionDetails() {
           </>}
           {req.status === "Submitted" && <>
             <button disabled={acting === "Approve"} onClick={() => doAction(() => portalRecruitmentApi.approveRequisition(subdomain, token, reqId), "Approve")} className="btn-approve">{acting === "Approve" ? "…" : "✓ Approve"}</button>
-            <button disabled={acting === "Reject"} onClick={() => { const r = window.prompt("Rejection reason:"); if (r !== null) doAction(() => portalRecruitmentApi.rejectRequisition(subdomain, token, reqId, { rejection_reason: r }), "Reject"); }} className="btn-danger">✕ Reject</button>
+            <button disabled={acting === "Reject" || rejecting} onClick={openRejectModal} className="btn-danger">✕ Reject</button>
           </>}
           {req.status === "Approved" && <button onClick={() => navigate(`/portal/${subdomain}/recruitment/openings/new?requisition_id=${reqId}`)} className="btn-primary">Create Opening</button>}
           {req.status === "Rejected" && <button onClick={() => navigate(`/portal/${subdomain}/recruitment/requisitions/${reqId}/edit`)} className="btn-secondary">Edit & Resubmit</button>}
@@ -89,6 +108,15 @@ export default function RequisitionDetails() {
         {req.rejection_reason && <InfoCard title="Rejection Reason"><p style={{ margin: 0, fontSize: 13, color: "#ef4444" }}>{req.rejection_reason}</p></InfoCard>}
         <div className="t-muted" style={{ fontSize: 11, paddingTop: 4 }}>Created by {req.created_by || "—"} · {req.created_at ? new Date(req.created_at).toLocaleString() : "—"}</div>
       </div>
+
+      <RejectReasonModal
+        open={rejectModal}
+        onClose={closeRejectModal}
+        onConfirm={confirmReject}
+        loading={rejecting}
+        reason={rejectReason}
+        onReasonChange={setRejectReason}
+      />
     </div>
   );
 }
