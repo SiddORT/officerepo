@@ -265,3 +265,18 @@ html.theme-light .hover\:border-gray-600:hover { border-color: var(--c-accent) !
 /* Input overrides */
 html.theme-light .input-field  { background-color: #ffffff !important; }
 html.theme-light .input-bg     { background-color: #ffffff !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Shared form layout utilities
+═══════════════════════════════════════════════════════════════════════════ */
+.form-grid-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .form-grid-4 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 520px) {
+  .form-grid-4 { grid-template-columns: 1fr; }
+}

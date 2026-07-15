@@ -78,20 +78,6 @@ export default function InterviewReschedule() {
 
   return (
     <div>
-      <style>{`
-        .form-grid-4 {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr 1fr;
-          gap: 16px;
-        }
-        @media (max-width: 900px) {
-          .form-grid-4 { grid-template-columns: 1fr 1fr; }
-        }
-        @media (max-width: 520px) {
-          .form-grid-4 { grid-template-columns: 1fr; }
-        }
-      `}</style>
-
       <PageHeader
         title="Reschedule Interview"
         breadcrumbs={[
