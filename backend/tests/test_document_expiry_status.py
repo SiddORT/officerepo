@@ -97,6 +97,55 @@ class TestComputeExpiryStatus(unittest.TestCase):
             with self.subTest(val=val):
                 self.assertIn(fn(val), allowed)
 
+    # ------------------------------------------------------------------
+    # soon_days parameter tests — custom window overrides default 30 days
+    # ------------------------------------------------------------------
+
+    def test_custom_soon_days_widens_expiring_soon_window(self):
+        """With soon_days=60, a doc expiring in 45 days should be 'expiring_soon'."""
+        fn = self._fn()
+        in_45 = date.today() + timedelta(days=45)
+        self.assertEqual(fn(in_45, soon_days=60), "expiring_soon")
+
+    def test_custom_soon_days_narrows_expiring_soon_window(self):
+        """With soon_days=10, a doc expiring in 20 days should be 'valid', not 'expiring_soon'."""
+        fn = self._fn()
+        in_20 = date.today() + timedelta(days=20)
+        self.assertEqual(fn(in_20, soon_days=10), "valid")
+
+    def test_custom_soon_days_boundary_exact(self):
+        """With soon_days=60, a doc expiring in exactly 60 days sits on the inclusive boundary → 'expiring_soon'."""
+        fn = self._fn()
+        in_60 = date.today() + timedelta(days=60)
+        self.assertEqual(fn(in_60, soon_days=60), "expiring_soon")
+
+    def test_custom_soon_days_boundary_just_outside(self):
+        """With soon_days=60, a doc expiring in 61 days is just outside the window → 'valid'."""
+        fn = self._fn()
+        in_61 = date.today() + timedelta(days=61)
+        self.assertEqual(fn(in_61, soon_days=60), "valid")
+
+    def test_custom_soon_days_does_not_affect_expired(self):
+        """A doc already expired remains 'expired' regardless of soon_days."""
+        fn = self._fn()
+        yesterday = date.today() - timedelta(days=1)
+        for soon in [5, 30, 60, 90]:
+            with self.subTest(soon_days=soon):
+                self.assertEqual(fn(yesterday, soon_days=soon), "expired")
+
+    def test_mismatched_window_scenario_default_is_30(self):
+        """
+        Regression: _compute_expiry_status default soon_days must equal _EXPIRY_SOON_DAYS.
+        A doc expiring in 30 days is 'expiring_soon' with the default.
+        If _EXPIRY_SOON_DAYS were ever changed without updating the default param this fails.
+        """
+        from backend.app.modules.organization_management.service import _EXPIRY_SOON_DAYS
+        fn = self._fn()
+        boundary = date.today() + timedelta(days=_EXPIRY_SOON_DAYS)
+        self.assertEqual(fn(boundary), "expiring_soon")
+        one_beyond = date.today() + timedelta(days=_EXPIRY_SOON_DAYS + 1)
+        self.assertEqual(fn(one_beyond), "valid")
+
 
 # ---------------------------------------------------------------------------
 # list_expiring_documents — confirm expiry_status key in every returned row
@@ -207,6 +256,69 @@ class TestListExpiringDocumentsExpiryStatusField(unittest.TestCase):
         """An empty query result must return an empty list, not raise."""
         rows = self._run_list([])
         self.assertEqual(rows, [])
+
+    def test_custom_days_ahead_uses_custom_soon_days(self):
+        """
+        When days_ahead=60 is passed, a document expiring in 45 days must be
+        'expiring_soon' (inside the 60-day window), NOT 'valid' (which would
+        happen if _compute_expiry_status still used the hard-coded 30-day constant).
+        This is the core mismatched-window regression test.
+        """
+        from backend.app.modules.organization_management import repository as repo
+        in_45 = date.today() + timedelta(days=45)
+
+        fake_doc = self._make_fake_doc(in_45)
+        fake_company = self._make_fake_company()
+
+        db = MagicMock()
+        q = MagicMock()
+        db.query.return_value = q
+        q.join.return_value = q
+        q.filter.return_value = q
+        q.order_by.return_value = q
+        q.all.return_value = [(fake_doc, fake_company)]
+
+        rows = repo.list_expiring_documents(db, client_id="client-1", days_ahead=60)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(
+            rows[0]["expiry_status"],
+            "expiring_soon",
+            msg=(
+                "With days_ahead=60 a doc expiring in 45 days must be 'expiring_soon'. "
+                "Got 'valid' — the soon_days kwarg was not forwarded to _compute_expiry_status."
+            ),
+        )
+
+    def test_narrow_days_ahead_marks_borderline_doc_valid(self):
+        """
+        When days_ahead=10 is passed, a document expiring in 20 days must be 'valid'
+        (outside the 10-day badge window), even though it would be 'expiring_soon'
+        under the default 30-day window.
+        """
+        from backend.app.modules.organization_management import repository as repo
+        in_20 = date.today() + timedelta(days=20)
+
+        fake_doc = self._make_fake_doc(in_20)
+        fake_company = self._make_fake_company()
+
+        db = MagicMock()
+        q = MagicMock()
+        db.query.return_value = q
+        q.join.return_value = q
+        q.filter.return_value = q
+        q.order_by.return_value = q
+        q.all.return_value = [(fake_doc, fake_company)]
+
+        rows = repo.list_expiring_documents(db, client_id="client-1", days_ahead=10)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(
+            rows[0]["expiry_status"],
+            "valid",
+            msg=(
+                "With days_ahead=10 a doc expiring in 20 days must be 'valid'. "
+                "Got 'expiring_soon' — the default 30-day constant was used instead of days_ahead."
+            ),
+        )
 
 
 # ---------------------------------------------------------------------------

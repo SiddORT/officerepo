@@ -973,7 +973,7 @@ def list_expiring_documents(
             "doc_type": doc.doc_type,
             "doc_number": doc.doc_number,
             "expiry_date": doc.expiry_date,
-            "expiry_status": _compute_expiry_status(doc.expiry_date),
+            "expiry_status": _compute_expiry_status(doc.expiry_date, soon_days=days_ahead),
             "issue_date": doc.issue_date,
             "file_name": doc.file_name,
             "has_file": bool(doc.file_path),

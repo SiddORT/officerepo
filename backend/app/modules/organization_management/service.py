@@ -740,16 +740,20 @@ def delete_designation(
 _EXPIRY_SOON_DAYS = 30
 
 
-def _compute_expiry_status(expiry_date) -> str:
+def _compute_expiry_status(expiry_date, soon_days: int = _EXPIRY_SOON_DAYS) -> str:
     """Return 'expired', 'expiring_soon', or 'valid' for a given expiry_date value.
-    Returns 'valid' when expiry_date is None (no expiry tracked)."""
+    Returns 'valid' when expiry_date is None (no expiry tracked).
+
+    `soon_days` sets the boundary for 'expiring_soon'; it must match the SQL
+    cutoff window used to fetch documents so the badge and the query stay in sync.
+    """
     if expiry_date is None:
         return "valid"
     from datetime import date, timedelta
     today = date.today()
     if expiry_date < today:
         return "expired"
-    if expiry_date <= today + timedelta(days=_EXPIRY_SOON_DAYS):
+    if expiry_date <= today + timedelta(days=soon_days):
         return "expiring_soon"
     return "valid"
 
