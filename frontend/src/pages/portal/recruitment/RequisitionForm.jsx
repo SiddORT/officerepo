@@ -64,7 +64,7 @@ export default function RequisitionForm({ editMode = false }) {
   };
 
   return (
-    <div style={{ maxWidth: 800 }}>
+    <div>
       <PageHeader
         title={editMode ? "Edit Requisition" : "New Job Requisition"}
         breadcrumbs={[{ label: "Requisitions", path: `/portal/${subdomain}/recruitment/requisitions` }, { label: editMode ? "Edit" : "New" }]}
