@@ -547,6 +547,75 @@ def reject_offer(db: Session, client_id: str, offer_id: str, reason: Optional[st
     return _offer_dict(obj)
 
 
+def provision_from_offer(db: Session, client_id: str, offer_id: str, actor: str) -> Dict[str, Any]:
+    """Create an Employee record + Onboarding record from an accepted offer.
+    Idempotent: if offer.employee_id is already set, returns the existing employee_id."""
+    obj = repo.get_offer(db, client_id, offer_id)
+    if not obj:
+        raise HTTPException(404, "Offer not found.")
+    if obj.status != "Accepted":
+        raise HTTPException(400, "Provisioning is only allowed for Accepted offers.")
+
+    # Idempotent — already provisioned
+    if obj.employee_id:
+        return {"employee_id": obj.employee_id, "already_provisioned": True}
+
+    # Fetch candidate for personal details
+    cand = repo.get_candidate(db, client_id, obj.candidate_id)
+    if not cand:
+        raise HTTPException(404, "Candidate not found.")
+
+    # ── Create Employee ──────────────────────────────────────────────────────
+    try:
+        from backend.app.modules.employee_management import service as emp_svc
+
+        # Split name on first space; fallback gracefully
+        name_parts = (cand.first_name + " " + cand.last_name).strip().split(" ", 1)
+        first_name = name_parts[0]
+        last_name  = name_parts[1] if len(name_parts) > 1 else ""
+
+        emp_payload = {
+            "client_id":          client_id,
+            "first_name":         first_name,
+            "last_name":          last_name,
+            "personal_email":     cand.email,
+            "mobile_number":      cand.mobile_number,
+            "company_id":         obj.offered_company_id,
+            "designation_id":     obj.offered_designation_id,
+            "department_id":      obj.offered_department_id,
+            "branch_id":          obj.offered_branch_id,
+            "joining_date":       obj.joining_date.isoformat() if obj.joining_date else None,
+            "employment_status":  "Draft",
+        }
+        emp_result = emp_svc.create_employee(db, client_id, emp_payload, actor_id=actor, ip=None)
+        employee_id = emp_result["id"]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to create employee record: {exc}") from exc
+
+    # ── Create Onboarding ────────────────────────────────────────────────────
+    try:
+        from backend.app.modules.onboarding import service as ob_svc
+        ob_svc.start_onboarding(db, client_id, {
+            "employee_id":  employee_id,
+            "offer_id":     offer_id,
+            "candidate_id": obj.candidate_id,
+        }, actor=actor)
+    except HTTPException as exc:
+        # 409 = duplicate active onboarding — acceptable, keep going
+        if exc.status_code != 409:
+            raise
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to create onboarding record: {exc}") from exc
+
+    # ── Stamp reverse link ───────────────────────────────────────────────────
+    repo.update_offer(db, obj, {"employee_id": employee_id})
+    repo.add_activity(db, client_id, obj.candidate_id, ACT_EMPLOYEE_CREATED, actor)
+
+    return {"employee_id": employee_id, "already_provisioned": False}
+
+
 def upload_offer_letter(db: Session, client_id: str, offer_id: str, key: str, filename: str) -> Dict[str, Any]:
     obj = repo.get_offer(db, client_id, offer_id)
     if not obj:

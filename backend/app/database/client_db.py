@@ -175,6 +175,8 @@ _COLUMN_MIGRATIONS = [
     # Offer — letter file
     ("offers", "offer_letter_key",  "VARCHAR(500)"),
     ("offers", "offer_letter_name", "VARCHAR(255)"),
+    # Offer — provisioned employee back-link
+    ("offers", "employee_id", "VARCHAR(36)"),
 ]
 
 

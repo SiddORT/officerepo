@@ -512,6 +512,18 @@ def accept_offer(
     return ApiResponse.ok(data=svc.accept_offer(db, _cid(portal_user), offer_id, _actor(portal_user)), message="Offer accepted.")
 
 
+@router.post("/{subdomain}/recruitment/offers/{offer_id}/provision")
+def provision_offer(
+    subdomain: str, offer_id: str,
+    portal_user: dict = Depends(_portal_jwt),
+    db: Session = Depends(_client_db_dep),
+):
+    _sub(portal_user, subdomain)
+    result = svc.provision_from_offer(db, _cid(portal_user), offer_id, _actor(portal_user))
+    msg = "Employee and onboarding already existed." if result.get("already_provisioned") else "Employee record and onboarding created."
+    return ApiResponse.ok(data=result, message=msg)
+
+
 @router.post("/{subdomain}/recruitment/offers/{offer_id}/reject")
 def reject_offer(
     subdomain: str, offer_id: str, body: OfferAction,
