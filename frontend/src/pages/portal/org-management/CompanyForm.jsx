@@ -497,7 +497,7 @@ export default function CompanyForm({ editMode }) {
 
         {/* ══ TAB: Branding & Docs ══ */}
         {tab === "branding" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%" }}>
             <div className="portal-form-card">
               <div className="portal-form-title">🎨 Company Logo</div>
               <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -535,7 +535,7 @@ export default function CompanyForm({ editMode }) {
               </div>
             </div>
 
-            <div className="portal-form-card">
+            <div className="portal-form-card" style={{ width: "100%" }}>
               <div className="portal-form-title">📁 Company Documents</div>
 
               {docs.length > 0 && (
@@ -572,7 +572,7 @@ export default function CompanyForm({ editMode }) {
               )}
 
               {addingDoc ? (
-                <div style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 8, padding: 16, display: "grid", gap: 12 }}>
+                <div style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 8, padding: 16, display: "grid", gap: 12, width: "100%" }}>
                   {/* Row 1 — all text/date fields */}
                   <div className="portal-form-row">
                     <div>
