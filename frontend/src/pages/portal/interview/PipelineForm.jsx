@@ -175,7 +175,7 @@ export default function PipelineForm({ editMode = false }) {
           <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 16 }}>
             Pipeline Details
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+          <div className="form-grid-2" style={{ marginBottom: 16 }}>
             <F label="Pipeline Name" required>
               <input value={form.pipeline_name} onChange={e => setField("pipeline_name", e.target.value)} className="input-field" placeholder="e.g. Software Engineer Pipeline" />
             </F>

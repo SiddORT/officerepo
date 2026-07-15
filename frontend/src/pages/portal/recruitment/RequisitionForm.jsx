@@ -44,10 +44,10 @@ const Row4 = ({ children }) => (
   <div className="form-grid-4">{children}</div>
 );
 const Row3 = ({ children }) => (
-  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>{children}</div>
+  <div className="form-grid-3">{children}</div>
 );
 const Row2 = ({ children }) => (
-  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>{children}</div>
+  <div className="form-grid-2">{children}</div>
 );
 
 export default function RequisitionForm({ editMode = false }) {

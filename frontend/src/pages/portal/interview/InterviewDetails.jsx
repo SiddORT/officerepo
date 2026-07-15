@@ -243,7 +243,7 @@ export default function InterviewDetails() {
 
       {/* ── OVERVIEW ── */}
       {tab === "Overview" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        <div className="form-grid-2" style={{ gap: 20 }}>
           <div className="card" style={{ padding: 20 }}>
             <SH label="Interview Details" />
             <Row label="Interview #"   value={iv.interview_number} />
@@ -299,7 +299,7 @@ export default function InterviewDetails() {
 
           {showPanelForm && (
             <form onSubmit={addPanelMember} className="card" style={{ padding: 20, marginBottom: 16 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div className="form-grid-2">
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>Employee *</label>
                   <select
@@ -414,7 +414,7 @@ export default function InterviewDetails() {
               </div>
 
               {/* Recommendation & overall score */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+              <div className="form-grid-2" style={{ marginBottom: 16 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>Recommendation</label>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -441,7 +441,7 @@ export default function InterviewDetails() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+              <div className="form-grid-2" style={{ marginBottom: 16 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>Strengths</label>
                   <textarea value={fbForm.strengths} onChange={e => setFbForm(f => ({ ...f, strengths: e.target.value }))} className="input-field" rows={3} style={{ resize: "vertical" }} placeholder="What stood out positively…" />
