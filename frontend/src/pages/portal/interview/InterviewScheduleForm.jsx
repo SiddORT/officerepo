@@ -4,8 +4,8 @@ import { portalInterviewApi, portalRecruitmentApi } from "../../../services/apiC
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
 
-const F = ({ label, required, children, half }) => (
-  <div style={{ display: "flex", flexDirection: "column", gap: 5, gridColumn: half ? "auto" : undefined }}>
+const F = ({ label, required, children, style }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 5, ...style }}>
     <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>
       {label}{required && <span style={{ color: "#ef4444" }}> *</span>}
     </label>
@@ -171,12 +171,24 @@ export default function InterviewScheduleForm({ editMode = false }) {
     </select>
   );
 
-  const GRID2 = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 };
   const selectedStage = form.pipeline_stage_id ? stages.find(s => s.id === form.pipeline_stage_id) : null;
   const roundFromPipeline = !!selectedStage;
 
   return (
     <div>
+      <style>{`
+        .form-grid-4 {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr 1fr;
+          gap: 16px;
+        }
+        @media (max-width: 900px) {
+          .form-grid-4 { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 520px) {
+          .form-grid-4 { grid-template-columns: 1fr; }
+        }
+      `}</style>
       <PageHeader
         title={editMode ? "Edit Interview" : "Schedule Interview"}
         breadcrumbs={[
@@ -197,7 +209,7 @@ export default function InterviewScheduleForm({ editMode = false }) {
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 12 }}>
           Candidate & Opening
         </div>
-        <div style={GRID2}>
+        <div className="form-grid-4">
           <F label="Candidate" required>
             <select value={form.candidate_id} onChange={e => set("candidate_id", e.target.value)} className="input-field">
               <option value="">Select candidate…</option>
@@ -220,8 +232,8 @@ export default function InterviewScheduleForm({ editMode = false }) {
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "20px 0 12px" }}>
           Interview Pipeline (optional)
         </div>
-        <div style={GRID2}>
-          <F label="Pipeline">
+        <div className="form-grid-4">
+          <F label="Pipeline" style={!(form.pipeline_id && stages.length > 0) ? { gridColumn: "1 / -1" } : undefined}>
             <select value={form.pipeline_id} onChange={e => handlePipelineChange(e.target.value)} className="input-field">
               <option value="">No pipeline — manual round</option>
               {pipelines.map(p => <option key={p.id} value={p.id}>{p.pipeline_name}</option>)}
@@ -242,7 +254,7 @@ export default function InterviewScheduleForm({ editMode = false }) {
           Round Details
           {roundFromPipeline && <span style={{ marginLeft: 8, fontWeight: 400, fontSize: 11, color: "var(--c-accent)", textTransform: "none", letterSpacing: 0 }}>auto-filled from pipeline</span>}
         </div>
-        <div style={GRID2}>
+        <div className="form-grid-4">
           <F label="Round Number" required>
             {roundFromPipeline
               ? <ReadOnly value={`Round ${form.round_number}`} />
@@ -265,7 +277,7 @@ export default function InterviewScheduleForm({ editMode = false }) {
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "20px 0 12px" }}>
           Schedule
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+        <div className="form-grid-4">
           <F label="Date" required>
             <input type="date" value={form.interview_date} onChange={e => set("interview_date", e.target.value)} className="input-field" />
           </F>
@@ -289,7 +301,7 @@ export default function InterviewScheduleForm({ editMode = false }) {
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "20px 0 12px" }}>
           Location / Meeting <span style={{ fontWeight: 400, fontSize: 11, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
         </div>
-        <div style={GRID2}>
+        <div className="form-grid-4">
           <F label="Location / Room">
             <input value={form.location} onChange={e => set("location", e.target.value)} className="input-field" placeholder="e.g. Conference Room A, 3rd Floor" />
           </F>
