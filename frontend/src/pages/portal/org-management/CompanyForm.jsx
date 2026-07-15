@@ -60,6 +60,40 @@ const EXTRA_EMPTY = {
 const EMPTY_DOC = { doc_type: "", doc_number: "", issue_date: "", expiry_date: "", remarks: "", file: null, fileName: "", filePreview: null, fileIsImage: false };
 const EMPTY_EDIT_DOC = { doc_type: "", doc_number: "", issue_date: "", expiry_date: "", remarks: "", file: null, fileName: "", replaceFile: false };
 
+function getExpiryStatus(dateStr) {
+  if (!dateStr) return "ok";
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const expiry = new Date(year, month - 1, day);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysLeft = Math.floor((expiry - today) / 86400000);
+  if (daysLeft < 0) return "expired";
+  if (daysLeft <= 30) return "expiring_soon";
+  return "ok";
+}
+
+function ExpiryCell({ dateStr }) {
+  if (!dateStr) return "—";
+  const status = getExpiryStatus(dateStr);
+  if (status === "expired") {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        {dateStr}
+        <span style={{ display: "inline-block", padding: "1px 7px", borderRadius: 10, fontSize: 10, fontWeight: 600, background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.35)", letterSpacing: "0.03em" }}>Expired</span>
+      </span>
+    );
+  }
+  if (status === "expiring_soon") {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        {dateStr}
+        <span style={{ display: "inline-block", padding: "1px 7px", borderRadius: 10, fontSize: 10, fontWeight: 600, background: "rgba(251,191,36,0.15)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.35)", letterSpacing: "0.03em" }}>Expiring soon</span>
+      </span>
+    );
+  }
+  return dateStr;
+}
+
 const TAB_FIELDS = {
   general:    ["company_code", "company_name", "legal_name", "display_name", "company_type", "industry", "date_of_incorporation", "company_description", "status"],
   compliance: ["registration_number", "cin_number", "pan_number", "tan_number", "msme_number", "tax_number", "gst_registration_date", "tax_identification_number"],
@@ -791,7 +825,7 @@ export default function CompanyForm({ editMode }) {
                               <td style={{ fontSize: 12, fontWeight: 500 }}>{d.doc_type}</td>
                               <td style={{ fontSize: 12, fontFamily: "monospace" }} className="t-muted">{d.doc_number || "—"}</td>
                               <td style={{ fontSize: 12 }} className="t-muted">{d.issue_date ? String(d.issue_date).slice(0, 10) : "—"}</td>
-                              <td style={{ fontSize: 12 }} className="t-muted">{d.expiry_date ? String(d.expiry_date).slice(0, 10) : "—"}</td>
+                              <td style={{ fontSize: 12 }} className="t-muted"><ExpiryCell dateStr={d.expiry_date ? String(d.expiry_date).slice(0, 10) : null} /></td>
                               <td style={{ fontSize: 12 }} className="t-muted">
                                 {d.has_file
                                   ? (
@@ -904,7 +938,7 @@ export default function CompanyForm({ editMode }) {
                             </td>
                             <td style={{ fontSize: 12, fontFamily: "monospace" }} className="t-muted">{d.doc_number || "—"}</td>
                             <td style={{ fontSize: 12 }} className="t-muted">{d.issue_date || "—"}</td>
-                            <td style={{ fontSize: 12 }} className="t-muted">{d.expiry_date || "—"}</td>
+                            <td style={{ fontSize: 12 }} className="t-muted"><ExpiryCell dateStr={d.expiry_date || null} /></td>
                             <td style={{ fontSize: 12 }} className="t-muted">
                               {d.fileName
                                 ? <span className="t-accent">📎 {d.fileName.length > 20 ? d.fileName.slice(0, 20) + "…" : d.fileName}</span>
