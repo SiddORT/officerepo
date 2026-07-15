@@ -381,11 +381,12 @@ export default function OnboardingDetails() {
                   {catTasks.map(t => (
                     <div key={t.id} className="card" style={{
                       padding: "10px 14px", display: "flex", alignItems: "center", gap: 12,
+                      flexWrap: "wrap",
                       opacity: t.status === "Skipped" ? 0.6 : 1,
                       borderLeft: `3px solid ${TASK_STATUS_COLOR[t.status] || "#6b7280"}`,
                     }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                           <span style={{ fontWeight: 600, fontSize: 13, textDecoration: t.status === "Completed" ? "line-through" : "none" }}>
                             {t.task_name}
                           </span>
@@ -498,13 +499,13 @@ export default function OnboardingDetails() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {ob.asset_summary.assignments.map(a => (
-                <div key={a.assignment_id} className="card" style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ fontSize: 24 }}>🖥️</div>
-                  <div style={{ flex: 1 }}>
+                <div key={a.assignment_id} className="card" style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                  <div style={{ fontSize: 24, flexShrink: 0 }}>🖥️</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 13 }}>{a.asset_name || "—"}</div>
                     <div className="t-muted" style={{ fontSize: 11 }}>{a.asset_code} · {a.category}</div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ fontSize: 11, color: "#22c55e", fontWeight: 600 }}>Assigned</div>
                     {a.assigned_date && <div className="t-muted" style={{ fontSize: 11 }}>{a.assigned_date}</div>}
                   </div>
