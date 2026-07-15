@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { clientsApi } from "../../../services/apiClient";
 import Modal from "../../../components/ui/Modal";
@@ -1135,11 +1135,12 @@ function DocFileIcon({ name }) {
 }
 
 function DocumentsTab({ clientId, documents = [], options, onChange }) {
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [failedFiles, setFailedFiles] = useState([]);
+  const fileInputRef = useRef(null);
   const [docTypeId, setDocTypeId] = useState("");
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState("");
-  const [uploadFailed, setUploadFailed] = useState(false);
   const [replacing, setReplacing] = useState(null);
   const [replaceFile, setReplaceFile] = useState(null);
   const [replaceErr, setReplaceErr] = useState("");
@@ -1149,23 +1150,41 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
   const [deleteErr, setDeleteErr] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(null);
-  const replaceInputRef = React.useRef(null);
+  const replaceInputRef = useRef(null);
 
   const docTypeMaster = options?.document_type_master || [];
 
   const upload = async () => {
-    if (!file) { setErr("Choose a file first."); return; }
-    setUploading(true); setErr(""); setUploadFailed(false);
-    try {
-      const selected = docTypeMaster.find((t) => t.id === docTypeId);
-      await clientsApi.uploadDocument(clientId, file, docTypeId || null, selected?.name || "Other");
-      setFile(null); setDocTypeId(""); setUploadFailed(false);
-      onChange();
-    } catch (e) {
-      setErr(e.response?.data?.detail || "Upload failed. Use ↺ Retry to try again.");
-      setUploadFailed(true);
+    const toUpload = failedFiles.length > 0 ? failedFiles : files;
+    if (toUpload.length === 0) { setErr("Choose at least one file."); return; }
+    setUploading(true); setErr("");
+    const selected = docTypeMaster.find((t) => t.id === docTypeId);
+    const typeName = selected?.name || "Other";
+    const results = await Promise.allSettled(
+      toUpload.map((f) => clientsApi.uploadDocument(clientId, f, docTypeId || null, typeName))
+    );
+    const failed = results
+      .map((r, i) => (r.status === "rejected" ? toUpload[i] : null))
+      .filter(Boolean);
+    const succeededCount = results.filter((r) => r.status === "fulfilled").length;
+    if (failed.length > 0) {
+      const names = failed.map((f) => f.name).join(", ");
+      const word = failed.length === 1 ? "file" : "files";
+      setErr(
+        succeededCount > 0
+          ? `${succeededCount} file${succeededCount !== 1 ? "s" : ""} uploaded. Failed to upload ${failed.length} ${word}: ${names}. Please try again.`
+          : `Failed to upload ${failed.length} ${word}: ${names}. Please try again.`
+      );
+      setFailedFiles(failed);
+    } else {
+      setFiles([]);
+      setFailedFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setDocTypeId("");
+      setErr("");
     }
-    finally { setUploading(false); }
+    if (succeededCount > 0) onChange();
+    setUploading(false);
   };
 
   const download = async (doc) => {
@@ -1229,12 +1248,21 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium t-muted">File</label>
-          <input type="file" onChange={(e) => { setFile(e.target.files?.[0] || null); setErr(""); setUploadFailed(false); }}
-                 className="text-sm t-body file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-[var(--c-accent)] file:text-white" />
+          <label className="text-xs font-medium t-muted">File{failedFiles.length > 0 ? ` (${failedFiles.length} failed — retry below)` : ""}</label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={(e) => { setFiles(Array.from(e.target.files || [])); setFailedFiles([]); setErr(""); }}
+            className="text-sm t-body file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-[var(--c-accent)] file:text-white"
+          />
         </div>
         <button onClick={upload} disabled={uploading} className="btn-primary text-sm">
-          {uploading ? "Uploading…" : "Upload"}
+          {uploading
+            ? "Uploading…"
+            : failedFiles.length > 0
+              ? `Retry ${failedFiles.length} failed file${failedFiles.length !== 1 ? "s" : ""}`
+              : files.length > 1 ? `Upload ${files.length} files` : "Upload"}
         </button>
       </div>
       {err && (
