@@ -236,7 +236,7 @@ export default function RequisitionForm({ editMode = false }) {
 
         {/* ── Section 2: Budget & Timeline ── */}
         <Section icon="💰" title="Budget & Timeline" accent="#10b981">
-          <Row3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div>
               <Label>Budget Min (₹)</Label>
               <input type="number" value={form.budget_min} onChange={f("budget_min")} placeholder="e.g. 500000" className="input-field" />
@@ -249,7 +249,7 @@ export default function RequisitionForm({ editMode = false }) {
               <Label>Target Joining Date</Label>
               <input type="date" value={form.target_joining_date} onChange={f("target_joining_date")} className="input-field" />
             </div>
-          </Row3>
+          </div>
         </Section>
 
         </div>{/* end top grid */}
