@@ -904,7 +904,7 @@ function NotesTab({ leadId }) {
 }
 
 /* ── Documents ───────────────────────────────────────────────────────────── */
-function DocumentsTab({ leadId, options }) {
+export function DocumentsTab({ leadId, options }) {
   const [items, loading, reload] = useList(() => leadsApi.documents(leadId), [leadId]);
   const [files, setFiles] = useState([]);
   const [failedFiles, setFailedFiles] = useState([]);

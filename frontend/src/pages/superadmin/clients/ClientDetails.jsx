@@ -1134,7 +1134,7 @@ function DocFileIcon({ name }) {
   );
 }
 
-function DocumentsTab({ clientId, documents = [], options, onChange }) {
+export function DocumentsTab({ clientId, documents = [], options, onChange }) {
   const [files, setFiles] = useState([]);
   const [failedFiles, setFailedFiles] = useState([]);
   const fileInputRef = useRef(null);
