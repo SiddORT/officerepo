@@ -89,7 +89,10 @@ export default function InterviewDetails() {
       loadPanel();
       if (employees.length === 0) {
         portalOrgApi.listActiveEmployees(subdomain, token, { page_size: 200 })
-          .then(r => setEmployees(r.data?.data?.items || r.data?.data || [])).catch(() => {});
+          .then(r => {
+            const d = r.data?.data;
+            setEmployees(Array.isArray(d) ? d : Array.isArray(d?.data) ? d.data : []);
+          }).catch(() => {});
       }
     }
     if (tab === "Feedback") loadFeedback();
@@ -316,8 +319,8 @@ export default function InterviewDetails() {
                     <option value="">Select employee…</option>
                     {employees.map(emp => (
                       <option key={emp.id} value={emp.id}>
-                        {`${emp.first_name || ""} ${emp.last_name || ""}`.trim() || emp.full_name || emp.employee_number}
-                        {emp.designation_name ? ` — ${emp.designation_name}` : ""}
+                        {emp.full_name || `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || emp.employee_code}
+                        {emp.employee_code ? ` (${emp.employee_code})` : ""}
                       </option>
                     ))}
                   </select>
