@@ -117,6 +117,20 @@ export default function CandidateForm({ editMode = false }) {
   const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
+  const onPositionChange = async (openingId) => {
+    setForm(p => ({ ...p, applied_position_id: openingId }));
+    if (!openingId) return;
+    const opening = openings.find(o => o.id === openingId);
+    if (!opening?.requisition_id) return;
+    try {
+      const r = await portalRecruitmentApi.getRequisition(subdomain, token, opening.requisition_id);
+      const hiring_manager = r.data?.data?.hiring_manager;
+      if (hiring_manager) {
+        setForm(p => ({ ...p, assigned_recruiter: p.assigned_recruiter || hiring_manager }));
+      }
+    } catch (_) {}
+  };
+
   const submit = async () => {
     if (!form.first_name) { setError("First name is required."); return; }
     if (!form.last_name) { setError("Last name is required."); return; }
@@ -252,7 +266,7 @@ export default function CandidateForm({ editMode = false }) {
             </div>
             <div>
               <Label>Applied Position</Label>
-              <select value={form.applied_position_id} onChange={f("applied_position_id")} className="input-field">
+              <select value={form.applied_position_id} onChange={e => onPositionChange(e.target.value)} className="input-field">
                 <option value="">Select opening…</option>
                 {openings.map(o => <option key={o.id} value={o.id}>{o.job_title} ({o.opening_number})</option>)}
               </select>

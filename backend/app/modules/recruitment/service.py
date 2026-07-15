@@ -15,7 +15,7 @@ from backend.app.modules.recruitment.constants import (
     ACT_OFFER_REJECTED, ACT_EMPLOYEE_CREATED, ACT_DOC_UPLOADED,
     REQ_STATUS_SUBMITTED, REQ_STATUS_APPROVED, REQ_STATUS_REJECTED,
 )
-from backend.shared.storage.file_handler import save_upload, physical_path, Visibility
+from backend.shared.storage.file_handler import save_upload_sync, physical_path, Visibility
 
 
 def _req_dict(r) -> Dict[str, Any]:
@@ -356,7 +356,7 @@ def upload_resume(db: Session, client_id: str, cand_id: str, file: UploadFile, a
     if len(content) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(400, "File too large. Max 20 MB.")
     file.file.seek(0)
-    file_key, _ = save_upload(file, scope=STORAGE_SCOPE, module=STORAGE_MODULE, visibility=Visibility.PRIVATE)
+    file_key = save_upload_sync(file, scope=STORAGE_SCOPE, module=STORAGE_MODULE, visibility=Visibility.PRIVATE)
     repo.update_candidate(db, obj, {
         "resume_file_name": file.filename,
         "resume_file_key": file_key,
@@ -381,7 +381,7 @@ def upload_doc(
     if len(content) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(400, "File too large. Max 20 MB.")
     file.file.seek(0)
-    file_key, _ = save_upload(file, scope=STORAGE_SCOPE, module=STORAGE_MODULE, visibility=Visibility.PRIVATE)
+    file_key = save_upload_sync(file, scope=STORAGE_SCOPE, module=STORAGE_MODULE, visibility=Visibility.PRIVATE)
     doc = repo.add_candidate_doc(db, client_id, cand_id, {
         "document_type": document_type,
         "file_name": file.filename,
