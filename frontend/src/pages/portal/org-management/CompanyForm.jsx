@@ -385,7 +385,16 @@ export default function CompanyForm({ editMode }) {
     setNewDoc(EMPTY_DOC);
     setAddingDoc(false);
   };
-  const removePendingDoc = (pid) => setPendingDocs(d => d.filter(x => x._pendingId !== pid));
+  const removePendingDoc = (pid) => {
+    setPendingDocs(d => {
+      const next = d.filter(x => x._pendingId !== pid);
+      if (next.length === 0 && uploadFailed) {
+        setUploadFailed(false);
+        setError("");
+      }
+      return next;
+    });
+  };
   const removeExistingDoc = (id) => setRemovedExistingIds(ids => [...ids, id]);
 
   const docFileExt = (name) => (name || "").split(".").pop()?.toUpperCase().slice(0, 4) || "FILE";
