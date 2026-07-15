@@ -202,6 +202,15 @@ export default function OnboardingDetails() {
 
   return (
     <div>
+      <style>{`
+        @media (max-width: 640px) {
+          .ob-task-row { flex-direction: column !important; align-items: flex-start !important; }
+          .ob-task-actions { width: 100%; justify-content: flex-start; }
+          .ob-task-badge { align-self: flex-start; }
+          .ob-asset-row { flex-direction: column !important; align-items: flex-start !important; }
+          .ob-asset-badge { text-align: left !important; }
+        }
+      `}</style>
       <PageHeader
         title={ob.employee_name || "Onboarding"}
         subtitle={`${ob.onboarding_number} · ${ob.designation_name || ""}`}
@@ -379,7 +388,7 @@ export default function OnboardingDetails() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {catTasks.map(t => (
-                    <div key={t.id} className="card" style={{
+                    <div key={t.id} className="card ob-task-row" style={{
                       padding: "10px 14px", display: "flex", alignItems: "center", gap: 12,
                       flexWrap: "wrap",
                       opacity: t.status === "Skipped" ? 0.6 : 1,
@@ -399,7 +408,7 @@ export default function OnboardingDetails() {
                         </div>
                       </div>
                       {isActive && (
-                        <div style={{ display: "flex", gap: 6 }}>
+                        <div className="ob-task-actions" style={{ display: "flex", gap: 6 }}>
                           {t.status !== "Completed" && (
                             <button onClick={() => doUpdateTaskStatus(t.id, "Completed")}
                               style={{ padding: "4px 10px", fontSize: 11, background: "#22c55e22", border: "1px solid #22c55e", color: "#22c55e", borderRadius: 6, cursor: "pointer" }}>
@@ -420,7 +429,7 @@ export default function OnboardingDetails() {
                           )}
                         </div>
                       )}
-                      <span style={{
+                      <span className="ob-task-badge" style={{
                         fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10,
                         background: (TASK_STATUS_COLOR[t.status] || "#6b7280") + "22",
                         color: TASK_STATUS_COLOR[t.status] || "#6b7280",
@@ -499,13 +508,13 @@ export default function OnboardingDetails() {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {ob.asset_summary.assignments.map(a => (
-                <div key={a.assignment_id} className="card" style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                <div key={a.assignment_id} className="card ob-asset-row" style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
                   <div style={{ fontSize: 24, flexShrink: 0 }}>🖥️</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, fontSize: 13 }}>{a.asset_name || "—"}</div>
                     <div className="t-muted" style={{ fontSize: 11 }}>{a.asset_code} · {a.category}</div>
                   </div>
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div className="ob-asset-badge" style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ fontSize: 11, color: "#22c55e", fontWeight: 600 }}>Assigned</div>
                     {a.assigned_date && <div className="t-muted" style={{ fontSize: 11 }}>{a.assigned_date}</div>}
                   </div>
