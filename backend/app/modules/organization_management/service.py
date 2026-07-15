@@ -772,6 +772,11 @@ def list_expiring_documents(
     return _repo.list_expiring_documents(client_db, client_id, days_ahead=days_ahead)
 
 
+_EXPIRY_REQUIRED_DOC_TYPES = {
+    "GST Certificate", "MSME Certificate", "Trade License", "Shop & Establishment License",
+}
+
+
 def add_company_document(
     client_db: Session,
     client_id: str,
@@ -787,9 +792,13 @@ def add_company_document(
     ip,
 ) -> dict:
     from backend.app.modules.organization_management import repository as _repo
+    if doc_type in _EXPIRY_REQUIRED_DOC_TYPES and not expiry_date:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Expiry date is required for document type '{doc_type}'.",
+        )
     co = _repo.get_company(client_db, client_id, company_id)
     if not co:
-        from fastapi import HTTPException
         raise HTTPException(404, "Company not found.")
     doc = _repo.create_company_document(
         client_db,
@@ -823,11 +832,6 @@ def get_company_document_file(
     if not doc.file_path:
         raise HTTPException(404, "No file attached to this document.")
     return doc.file_path, (doc.file_name or "document")
-
-
-_EXPIRY_REQUIRED_DOC_TYPES = {
-    "GST Certificate", "MSME Certificate", "Trade License", "Shop & Establishment License",
-}
 
 
 def update_company_document(

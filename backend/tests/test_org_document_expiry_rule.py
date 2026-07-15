@@ -334,5 +334,119 @@ class TestMissingDocumentRaises404(unittest.TestCase):
         self.assertEqual(ctx.exception.status_code, 404)
 
 
+# ---------------------------------------------------------------------------
+# Service-level guard on CREATE (add_company_document) — svc.add_company_document
+# ---------------------------------------------------------------------------
+
+class TestServiceAddDocumentExpiryGuard(unittest.TestCase):
+    """
+    The add_company_document service function must enforce the same expiry-date
+    rule as update_company_document.  These tests call the service function
+    directly (not via the router) so that we prove the guard cannot be bypassed
+    by a caller that skips router-level validation.
+    """
+
+    def _invoke_service(self, doc_type, expiry_date=None):
+        """
+        Call svc.add_company_document directly, mocking only the repository
+        layer.  Returns the result dict or raises HTTPException.
+        """
+        from backend.app.modules.organization_management import service as svc
+
+        fake_company = MagicMock()
+        fake_doc = _FakeDoc(doc_type, expiry_date)
+
+        with (
+            patch(
+                "backend.app.modules.organization_management.repository.get_company",
+                return_value=fake_company,
+            ),
+            patch(
+                "backend.app.modules.organization_management.repository.create_company_document",
+                return_value=fake_doc,
+            ),
+            patch(
+                "backend.app.modules.organization_management.service._log",
+                return_value=None,
+            ),
+            patch(
+                "backend.app.modules.organization_management.service._doc_dict",
+                side_effect=lambda d: {"id": d.id, "doc_type": d.doc_type},
+            ),
+        ):
+            return svc.add_company_document(
+                client_db=_make_db(),
+                client_id=_CLIENT_ID,
+                company_id=_COMPANY_ID,
+                doc_type=doc_type,
+                doc_number=None,
+                issue_date=None,
+                expiry_date=expiry_date,
+                remarks=None,
+                file_name=None,
+                file_path=None,
+                actor_id="admin-uuid-1",
+                ip="127.0.0.1",
+            )
+
+    # ── 422 cases ─────────────────────────────────────────────────────────────
+
+    def test_service_create_required_type_without_expiry_raises_422(self):
+        """Service rejects required-type doc creation with no expiry_date."""
+        with self.assertRaises(HTTPException) as ctx:
+            self._invoke_service(doc_type="GST Certificate", expiry_date=None)
+        self.assertEqual(ctx.exception.status_code, 422)
+
+    def test_service_create_all_required_types_blocked(self):
+        """Guard fires for every member of _EXPIRY_REQUIRED_DOC_TYPES."""
+        from backend.app.modules.organization_management.service import (
+            _EXPIRY_REQUIRED_DOC_TYPES,
+        )
+        for doc_type in _EXPIRY_REQUIRED_DOC_TYPES:
+            with self.subTest(doc_type=doc_type):
+                with self.assertRaises(HTTPException) as ctx:
+                    self._invoke_service(doc_type=doc_type, expiry_date=None)
+                self.assertEqual(ctx.exception.status_code, 422)
+
+    def test_service_create_422_detail_names_the_doc_type(self):
+        """The 422 detail must identify which document type triggered the rule."""
+        with self.assertRaises(HTTPException) as ctx:
+            self._invoke_service(doc_type="Trade License", expiry_date=None)
+        self.assertIn("Trade License", str(ctx.exception.detail))
+
+    def test_service_create_guard_fires_before_db_lookup(self):
+        """
+        The 422 must be raised before any repository call — the guard should
+        not depend on a live DB round-trip to enforce the rule.
+        """
+        from backend.app.modules.organization_management import service as svc
+
+        with patch(
+            "backend.app.modules.organization_management.repository.get_company",
+        ) as mock_get_company:
+            with self.assertRaises(HTTPException) as ctx:
+                self._invoke_service(doc_type="GST Certificate", expiry_date=None)
+            self.assertEqual(ctx.exception.status_code, 422)
+            mock_get_company.assert_not_called()
+
+    # ── Success cases ──────────────────────────────────────────────────────────
+
+    def test_service_create_required_type_with_expiry_succeeds(self):
+        """Providing a valid expiry_date for a required type must not raise."""
+        from datetime import date
+        result = self._invoke_service(
+            doc_type="GST Certificate",
+            expiry_date=date(2027, 12, 31),
+        )
+        self.assertIsNotNone(result)
+        self.assertEqual(result["doc_type"], "GST Certificate")
+
+    def test_service_create_non_required_type_without_expiry_succeeds(self):
+        """Non-required types need no expiry at the service layer either."""
+        result = self._invoke_service(doc_type="Invoice", expiry_date=None)
+        self.assertIsNotNone(result)
+        self.assertEqual(result["doc_type"], "Invoice")
+
+
 if __name__ == "__main__":
     unittest.main()
