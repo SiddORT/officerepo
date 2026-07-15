@@ -244,6 +244,39 @@ function EmptyState({ icon, title, desc }) {
   );
 }
 
+function QuickLink({ icon, label, color, onClick }) {
+  const [h, setH] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setH(true)}
+      onMouseLeave={() => setH(false)}
+      style={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "10px 14px",
+        background: h ? color + "18" : "var(--c-surface)",
+        border: `1px solid ${h ? color + "60" : "var(--c-border)"}`,
+        borderRadius: 10,
+        cursor: "pointer",
+        transition: "all 180ms ease",
+        transform: h ? "translateY(-1px)" : "translateY(0)",
+        boxShadow: h ? `0 4px 12px ${color}20` : "var(--c-shadow)",
+      }}
+    >
+      <div style={{ width: 30, height: 30, borderRadius: 8, background: color + "18", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>
+        {icon}
+      </div>
+      <div style={{ textAlign: "left" }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: h ? color : "var(--c-text)", transition: "color 180ms" }}>{label}</div>
+        <div style={{ fontSize: 10, color: "var(--c-muted)" }}>View all →</div>
+      </div>
+    </button>
+  );
+}
+
 function SectionCard({ title, action, onAction, children, accentColor }) {
   return (
     <div style={{
@@ -362,6 +395,18 @@ export default function RecruitmentDashboard() {
             value={kpiValues[kpi.key]}
             color={kpi.color}
           />
+        ))}
+      </div>
+
+      {/* ── Quick Links ── */}
+      <div style={{ display: "flex", gap: 8 }}>
+        {[
+          { label: "Job Requisitions", icon: "📋", path: "requisitions", color: "#00aeec" },
+          { label: "Job Openings",     icon: "🗂️", path: "openings",     color: "#8b5cf6" },
+          { label: "Candidates",       icon: "👤", path: "candidates",   color: "#f59e0b" },
+          { label: "Offers",           icon: "📨", path: "offers",       color: "#10b981" },
+        ].map(item => (
+          <QuickLink key={item.path} {...item} onClick={() => go(item.path)} />
         ))}
       </div>
 
