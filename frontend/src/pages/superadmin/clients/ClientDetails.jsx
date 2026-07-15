@@ -1139,6 +1139,7 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
   const [docTypeId, setDocTypeId] = useState("");
   const [uploading, setUploading] = useState(false);
   const [err, setErr] = useState("");
+  const [uploadFailed, setUploadFailed] = useState(false);
   const [replacing, setReplacing] = useState(null);
   const [replaceFile, setReplaceFile] = useState(null);
   const [replaceErr, setReplaceErr] = useState("");
@@ -1153,13 +1154,16 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
 
   const upload = async () => {
     if (!file) { setErr("Choose a file first."); return; }
-    setUploading(true); setErr("");
+    setUploading(true); setErr(""); setUploadFailed(false);
     try {
       const selected = docTypeMaster.find((t) => t.id === docTypeId);
       await clientsApi.uploadDocument(clientId, file, docTypeId || null, selected?.name || "Other");
-      setFile(null); setDocTypeId("");
+      setFile(null); setDocTypeId(""); setUploadFailed(false);
       onChange();
-    } catch (e) { setErr(e.response?.data?.detail || "Upload failed."); }
+    } catch (e) {
+      setErr(e.response?.data?.detail || "Upload failed. Use ↺ Retry to try again.");
+      setUploadFailed(true);
+    }
     finally { setUploading(false); }
   };
 
@@ -1224,14 +1228,25 @@ function DocumentsTab({ clientId, documents = [], options, onChange }) {
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium t-muted">File</label>
-          <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)}
+          <input type="file" onChange={(e) => { setFile(e.target.files?.[0] || null); setErr(""); setUploadFailed(false); }}
                  className="text-sm t-body file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-[var(--c-accent)] file:text-white" />
         </div>
         <button onClick={upload} disabled={uploading} className="btn-primary text-sm">
           {uploading ? "Uploading…" : "Upload"}
         </button>
       </div>
-      {err && <div className="rounded-lg px-3 py-2 text-sm text-red-400 mb-3" style={{ background: "rgba(239,68,68,0.08)" }}>{err}</div>}
+      {err && (
+        <div className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-red-400 mb-3" style={{ background: "rgba(239,68,68,0.08)" }}>
+          <span>{err}</span>
+          {uploadFailed && file && (
+            <button onClick={upload} disabled={uploading}
+              className="flex-shrink-0 text-xs font-semibold px-2 py-1 rounded"
+              style={{ background: "rgba(239,68,68,0.15)", color: "inherit" }}>
+              {uploading ? "Retrying…" : "↺ Retry upload"}
+            </button>
+          )}
+        </div>
+      )}
 
       {documents.length === 0 ? <Empty>No documents yet.</Empty> : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
