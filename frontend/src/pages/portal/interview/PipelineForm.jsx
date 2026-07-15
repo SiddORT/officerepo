@@ -219,7 +219,7 @@ export default function PipelineForm({ editMode = false }) {
                   <span style={{ background: "rgba(99,102,241,0.15)", color: "#a5b4fc", width: 26, height: 26, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
                     {i + 1}
                   </span>
-                  <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr auto auto", gap: 10, alignItems: "center" }}>
+                  <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) auto auto", gap: 10, alignItems: "center" }}>
                     <input
                       value={s.stage_name}
                       onChange={e => setStage(i, "stage_name", e.target.value)}
@@ -261,7 +261,7 @@ export default function PipelineForm({ editMode = false }) {
                   value={s.instructions || ""}
                   onChange={e => setStage(i, "instructions", e.target.value)}
                   className="input-field" placeholder="Instructions for this round (optional)…"
-                  style={{ fontSize: 12, marginLeft: 38 }}
+                  style={{ fontSize: 12, marginLeft: 38, width: "calc(100% - 38px)", boxSizing: "border-box" }}
                 />
               </div>
             ))}
