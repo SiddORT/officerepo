@@ -55,6 +55,7 @@ const EXTRA_EMPTY = {
 };
 
 const EMPTY_DOC = { doc_type: "", doc_number: "", issue_date: "", expiry_date: "", remarks: "", file: null, fileName: "", filePreview: null, fileIsImage: false };
+const EMPTY_EDIT_DOC = { doc_type: "", doc_number: "", issue_date: "", expiry_date: "", remarks: "", file: null, fileName: "", replaceFile: false };
 
 const TAB_FIELDS = {
   general:    ["company_code", "company_name", "legal_name", "display_name", "company_type", "industry", "date_of_incorporation", "company_description", "status"],
@@ -141,6 +142,9 @@ export default function CompanyForm({ editMode }) {
 
   const [addingDoc, setAddingDoc] = useState(false);
   const [newDoc,    setNewDoc]    = useState(EMPTY_DOC);
+  const [editingDocId, setEditingDocId] = useState(null);
+  const [editDoc,      setEditDoc]      = useState(EMPTY_EDIT_DOC);
+  const [savingDoc,    setSavingDoc]    = useState(false);
   const [logoPreview, setLogoPreview] = useState(null);
 
   // When a new company is created but doc uploads partially fail, we store the
@@ -334,6 +338,58 @@ export default function CompanyForm({ editMode }) {
   const removeExistingDoc = (id) => setRemovedExistingIds(ids => [...ids, id]);
 
   const docFileExt = (name) => (name || "").split(".").pop()?.toUpperCase().slice(0, 4) || "FILE";
+
+  const startEditDoc = (doc) => {
+    setEditingDocId(doc.id);
+    setEditDoc({
+      doc_type:   doc.doc_type   || "",
+      doc_number: doc.doc_number || "",
+      issue_date: doc.issue_date ? String(doc.issue_date).slice(0, 10) : "",
+      expiry_date: doc.expiry_date ? String(doc.expiry_date).slice(0, 10) : "",
+      remarks:    doc.remarks    || "",
+      file:       null,
+      fileName:   "",
+      replaceFile: false,
+    });
+    setAddingDoc(false);
+  };
+
+  const cancelEditDoc = () => {
+    setEditingDocId(null);
+    setEditDoc(EMPTY_EDIT_DOC);
+  };
+
+  const setEditField = (k, v) => setEditDoc(d => ({ ...d, [k]: v }));
+
+  const handleEditDocFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setEditDoc(d => ({ ...d, file, fileName: file.name, replaceFile: true }));
+  };
+
+  const saveDocEdit = async () => {
+    if (!editDoc.doc_type) return;
+    setSavingDoc(true);
+    try {
+      const fd = new FormData();
+      fd.append("doc_type", editDoc.doc_type);
+      fd.append("doc_number", editDoc.doc_number || "");
+      fd.append("issue_date", editDoc.issue_date || "");
+      fd.append("expiry_date", editDoc.expiry_date || "");
+      fd.append("remarks", editDoc.remarks || "");
+      if (editDoc.file) fd.append("file", editDoc.file);
+      const res = await portalOrgApi.updateCompanyDoc(subdomain, token, companyId, editingDocId, fd);
+      const updated = res.data?.data;
+      if (updated) {
+        setExistingDocs(docs => docs.map(d => d.id === editingDocId ? updated : d));
+      }
+      cancelEditDoc();
+    } catch (e) {
+      setError(e?.response?.data?.detail || "Failed to save document changes.");
+    } finally {
+      setSavingDoc(false);
+    }
+  };
 
   const handleDownload = async (doc) => {
     try {
@@ -622,66 +678,146 @@ export default function CompanyForm({ editMode }) {
               <div className="portal-form-title">📁 Company Documents</div>
 
               {(visibleExistingDocs.length > 0 || pendingDocs.length > 0) && (
-                <div className="portal-table-wrap" style={{ marginBottom: 12 }}>
-                  <table className="portal-table">
-                    <thead>
-                      <tr>
-                        {["Type", "Doc. Number", "Issue Date", "Expiry Date", "File", ""].map(h => <th key={h}>{h}</th>)}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {/* Persisted (existing) documents */}
-                      {visibleExistingDocs.map(d => (
-                        <tr key={d.id}>
-                          <td style={{ fontSize: 12, fontWeight: 500 }}>{d.doc_type}</td>
-                          <td style={{ fontSize: 12, fontFamily: "monospace" }} className="t-muted">{d.doc_number || "—"}</td>
-                          <td style={{ fontSize: 12 }} className="t-muted">{d.issue_date ? String(d.issue_date).slice(0, 10) : "—"}</td>
-                          <td style={{ fontSize: 12 }} className="t-muted">{d.expiry_date ? String(d.expiry_date).slice(0, 10) : "—"}</td>
-                          <td style={{ fontSize: 12 }} className="t-muted">
-                            {d.has_file
-                              ? (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDownload(d)}
-                                  style={{ fontSize: 12, color: "var(--c-accent)", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 500 }}>
-                                  📎 {d.file_name ? (d.file_name.length > 20 ? d.file_name.slice(0, 20) + "…" : d.file_name) : "Download"}
-                                </button>
-                              )
-                              : "—"}
-                          </td>
-                          <td>
-                            <button onClick={() => removeExistingDoc(d.id)}
-                              style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
-                              Remove
-                            </button>
-                          </td>
+                <div style={{ marginBottom: 12 }}>
+                  <div className="portal-table-wrap">
+                    <table className="portal-table">
+                      <thead>
+                        <tr>
+                          {["Type", "Doc. Number", "Issue Date", "Expiry Date", "File", ""].map(h => <th key={h}>{h}</th>)}
                         </tr>
-                      ))}
-                      {/* Pending (not yet saved) documents */}
-                      {pendingDocs.map(d => (
-                        <tr key={d._pendingId}>
-                          <td style={{ fontSize: 12, fontWeight: 500 }}>
-                            {d.doc_type}
-                            <span style={{ marginLeft: 6, fontSize: 10, color: "var(--c-muted)", fontStyle: "italic" }}>unsaved</span>
-                          </td>
-                          <td style={{ fontSize: 12, fontFamily: "monospace" }} className="t-muted">{d.doc_number || "—"}</td>
-                          <td style={{ fontSize: 12 }} className="t-muted">{d.issue_date || "—"}</td>
-                          <td style={{ fontSize: 12 }} className="t-muted">{d.expiry_date || "—"}</td>
-                          <td style={{ fontSize: 12 }} className="t-muted">
-                            {d.fileName
-                              ? <span className="t-accent">📎 {d.fileName.length > 20 ? d.fileName.slice(0, 20) + "…" : d.fileName}</span>
-                              : "—"}
-                          </td>
-                          <td>
-                            <button onClick={() => removePendingDoc(d._pendingId)}
-                              style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
-                              Remove
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {/* Persisted (existing) documents */}
+                        {visibleExistingDocs.map(d => (
+                          <React.Fragment key={d.id}>
+                            <tr style={editingDocId === d.id ? { background: "rgba(99,179,237,0.06)" } : {}}>
+                              <td style={{ fontSize: 12, fontWeight: 500 }}>{d.doc_type}</td>
+                              <td style={{ fontSize: 12, fontFamily: "monospace" }} className="t-muted">{d.doc_number || "—"}</td>
+                              <td style={{ fontSize: 12 }} className="t-muted">{d.issue_date ? String(d.issue_date).slice(0, 10) : "—"}</td>
+                              <td style={{ fontSize: 12 }} className="t-muted">{d.expiry_date ? String(d.expiry_date).slice(0, 10) : "—"}</td>
+                              <td style={{ fontSize: 12 }} className="t-muted">
+                                {d.has_file
+                                  ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDownload(d)}
+                                      style={{ fontSize: 12, color: "var(--c-accent)", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 500 }}>
+                                      📎 {d.file_name ? (d.file_name.length > 20 ? d.file_name.slice(0, 20) + "…" : d.file_name) : "Download"}
+                                    </button>
+                                  )
+                                  : "—"}
+                              </td>
+                              <td>
+                                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                  {editingDocId === d.id ? (
+                                    <button onClick={cancelEditDoc}
+                                      style={{ fontSize: 12, color: "var(--c-muted)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
+                                      Cancel
+                                    </button>
+                                  ) : (
+                                    <>
+                                      <button onClick={() => startEditDoc(d)}
+                                        style={{ fontSize: 12, color: "var(--c-accent)", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
+                                        Edit
+                                      </button>
+                                      <button onClick={() => removeExistingDoc(d.id)}
+                                        style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
+                                        Remove
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                            {editingDocId === d.id && (
+                              <tr>
+                                <td colSpan={6} style={{ padding: 0, background: "var(--c-bg)" }}>
+                                  <div style={{ padding: "14px 16px", borderTop: "1px solid var(--c-border)", display: "flex", flexDirection: "column", gap: 12 }}>
+                                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--c-accent)", marginBottom: 2 }}>✏️ Editing document</div>
+                                    <div className="portal-form-row">
+                                      <div>
+                                        <label className="portal-form-label portal-form-label-req">Document Type</label>
+                                        <select value={editDoc.doc_type} onChange={e => setEditField("doc_type", e.target.value)}
+                                          className="input-field" style={{ cursor: "pointer" }}>
+                                          <option value="">Select type…</option>
+                                          {DOC_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label className="portal-form-label">Document Number</label>
+                                        <input value={editDoc.doc_number} onChange={e => setEditField("doc_number", e.target.value)}
+                                          placeholder="Reg. No / ID" className="input-field" style={{ fontFamily: "monospace" }} />
+                                      </div>
+                                      <div>
+                                        <label className="portal-form-label">Issue Date</label>
+                                        <input type="date" value={editDoc.issue_date} onChange={e => setEditField("issue_date", e.target.value)} className="input-field" />
+                                      </div>
+                                      <div>
+                                        <label className="portal-form-label">Expiry Date</label>
+                                        <input type="date" value={editDoc.expiry_date} onChange={e => setEditField("expiry_date", e.target.value)} className="input-field" />
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <label className="portal-form-label">Remarks</label>
+                                      <input value={editDoc.remarks} onChange={e => setEditField("remarks", e.target.value)}
+                                        placeholder="Optional note" className="input-field" />
+                                    </div>
+                                    <div>
+                                      <label className="portal-form-label">Replace File <span style={{ fontWeight: 400, color: "var(--c-muted)" }}>(optional)</span></label>
+                                      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                        <button type="button"
+                                          onClick={() => document.getElementById(`edit-doc-file-${d.id}`).click()}
+                                          className="btn-secondary" style={{ padding: "5px 12px", fontSize: 12 }}>
+                                          {editDoc.fileName ? "Change File" : d.has_file ? "Replace File" : "Attach File"}
+                                        </button>
+                                        <span style={{ fontSize: 12, color: "var(--c-muted)" }}>
+                                          {editDoc.fileName ? `📎 ${editDoc.fileName}` : d.has_file ? `Current: ${d.file_name || "file"}` : "No file"}
+                                        </span>
+                                        <input id={`edit-doc-file-${d.id}`} type="file" style={{ display: "none" }} onChange={handleEditDocFile} />
+                                      </div>
+                                    </div>
+                                    <div style={{ display: "flex", gap: 10 }}>
+                                      <button type="button" onClick={saveDocEdit} disabled={savingDoc || !editDoc.doc_type}
+                                        className="btn-primary" style={{ padding: "6px 18px", fontSize: 13 }}>
+                                        {savingDoc ? "Saving…" : "Save Changes"}
+                                      </button>
+                                      <button type="button" onClick={cancelEditDoc}
+                                        className="btn-secondary" style={{ padding: "6px 14px", fontSize: 13 }}>
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        ))}
+                        {/* Pending (not yet saved) documents */}
+                        {pendingDocs.map(d => (
+                          <tr key={d._pendingId}>
+                            <td style={{ fontSize: 12, fontWeight: 500 }}>
+                              {d.doc_type}
+                              <span style={{ marginLeft: 6, fontSize: 10, color: "var(--c-muted)", fontStyle: "italic" }}>unsaved</span>
+                            </td>
+                            <td style={{ fontSize: 12, fontFamily: "monospace" }} className="t-muted">{d.doc_number || "—"}</td>
+                            <td style={{ fontSize: 12 }} className="t-muted">{d.issue_date || "—"}</td>
+                            <td style={{ fontSize: 12 }} className="t-muted">{d.expiry_date || "—"}</td>
+                            <td style={{ fontSize: 12 }} className="t-muted">
+                              {d.fileName
+                                ? <span className="t-accent">📎 {d.fileName.length > 20 ? d.fileName.slice(0, 20) + "…" : d.fileName}</span>
+                                : "—"}
+                            </td>
+                            <td>
+                              <button onClick={() => removePendingDoc(d._pendingId)}
+                                style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
+                                Remove
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 

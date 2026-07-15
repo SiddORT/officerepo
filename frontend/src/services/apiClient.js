@@ -489,6 +489,7 @@ export const portalOrgApi = {
   // Company Documents
   listCompanyDocs:   (sd, tk, cid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${cid}/documents`, { headers: { Authorization: `Bearer ${tk}` } }),
   uploadCompanyDoc:  (sd, tk, cid, formData) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${cid}/documents`, formData, { headers: { Authorization: `Bearer ${tk}`, "Content-Type": "multipart/form-data" } }),
+  updateCompanyDoc:  (sd, tk, cid, docId, formData) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${cid}/documents/${docId}`, formData, { headers: { Authorization: `Bearer ${tk}`, "Content-Type": "multipart/form-data" } }),
   deleteCompanyDoc:  (sd, tk, cid, docId) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${cid}/documents/${docId}`, { headers: { Authorization: `Bearer ${tk}` } }),
   downloadCompanyDoc:(sd, tk, cid, docId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${cid}/documents/${docId}/download`, { headers: { Authorization: `Bearer ${tk}` }, responseType: "blob" }),
 };

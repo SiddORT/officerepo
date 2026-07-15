@@ -816,6 +816,45 @@ def get_company_document_file(
     return doc.file_path, (doc.file_name or "document")
 
 
+def update_company_document(
+    client_db: Session,
+    client_id: str,
+    company_id: str,
+    doc_id: str,
+    doc_type,
+    doc_number,
+    issue_date,
+    expiry_date,
+    remarks,
+    new_file_name,
+    new_file_path,
+    actor_id,
+    ip,
+) -> dict:
+    from backend.app.modules.organization_management import repository as _repo
+    from fastapi import HTTPException
+    doc = _repo.get_company_document(client_db, client_id, company_id, doc_id)
+    if not doc:
+        raise HTTPException(404, "Document not found.")
+    old_file_key = doc.file_path if new_file_path else None
+    _repo.update_company_document(
+        client_db, doc,
+        doc_type=doc_type,
+        doc_number=doc_number,
+        issue_date=issue_date,
+        expiry_date=expiry_date,
+        remarks=remarks,
+        file_name=new_file_name,
+        file_path=new_file_path,
+    )
+    _log(client_db, client_id, "COMPANY_DOCUMENT_UPDATED", actor_id, ip, {
+        "company_id": company_id, "doc_type": doc.doc_type, "doc_id": doc_id,
+    })
+    client_db.commit()
+    client_db.refresh(doc)
+    return _doc_dict(doc), old_file_key or ""
+
+
 def delete_company_document(
     client_db: Session, client_id: str, company_id: str, doc_id: str,
     actor_id, ip,

@@ -903,6 +903,40 @@ def create_company_document(
     return doc
 
 
+def update_company_document(
+    db: Session,
+    doc: OrgCompanyDocument,
+    doc_type: Optional[str] = None,
+    doc_number: Optional[str] = None,
+    issue_date=None,
+    expiry_date=None,
+    remarks: Optional[str] = None,
+    file_name: Optional[str] = None,
+    file_path: Optional[str] = None,
+    clear_file: bool = False,
+) -> OrgCompanyDocument:
+    if doc_type is not None:
+        doc.doc_type = doc_type
+    if doc_number is not None:
+        doc.doc_number = doc_number or None
+    if issue_date is not None:
+        doc.issue_date = issue_date or None
+    if expiry_date is not None:
+        doc.expiry_date = expiry_date or None
+    if remarks is not None:
+        doc.remarks = remarks or None
+    if file_name is not None:
+        doc.file_name = file_name or None
+    if file_path is not None:
+        doc.file_path = file_path or None
+    if clear_file:
+        doc.file_name = None
+        doc.file_path = None
+    doc.updated_at = datetime.utcnow()
+    db.flush()
+    return doc
+
+
 def soft_delete_company_document(db: Session, doc: OrgCompanyDocument) -> None:
     from datetime import datetime as _dt
     doc.is_deleted = True

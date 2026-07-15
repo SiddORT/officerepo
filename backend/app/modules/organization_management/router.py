@@ -302,6 +302,69 @@ def upload_company_document(
     return ApiResponse.ok(data, "Document uploaded.").model_dump()
 
 
+@router.patch("/{subdomain}/org/companies/{company_id}/documents/{doc_id}")
+def update_company_document(
+    subdomain: str,
+    company_id: str,
+    doc_id: str,
+    request: Request,
+    doc_type: Optional[str] = Form(None),
+    doc_number: Optional[str] = Form(None),
+    issue_date: Optional[str] = Form(None),
+    expiry_date: Optional[str] = Form(None),
+    remarks: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    from backend.app.modules.organization_management.constants import ORG_STORAGE_SCOPE, ORG_DOCUMENTS_MODULE
+    from backend.shared.storage.file_handler import Visibility, save_document, delete_file
+
+    new_file_key = None
+    new_file_name = None
+    if file and file.filename:
+        new_file_key, new_file_name = save_document(file, ORG_STORAGE_SCOPE, ORG_DOCUMENTS_MODULE)
+
+    try:
+        from datetime import date as _date
+        def _parse_date(s):
+            if not s:
+                return None
+            try:
+                return _date.fromisoformat(s)
+            except (ValueError, TypeError):
+                return None
+
+        data, old_file_key = svc.update_company_document(
+            client_db,
+            client_id=portal_user["client_id"],
+            company_id=company_id,
+            doc_id=doc_id,
+            doc_type=doc_type,
+            doc_number=doc_number,
+            issue_date=_parse_date(issue_date) if issue_date is not None else None,
+            expiry_date=_parse_date(expiry_date) if expiry_date is not None else None,
+            remarks=remarks,
+            new_file_name=new_file_name,
+            new_file_path=new_file_key,
+            actor_id=portal_user["admin_user_id"],
+            ip=_get_ip(request),
+        )
+    except Exception:
+        if new_file_key:
+            delete_file(new_file_key, Visibility.PRIVATE)
+        raise
+
+    if old_file_key:
+        try:
+            delete_file(old_file_key, Visibility.PRIVATE)
+        except Exception:
+            pass
+
+    return ApiResponse.ok(data, "Document updated.").model_dump()
+
+
 @router.get("/{subdomain}/org/companies/{company_id}/documents/{doc_id}/download")
 def download_company_document(
     subdomain: str, company_id: str, doc_id: str,
