@@ -17,7 +17,7 @@ export default function OfferForm({ editMode = false }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    portalRecruitmentApi.listCandidates(subdomain, token, { page_size: 200, status: "Selected" }).then(r => setCandidates(r.data?.data?.items || [])).catch(() => {});
+    portalRecruitmentApi.listCandidates(subdomain, token, { page_size: 100, status: "Selected" }).then(r => setCandidates(r.data?.data?.items || [])).catch(() => {});
     portalRecruitmentApi.listOpenings(subdomain, token, { page_size: 100 }).then(r => setOpenings(r.data?.data?.items || [])).catch(() => {});
     if (editMode && offerId) {
       portalRecruitmentApi.getOffer(subdomain, token, offerId).then(r => {
