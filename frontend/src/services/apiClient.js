@@ -486,6 +486,9 @@ export const portalOrgApi = {
   // Full hierarchy (company + dept tree + designations)
   hierarchy: (sd, tk, companyId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/hierarchy/${companyId}`, { headers: { Authorization: `Bearer ${tk}` } }),
 
+  // Cross-company document expiry summary
+  listExpiringDocs:  (sd, tk, days_ahead = 30) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/documents/expiring`, { headers: { Authorization: `Bearer ${tk}` }, params: { days_ahead } }),
+
   // Company Documents
   listCompanyDocs:   (sd, tk, cid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${cid}/documents`, { headers: { Authorization: `Bearer ${tk}` } }),
   uploadCompanyDoc:  (sd, tk, cid, formData) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${cid}/documents`, formData, { headers: { Authorization: `Bearer ${tk}`, "Content-Type": "multipart/form-data" } }),

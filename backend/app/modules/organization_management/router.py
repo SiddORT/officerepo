@@ -235,6 +235,22 @@ def delete_company(
     return ApiResponse.ok(None, "Company deleted.").model_dump()
 
 
+# ── Cross-company document expiry summary ──────────────────────────────────────
+
+@router.get("/{subdomain}/org/documents/expiring")
+def list_expiring_documents(
+    subdomain: str,
+    days_ahead: int = 30,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    """Return all documents expiring within `days_ahead` days (or already expired)
+    across every company in this workspace. Used by the dashboard warning panel."""
+    _subdomain_check(portal_user, subdomain)
+    docs = svc.list_expiring_documents(client_db, portal_user["client_id"], days_ahead=days_ahead)
+    return ApiResponse.ok(docs).model_dump()
+
+
 # ── Company Documents ──────────────────────────────────────────────────────────
 
 @router.get("/{subdomain}/org/companies/{company_id}/documents")

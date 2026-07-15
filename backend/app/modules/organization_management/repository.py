@@ -942,3 +942,40 @@ def soft_delete_company_document(db: Session, doc: OrgCompanyDocument) -> None:
     doc.is_deleted = True
     doc.deleted_at = _dt.utcnow()
     db.flush()
+
+
+def list_expiring_documents(
+    db: Session, client_id: str, days_ahead: int = 30,
+) -> List[dict]:
+    """Return all non-deleted company documents expiring within `days_ahead` days
+    (or already expired), enriched with the company name."""
+    from datetime import date, timedelta
+    from sqlalchemy import and_, or_
+    cutoff = date.today() + timedelta(days=days_ahead)
+    rows = (
+        db.query(OrgCompanyDocument, OrgCompany)
+        .join(OrgCompany, OrgCompanyDocument.company_id == OrgCompany.id)
+        .filter(
+            OrgCompanyDocument.client_id == client_id,
+            OrgCompanyDocument.is_deleted.is_(False),
+            OrgCompany.is_deleted.is_(False),
+            OrgCompanyDocument.expiry_date.isnot(None),
+            OrgCompanyDocument.expiry_date <= cutoff,
+        )
+        .order_by(OrgCompanyDocument.expiry_date)
+        .all()
+    )
+    return [
+        {
+            "id": doc.id,
+            "company_id": doc.company_id,
+            "company_name": company.company_name,
+            "doc_type": doc.doc_type,
+            "doc_number": doc.doc_number,
+            "expiry_date": doc.expiry_date,
+            "issue_date": doc.issue_date,
+            "file_name": doc.file_name,
+            "has_file": bool(doc.file_path),
+        }
+        for doc, company in rows
+    ]

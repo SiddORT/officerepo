@@ -763,6 +763,15 @@ def list_company_documents(
     return [_doc_dict(d) for d in docs]
 
 
+def list_expiring_documents(
+    client_db: Session, client_id: str, days_ahead: int = 30,
+) -> list:
+    """Return all documents expiring within `days_ahead` days (or already expired),
+    enriched with company name for display in the central warnings panel."""
+    from backend.app.modules.organization_management import repository as _repo
+    return _repo.list_expiring_documents(client_db, client_id, days_ahead=days_ahead)
+
+
 def add_company_document(
     client_db: Session,
     client_id: str,

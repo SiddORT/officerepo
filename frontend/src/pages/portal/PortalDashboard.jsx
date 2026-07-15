@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../contexts/PortalAuthContext";
-import { portalUserMgmtApi } from "../../services/apiClient";
+import { portalUserMgmtApi, portalOrgApi } from "../../services/apiClient";
 import StatCard from "./shared/StatCard";
 
 const MODULE_CARDS = [
@@ -44,6 +44,176 @@ const MODULE_CARDS = [
     ],
   },
 ];
+
+function getExpiryStatus(dateStr) {
+  if (!dateStr) return "ok";
+  const [year, month, day] = String(dateStr).slice(0, 10).split("-").map(Number);
+  const expiry = new Date(year, month - 1, day);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysLeft = Math.floor((expiry - today) / 86400000);
+  if (daysLeft < 0) return { status: "expired", daysLeft };
+  if (daysLeft <= 30) return { status: "expiring_soon", daysLeft };
+  return { status: "ok", daysLeft };
+}
+
+function ExpiringDocumentsPanel({ subdomain, token }) {
+  const [docs, setDocs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    if (!token || !subdomain) return;
+    setLoading(true);
+    portalOrgApi.listExpiringDocs(subdomain, token, 30)
+      .then(r => setDocs(r.data?.data || []))
+      .catch(() => setDocs([]))
+      .finally(() => setLoading(false));
+  }, [token, subdomain]);
+
+  if (loading || dismissed || docs.length === 0) return null;
+
+  const expired = docs.filter(d => {
+    const r = getExpiryStatus(d.expiry_date);
+    return r.status === "expired";
+  });
+  const expiringSoon = docs.filter(d => {
+    const r = getExpiryStatus(d.expiry_date);
+    return r.status === "expiring_soon";
+  });
+
+  return (
+    <div style={{
+      borderRadius: 12,
+      border: "1px solid rgba(251,191,36,0.35)",
+      background: "rgba(251,191,36,0.06)",
+      overflow: "hidden",
+    }}>
+      {/* Header */}
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "14px 18px",
+        borderBottom: "1px solid rgba(251,191,36,0.2)",
+        background: "rgba(251,191,36,0.09)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 18 }}>⚠️</span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#d97706" }}>
+              Document Expiry Alerts
+            </div>
+            <div style={{ fontSize: 11, color: "#92400e", marginTop: 1 }}>
+              {expired.length > 0 && (
+                <span style={{ color: "#ef4444", fontWeight: 600 }}>{expired.length} expired</span>
+              )}
+              {expired.length > 0 && expiringSoon.length > 0 && <span style={{ color: "#92400e" }}> · </span>}
+              {expiringSoon.length > 0 && (
+                <span style={{ color: "#d97706", fontWeight: 600 }}>{expiringSoon.length} expiring within 30 days</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={() => setDismissed(true)}
+          title="Dismiss"
+          style={{
+            background: "none", border: "none", cursor: "pointer",
+            color: "#92400e", fontSize: 16, padding: "2px 6px", borderRadius: 4,
+            opacity: 0.7, lineHeight: 1,
+          }}>
+          ✕
+        </button>
+      </div>
+
+      {/* Document rows */}
+      <div style={{ maxHeight: 320, overflowY: "auto" }}>
+        {docs.map(doc => {
+          const dateStr = doc.expiry_date ? String(doc.expiry_date).slice(0, 10) : null;
+          const info = getExpiryStatus(dateStr);
+          const isExpired = info.status === "expired";
+          const daysLeft = info.daysLeft;
+          return (
+            <div key={doc.id} style={{
+              display: "flex", alignItems: "center", gap: 12,
+              padding: "10px 18px",
+              borderBottom: "1px solid rgba(251,191,36,0.12)",
+              transition: "background 0.1s",
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(251,191,36,0.08)"}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              {/* Status dot */}
+              <div style={{
+                width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                background: isExpired ? "#ef4444" : "#f59e0b",
+                boxShadow: isExpired ? "0 0 0 3px rgba(239,68,68,0.18)" : "0 0 0 3px rgba(245,158,11,0.18)",
+              }} />
+
+              {/* Doc info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }} className="t-heading">
+                  {doc.doc_type}
+                  {doc.doc_number && (
+                    <span style={{ fontFamily: "monospace", fontWeight: 400, fontSize: 11, marginLeft: 6, opacity: 0.7 }} className="t-muted">
+                      #{doc.doc_number}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 11 }} className="t-muted">
+                  {doc.company_name}
+                </div>
+              </div>
+
+              {/* Expiry date + badge */}
+              <div style={{ flexShrink: 0, textAlign: "right" }}>
+                <div style={{ fontSize: 11, fontFamily: "monospace" }} className="t-muted">
+                  {dateStr || "—"}
+                </div>
+                <div style={{ marginTop: 2 }}>
+                  {isExpired ? (
+                    <span style={{
+                      display: "inline-block", padding: "1px 7px", borderRadius: 10,
+                      fontSize: 10, fontWeight: 700,
+                      background: "rgba(239,68,68,0.14)", color: "#ef4444",
+                      border: "1px solid rgba(239,68,68,0.3)",
+                    }}>
+                      Expired
+                    </span>
+                  ) : (
+                    <span style={{
+                      display: "inline-block", padding: "1px 7px", borderRadius: 10,
+                      fontSize: 10, fontWeight: 700,
+                      background: "rgba(245,158,11,0.14)", color: "#d97706",
+                      border: "1px solid rgba(245,158,11,0.3)",
+                    }}>
+                      {daysLeft === 0 ? "Today" : `${daysLeft}d left`}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Company link */}
+              <Link
+                to={`/portal/${subdomain}/org/companies/${doc.company_id}`}
+                title={`Open ${doc.company_name}`}
+                style={{
+                  flexShrink: 0, fontSize: 11, fontWeight: 600,
+                  color: "var(--c-accent)", textDecoration: "none",
+                  padding: "4px 10px", borderRadius: 6,
+                  border: "1px solid var(--c-border)",
+                  background: "var(--c-surface2)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                View →
+              </Link>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function PortalDashboard() {
   const { subdomain } = useParams();
@@ -95,6 +265,9 @@ export default function PortalDashboard() {
         <StatCard icon="🛡️" label="Roles Defined"   value={stats.roles}    color="#a855f7" />
         <StatCard icon="🖥️" label="Active Sessions" value={stats.sessions} color="#f59e0b" />
       </div>
+
+      {/* Document expiry warnings (only shown when org module is accessible and docs are expiring) */}
+      <ExpiringDocumentsPanel subdomain={subdomain} token={token} />
 
       {/* Module cards */}
       <div>
