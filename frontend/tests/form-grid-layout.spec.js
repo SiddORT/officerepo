@@ -11,8 +11,9 @@ import { test, expect } from "@playwright/test";
  *
  * Tests verify each breakpoint for the portal forms that use each class:
  *
- *  .form-grid-4 — InterviewScheduleForm, CandidateForm, JobOpeningForm
- *  .form-grid-3 — RequisitionForm
+ *  .form-grid-4 — InterviewScheduleForm, CandidateForm, JobOpeningForm,
+ *                 OfferForm, InterviewReschedule, RequisitionForm, BranchList
+ *  .form-grid-3 — RequisitionForm, PipelineDetails, OnboardingDetails
  *  .form-grid-2 — RequisitionForm, PipelineForm, InterviewDetails
  *
  * Tests are self-contained: they embed the CSS inline and use page.setContent()
@@ -99,7 +100,8 @@ async function getColumnCount(page, gridClass) {
 }
 
 // ── .form-grid-4 ─────────────────────────────────────────────────────────────
-// Used by: InterviewScheduleForm, CandidateForm, JobOpeningForm
+// Used by: InterviewScheduleForm, CandidateForm, JobOpeningForm,
+//          OfferForm, InterviewReschedule, RequisitionForm, BranchList
 
 const VIEWPORTS_GRID4 = [
   { width: 1280, height: 900,  expectedCols: 4, label: "1280px (desktop — 4 columns)" },
@@ -113,6 +115,10 @@ const FORMS_GRID4 = [
   "InterviewScheduleForm",
   "CandidateForm",
   "JobOpeningForm",
+  "OfferForm",
+  "InterviewReschedule",
+  "RequisitionForm",
+  "BranchList",
 ];
 
 for (const formName of FORMS_GRID4) {
@@ -134,7 +140,7 @@ for (const formName of FORMS_GRID4) {
 }
 
 // ── .form-grid-3 ─────────────────────────────────────────────────────────────
-// Used by: RequisitionForm (Row3 helper)
+// Used by: RequisitionForm (Row3 helper), PipelineDetails, OnboardingDetails
 //
 // Breakpoints:
 //   >1024px  → 3 columns  (desktop)
@@ -153,6 +159,8 @@ const VIEWPORTS_GRID3 = [
 
 const FORMS_GRID3 = [
   "RequisitionForm",
+  "PipelineDetails",
+  "OnboardingDetails",
 ];
 
 for (const formName of FORMS_GRID3) {
