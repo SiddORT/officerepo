@@ -353,7 +353,7 @@ export default function RecruitmentDashboard() {
       </div>
 
       {/* ── KPI Cards ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(148px, 1fr))", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12 }}>
         {KPI_DEFS.map(kpi => (
           <KpiCard
             key={kpi.key}
