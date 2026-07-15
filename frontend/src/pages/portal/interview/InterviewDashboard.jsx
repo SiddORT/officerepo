@@ -543,16 +543,6 @@ export default function InterviewDashboard() {
           {/* ════ RIGHT COLUMN ════ */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-            {/* Quick Actions */}
-            <Card style={{ padding: 16 }}>
-              <SectionHeader title="Quick Actions" accentColor="#f59e0b" />
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <QuickAction icon="🔀" label="Interview Pipelines" onClick={() => go("/pipelines")} />
-                <QuickAction icon="📋" label="All Interviews"      onClick={() => go("/list")} />
-                <QuickAction icon="📆" label="Calendar View"       onClick={() => go("/calendar")} />
-              </div>
-            </Card>
-
             {/* Stats at a glance */}
             <Card style={{ padding: 16 }}>
               <SectionHeader title="Overview" accentColor="#22c55e" />
@@ -573,6 +563,19 @@ export default function InterviewDashboard() {
                   </div>
                 ))}
               </div>
+              <button
+                onClick={() => go("/list")}
+                style={{
+                  marginTop: 12, width: "100%", padding: "8px 0",
+                  background: "var(--c-surface2)", border: "1px solid var(--c-border)",
+                  borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600,
+                  color: "var(--c-accent)", transition: "all 200ms ease",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "var(--c-accent-dim)"; e.currentTarget.style.borderColor = "var(--c-accent)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "var(--c-surface2)"; e.currentTarget.style.borderColor = "var(--c-border)"; }}
+              >
+                View All Interviews →
+              </button>
             </Card>
 
             {/* Interview Activity Timeline */}
