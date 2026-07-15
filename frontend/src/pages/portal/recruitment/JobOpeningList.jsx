@@ -50,7 +50,7 @@ export default function JobOpeningList() {
       />
 
       <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search title, department, location…" className="input-field" style={{ flex: 1, minWidth: 200 }} />
+        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search title, department…" className="input-field" style={{ flex: 1, minWidth: 200 }} />
         <select value={status} onChange={e => { setStatus(e.target.value); setPage(1); }} className="input-field" style={{ width: "auto", minWidth: 140 }}>
           <option value="">All Statuses</option>
           {statuses.map(s => <option key={s}>{s}</option>)}
@@ -60,8 +60,9 @@ export default function JobOpeningList() {
       <div className="portal-table-wrap">
         <table className="portal-table">
           <thead><tr>
+            <th style={{ width: 48 }}>Sr No</th>
             <th>Opening #</th><th>Job Title</th><th>Department</th>
-            <th>Location</th><th>Vacancies</th><th>Deadline</th>
+            <th>Vacancies</th><th>Deadline</th>
             <th>Status</th><th>Actions</th>
           </tr></thead>
           <tbody>
@@ -69,12 +70,12 @@ export default function JobOpeningList() {
               ? <tr><td colSpan={8} style={{ textAlign: "center", padding: 40 }} className="t-muted">Loading…</td></tr>
               : rows.length === 0
               ? <tr><td colSpan={8} style={{ textAlign: "center", padding: 48 }} className="t-muted">No openings found. Create one to start receiving candidates.</td></tr>
-              : rows.map(r => (
+              : rows.map((r, idx) => (
                 <tr key={r.id}>
+                  <td style={{ textAlign: "center" }} className="t-muted">{(page - 1) * PAGE_SIZE + idx + 1}</td>
                   <td><span className="t-accent" style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700 }}>{r.opening_number}</span></td>
                   <td><span style={{ fontWeight: 600 }}>{r.job_title}</span></td>
                   <td>{r.department_name || "—"}</td>
-                  <td><span className="t-muted" style={{ fontSize: 12 }}>{r.location || "—"}</span></td>
                   <td style={{ textAlign: "center" }}>{r.number_of_vacancies}</td>
                   <td><span className="t-muted" style={{ fontSize: 12 }}>{r.application_deadline || "—"}</span></td>
                   <td><Badge status={r.status} /></td>

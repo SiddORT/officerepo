@@ -8,7 +8,7 @@ const BLANK = {
   job_title: "", requisition_id: "", company_id: "", branch_id: "",
   department_id: "", designation_id: "", number_of_vacancies: 1,
   employment_type: "", employee_category: "", experience_required: "",
-  location: "", salary_min: "", salary_max: "", application_deadline: "",
+  salary_min: "", salary_max: "", application_deadline: "",
   expected_joining_date: "", job_description: "", skills_required: "",
 };
 
@@ -53,7 +53,7 @@ export default function JobOpeningForm({ editMode = false }) {
           department_id: d.department_id || "", designation_id: d.designation_id || "",
           number_of_vacancies: d.number_of_vacancies || 1,
           employment_type: d.employment_type || "", employee_category: d.employee_category || "",
-          experience_required: d.experience_required || "", location: d.location || "",
+          experience_required: d.experience_required || "",
           salary_min: d.salary_min || "", salary_max: d.salary_max || "",
           application_deadline: d.application_deadline || "",
           expected_joining_date: d.expected_joining_date || "",
@@ -142,15 +142,11 @@ export default function JobOpeningForm({ editMode = false }) {
           <input value={form.job_title} onChange={f("job_title")} placeholder="e.g. Senior React Developer" className="input-field" />
         </div>
 
-        {/* Row 1 — Vacancies | Location | Employment Type | Employee Category */}
+        {/* Row 1 — Vacancies | Employment Type | Employee Category | Experience */}
         <Row4>
           <div>
             <Label>No. of Vacancies</Label>
             <input type="number" min={1} value={form.number_of_vacancies} onChange={f("number_of_vacancies")} className="input-field" />
-          </div>
-          <div>
-            <Label>Location</Label>
-            <input value={form.location} onChange={f("location")} placeholder="City / Remote" className="input-field" />
           </div>
           <div>
             <Label>Employment Type</Label>
@@ -165,6 +161,10 @@ export default function JobOpeningForm({ editMode = false }) {
               <option value="">Select…</option>
               {(meta.employee_categories || []).map(c => <option key={c}>{c}</option>)}
             </select>
+          </div>
+          <div>
+            <Label>Experience Required</Label>
+            <input value={form.experience_required} onChange={f("experience_required")} placeholder="e.g. 2-5 years" className="input-field" />
           </div>
         </Row4>
 
@@ -200,12 +200,8 @@ export default function JobOpeningForm({ editMode = false }) {
           </div>
         </Row4>
 
-        {/* Row 3 — Experience | Salary Min | Salary Max | Application Deadline */}
+        {/* Row 3 — Salary Min | Salary Max | Application Deadline | Expected Joining Date */}
         <Row4>
-          <div>
-            <Label>Experience Required</Label>
-            <input value={form.experience_required} onChange={f("experience_required")} placeholder="e.g. 2-5 years" className="input-field" />
-          </div>
           <div>
             <Label>Salary Min (₹/yr)</Label>
             <input type="number" value={form.salary_min} onChange={f("salary_min")} placeholder="e.g. 500000" className="input-field" />
@@ -218,10 +214,6 @@ export default function JobOpeningForm({ editMode = false }) {
             <Label>Application Deadline</Label>
             <input type="date" value={form.application_deadline} onChange={f("application_deadline")} className="input-field" />
           </div>
-        </Row4>
-
-        {/* Row 4 — Expected Joining Date (single col, left-aligned) */}
-        <Row4>
           <div>
             <Label>Expected Joining Date</Label>
             <input type="date" value={form.expected_joining_date} onChange={f("expected_joining_date")} className="input-field" />
