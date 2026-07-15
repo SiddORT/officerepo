@@ -13,6 +13,15 @@ const ROUND_TYPES = [
 
 const EMPTY_STAGE = { stage_name: "", round_type: "", is_mandatory: true, duration_minutes: "", instructions: "" };
 
+const F = ({ label, required, children }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>
+      {label}{required && <span style={{ color: "#ef4444" }}> *</span>}
+    </label>
+    {children}
+  </div>
+);
+
 export default function PipelineForm({ editMode = false }) {
   const { subdomain, pipelineId } = useParams();
   const { token } = usePortalAuth();
@@ -142,15 +151,6 @@ export default function PipelineForm({ editMode = false }) {
       setSaving(false);
     }
   };
-
-  const F = ({ label, required, children }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>
-        {label}{required && <span style={{ color: "#ef4444" }}> *</span>}
-      </label>
-      {children}
-    </div>
-  );
 
   return (
     <div>

@@ -166,6 +166,9 @@ _COLUMN_MIGRATIONS = [
     ("org_companies", "off_state",                   "VARCHAR(100)"),
     ("org_companies", "off_country",                 "VARCHAR(100)"),
     ("org_companies", "off_postal_code",             "VARCHAR(20)"),
+    # JobOpening — hiring manager + expected joining date
+    ("job_openings", "hiring_manager",       "VARCHAR(200)"),
+    ("job_openings", "expected_joining_date", "DATE"),
 ]
 
 

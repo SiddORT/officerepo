@@ -4,6 +4,15 @@ import { portalInterviewApi, portalRecruitmentApi } from "../../../services/apiC
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
 
+const F = ({ label, required, children, half }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 5, gridColumn: half ? "auto" : undefined }}>
+    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>
+      {label}{required && <span style={{ color: "#ef4444" }}> *</span>}
+    </label>
+    {children}
+  </div>
+);
+
 export default function InterviewScheduleForm({ editMode = false }) {
   const { subdomain, interviewId } = useParams();
   const { token } = usePortalAuth();
@@ -121,15 +130,6 @@ export default function InterviewScheduleForm({ editMode = false }) {
       setSaving(false);
     }
   };
-
-  const F = ({ label, required, children, half }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 5, gridColumn: half ? "auto" : undefined }}>
-      <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>
-        {label}{required && <span style={{ color: "#ef4444" }}> *</span>}
-      </label>
-      {children}
-    </div>
-  );
 
   const inp = (k, type = "text", extra = {}) => (
     <input type={type} value={form[k]} onChange={e => set(k, e.target.value)} className="input-field" {...extra} />
