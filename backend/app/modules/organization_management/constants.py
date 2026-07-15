@@ -48,3 +48,25 @@ ACTION_DESIG_UPDATED        = "DESIGNATION_UPDATED"
 ACTION_DESIG_ACTIVATED      = "DESIGNATION_ACTIVATED"
 ACTION_DESIG_DEACTIVATED    = "DESIGNATION_DEACTIVATED"
 ACTION_DESIG_DELETED        = "DESIGNATION_DELETED"
+
+# Activity log actions — company documents
+ACTION_COMPANY_DOC_UPLOADED = "COMPANY_DOCUMENT_UPLOADED"
+ACTION_COMPANY_DOC_DELETED  = "COMPANY_DOCUMENT_DELETED"
+
+# File storage — company documents are stored in the shared private storage under
+# a client-scoped path so a future S3 move is "swap driver + base" only.
+from backend.shared.storage.file_handler import PLATFORM_SCOPE as _PLATFORM_SCOPE
+ORG_STORAGE_SCOPE   = _PLATFORM_SCOPE   # "platform" scope (shared storage root)
+ORG_DOCUMENTS_MODULE = "org_company_documents"  # {scope}/{module}/{filename}
+
+# Allowed document types shown in the frontend picker
+COMPANY_DOC_TYPES = [
+    "Certificate of Incorporation",
+    "GST Certificate",
+    "PAN Copy",
+    "TAN Certificate",
+    "MSME Certificate",
+    "Trade License",
+    "Shop & Establishment License",
+    "Other",
+]

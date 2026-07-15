@@ -46,7 +46,8 @@ from __future__ import annotations
 
 from typing import Generator, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from backend.app.core.security import decode_access_token
@@ -102,7 +103,16 @@ def _client_db_dep(
     if not conn or conn.database_status != DB_STATUS_ACTIVE:
         raise HTTPException(503, "Client workspace database is not provisioned.")
 
-    session = make_client_session(build_client_db_url(conn))
+    url = build_client_db_url(conn)
+    # Ensure all ClientBase tables (including new ones like org_company_documents)
+    # exist on this client DB before opening a session.
+    from backend.app.database.client_db import provision_portal_schema
+    try:
+        provision_portal_schema(url)
+    except Exception:
+        pass  # never block the request on a schema check failure
+
+    session = make_client_session(url)
     try:
         yield session
     except Exception:
@@ -223,6 +233,106 @@ def delete_company(
     svc.delete_company(client_db, portal_user["client_id"], company_id,
                        actor_id=portal_user["admin_user_id"], ip=_get_ip(request))
     return ApiResponse.ok(None, "Company deleted.").model_dump()
+
+
+# ── Company Documents ──────────────────────────────────────────────────────────
+
+@router.get("/{subdomain}/org/companies/{company_id}/documents")
+def list_company_documents(
+    subdomain: str, company_id: str,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    docs = svc.list_company_documents(client_db, portal_user["client_id"], company_id)
+    return ApiResponse.ok(docs).model_dump()
+
+
+@router.post("/{subdomain}/org/companies/{company_id}/documents")
+def upload_company_document(
+    subdomain: str,
+    company_id: str,
+    request: Request,
+    doc_type: str = Form(...),
+    doc_number: Optional[str] = Form(None),
+    issue_date: Optional[str] = Form(None),
+    expiry_date: Optional[str] = Form(None),
+    remarks: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    from backend.app.modules.organization_management.constants import ORG_STORAGE_SCOPE, ORG_DOCUMENTS_MODULE
+    from backend.shared.storage.file_handler import Visibility, save_document, delete_file
+
+    file_key = None
+    file_name = None
+    if file and file.filename:
+        file_key, file_name = save_document(file, ORG_STORAGE_SCOPE, ORG_DOCUMENTS_MODULE)
+
+    try:
+        from datetime import date as _date
+        def _parse_date(s):
+            if not s:
+                return None
+            try:
+                return _date.fromisoformat(s)
+            except (ValueError, TypeError):
+                return None
+
+        data = svc.add_company_document(
+            client_db,
+            client_id=portal_user["client_id"],
+            company_id=company_id,
+            doc_type=doc_type,
+            doc_number=doc_number,
+            issue_date=_parse_date(issue_date),
+            expiry_date=_parse_date(expiry_date),
+            remarks=remarks,
+            file_name=file_name,
+            file_path=file_key,
+            actor_id=portal_user["admin_user_id"],
+            ip=_get_ip(request),
+        )
+    except Exception:
+        if file_key:
+            delete_file(file_key, Visibility.PRIVATE)
+        raise
+    return ApiResponse.ok(data, "Document uploaded.").model_dump()
+
+
+@router.get("/{subdomain}/org/companies/{company_id}/documents/{doc_id}/download")
+def download_company_document(
+    subdomain: str, company_id: str, doc_id: str,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    from backend.shared.storage.file_handler import Visibility, physical_path
+    key, name = svc.get_company_document_file(client_db, portal_user["client_id"], company_id, doc_id)
+    path = physical_path(key, Visibility.PRIVATE)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="File no longer available.")
+    return FileResponse(str(path), filename=name)
+
+
+@router.delete("/{subdomain}/org/companies/{company_id}/documents/{doc_id}")
+def delete_company_document(
+    subdomain: str, company_id: str, doc_id: str,
+    request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    from backend.shared.storage.file_handler import Visibility, delete_file
+    key = svc.delete_company_document(
+        client_db, portal_user["client_id"], company_id, doc_id,
+        actor_id=portal_user["admin_user_id"], ip=_get_ip(request),
+    )
+    if key:
+        delete_file(key, Visibility.PRIVATE)
+    return ApiResponse.ok(None, "Document deleted.").model_dump()
 
 
 # ── Branches ───────────────────────────────────────────────────────────────────

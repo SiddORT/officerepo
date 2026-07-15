@@ -10,7 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from backend.app.modules.organization_management.models import (
-    OrgBranch, OrgCompany, OrgDepartment, OrgDesignation,
+    OrgBranch, OrgCompany, OrgCompanyDocument, OrgDepartment, OrgDesignation,
 )
 
 logger = logging.getLogger(__name__)
@@ -842,3 +842,69 @@ def seed_sample_designations(db: Session, client_id: str, company_id: str) -> in
         pass
 
     return count
+
+
+# ── Company Documents ───────────────────────────────────────────────────────────
+
+def list_company_documents(
+    db: Session, client_id: str, company_id: str,
+) -> List[OrgCompanyDocument]:
+    return (
+        db.query(OrgCompanyDocument)
+        .filter(
+            OrgCompanyDocument.client_id == client_id,
+            OrgCompanyDocument.company_id == company_id,
+            OrgCompanyDocument.is_deleted.is_(False),
+        )
+        .order_by(OrgCompanyDocument.created_at)
+        .all()
+    )
+
+
+def get_company_document(
+    db: Session, client_id: str, company_id: str, doc_id: str,
+) -> Optional[OrgCompanyDocument]:
+    return db.query(OrgCompanyDocument).filter(
+        OrgCompanyDocument.id == doc_id,
+        OrgCompanyDocument.client_id == client_id,
+        OrgCompanyDocument.company_id == company_id,
+        OrgCompanyDocument.is_deleted.is_(False),
+    ).first()
+
+
+def create_company_document(
+    db: Session,
+    client_id: str,
+    company_id: str,
+    doc_type: str,
+    doc_number,
+    issue_date,
+    expiry_date,
+    remarks,
+    file_name,
+    file_path,
+    uploaded_by,
+) -> OrgCompanyDocument:
+    doc = OrgCompanyDocument(
+        id=_uuid(),
+        client_id=client_id,
+        company_id=company_id,
+        doc_type=doc_type,
+        doc_number=doc_number or None,
+        issue_date=issue_date or None,
+        expiry_date=expiry_date or None,
+        remarks=remarks or None,
+        file_name=file_name or None,
+        file_path=file_path or None,
+        uploaded_by=uploaded_by,
+    )
+    db.add(doc)
+    db.flush()
+    return doc
+
+
+def soft_delete_company_document(db: Session, doc: OrgCompanyDocument) -> None:
+    from datetime import datetime as _dt
+    doc.is_deleted = True
+    doc.deleted_at = _dt.utcnow()
+    db.flush()

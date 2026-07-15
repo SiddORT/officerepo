@@ -1,10 +1,11 @@
 """Organization Management models — live in the CLIENT database (ClientBase).
 
 Tables:
-  org_companies     — companies owned by a client (ABC Group → ABC Tech, ABC Consulting …)
-  org_branches      — physical offices / work locations per company
-  org_departments   — departments within a company (supports self-referential hierarchy)
-  org_designations  — job designations within a company / department
+  org_companies          — companies owned by a client (ABC Group → ABC Tech, ABC Consulting …)
+  org_company_documents  — compliance / branding documents attached to a company
+  org_branches           — physical offices / work locations per company
+  org_departments        — departments within a company (supports self-referential hierarchy)
+  org_designations       — job designations within a company / department
 """
 from __future__ import annotations
 
@@ -95,6 +96,35 @@ class OrgCompany(ClientBase):
     deleted_at          = Column(DateTime, nullable=True)
     created_at          = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at          = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class OrgCompanyDocument(ClientBase):
+    """Compliance / branding documents attached to an org_company row.
+
+    The file itself is stored in private storage (not publicly accessible).
+    `file_path` holds the rootless storage key: {scope}/{module}/{filename}.
+    """
+    __tablename__ = "org_company_documents"
+
+    id           = Column(String(36), primary_key=True, default=_uuid)
+    client_id    = Column(String(36), nullable=False, index=True)
+    company_id   = Column(String(36), ForeignKey("org_companies.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    doc_type     = Column(String(100), nullable=False)
+    doc_number   = Column(String(100), nullable=True)
+    issue_date   = Column(Date, nullable=True)
+    expiry_date  = Column(Date, nullable=True)
+    remarks      = Column(Text, nullable=True)
+
+    file_name    = Column(String(500), nullable=True)   # original filename shown to user
+    file_path    = Column(String(500), nullable=True)   # rootless storage key
+
+    uploaded_by  = Column(String(36), nullable=True)    # admin_user_id
+
+    is_deleted   = Column(Boolean, nullable=False, default=False)
+    deleted_at   = Column(DateTime, nullable=True)
+    created_at   = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at   = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
 
 class OrgBranch(ClientBase):

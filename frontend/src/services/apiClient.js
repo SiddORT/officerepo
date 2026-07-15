@@ -485,6 +485,12 @@ export const portalOrgApi = {
 
   // Full hierarchy (company + dept tree + designations)
   hierarchy: (sd, tk, companyId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/hierarchy/${companyId}`, { headers: { Authorization: `Bearer ${tk}` } }),
+
+  // Company Documents
+  listCompanyDocs:   (sd, tk, cid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${cid}/documents`, { headers: { Authorization: `Bearer ${tk}` } }),
+  uploadCompanyDoc:  (sd, tk, cid, formData) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${cid}/documents`, formData, { headers: { Authorization: `Bearer ${tk}`, "Content-Type": "multipart/form-data" } }),
+  deleteCompanyDoc:  (sd, tk, cid, docId) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${cid}/documents/${docId}`, { headers: { Authorization: `Bearer ${tk}` } }),
+  downloadCompanyDoc:(sd, tk, cid, docId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/companies/${cid}/documents/${docId}/download`, { headers: { Authorization: `Bearer ${tk}` }, responseType: "blob" }),
 };
 
 // ── Portal Employee Management ────────────────────────────────────────────────

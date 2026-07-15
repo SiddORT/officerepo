@@ -24,7 +24,6 @@ const isValidTAN   = v => !v || /^[A-Z]{4}[0-9]{5}[A-Z]$/.test(v.trim().toUpperC
 const isValidMSME  = v => !v || /^UDYAM-[A-Z]{2}-[0-9]{2}-[0-9]{7}$/.test(v.trim().toUpperCase());
 const trimStr      = v => typeof v === "string" ? v.replace(/\s+/g, " ").trim() : v;
 
-// Auto-generate a company code from the company name
 const SKIP_WORDS = new Set(["pvt", "private", "ltd", "limited", "llp", "public", "inc", "corp", "co", "and", "the", "&"]);
 function generateCode(name) {
   if (!name.trim()) return "";
@@ -71,9 +70,6 @@ const TABS = [
   { id: "branding",   label: "Branding & Docs",   icon: "🎨" },
 ];
 
-// ── Field renderer — called as a FUNCTION {field({...})}, NOT as <field /> ──
-// (Keeping it as a component causes React to remount on every re-render,
-//  losing input focus after each keystroke.)
 function field({ k, label, placeholder, type = "text", mono, full, required, note, as, rows, options,
                  form, extra, fieldErrors, set, setX, onChangeOverride, suffix, onBlur }) {
   const isForm = k in API_EMPTY;
@@ -134,7 +130,15 @@ export default function CompanyForm({ editMode }) {
   const [form, setForm] = useState(API_EMPTY);
   const [extra, setExtra] = useState(EXTRA_EMPTY);
   const [codeTouched, setCodeTouched] = useState(!!editMode);
-  const [docs,  setDocs]  = useState([]);
+
+  // Document state:
+  //   existingDocs      — persisted docs loaded from backend (edit mode)
+  //   removedExistingIds — ids of existing docs the user removed (to delete on save)
+  //   pendingDocs        — new docs added in this session (to upload on save)
+  const [existingDocs, setExistingDocs] = useState([]);
+  const [removedExistingIds, setRemovedExistingIds] = useState([]);
+  const [pendingDocs, setPendingDocs] = useState([]);
+
   const [addingDoc, setAddingDoc] = useState(false);
   const [newDoc,    setNewDoc]    = useState(EMPTY_DOC);
   const [logoPreview, setLogoPreview] = useState(null);
@@ -154,16 +158,19 @@ export default function CompanyForm({ editMode }) {
   useEffect(() => {
     if (!editMode || !companyId) return;
     setLoading(true);
-    portalOrgApi.getCompany(subdomain, token, companyId)
-      .then(r => {
-        const d = r.data.data;
-        setForm(Object.fromEntries(Object.keys(API_EMPTY).map(k => [k, d[k] ?? (k === "phone_country_code" ? "+91" : "")])));
-        setExtra(ex => Object.fromEntries(Object.keys(EXTRA_EMPTY).map(k => {
-          if (d[k] === undefined || d[k] === null) return [k, EXTRA_EMPTY[k]];
-          if (typeof EXTRA_EMPTY[k] === "boolean") return [k, !!d[k]];
-          return [k, String(d[k])];
-        })));
-      })
+    Promise.all([
+      portalOrgApi.getCompany(subdomain, token, companyId),
+      portalOrgApi.listCompanyDocs(subdomain, token, companyId).catch(() => ({ data: { data: [] } })),
+    ]).then(([cr, dr]) => {
+      const d = cr.data.data;
+      setForm(Object.fromEntries(Object.keys(API_EMPTY).map(k => [k, d[k] ?? (k === "phone_country_code" ? "+91" : "")])));
+      setExtra(ex => Object.fromEntries(Object.keys(EXTRA_EMPTY).map(k => {
+        if (d[k] === undefined || d[k] === null) return [k, EXTRA_EMPTY[k]];
+        if (typeof EXTRA_EMPTY[k] === "boolean") return [k, !!d[k]];
+        return [k, String(d[k])];
+      })));
+      setExistingDocs(dr.data?.data || []);
+    })
       .catch(() => setError("Failed to load company."))
       .finally(() => setLoading(false));
   }, [editMode, companyId, subdomain, token]);
@@ -172,16 +179,13 @@ export default function CompanyForm({ editMode }) {
   const setX = (k, v) => setExtra(f => ({ ...f, [k]: v }));
   const { lookup } = usePincodeLookup();
 
-  // Auto-generate company code from company name (only while code hasn't been manually touched)
   useEffect(() => {
     if (codeTouched) return;
     set("company_code", generateCode(form.company_name));
   }, [form.company_name]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Derived industry options
   const industryNames = industries.map(i => i.name);
 
-  // Shared props passed to every field() call
   const fp = { form, extra, fieldErrors, set, setX };
 
   const handleLogoChange = (e) => {
@@ -238,14 +242,39 @@ export default function CompanyForm({ editMode }) {
     });
     if (payload.pan_number) payload.pan_number = payload.pan_number.toUpperCase();
     try {
-      if (editMode) await portalOrgApi.updateCompany(subdomain, token, companyId, payload);
-      else          await portalOrgApi.createCompany(subdomain, token, payload);
+      let savedId = companyId;
+      if (editMode) {
+        await portalOrgApi.updateCompany(subdomain, token, companyId, payload);
+      } else {
+        const res = await portalOrgApi.createCompany(subdomain, token, payload);
+        savedId = res.data?.data?.id;
+      }
+
+      if (savedId) {
+        // Delete removed existing documents
+        await Promise.allSettled(
+          removedExistingIds.map(id => portalOrgApi.deleteCompanyDoc(subdomain, token, savedId, id))
+        );
+
+        // Upload pending new documents
+        for (const doc of pendingDocs) {
+          const fd = new FormData();
+          fd.append("doc_type", doc.doc_type || "Other");
+          if (doc.doc_number) fd.append("doc_number", doc.doc_number);
+          if (doc.issue_date) fd.append("issue_date", doc.issue_date);
+          if (doc.expiry_date) fd.append("expiry_date", doc.expiry_date);
+          if (doc.remarks) fd.append("remarks", doc.remarks);
+          if (doc.file) fd.append("file", doc.file);
+          await portalOrgApi.uploadCompanyDoc(subdomain, token, savedId, fd);
+        }
+      }
+
       navigate(`/portal/${subdomain}/org/companies`);
     } catch (e) { setError(e?.response?.data?.detail || "Save failed."); }
     finally { setSaving(false); }
   };
 
-  // Document helpers
+  // Document helpers — new/pending docs
   const setDocField  = (k, v) => setNewDoc(d => ({ ...d, [k]: v }));
   const handleDocFile = (e) => {
     const file = e.target.files?.[0];
@@ -259,14 +288,32 @@ export default function CompanyForm({ editMode }) {
       setNewDoc(d => ({ ...d, file, fileName: file.name, filePreview: null, fileIsImage: false }));
     }
   };
-  const addDoc    = () => {
+  const addDoc = () => {
     if (!newDoc.doc_type) return;
-    setDocs(d => [...d, { ...newDoc, id: Date.now() }]);
+    setPendingDocs(d => [...d, { ...newDoc, _pendingId: Date.now() }]);
     setNewDoc(EMPTY_DOC);
     setAddingDoc(false);
   };
-  const removeDoc = (id) => setDocs(d => d.filter(x => x.id !== id));
+  const removePendingDoc = (pid) => setPendingDocs(d => d.filter(x => x._pendingId !== pid));
+  const removeExistingDoc = (id) => setRemovedExistingIds(ids => [...ids, id]);
+
   const docFileExt = (name) => (name || "").split(".").pop()?.toUpperCase().slice(0, 4) || "FILE";
+
+  const handleDownload = async (doc) => {
+    try {
+      const res = await portalOrgApi.downloadCompanyDoc(subdomain, token, companyId, doc.id);
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = doc.file_name || "document";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError("Download failed.");
+    }
+  };
+
+  const visibleExistingDocs = existingDocs.filter(d => !removedExistingIds.includes(d.id));
 
   if (loading) return (
     <OrgLayout title="Company">
@@ -538,7 +585,7 @@ export default function CompanyForm({ editMode }) {
             <div className="portal-form-card" style={{ width: "100%" }}>
               <div className="portal-form-title">📁 Company Documents</div>
 
-              {docs.length > 0 && (
+              {(visibleExistingDocs.length > 0 || pendingDocs.length > 0) && (
                 <div className="portal-table-wrap" style={{ marginBottom: 12 }}>
                   <table className="portal-table">
                     <thead>
@@ -547,9 +594,40 @@ export default function CompanyForm({ editMode }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {docs.map(d => (
+                      {/* Persisted (existing) documents */}
+                      {visibleExistingDocs.map(d => (
                         <tr key={d.id}>
                           <td style={{ fontSize: 12, fontWeight: 500 }}>{d.doc_type}</td>
+                          <td style={{ fontSize: 12, fontFamily: "monospace" }} className="t-muted">{d.doc_number || "—"}</td>
+                          <td style={{ fontSize: 12 }} className="t-muted">{d.issue_date ? String(d.issue_date).slice(0, 10) : "—"}</td>
+                          <td style={{ fontSize: 12 }} className="t-muted">{d.expiry_date ? String(d.expiry_date).slice(0, 10) : "—"}</td>
+                          <td style={{ fontSize: 12 }} className="t-muted">
+                            {d.has_file
+                              ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDownload(d)}
+                                  style={{ fontSize: 12, color: "var(--c-accent)", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 500 }}>
+                                  📎 {d.file_name ? (d.file_name.length > 20 ? d.file_name.slice(0, 20) + "…" : d.file_name) : "Download"}
+                                </button>
+                              )
+                              : "—"}
+                          </td>
+                          <td>
+                            <button onClick={() => removeExistingDoc(d.id)}
+                              style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {/* Pending (not yet saved) documents */}
+                      {pendingDocs.map(d => (
+                        <tr key={d._pendingId}>
+                          <td style={{ fontSize: 12, fontWeight: 500 }}>
+                            {d.doc_type}
+                            <span style={{ marginLeft: 6, fontSize: 10, color: "var(--c-muted)", fontStyle: "italic" }}>unsaved</span>
+                          </td>
                           <td style={{ fontSize: 12, fontFamily: "monospace" }} className="t-muted">{d.doc_number || "—"}</td>
                           <td style={{ fontSize: 12 }} className="t-muted">{d.issue_date || "—"}</td>
                           <td style={{ fontSize: 12 }} className="t-muted">{d.expiry_date || "—"}</td>
@@ -559,7 +637,7 @@ export default function CompanyForm({ editMode }) {
                               : "—"}
                           </td>
                           <td>
-                            <button onClick={() => removeDoc(d.id)}
+                            <button onClick={() => removePendingDoc(d._pendingId)}
                               style={{ fontSize: 12, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontWeight: 500 }}>
                               Remove
                             </button>

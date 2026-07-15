@@ -733,3 +733,102 @@ def delete_designation(
     repo.soft_delete_designation(client_db, desig)
     _log(client_db, client_id, c.ACTION_DESIG_DELETED, actor_id, ip, {"designation_name": desig.designation_name})
     client_db.commit()
+
+
+# ── Company Documents ───────────────────────────────────────────────────────────
+
+def _doc_dict(doc) -> dict:
+    return {
+        "id": doc.id,
+        "client_id": doc.client_id,
+        "company_id": doc.company_id,
+        "doc_type": doc.doc_type,
+        "doc_number": doc.doc_number,
+        "issue_date": doc.issue_date,
+        "expiry_date": doc.expiry_date,
+        "remarks": doc.remarks,
+        "file_name": doc.file_name,
+        "has_file": bool(doc.file_path),
+        "uploaded_by": doc.uploaded_by,
+        "created_at": doc.created_at,
+        "updated_at": doc.updated_at,
+    }
+
+
+def list_company_documents(
+    client_db: Session, client_id: str, company_id: str,
+) -> list:
+    from backend.app.modules.organization_management import repository as _repo
+    docs = _repo.list_company_documents(client_db, client_id, company_id)
+    return [_doc_dict(d) for d in docs]
+
+
+def add_company_document(
+    client_db: Session,
+    client_id: str,
+    company_id: str,
+    doc_type: str,
+    doc_number,
+    issue_date,
+    expiry_date,
+    remarks,
+    file_name,
+    file_path,
+    actor_id,
+    ip,
+) -> dict:
+    from backend.app.modules.organization_management import repository as _repo
+    co = _repo.get_company(client_db, client_id, company_id)
+    if not co:
+        from fastapi import HTTPException
+        raise HTTPException(404, "Company not found.")
+    doc = _repo.create_company_document(
+        client_db,
+        client_id=client_id,
+        company_id=company_id,
+        doc_type=doc_type,
+        doc_number=doc_number,
+        issue_date=issue_date,
+        expiry_date=expiry_date,
+        remarks=remarks,
+        file_name=file_name,
+        file_path=file_path,
+        uploaded_by=actor_id,
+    )
+    _log(client_db, client_id, "COMPANY_DOCUMENT_UPLOADED", actor_id, ip, {
+        "company_id": company_id, "doc_type": doc_type, "doc_id": doc.id,
+    })
+    client_db.commit()
+    client_db.refresh(doc)
+    return _doc_dict(doc)
+
+
+def get_company_document_file(
+    client_db: Session, client_id: str, company_id: str, doc_id: str,
+):
+    from backend.app.modules.organization_management import repository as _repo
+    from fastapi import HTTPException
+    doc = _repo.get_company_document(client_db, client_id, company_id, doc_id)
+    if not doc:
+        raise HTTPException(404, "Document not found.")
+    if not doc.file_path:
+        raise HTTPException(404, "No file attached to this document.")
+    return doc.file_path, (doc.file_name or "document")
+
+
+def delete_company_document(
+    client_db: Session, client_id: str, company_id: str, doc_id: str,
+    actor_id, ip,
+) -> str:
+    from backend.app.modules.organization_management import repository as _repo
+    from fastapi import HTTPException
+    doc = _repo.get_company_document(client_db, client_id, company_id, doc_id)
+    if not doc:
+        raise HTTPException(404, "Document not found.")
+    file_key = doc.file_path
+    _repo.soft_delete_company_document(client_db, doc)
+    _log(client_db, client_id, "COMPANY_DOCUMENT_DELETED", actor_id, ip, {
+        "company_id": company_id, "doc_type": doc.doc_type, "doc_id": doc_id,
+    })
+    client_db.commit()
+    return file_key or ""
