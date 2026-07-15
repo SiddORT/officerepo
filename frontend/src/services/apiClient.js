@@ -774,6 +774,7 @@ export const portalRecruitmentApi = {
   deleteDoc:       (sd, tk, id, did)=> axios.delete(_rurl(sd, `/candidates/${id}/documents/${did}`), _rh(sd, tk)),
   downloadDoc:     (sd, tk, id, did)=> axios.get(_rurl(sd, `/candidates/${id}/documents/${did}/download`), { ..._rh(sd, tk), responseType: "blob" }),
   getCandidateActivities: (sd, tk, id) => axios.get(_rurl(sd, `/candidates/${id}/activities`), _rh(sd, tk)),
+  timeline: (sd, tk, limit = 15)       => axios.get(_rurl(sd, "/timeline"), { ..._rh(sd, tk), params: { limit } }),
 
   listOffers:  (sd, tk, p)          => axios.get(_rurl(sd, "/offers"), { ..._rh(sd, tk), params: p }),
   getOffer:    (sd, tk, id)         => axios.get(_rurl(sd, `/offers/${id}`), _rh(sd, tk)),

@@ -1,0 +1,127 @@
+==================================================
+RECRUITMENT TIMELINE
+==================================================
+
+At the bottom of the dashboard, add a full-width "Recruitment Timeline" section.
+
+Purpose:
+
+Provide HR with a chronological view of everything happening in Recruitment without opening individual modules.
+
+The timeline should automatically display the latest recruitment activities.
+
+Examples:
+
+• New Job Requisition Created
+• Requisition Approved
+• Job Opening Published
+• Candidate Applied
+• Resume Shortlisted
+• Candidate Rejected
+• Interview Scheduled
+• Interview Completed
+• Offer Generated
+• Offer Accepted
+• Offer Declined
+• Candidate Joined
+• Candidate Withdrawn
+
+Each activity card should display:
+
+• Activity icon
+• Activity title
+• Candidate Name (if applicable)
+• Job Opening
+• Department
+• User who performed the action
+• Date & Time
+• Relative time (2 mins ago, Today 11:30 AM)
+
+Example:
+
+----------------------------------------------------
+
+🟢 Candidate Applied
+
+Rahul Sharma applied for
+
+Senior React Developer
+
+IT Department
+
+Today • 10:42 AM
+
+----------------------------------------------------
+
+🟡 Interview Scheduled
+
+Priya Patel
+
+Technical Round
+
+Tomorrow • 2:00 PM
+
+Scheduled by Neha (HR)
+
+----------------------------------------------------
+
+🔵 Offer Accepted
+
+Amit Shah
+
+Accepted offer for
+
+Software Engineer
+
+Yesterday • 5:20 PM
+
+----------------------------------------------------
+
+The timeline should load the latest 10–15 activities.
+
+Provide a "View All Activities" link which will later navigate to a complete activity log.
+
+==================================================
+MICRO INTERACTIONS
+==================================================
+
+Add subtle premium interactions:
+
+• Timeline cards fade in sequentially.
+• Hover slightly brightens the card.
+• Left colored activity indicator animates on hover.
+• Icons rotate or scale slightly on hover.
+• Smooth 200–250ms transitions.
+
+No flashy animations.
+
+==================================================
+EMPTY STATE
+==================================================
+
+If no activities exist:
+
+Show a clean empty illustration.
+
+Title:
+
+"No Recruitment Activity Yet"
+
+Subtitle:
+
+"Activities will automatically appear here as your hiring process begins."
+
+==================================================
+FUTURE READY
+==================================================
+
+Design the timeline component to be reusable.
+
+In future, the same component should also be usable in:
+
+• HRMS Dashboard
+• Asset Management Dashboard
+• CRM Dashboard
+• Global Client Dashboard
+
+The component should accept an activity list and render it generically.

@@ -1,0 +1,423 @@
+Let's redesign ONLY the Interview Dashboard UI/UX.
+
+IMPORTANT
+
+Do NOT modify database schema.
+Do NOT modify APIs.
+Do NOT modify interview logic.
+
+Only redesign the dashboard using the existing Office Repo design system.
+
+Maintain the existing dark theme.
+
+The dashboard should feel modern, premium and enterprise-grade while remaining extremely simple for HR users.
+
+==================================================
+DESIGN GOALS
+==================================================
+
+• Dashboard should provide information first.
+• Navigation should come from sidebar.
+• Only one primary CTA for scheduling interviews.
+• Remove duplicate navigation.
+• Improve spacing.
+• Add subtle premium animations.
+• Responsive.
+
+==================================================
+HEADER
+==================================================
+
+Title
+
+Interview Management
+
+Subtitle
+
+Manage interview schedules, interview rounds and hiring decisions.
+
+Top Right Buttons
+
+[ Calendar ]
+
+[ Schedule Interview ]
+
+Schedule Interview should ONLY appear here.
+
+Remove every other Schedule Interview button/card from the dashboard.
+
+==================================================
+TOP KPI SECTION
+==================================================
+
+Display only six KPI cards.
+
+Today's Interviews
+
+Upcoming Interviews
+
+Pending Feedback
+
+Completed This Week
+
+Rescheduled
+
+Offers Ready
+
+Each KPI card should contain
+
+• small icon
+• value
+• label
+• optional trend
+
+Example
+
++3 Today
+
+Cards should lift slightly on hover.
+
+Animation:
+
+translateY(-2px)
+
+Duration
+
+200ms
+
+==================================================
+MAIN LAYOUT
+==================================================
+
+Create a two-column layout.
+
+LEFT
+
+70%
+
+RIGHT
+
+30%
+
+==================================================
+LEFT COLUMN
+==================================================
+
+SECTION 1
+
+Today's Interview Schedule
+
+Timeline style.
+
+Each interview card displays
+
+Time
+
+Candidate
+
+Interview Round
+
+Interviewer
+
+Interview Type
+
+Online / Offline badge
+
+Status
+
+Examples
+
+09:30 AM
+
+John Smith
+
+Technical Round
+
+Rajesh
+
+Online
+
+Upcoming
+
+--------------------------------
+
+11:00 AM
+
+Sarah
+
+HR Round
+
+Sneha
+
+Meeting Room 2
+
+--------------------------------
+
+Cards should have
+
+soft hover
+
+slight elevation
+
+rounded corners
+
+==================================================
+SECTION 2
+
+Upcoming Interviews
+
+Display next few interviews.
+
+Show
+
+Tomorrow
+
+Friday
+
+Next Week
+
+Small clean cards.
+
+==================================================
+SECTION 3
+
+Candidate Progress
+
+Display current interview pipeline for active candidates.
+
+Example
+
+John Smith
+
+✔ Screening
+
+✔ Technical
+
+🟡 HR
+
+⚪ Final
+
+⚪ Offer
+
+Clicking should open candidate interview details.
+
+==================================================
+RIGHT COLUMN
+==================================================
+
+SECTION 1
+
+Pending Feedback
+
+Display interview feedback waiting from interviewers.
+
+Columns
+
+Candidate
+
+Round
+
+Interviewer
+
+Waiting Since
+
+Action
+
+Examples
+
+John
+
+Technical
+
+Rajesh
+
+2 Days
+
+Reminder
+
+--------------------------------
+
+Priya
+
+HR
+
+Sneha
+
+Today
+
+Reminder
+
+==================================================
+SECTION 2
+
+Quick Actions
+
+Instead of four navigation cards.
+
+Create ONE compact Quick Actions widget.
+
+Small icon buttons.
+
+New Interview Pipeline
+
+View All Interviews
+
+Calendar
+
+Interview Reports
+
+These are navigation shortcuts only.
+
+Do NOT include Schedule Interview.
+
+That action already exists in the page header.
+
+==================================================
+SECTION 3
+
+Interview Activity Timeline
+
+Display latest activities.
+
+Examples
+
+Interview Scheduled
+
+Interview Completed
+
+Feedback Submitted
+
+Candidate Rescheduled
+
+Offer Recommended
+
+Each activity displays
+
+icon
+
+title
+
+candidate
+
+time
+
+relative time
+
+Cards fade in one after another.
+
+==================================================
+EMPTY STATES
+==================================================
+
+If no interviews exist
+
+Show illustration
+
+Title
+
+No Interviews Scheduled
+
+Subtitle
+
+Schedule your first interview to begin tracking candidates.
+
+==================================================
+REMOVE
+==================================================
+
+Remove these large navigation cards
+
+• All Interviews
+• Interview Pipelines
+• Calendar View
+• Schedule Interview
+
+Replace them with the compact Quick Actions widget.
+
+==================================================
+ANIMATIONS
+==================================================
+
+Cards
+
+Fade Up
+
+Timeline
+
+Fade In
+
+Buttons
+
+Scale 1.02
+
+Hover
+
+translateY(-2px)
+
+Duration
+
+200-250ms
+
+No excessive animations.
+
+==================================================
+THEME
+==================================================
+
+Follow Office Repo branding.
+
+Status Colors
+
+Blue
+
+Upcoming
+
+Green
+
+Completed
+
+Orange
+
+Pending
+
+Red
+
+Cancelled
+
+Purple
+
+Rescheduled
+
+==================================================
+RESPONSIVE
+==================================================
+
+Desktop
+
+2 Columns
+
+Tablet
+
+Single Column
+
+Mobile
+
+Cards Stack
+
+==================================================
+FINAL RESULT
+==================================================
+
+The dashboard should feel similar to enterprise ATS products like
+
+Freshteam
+
+Lever
+
+Greenhouse
+
+BambooHR
+
+while maintaining Office Repo's existing branding and dark theme.
+
+This page should function as an Interview Operations Dashboard, not as a navigation page.

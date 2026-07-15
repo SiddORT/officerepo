@@ -416,6 +416,19 @@ def download_candidate_doc(
     return FileResponse(path, filename=filename, media_type="application/octet-stream")
 
 
+@router.get("/{subdomain}/recruitment/timeline")
+def recruitment_timeline(
+    subdomain: str,
+    limit: int = Query(15, ge=1, le=50),
+    portal_user: dict = Depends(_portal_jwt),
+    db: Session = Depends(_client_db_dep),
+):
+    """Global recruitment activity timeline — latest N events across all candidates."""
+    _sub(portal_user, subdomain)
+    from backend.app.modules.recruitment import repository as repo
+    return ApiResponse.ok(data=repo.get_global_timeline(db, _cid(portal_user), limit=limit))
+
+
 @router.get("/{subdomain}/recruitment/candidates/{cand_id}/activities")
 def candidate_activities(
     subdomain: str, cand_id: str,

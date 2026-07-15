@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { portalRecruitmentApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { useTheme } from "../../../contexts/ThemeContext";
+import ActivityTimeline from "../../../components/ActivityTimeline";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const STATUS_COLOR = {
@@ -320,11 +321,13 @@ export default function RecruitmentDashboard() {
   const navigate = useNavigate();
   const go = path => navigate(`/portal/${subdomain}/recruitment/${path}`);
 
-  const [stats, setStats]       = useState(null);
-  const [openings, setOpenings] = useState([]);
-  const [recent, setRecent]     = useState([]);
-  const [pipeline, setPipeline] = useState({});
-  const [loading, setLoading]   = useState(true);
+  const [stats, setStats]         = useState(null);
+  const [openings, setOpenings]   = useState([]);
+  const [recent, setRecent]       = useState([]);
+  const [pipeline, setPipeline]   = useState({});
+  const [timeline, setTimeline]   = useState([]);
+  const [tlLoading, setTlLoading] = useState(true);
+  const [loading, setLoading]     = useState(true);
 
   useEffect(() => {
     Promise.all([
@@ -345,6 +348,11 @@ export default function RecruitmentDashboard() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+
+    portalRecruitmentApi.timeline(subdomain, token, 15)
+      .then(r => setTimeline(r.data?.data || []))
+      .catch(() => {})
+      .finally(() => setTlLoading(false));
   }, []);
 
   if (loading) {
@@ -521,6 +529,17 @@ export default function RecruitmentDashboard() {
           </table>
         )}
       </SectionCard>
+
+      {/* ── Recruitment Timeline ── */}
+      <ActivityTimeline
+        title="Recruitment Timeline"
+        accentColor="#6366f1"
+        items={timeline}
+        loading={tlLoading}
+        onViewAll={() => go("candidates")}
+        emptyTitle="No Recruitment Activity Yet"
+        emptySubtitle="Activities will automatically appear here as your hiring process begins."
+      />
 
     </div>
   );

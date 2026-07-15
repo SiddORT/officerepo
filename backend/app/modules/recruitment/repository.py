@@ -9,7 +9,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from backend.app.modules.recruitment.models import (
-    JobRequisition, JobOpening, Candidate, CandidateDocument, Offer, CandidateActivity,
+    JobRequisition, JobOpening, Candidate, CandidateDocument, Offer, CandidateActivity,  # noqa: F401 – JobOpening used in get_global_timeline
 )
 from backend.app.modules.recruitment.constants import (
     REQUISITION_STATUSES, OPENING_STATUSES, CANDIDATE_STATUSES, OFFER_STATUSES,
@@ -262,6 +262,51 @@ def get_candidate_activities(db: Session, client_id: str, cand_id: str) -> List[
         CandidateActivity.client_id == client_id,
         CandidateActivity.candidate_id == cand_id,
     ).order_by(CandidateActivity.created_at.desc()).all()
+
+
+def get_global_timeline(db: Session, client_id: str, limit: int = 15) -> List[Dict[str, Any]]:
+    """Latest recruitment activities across all candidates, joined with candidate + opening info."""
+    rows = (
+        db.query(
+            CandidateActivity,
+            Candidate.first_name,
+            Candidate.last_name,
+            Candidate.applied_position,
+            Candidate.applied_position_id,
+        )
+        .outerjoin(Candidate, CandidateActivity.candidate_id == Candidate.id)
+        .filter(CandidateActivity.client_id == client_id)
+        .order_by(CandidateActivity.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    opening_ids = list({pid for _, _, _, _, pid in rows if pid is not None})
+    dept_map: Dict[str, str] = {}
+    if opening_ids:
+        openings = db.query(JobOpening).filter(
+            JobOpening.id.in_(opening_ids),
+            JobOpening.client_id == client_id,
+        ).all()
+        dept_map = {o.id: o.department_name for o in openings if o.department_name}
+
+    result = []
+    for act, fname, lname, position, pos_id in rows:
+        candidate_name = f"{fname or ''} {lname or ''}".strip() or None
+        result.append({
+            "id": act.id,
+            "candidate_id": act.candidate_id,
+            "candidate_name": candidate_name,
+            "applied_position": position,
+            "department_name": dept_map.get(pos_id) if pos_id else None,
+            "action": act.action,
+            "actor": act.actor,
+            "old_value": act.old_value,
+            "new_value": act.new_value,
+            "notes": act.notes,
+            "created_at": act.created_at.isoformat() if act.created_at else None,
+        })
+    return result
 
 
 def add_activity(
