@@ -54,17 +54,19 @@ export default function RequisitionList() {
       <div className="portal-table-wrap">
         <table className="portal-table">
           <thead><tr>
+            <th style={{ width: 48, textAlign: "center" }}>Sr No</th>
             <th>Req #</th><th>Department</th><th>Designation</th>
             <th>Positions</th><th>Type</th><th>Target Date</th>
             <th>Status</th><th>Actions</th>
           </tr></thead>
           <tbody>
             {loading
-              ? <tr><td colSpan={8} style={{ textAlign: "center", padding: 40 }} className="t-muted">Loading…</td></tr>
+              ? <tr><td colSpan={9} style={{ textAlign: "center", padding: 40 }} className="t-muted">Loading…</td></tr>
               : rows.length === 0
-              ? <tr><td colSpan={8} style={{ textAlign: "center", padding: 48 }} className="t-muted">No requisitions found.</td></tr>
-              : rows.map(r => (
+              ? <tr><td colSpan={9} style={{ textAlign: "center", padding: 48 }} className="t-muted">No requisitions found.</td></tr>
+              : rows.map((r, idx) => (
                 <tr key={r.id} onClick={() => navigate(`/portal/${subdomain}/recruitment/requisitions/${r.id}`)}>
+                  <td style={{ textAlign: "center", color: "var(--c-muted)", fontSize: 12 }}>{(page - 1) * PAGE_SIZE + idx + 1}</td>
                   <td><span className="t-accent" style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700 }}>{r.requisition_number}</span></td>
                   <td>{r.department_name || "—"}</td>
                   <td>{r.designation_name || "—"}</td>
