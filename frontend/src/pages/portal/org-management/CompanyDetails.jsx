@@ -7,6 +7,7 @@ import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 
 function getExpiryStatus(dateStr) {
+  if (!dateStr) return "valid";
   const [year, month, day] = dateStr.split("-").map(Number);
   const expiry = new Date(year, month - 1, day);
   const today = new Date();
@@ -14,7 +15,7 @@ function getExpiryStatus(dateStr) {
   const daysLeft = Math.floor((expiry - today) / 86400000);
   if (daysLeft < 0) return "expired";
   if (daysLeft <= 30) return "expiring_soon";
-  return "ok";
+  return "valid";
 }
 
 function InfoRow({ label, value }) {
@@ -233,6 +234,35 @@ export default function CompanyDetails() {
                 {downloadError}
               </div>
             )}
+            {!docsLoading && docs.length > 0 && (() => {
+              const expiredDocs = docs.filter(d => (d.expiry_status || getExpiryStatus(d.expiry_date ? String(d.expiry_date).slice(0, 10) : null)) === "expired");
+              const expiringSoonDocs = docs.filter(d => (d.expiry_status || getExpiryStatus(d.expiry_date ? String(d.expiry_date).slice(0, 10) : null)) === "expiring_soon");
+              if (expiredDocs.length === 0 && expiringSoonDocs.length === 0) return null;
+              return (
+                <div style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {expiredDocs.length > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 7, fontSize: 12, color: "#f87171" }}>
+                      <span style={{ fontSize: 15 }}>⚠️</span>
+                      <span>
+                        <strong>{expiredDocs.length} document{expiredDocs.length > 1 ? "s" : ""} expired</strong>
+                        {" — "}
+                        {expiredDocs.map(d => d.doc_type).join(", ")}. Renew immediately to maintain compliance.
+                      </span>
+                    </div>
+                  )}
+                  {expiringSoonDocs.length > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.35)", borderRadius: 7, fontSize: 12, color: "#fbbf24" }}>
+                      <span style={{ fontSize: 15 }}>🕐</span>
+                      <span>
+                        <strong>{expiringSoonDocs.length} document{expiringSoonDocs.length > 1 ? "s" : ""} expiring within 30 days</strong>
+                        {" — "}
+                        {expiringSoonDocs.map(d => d.doc_type).join(", ")}. Schedule renewal soon.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             {docsLoading ? (
               <div style={{ fontSize: 13, color: "var(--c-muted)", opacity: 0.6 }}>Loading documents…</div>
             ) : docs.length === 0 ? (
@@ -242,52 +272,45 @@ export default function CompanyDetails() {
                 <table className="portal-table">
                   <thead>
                     <tr>
-                      {["Type", "Doc. Number", "Issue Date", "Expiry Date", "File"].map(h => (
+                      {["Type", "Doc. Number", "Issue Date", "Expiry Date", "Status", "File"].map(h => (
                         <th key={h}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {docs.map(d => (
-                      <tr key={d.id}>
-                        <td style={{ fontSize: 12, fontWeight: 500 }}>{d.doc_type}</td>
-                        <td style={{ fontSize: 12, fontFamily: "monospace" }} className="t-muted">{d.doc_number || "—"}</td>
-                        <td style={{ fontSize: 12 }} className="t-muted">{d.issue_date ? String(d.issue_date).slice(0, 10) : "—"}</td>
-                        <td style={{ fontSize: 12 }} className="t-muted">
-                          {d.expiry_date ? (() => {
-                            const dateStr = String(d.expiry_date).slice(0, 10);
-                            const status = getExpiryStatus(dateStr);
-                            if (status === "expired") {
-                              return (
-                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                                  {dateStr}
-                                  <span style={{ display: "inline-block", padding: "1px 7px", borderRadius: 10, fontSize: 10, fontWeight: 600, background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.35)", letterSpacing: "0.03em" }}>Expired</span>
-                                </span>
-                              );
-                            }
-                            if (status === "expiring_soon") {
-                              return (
-                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                                  {dateStr}
-                                  <span style={{ display: "inline-block", padding: "1px 7px", borderRadius: 10, fontSize: 10, fontWeight: 600, background: "rgba(251,191,36,0.15)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.35)", letterSpacing: "0.03em" }}>Expiring soon</span>
-                                </span>
-                              );
-                            }
-                            return dateStr;
-                          })() : "—"}
-                        </td>
-                        <td style={{ fontSize: 12 }} className="t-muted">
-                          {d.has_file ? (
-                            <button
-                              type="button"
-                              onClick={() => handleDownload(d)}
-                              style={{ fontSize: 12, color: "var(--c-accent)", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 500 }}>
-                              📎 {d.file_name ? (d.file_name.length > 24 ? d.file_name.slice(0, 24) + "…" : d.file_name) : "Download"}
-                            </button>
-                          ) : "—"}
-                        </td>
-                      </tr>
-                    ))}
+                    {docs.map(d => {
+                      const dateStr = d.expiry_date ? String(d.expiry_date).slice(0, 10) : null;
+                      const status = d.expiry_status || (dateStr ? getExpiryStatus(dateStr) : "valid");
+                      return (
+                        <tr key={d.id}>
+                          <td style={{ fontSize: 12, fontWeight: 500 }}>{d.doc_type}</td>
+                          <td style={{ fontSize: 12, fontFamily: "monospace" }} className="t-muted">{d.doc_number || "—"}</td>
+                          <td style={{ fontSize: 12 }} className="t-muted">{d.issue_date ? String(d.issue_date).slice(0, 10) : "—"}</td>
+                          <td style={{ fontSize: 12 }} className="t-muted">{dateStr || "—"}</td>
+                          <td style={{ fontSize: 12 }}>
+                            {!dateStr ? (
+                              <span style={{ color: "var(--c-muted)", opacity: 0.5 }}>—</span>
+                            ) : status === "expired" ? (
+                              <span style={{ display: "inline-block", padding: "1px 7px", borderRadius: 10, fontSize: 10, fontWeight: 600, background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.35)", letterSpacing: "0.03em" }}>Expired</span>
+                            ) : status === "expiring_soon" ? (
+                              <span style={{ display: "inline-block", padding: "1px 7px", borderRadius: 10, fontSize: 10, fontWeight: 600, background: "rgba(251,191,36,0.15)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.35)", letterSpacing: "0.03em" }}>Expiring soon</span>
+                            ) : (
+                              <span style={{ display: "inline-block", padding: "1px 7px", borderRadius: 10, fontSize: 10, fontWeight: 600, background: "rgba(34,197,94,0.12)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.3)", letterSpacing: "0.03em" }}>Valid</span>
+                            )}
+                          </td>
+                          <td style={{ fontSize: 12 }} className="t-muted">
+                            {d.has_file ? (
+                              <button
+                                type="button"
+                                onClick={() => handleDownload(d)}
+                                style={{ fontSize: 12, color: "var(--c-accent)", background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 500 }}>
+                                📎 {d.file_name ? (d.file_name.length > 24 ? d.file_name.slice(0, 24) + "…" : d.file_name) : "Download"}
+                              </button>
+                            ) : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -737,6 +737,23 @@ def delete_designation(
 
 # ── Company Documents ───────────────────────────────────────────────────────────
 
+_EXPIRY_SOON_DAYS = 30
+
+
+def _compute_expiry_status(expiry_date) -> str:
+    """Return 'expired', 'expiring_soon', or 'valid' for a given expiry_date value.
+    Returns 'valid' when expiry_date is None (no expiry tracked)."""
+    if expiry_date is None:
+        return "valid"
+    from datetime import date, timedelta
+    today = date.today()
+    if expiry_date < today:
+        return "expired"
+    if expiry_date <= today + timedelta(days=_EXPIRY_SOON_DAYS):
+        return "expiring_soon"
+    return "valid"
+
+
 def _doc_dict(doc) -> dict:
     return {
         "id": doc.id,
@@ -746,6 +763,7 @@ def _doc_dict(doc) -> dict:
         "doc_number": doc.doc_number,
         "issue_date": doc.issue_date,
         "expiry_date": doc.expiry_date,
+        "expiry_status": _compute_expiry_status(doc.expiry_date),
         "remarks": doc.remarks,
         "file_name": doc.file_name,
         "has_file": bool(doc.file_path),

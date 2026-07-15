@@ -965,6 +965,18 @@ def list_expiring_documents(
         .order_by(OrgCompanyDocument.expiry_date)
         .all()
     )
+    today = date.today()
+    soon_cutoff = today + timedelta(days=30)
+
+    def _expiry_status(expiry_date_val):
+        if expiry_date_val is None:
+            return "valid"
+        if expiry_date_val < today:
+            return "expired"
+        if expiry_date_val <= soon_cutoff:
+            return "expiring_soon"
+        return "valid"
+
     return [
         {
             "id": doc.id,
@@ -973,6 +985,7 @@ def list_expiring_documents(
             "doc_type": doc.doc_type,
             "doc_number": doc.doc_number,
             "expiry_date": doc.expiry_date,
+            "expiry_status": _expiry_status(doc.expiry_date),
             "issue_date": doc.issue_date,
             "file_name": doc.file_name,
             "has_file": bool(doc.file_path),
