@@ -590,7 +590,7 @@ export default function OnboardingDetails() {
                   <div key={a.id} className="card" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, fontSize: 13, wordBreak: "break-word", overflowWrap: "break-word" }}>{a.account_type}</div>
-                      <div className="t-muted" style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div className="t-muted" style={{ fontSize: 11, wordBreak: "break-word", overflowWrap: "anywhere" }}>
                         {a.username || "No username set"}
                         {a.notes ? ` · ${a.notes}` : ""}
                       </div>
