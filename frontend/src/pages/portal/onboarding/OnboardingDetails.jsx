@@ -518,7 +518,7 @@ export default function OnboardingDetails() {
       {/* ── Accounts ──────────────────────────────────────────────────────── */}
       {tab === "Accounts" && (
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
             <div style={{ fontWeight: 700, fontSize: 14 }} className="t-heading">Provisioned Accounts ({(accounts || []).length})</div>
             {isActive && (
               <button onClick={() => setAddAcctForm({ account_type: "", username: "", notes: "", status: "Pending", created_date: "" })}
@@ -571,14 +571,14 @@ export default function OnboardingDetails() {
                     <div className="form-grid-3" style={{ gap: 10, marginBottom: 10 }}>
                       <input value={editAcct.username || ""} onChange={e => setEditAcct(f => ({ ...f, username: e.target.value }))}
                         placeholder="Username"
-                        style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 12 }} />
+                        style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 12 }} />
                       <select value={editAcct.status} onChange={e => setEditAcct(f => ({ ...f, status: e.target.value }))}
-                        style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 12 }}>
+                        style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 12 }}>
                         {["Pending","Created","Active","Suspended"].map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                       <input value={editAcct.notes || ""} onChange={e => setEditAcct(f => ({ ...f, notes: e.target.value }))}
                         placeholder="Notes"
-                        style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 12 }} />
+                        style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 12 }} />
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
                       <button onClick={() => doUpdateAccount(a.id, { username: editAcct.username, status: editAcct.status, notes: editAcct.notes })} className="btn-primary" style={{ padding: "5px 14px", fontSize: 12 }}>Save</button>
@@ -586,21 +586,21 @@ export default function OnboardingDetails() {
                     </div>
                   </div>
                 ) : (
-                  <div key={a.id} className="card" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
-                    <div style={{ flex: 1 }}>
+                  <div key={a.id} className="card" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, fontSize: 13 }}>{a.account_type}</div>
-                      <div className="t-muted" style={{ fontSize: 11 }}>
+                      <div className="t-muted" style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {a.username || "No username set"}
                         {a.notes ? ` · ${a.notes}` : ""}
                       </div>
                     </div>
                     <span style={{
-                      fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10,
+                      fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, flexShrink: 0,
                       background: a.status === "Active" ? "#22c55e22" : a.status === "Pending" ? "#f59e0b22" : "#6b728022",
                       color: a.status === "Active" ? "#22c55e" : a.status === "Pending" ? "#f59e0b" : "#6b7280",
                     }}>{a.status}</span>
                     {isActive && (
-                      <div style={{ display: "flex", gap: 6 }}>
+                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                         <button onClick={() => setEditAcct({ ...a })} className="btn-secondary" style={{ padding: "3px 10px", fontSize: 11 }}>Edit</button>
                         <button onClick={() => askConfirm("Remove Account", "Remove this account?", () => doDeleteAccount(a.id))} style={{ padding: "3px 10px", fontSize: 11, background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 6, cursor: "pointer" }}>✕</button>
                       </div>
@@ -616,7 +616,7 @@ export default function OnboardingDetails() {
       {/* ── Training ──────────────────────────────────────────────────────── */}
       {tab === "Training" && (
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
             <div style={{ fontWeight: 700, fontSize: 14 }} className="t-heading">Training Assignments ({(training || []).length})</div>
             {isActive && (
               <button onClick={() => setAddTrainForm({ course_name: "", course_type: "", provider: "", is_mandatory: false, assigned_date: "", due_date: "", status: "Assigned" })}
@@ -626,8 +626,7 @@ export default function OnboardingDetails() {
 
           {addTrainForm && (
             <div className="card" style={{ padding: 16, marginBottom: 16, border: "1px dashed var(--c-accent)" }}>
-              {/* Non-uniform grid — wider course name col + 2 equal cols; intentional */}
-              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
+              <div className="form-grid-3" style={{ gap: 10, marginBottom: 10 }}>
                 <input value={addTrainForm.course_name} onChange={e => setAddTrainForm(f => ({ ...f, course_name: e.target.value }))}
                   placeholder="Course name *" autoFocus
                   style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 12 }} />
@@ -640,11 +639,11 @@ export default function OnboardingDetails() {
                   type="date" placeholder="Due date"
                   style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 12 }} />
               </div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
                 <input value={addTrainForm.provider} onChange={e => setAddTrainForm(f => ({ ...f, provider: e.target.value }))}
                   placeholder="Provider / platform"
-                  style={{ flex: 1, padding: "7px 10px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 12 }} />
-                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  style={{ flex: 1, minWidth: 120, padding: "7px 10px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 12 }} />
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
                   <input type="checkbox" checked={addTrainForm.is_mandatory} onChange={e => setAddTrainForm(f => ({ ...f, is_mandatory: e.target.checked }))} />
                   Mandatory
                 </label>
@@ -686,13 +685,13 @@ export default function OnboardingDetails() {
                     </div>
                   </div>
                 ) : (
-                  <div key={tr.id} className="card" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 14 }}>
-                    <div style={{ flex: 1 }}>
+                  <div key={tr.id} className="card" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, fontSize: 13 }}>
                         {tr.course_name}
                         {tr.is_mandatory && <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 700, marginLeft: 8 }}>REQUIRED</span>}
                       </div>
-                      <div className="t-muted" style={{ fontSize: 11 }}>
+                      <div className="t-muted" style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {tr.course_type || "General"}
                         {tr.provider ? ` · ${tr.provider}` : ""}
                         {tr.due_date  ? ` · Due: ${tr.due_date}` : ""}
@@ -700,12 +699,12 @@ export default function OnboardingDetails() {
                       </div>
                     </div>
                     <span style={{
-                      fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10,
+                      fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 10, flexShrink: 0,
                       background: tr.status === "Completed" ? "#22c55e22" : tr.status === "In Progress" ? "var(--c-accent)22" : "#6b728022",
                       color: tr.status === "Completed" ? "#22c55e" : tr.status === "In Progress" ? "var(--c-accent)" : "#6b7280",
                     }}>{tr.status}</span>
                     {isActive && (
-                      <div style={{ display: "flex", gap: 6 }}>
+                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                         <button onClick={() => setEditTrain({ ...tr })} className="btn-secondary" style={{ padding: "3px 10px", fontSize: 11 }}>Edit</button>
                         <button onClick={() => askConfirm("Remove Training", "Remove this training record?", () => doDeleteTraining(tr.id))} style={{ padding: "3px 10px", fontSize: 11, background: "none", border: "1px solid #ef4444", color: "#ef4444", borderRadius: 6, cursor: "pointer" }}>✕</button>
                       </div>
