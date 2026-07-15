@@ -217,9 +217,9 @@ export default function AssetRequestList() {
                       {(r.status === "Submitted" || r.status === "Under Review") && (
                         <>
                           <button onClick={() => setActionModal({ type: "approve", id: r.id, label: "Approve", needsNote: true, notePlaceholder: "Approval notes (optional)" })}
-                            className="text-xs text-green-600 hover:underline font-medium">Approve</button>
+                            style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: "1px solid #22c55e", color: "#22c55e", background: "transparent", cursor: "pointer", fontWeight: 600 }}>✓ Approve</button>
                           <button onClick={() => setActionModal({ type: "reject", id: r.id, label: "Reject", needsNote: true, notePlaceholder: "Reason for rejection…" })}
-                            className="text-xs text-red-500 hover:underline font-medium">Reject</button>
+                            style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: "1px solid #ef4444", color: "#ef4444", background: "transparent", cursor: "pointer", fontWeight: 600 }}>✕ Reject</button>
                         </>
                       )}
                       {r.status === "Approved" && (

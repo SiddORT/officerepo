@@ -117,14 +117,8 @@ export default function RegularizationList() {
                               <input className="input w-full text-sm" value={reviewNote}
                                 onChange={e => setReviewNote(e.target.value)} placeholder="Reason for approval/rejection" />
                             </div>
-                            <button onClick={() => handleReview(r.id, "Approved")}
-                              className="bg-green-500 text-white text-xs px-4 py-2 rounded-lg hover:bg-green-600 transition-colors">
-                              Approve
-                            </button>
-                            <button onClick={() => handleReview(r.id, "Rejected")}
-                              className="bg-red-500 text-white text-xs px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">
-                              Reject
-                            </button>
+                            <button onClick={() => handleReview(r.id, "Approved")} className="btn-approve">✓ Approve</button>
+                            <button onClick={() => handleReview(r.id, "Rejected")} className="btn-danger">✕ Reject</button>
                             <button onClick={() => setReviewing(null)} className="text-xs t-muted hover:t-heading">Cancel</button>
                           </div>
                         </td>

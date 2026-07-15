@@ -99,7 +99,7 @@ export default function PayrollRunDetails() {
           )}
           {canApprove && (
             <button disabled={actionBusy} onClick={() => doAction("Approve payroll run", () => portalPayrollApi.approveRun(subdomain, token, run.id, {}))}
-              className="btn-primary" style={{ fontSize:12,background:"#10B981" }}>
+              className="btn-approve">
               {actionBusy ? "Approving…" : "✓ Approve"}
             </button>
           )}

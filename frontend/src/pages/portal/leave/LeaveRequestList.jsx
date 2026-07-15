@@ -41,29 +41,30 @@ function ReviewModal({ req, onClose, onDone }) {
           <div><span style={{ color: "var(--c-muted)" }}>Dates:</span> <span style={{ color: "var(--c-text)" }}>{req.start_date} → {req.end_date} ({req.leave_days}d)</span></div>
           {req.reason && <div><span style={{ color: "var(--c-muted)" }}>Reason:</span> <span style={{ color: "var(--c-text)" }}>{req.reason}</span></div>}
         </div>
-        {err && <div className="text-sm text-red-500 bg-red-50 rounded p-2">{err}</div>}
-        <div className="flex gap-3">
-          <button onClick={() => setAction("approve")}
-            className={`flex-1 py-2 rounded-xl text-sm font-medium border-2 transition-colors ${action === "approve" ? "border-green-500 bg-green-50 text-green-700" : "text-gray-500"}`}
-            style={{ borderColor: action === "approve" ? "#22c55e" : "var(--c-border)" }}>
-            ✓ Approve
-          </button>
-          <button onClick={() => setAction("reject")}
-            className={`flex-1 py-2 rounded-xl text-sm font-medium border-2 transition-colors ${action === "reject" ? "border-red-500 bg-red-50 text-red-600" : "text-gray-500"}`}
-            style={{ borderColor: action === "reject" ? "#ef4444" : "var(--c-border)" }}>
-            ✕ Reject
-          </button>
+        {err && <div style={{ fontSize: 13, color: "#ef4444", background: "rgba(239,68,68,0.1)", borderRadius: 6, padding: "8px 12px" }}>{err}</div>}
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={() => setAction("approve")} style={{
+            flex: 1, padding: "8px 0", borderRadius: 10, fontSize: 13, fontWeight: 600,
+            border: `2px solid ${action === "approve" ? "#22c55e" : "var(--c-border)"}`,
+            background: action === "approve" ? "rgba(34,197,94,0.12)" : "transparent",
+            color: action === "approve" ? "#22c55e" : "var(--c-muted)",
+            cursor: "pointer", transition: "all 0.15s",
+          }}>✓ Approve</button>
+          <button onClick={() => setAction("reject")} style={{
+            flex: 1, padding: "8px 0", borderRadius: 10, fontSize: 13, fontWeight: 600,
+            border: `2px solid ${action === "reject" ? "#ef4444" : "var(--c-border)"}`,
+            background: action === "reject" ? "rgba(239,68,68,0.12)" : "transparent",
+            color: action === "reject" ? "#ef4444" : "var(--c-muted)",
+            cursor: "pointer", transition: "all 0.15s",
+          }}>✕ Reject</button>
         </div>
-        <textarea rows={3} className="w-full rounded-lg px-3 py-2 text-sm border resize-none"
-          style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)", color: "var(--c-text)" }}
+        <textarea rows={3} style={{ width: "100%", borderRadius: 8, padding: "8px 12px", fontSize: 13, background: "var(--c-bg)", border: "1px solid var(--c-border)", color: "var(--c-text)", resize: "vertical", boxSizing: "border-box" }}
           placeholder="Comments (optional)…" value={comments} onChange={e => setComments(e.target.value)} />
-        <div className="flex gap-3">
-          <button onClick={onClose}
-            className="flex-1 py-2 rounded-xl text-sm border"
-            style={{ borderColor: "var(--c-border)", color: "var(--c-muted)" }}>Cancel</button>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={onClose} className="btn-secondary" style={{ flex: 1 }}>Cancel</button>
           <button onClick={submit} disabled={saving}
-            className={`flex-1 py-2 rounded-xl text-sm font-medium text-white ${action === "reject" ? "bg-red-500" : "bg-green-600"}`}>
-            {saving ? "…" : (action === "approve" ? "Approve" : "Reject")}
+            className={action === "reject" ? "btn-danger" : "btn-approve"} style={{ flex: 1 }}>
+            {saving ? "…" : (action === "approve" ? "✓ Approve" : "✕ Reject")}
           </button>
         </div>
       </div>

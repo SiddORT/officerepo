@@ -118,8 +118,8 @@ export default function ExpenseClaimDetails() {
         <div className="flex flex-wrap gap-2 shrink-0">
           {canEdit      && <EditIconBtn onClick={() => navigate(`/portal/${subdomain}/hrms/expenses/claims/${claimId}/edit`)} title="Edit claim" />}
           {canSubmit    && <button onClick={() => { setActionModal("submit"); setError(""); }} className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">Submit</button>}
-          {canApprove   && <button onClick={() => { setActionModal("approve"); setActionForm({}); setError(""); }} className="px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors font-medium">Approve</button>}
-          {canReject    && <button onClick={() => { setActionModal("reject"); setActionForm({}); setError(""); }} className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium">Reject</button>}
+          {canApprove   && <button onClick={() => { setActionModal("approve"); setActionForm({}); setError(""); }} className="btn-approve">✓ Approve</button>}
+          {canReject    && <button onClick={() => { setActionModal("reject"); setActionForm({}); setError(""); }} className="btn-danger">✕ Reject</button>}
           {canReturn    && <button onClick={() => { setActionModal("return"); setActionForm({}); setError(""); }} className="px-3 py-1.5 text-xs bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors font-medium">Return</button>}
           {canReimburse && <button onClick={() => { setActionModal("reimburse"); setActionForm({ method: "Payroll" }); setError(""); }} className="px-3 py-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium">Reimburse</button>}
           {canCancel    && <button onClick={() => { setActionModal("cancel"); setActionForm({}); setError(""); }} className="px-3 py-1.5 text-xs border border-red-300 dark:border-red-700 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">Cancel</button>}

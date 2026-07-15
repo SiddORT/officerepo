@@ -72,11 +72,11 @@ export default function OfferList() {
                   <td style={{ textAlign: "right" }}>
                     {r.status === "Draft" && <>
                       <button onClick={() => navigate(`/portal/${subdomain}/recruitment/offers/${r.id}/edit`)} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Edit</button>
-                      <button onClick={() => doAction(() => portalRecruitmentApi.sendOffer(subdomain, token, r.id))} style={{ background: "none", border: "none", color: "#22c55e", cursor: "pointer", fontSize: 12, marginLeft: 10 }}>Send</button>
+                      <button onClick={() => doAction(() => portalRecruitmentApi.sendOffer(subdomain, token, r.id))} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: "1px solid #22c55e", color: "#22c55e", background: "transparent", cursor: "pointer", fontWeight: 600 }}>Send</button>
                     </>}
                     {r.status === "Sent" && <>
-                      <button onClick={() => doAction(() => portalRecruitmentApi.acceptOffer(subdomain, token, r.id))} style={{ background: "none", border: "none", color: "#22c55e", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Accept</button>
-                      <button onClick={() => { const reason = window.prompt("Rejection reason:"); if (reason !== null) doAction(() => portalRecruitmentApi.rejectOffer(subdomain, token, r.id, { rejection_reason: reason })); }} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 12, marginLeft: 10 }}>Reject</button>
+                      <button onClick={() => doAction(() => portalRecruitmentApi.acceptOffer(subdomain, token, r.id))} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: "1px solid #22c55e", color: "#22c55e", background: "transparent", cursor: "pointer", fontWeight: 600 }}>✓ Accept</button>
+                      <button onClick={() => { const reason = window.prompt("Rejection reason:"); if (reason !== null) doAction(() => portalRecruitmentApi.rejectOffer(subdomain, token, r.id, { rejection_reason: reason })); }} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: "1px solid #ef4444", color: "#ef4444", background: "transparent", cursor: "pointer", fontWeight: 600 }}>✕ Reject</button>
                     </>}
                   </td>
                 </tr>

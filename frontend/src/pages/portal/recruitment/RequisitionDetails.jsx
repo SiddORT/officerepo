@@ -55,8 +55,8 @@ export default function RequisitionDetails() {
             <button disabled={acting === "Submit"} onClick={() => doAction(() => portalRecruitmentApi.submitRequisition(subdomain, token, reqId), "Submit")} className="btn-primary">{acting === "Submit" ? "…" : "Submit"}</button>
           </>}
           {req.status === "Submitted" && <>
-            <button disabled={acting === "Approve"} onClick={() => doAction(() => portalRecruitmentApi.approveRequisition(subdomain, token, reqId), "Approve")} className="btn-primary" style={{ background: "#22c55e" }}>{acting === "Approve" ? "…" : "Approve"}</button>
-            <button disabled={acting === "Reject"} onClick={() => { const r = window.prompt("Rejection reason:"); if (r !== null) doAction(() => portalRecruitmentApi.rejectRequisition(subdomain, token, reqId, { rejection_reason: r }), "Reject"); }} className="btn-danger">Reject</button>
+            <button disabled={acting === "Approve"} onClick={() => doAction(() => portalRecruitmentApi.approveRequisition(subdomain, token, reqId), "Approve")} className="btn-approve">{acting === "Approve" ? "…" : "✓ Approve"}</button>
+            <button disabled={acting === "Reject"} onClick={() => { const r = window.prompt("Rejection reason:"); if (r !== null) doAction(() => portalRecruitmentApi.rejectRequisition(subdomain, token, reqId, { rejection_reason: r }), "Reject"); }} className="btn-danger">✕ Reject</button>
           </>}
           {req.status === "Approved" && <button onClick={() => navigate(`/portal/${subdomain}/recruitment/openings/new?requisition_id=${reqId}`)} className="btn-primary">Create Opening</button>}
           {req.status === "Rejected" && <button onClick={() => navigate(`/portal/${subdomain}/recruitment/requisitions/${reqId}/edit`)} className="btn-secondary">Edit & Resubmit</button>}

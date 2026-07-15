@@ -114,8 +114,8 @@ export default function AssignmentRequestList() {
                   <div className="flex gap-2 justify-end">
                     {r.status === "Draft" && <button onClick={() => doAction("submit", r.id)} className="text-xs text-amber-600 hover:underline">Submit</button>}
                     {r.status === "Submitted" && <>
-                      <button onClick={() => doAction("approve", r.id)} className="text-xs text-green-600 hover:underline">Approve</button>
-                      <button onClick={() => setActionModal({type:"reject", id:r.id})} className="text-xs text-red-500 hover:underline">Reject</button>
+                      <button onClick={() => doAction("approve", r.id)} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: "1px solid #22c55e", color: "#22c55e", background: "transparent", cursor: "pointer", fontWeight: 600 }}>✓ Approve</button>
+                      <button onClick={() => setActionModal({type:"reject", id:r.id})} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: "1px solid #ef4444", color: "#ef4444", background: "transparent", cursor: "pointer", fontWeight: 600 }}>✕ Reject</button>
                     </>}
                     {r.status === "Approved" && (
                       <Link to={`/portal/${subdomain}/assets/assignments/new?request_id=${r.id}`} className="text-xs text-blue-600 hover:underline">Fulfill</Link>

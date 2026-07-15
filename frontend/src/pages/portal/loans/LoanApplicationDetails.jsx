@@ -104,8 +104,8 @@ export default function LoanApplicationDetails() {
           </div>
           <div className="flex gap-2 flex-wrap justify-end">
             {status === "Draft"      && <ActionBtn label="Submit"   onClick={() => setActionModal("submit")} />}
-            {status === "Submitted"  && <ActionBtn label="Approve"  onClick={() => openAction("approve")} color="#3b82f6" />}
-            {status === "Submitted"  && <ActionBtn label="Reject"   onClick={() => openAction("reject")}  color="#ef4444" />}
+            {status === "Submitted"  && <ActionBtn label="✓ Approve" onClick={() => openAction("approve")} color="#16a34a" />}
+            {status === "Submitted"  && <ActionBtn label="✕ Reject"  onClick={() => openAction("reject")}  color="#dc2626" />}
             {["Draft","Submitted","Under Review","Approved"].includes(status) && <ActionBtn label="Cancel" onClick={() => openAction("cancel")} color="#6b7280" />}
             {status === "Approved"   && <ActionBtn label="Disburse" onClick={() => openAction("disburse")} color="#10b981" />}
             {status === "Disbursed"  && <ActionBtn label="Close Loan" onClick={() => openAction("close")} color="#8b5cf6" />}

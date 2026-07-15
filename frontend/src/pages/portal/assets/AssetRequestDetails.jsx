@@ -110,12 +110,12 @@ export default function AssetRequestDetails() {
           {(req.status === "Submitted" || req.status === "Under Review") && (
             <>
               <button onClick={() => setActionModal({ type: "approve", label: "Approve Request", needsNote: true, notePlaceholder: "Approval notes (optional)" })}
-                className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-lg font-medium">
-                Approve
+                className="btn-approve">
+                ✓ Approve
               </button>
               <button onClick={() => setActionModal({ type: "reject", label: "Reject Request", needsNote: true, notePlaceholder: "Reason for rejection…" })}
-                className="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded-lg font-medium">
-                Reject
+                className="btn-danger">
+                ✕ Reject
               </button>
             </>
           )}

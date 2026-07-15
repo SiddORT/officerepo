@@ -87,10 +87,10 @@ export default function ResignationDetails() {
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`text-sm px-3 py-1 rounded-full font-medium ${STATUS_COLORS[r.status] || "bg-gray-100"}`}>{r.status}</span>
           {r.status === "Draft"        && <button onClick={() => setActionModal("submit")} className="bg-amber-500 text-white text-sm px-3 py-1.5 rounded-lg">Submit</button>}
-          {r.status === "Submitted"    && <button onClick={() => setActionModal("approve")} className="bg-green-600 text-white text-sm px-3 py-1.5 rounded-lg">Approve</button>}
-          {r.status === "Submitted"    && <button onClick={() => setActionModal("reject")} className="bg-red-500 text-white text-sm px-3 py-1.5 rounded-lg">Reject</button>}
+          {r.status === "Submitted"    && <button onClick={() => setActionModal("approve")} className="btn-approve">✓ Approve</button>}
+          {r.status === "Submitted"    && <button onClick={() => setActionModal("reject")} className="btn-danger">✕ Reject</button>}
           {!["Rejected","Withdrawn","Approved"].includes(r.status) &&
-            <button onClick={() => setActionModal("withdraw")} className="border border-gray-300 text-sm px-3 py-1.5 rounded-lg text-gray-600">Withdraw</button>}
+            <button onClick={() => setActionModal("withdraw")} className="btn-secondary">Withdraw</button>}
           {r.status === "Draft" &&
             <Link to={`/portal/${subdomain}/hrms/exit/resignations/${r.id}/edit`}
               className="border border-gray-300 text-sm px-3 py-1.5 rounded-lg text-gray-600">Edit</Link>}
