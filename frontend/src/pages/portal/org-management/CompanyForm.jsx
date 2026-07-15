@@ -154,6 +154,8 @@ export default function CompanyForm({ editMode }) {
 
   const [industries, setIndustries] = useState([]);
   const [saving, setSaving]   = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [uploadFailed, setUploadFailed] = useState(false);
   const [loading, setLoading] = useState(editMode);
   const [error,  setError]    = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
@@ -231,6 +233,7 @@ export default function CompanyForm({ editMode }) {
 
   const handleSubmit = async () => {
     setError("");
+    setUploadFailed(false);
     const errs = validate();
     if (Object.keys(errs).length) {
       setFieldErrors(errs);
@@ -294,10 +297,11 @@ export default function CompanyForm({ editMode }) {
             const word  = failed.length === 1 ? "document" : "documents";
             setError(
               `Company saved, but ${failed.length} ${word} failed to upload: ${names}. ` +
-              `Please remove the failed ${word} and try uploading again.`
+              `Use "Retry uploads" to try again, or remove the failed ${word} and save.`
             );
             // Keep only the failed docs in pendingDocs so the user can retry them
             setPendingDocs(failed);
+            setUploadFailed(true);
             // Remember the created id so a retry doesn't create a duplicate company
             if (!editMode) setSavedCompanyId(savedId);
             // Reload existing docs to reflect what was actually persisted
@@ -312,6 +316,53 @@ export default function CompanyForm({ editMode }) {
       navigate(`/portal/${subdomain}/org/companies`);
     } catch (e) { setError(e?.response?.data?.detail || "Save failed."); }
     finally { setSaving(false); }
+  };
+
+  const handleRetryUploads = async () => {
+    if (!pendingDocs.length) return;
+    const targetId = savedCompanyId || companyId;
+    if (!targetId) return;
+    setError("");
+    setRetrying(true);
+    try {
+      const uploadResults = await Promise.allSettled(
+        pendingDocs.map(doc => {
+          const fd = new FormData();
+          fd.append("doc_type", doc.doc_type || "Other");
+          if (doc.doc_number) fd.append("doc_number", doc.doc_number);
+          if (doc.issue_date) fd.append("issue_date", doc.issue_date);
+          if (doc.expiry_date) fd.append("expiry_date", doc.expiry_date);
+          if (doc.remarks) fd.append("remarks", doc.remarks);
+          if (doc.file) fd.append("file", doc.file);
+          return portalOrgApi.uploadCompanyDoc(subdomain, token, targetId, fd);
+        })
+      );
+
+      const failed = uploadResults
+        .map((r, i) => r.status === "rejected" ? pendingDocs[i] : null)
+        .filter(Boolean);
+
+      if (failed.length > 0) {
+        const names = failed.map(d => d.fileName || d.doc_type || "document").join(", ");
+        const word  = failed.length === 1 ? "document" : "documents";
+        setError(
+          `${failed.length} ${word} still failed to upload: ${names}. ` +
+          `Use "Retry uploads" to try again, or remove the failed ${word}.`
+        );
+        setPendingDocs(failed);
+        // Reload to reflect any that did succeed this round
+        portalOrgApi.listCompanyDocs(subdomain, token, targetId)
+          .then(r => setExistingDocs(r.data?.data || []))
+          .catch(() => {});
+      } else {
+        setUploadFailed(false);
+        navigate(`/portal/${subdomain}/org/companies`);
+      }
+    } catch (e) {
+      setError(e?.response?.data?.detail || "Retry failed.");
+    } finally {
+      setRetrying(false);
+    }
   };
 
   // Document helpers — new/pending docs
@@ -423,8 +474,29 @@ export default function CompanyForm({ editMode }) {
         />
 
         {error && (
-          <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#f87171" }}>
-            {error}
+          <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#f87171", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <span style={{ flex: 1 }}>{error}</span>
+            {uploadFailed && pendingDocs.length > 0 && (
+              <button
+                type="button"
+                onClick={handleRetryUploads}
+                disabled={retrying}
+                style={{
+                  flexShrink: 0,
+                  padding: "5px 14px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  borderRadius: 6,
+                  border: "1px solid rgba(239,68,68,0.5)",
+                  background: "rgba(239,68,68,0.15)",
+                  color: "#f87171",
+                  cursor: retrying ? "not-allowed" : "pointer",
+                  opacity: retrying ? 0.6 : 1,
+                  whiteSpace: "nowrap",
+                }}>
+                {retrying ? "Retrying…" : "↺ Retry uploads"}
+              </button>
+            )}
           </div>
         )}
 
