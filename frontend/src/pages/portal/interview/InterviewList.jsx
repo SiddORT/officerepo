@@ -173,7 +173,6 @@ export default function InterviewList() {
                   </td>
                   <td style={{ textAlign: "right", whiteSpace: "nowrap" }} onClick={e => e.stopPropagation()}>
                     {(r.status === "Scheduled" || r.status === "Rescheduled") && <>
-                      <IBtn onClick={() => navigate(`${base}/${r.id}/complete`)} title="Mark Complete" color="#22c55e">✅</IBtn>
                       <IBtn onClick={() => navigate(`${base}/${r.id}/reschedule`)} title="Reschedule" color="#8b5cf6">📅</IBtn>
                       <IBtn onClick={() => doAction(() => portalInterviewApi.noShow(subdomain, token, r.id), "Mark this interview as No Show?")} title="No Show" color="#f59e0b">🚫</IBtn>
                       <IBtn onClick={() => doAction(() => portalInterviewApi.cancel(subdomain, token, r.id, {}), "Cancel this interview?")} title="Cancel" color="#ef4444">❌</IBtn>

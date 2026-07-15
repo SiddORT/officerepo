@@ -115,7 +115,6 @@ import InterviewDashboard from "./interview/InterviewDashboard";
 import InterviewList from "./interview/InterviewList";
 import InterviewScheduleForm from "./interview/InterviewScheduleForm";
 import InterviewDetails from "./interview/InterviewDetails";
-import InterviewComplete from "./interview/InterviewComplete";
 import InterviewReschedule from "./interview/InterviewReschedule";
 import PipelineList from "./interview/PipelineList";
 import PipelineDetails from "./interview/PipelineDetails";
@@ -328,7 +327,6 @@ function PortalRoutes() {
       <Route path="/hrms/interviews/pipelines/:pipelineId"   element={<Protected><PortalLayout title="Pipeline Details"><PipelineDetails /></PortalLayout></Protected>} />
       <Route path="/hrms/interviews/pipelines"               element={<Protected><PortalLayout title="Interview Pipelines"><PipelineList /></PortalLayout></Protected>} />
       <Route path="/hrms/interviews/:interviewId/edit"       element={<Protected><PortalLayout title="Edit Interview"><InterviewScheduleForm editMode={true} /></PortalLayout></Protected>} />
-      <Route path="/hrms/interviews/:interviewId/complete"   element={<Protected><PortalLayout title="Complete Interview"><InterviewComplete /></PortalLayout></Protected>} />
       <Route path="/hrms/interviews/:interviewId/reschedule" element={<Protected><PortalLayout title="Reschedule Interview"><InterviewReschedule /></PortalLayout></Protected>} />
       <Route path="/hrms/interviews/:interviewId"            element={<Protected><PortalLayout title="Interview Details"><InterviewDetails /></PortalLayout></Protected>} />
       <Route path="/hrms/interviews"                         element={<Protected><PortalLayout title="Interview Management"><InterviewDashboard /></PortalLayout></Protected>} />

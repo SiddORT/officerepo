@@ -184,7 +184,6 @@ export default function InterviewDetails() {
             {isActive && <>
               <button onClick={() => navigate(`${base}/${iv.id}/edit`)} className="btn-secondary">Edit</button>
               <button onClick={() => navigate(`${base}/${iv.id}/reschedule`)} style={{ padding: "8px 16px", background: "none", border: "1px solid #8b5cf6", color: "#8b5cf6", borderRadius: 8, cursor: "pointer", fontSize: 13 }}>Reschedule</button>
-              <button onClick={() => navigate(`${base}/${iv.id}/complete`)} className="btn-primary">Mark Complete</button>
               <button onClick={() => askConfirm("No Show", "Mark this interview as No Show?", () => doAction(() => portalInterviewApi.noShow(subdomain, token, iv.id)))}
                 style={{ padding: "8px 16px", background: "none", border: "1px solid #f59e0b", color: "#f59e0b", borderRadius: 8, cursor: "pointer", fontSize: 13 }}>
                 No Show
