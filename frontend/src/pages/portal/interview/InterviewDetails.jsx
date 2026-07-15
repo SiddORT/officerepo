@@ -388,6 +388,7 @@ export default function InterviewDetails() {
               <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
                 {fbForm.scorecards.map((sc, i) => (
                   <div key={sc.criteria} style={{ display: "grid", gridTemplateColumns: "180px auto 1fr", gap: 12, alignItems: "center" }}>
+                    {/* Non-uniform scorecard row: fixed 180px label + auto rating buttons + 1fr notes — intentional */}
                     <div style={{ fontSize: 13, fontWeight: 600 }}>{sc.criteria}</div>
                     <div style={{ display: "flex", gap: 6 }}>
                       {[1,2,3,4,5].map(n => (

@@ -299,7 +299,7 @@ function FamilyModal({ subdomain, token, empId, editRow, familyRelationships, on
             placeholder="9876543210"
           />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="form-grid-2" style={{ gap: 12 }}>
           <Toggle value={form.is_dependent} onChange={v => set("is_dependent", v)} label="Is Dependent" />
           <Toggle value={form.is_nominee} onChange={v => set("is_nominee", v)} label="Insurance Nominee" />
         </div>

@@ -185,7 +185,7 @@ export default function UserForm({ editMode = false }) {
         ) : (
           <div className="portal-form-card">
             <div className="portal-form-row">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div className="form-grid-2" style={{ gap: 12 }}>
                 <div>
                   <label className="portal-form-label portal-form-label-req">First Name</label>
                   <input className="input-field" value={form.first_name} onChange={e => set("first_name", e.target.value)} placeholder="Reena" />
@@ -210,6 +210,7 @@ export default function UserForm({ editMode = false }) {
                 </div>
               )}
 
+              {/* Non-uniform grid — fixed 80px country-code picker + 1fr number input */}
               <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: 8 }}>
                 <div>
                   <label className="portal-form-label">Code</label>

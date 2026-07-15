@@ -275,7 +275,7 @@ export default function OnboardingDetails() {
 
       {/* ── Overview ──────────────────────────────────────────────────────── */}
       {tab === "Overview" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        <div className="form-grid-2" style={{ gap: 20 }}>
           <div className="card" style={{ padding: 20 }}>
             <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 14 }} className="t-heading">Employee Details</div>
             <Field label="Name"        value={ob.employee_name} />
@@ -354,6 +354,7 @@ export default function OnboardingDetails() {
 
           {addTaskForm && (
             <div className="card" style={{ padding: 16, marginBottom: 16, border: "1px dashed var(--c-accent)" }}>
+              {/* Non-uniform grid — 1fr content + 3 auto action cols */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto", gap: 8, alignItems: "center" }}>
                 <input value={addTaskForm.task_name} onChange={e => setAddTaskForm(f => ({ ...f, task_name: e.target.value }))}
                   placeholder="Task name…" autoFocus
@@ -527,7 +528,7 @@ export default function OnboardingDetails() {
 
           {addAcctForm && (
             <div className="card" style={{ padding: 16, marginBottom: 16, border: "1px dashed var(--c-accent)" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
+              <div className="form-grid-3" style={{ gap: 10, marginBottom: 10 }}>
                 <div>
                   <label style={{ fontSize: 11, color: "var(--c-muted)", display: "block", marginBottom: 4 }}>Account Type *</label>
                   <select value={addAcctForm.account_type} onChange={e => setAddAcctForm(f => ({ ...f, account_type: e.target.value }))}
@@ -567,7 +568,7 @@ export default function OnboardingDetails() {
               {(accounts || []).map(a => (
                 editAcct?.id === a.id ? (
                   <div key={a.id} className="card" style={{ padding: 14, border: "1px solid var(--c-accent)" }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
+                    <div className="form-grid-3" style={{ gap: 10, marginBottom: 10 }}>
                       <input value={editAcct.username || ""} onChange={e => setEditAcct(f => ({ ...f, username: e.target.value }))}
                         placeholder="Username"
                         style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 12 }} />
@@ -625,6 +626,7 @@ export default function OnboardingDetails() {
 
           {addTrainForm && (
             <div className="card" style={{ padding: 16, marginBottom: 16, border: "1px dashed var(--c-accent)" }}>
+              {/* Non-uniform grid — wider course name col + 2 equal cols; intentional */}
               <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
                 <input value={addTrainForm.course_name} onChange={e => setAddTrainForm(f => ({ ...f, course_name: e.target.value }))}
                   placeholder="Course name *" autoFocus
@@ -664,7 +666,7 @@ export default function OnboardingDetails() {
               {(training || []).map(tr => (
                 editTrain?.id === tr.id ? (
                   <div key={tr.id} className="card" style={{ padding: 14, border: "1px solid var(--c-accent)" }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                    <div className="form-grid-2" style={{ gap: 10, marginBottom: 10 }}>
                       <div>
                         <label style={{ fontSize: 11, color: "var(--c-muted)", display: "block", marginBottom: 4 }}>Status</label>
                         <select value={editTrain.status} onChange={e => setEditTrain(f => ({ ...f, status: e.target.value }))}

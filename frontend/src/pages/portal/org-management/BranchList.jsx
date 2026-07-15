@@ -179,7 +179,7 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
           </div>
           <div><label className="portal-form-label">Address Line 1</label><input value={form.address_line1} onChange={e => set("address_line1", e.target.value)} className="input-field" placeholder="123 Business Park" /></div>
           <div><label className="portal-form-label">Address Line 2</label><input value={form.address_line2} onChange={e => set("address_line2", e.target.value)} className="input-field" placeholder="Floor 5, Tower B" /></div>
-          <div className="portal-form-row" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
+          <div className="form-grid-4">
             <div>
               <label className="portal-form-label">City</label>
               <select value={form.city} onChange={e => set("city", e.target.value)} className="input-field"

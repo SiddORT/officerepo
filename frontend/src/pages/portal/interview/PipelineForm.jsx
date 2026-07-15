@@ -219,6 +219,7 @@ export default function PipelineForm({ editMode = false }) {
                   <span style={{ background: "rgba(99,102,241,0.15)", color: "#a5b4fc", width: 26, height: 26, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
                     {i + 1}
                   </span>
+                  {/* Non-uniform pipeline stage row: 2 minmax field cols + 2 auto action cols */}
                   <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) auto auto", gap: 10, alignItems: "center" }}>
                     <input
                       value={s.stage_name}

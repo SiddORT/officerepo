@@ -106,7 +106,7 @@ function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) 
             </select>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="form-grid-2" style={{ gap: 12 }}>
             <div>
               <label className="portal-form-label">
                 Code *
@@ -157,7 +157,7 @@ function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) 
           </div>
 
           {form.head_employee_id && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="form-grid-2" style={{ gap: 12 }}>
               <div>
                 <label className="portal-form-label">Effective From</label>
                 <input type="date" value={form.head_effective_from} onChange={e => set("head_effective_from", e.target.value)}

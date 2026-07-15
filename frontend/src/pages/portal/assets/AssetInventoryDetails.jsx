@@ -22,6 +22,7 @@ function InfoCard({ title, children, extra }) {
         <span>{title}</span>
         {extra}
       </div>
+      {/* Non-standard portal-form-row override: forces exactly 2 cols instead of auto-fill */}
       <div className="portal-form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>{children}</div>
     </div>
   );
@@ -153,7 +154,7 @@ export default function AssetInventoryDetails() {
 
       {/* Overview Tab */}
       {tab === "Overview" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div className="form-grid-2">
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <InfoCard title="Basic Information">
               <Field label="Asset Number" value={asset.asset_number} />

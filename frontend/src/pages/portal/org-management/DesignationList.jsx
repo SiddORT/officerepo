@@ -113,7 +113,7 @@ function DesigModal({ subdomain, token, companies, allDepartments, editDesig, on
             </select>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="form-grid-2" style={{ gap: 12 }}>
             <div>
               <label className="portal-form-label">Code *</label>
               <input value={form.designation_code} onChange={e => set("designation_code", e.target.value.toUpperCase())}

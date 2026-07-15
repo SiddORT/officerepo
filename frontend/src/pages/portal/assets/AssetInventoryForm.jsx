@@ -136,7 +136,7 @@ export default function AssetInventoryForm({ editMode = false }) {
         {error && <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
         <form id="inv-form" onSubmit={submit}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+          <div className="form-grid-2" style={{ alignItems: "start" }}>
 
             {/* LEFT */}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

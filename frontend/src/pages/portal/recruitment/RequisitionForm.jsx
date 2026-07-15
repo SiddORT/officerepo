@@ -150,6 +150,7 @@ export default function RequisitionForm({ editMode = false }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
         {/* ── Top row: Org + Budget side by side ── */}
+        {/* Non-uniform sidebar layout — 1fr main content + fixed 340px budget sidebar */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 16, alignItems: "start" }}>
 
         {/* ── Section 1: Organisation & Position ── */}

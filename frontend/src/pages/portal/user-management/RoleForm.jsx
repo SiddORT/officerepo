@@ -229,7 +229,7 @@ export default function RoleForm({ editMode = false }) {
                         </div>
 
                         {/* Permission rows */}
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, paddingLeft: isSystemRole ? 0 : 24 }}>
+                        <div className="form-grid-2" style={{ gap: 6, paddingLeft: isSystemRole ? 0 : 24 }}>
                           {group.permissions.map(perm => {
                             const checked = checkedIds.has(perm.id);
                             return (

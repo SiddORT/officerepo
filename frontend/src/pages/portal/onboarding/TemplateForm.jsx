@@ -128,7 +128,7 @@ export default function TemplateForm({ editMode = false }) {
         <div className="card" style={{ padding: 24, marginBottom: 20 }}>
           <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 18 }} className="t-heading">Template Details</div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div className="form-grid-2">
             <div style={{ gridColumn: "1 / -1" }}>
               <label className="t-muted" style={{ display: "block", fontSize: 12, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>Template Name *</label>
               <input value={form.template_name} onChange={e => setF("template_name", e.target.value)} required
@@ -203,6 +203,7 @@ export default function TemplateForm({ editMode = false }) {
                     <button type="button" onClick={() => removeTask(i)}
                       style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 18, paddingTop: 6 }}>✕</button>
                   </div>
+                  {/* Non-uniform grid — 3 field cols + 2 action cols; not a standard form-grid */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto auto", gap: 10, alignItems: "center" }}>
                     <select value={t.category} onChange={e => setT(i, "category", e.target.value)}
                       style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-input)", color: "var(--c-text)", fontSize: 12 }}>

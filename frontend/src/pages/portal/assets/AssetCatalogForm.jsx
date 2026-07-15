@@ -96,7 +96,7 @@ export default function AssetCatalogForm() {
         )}
 
         <form id="asset-catalog-form" onSubmit={submit}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+          <div className="form-grid-2" style={{ alignItems: "start" }}>
 
             {/* LEFT COLUMN */}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
