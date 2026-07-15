@@ -1,0 +1,465 @@
+Let's redesign the Recruitment Dashboard UI completely.
+
+IMPORTANT
+
+This is ONLY a UI/UX redesign.
+
+Do NOT change database schema.
+Do NOT change APIs.
+Do NOT change business logic.
+
+Only redesign the dashboard using the existing design system, components and dark theme already used across Office Repo.
+
+The page should feel modern, premium and enterprise-grade while remaining extremely easy for a non-technical HR executive to understand.
+
+==================================================
+
+DESIGN GOALS
+
+==================================================
+
+• Clean and spacious layout
+
+• Remove unnecessary clutter
+
+• Dashboard should show information, not navigation
+
+• Sidebar already provides navigation
+
+• Follow existing Office Repo dark theme
+
+• Consistent card radius, shadows and spacing
+
+• Add subtle premium animations
+
+• Responsive
+
+• Professional typography hierarchy
+
+Do NOT make it flashy.
+
+Animations should be elegant.
+
+==================================================
+
+HEADER
+
+==================================================
+
+Keep the existing page title.
+
+Recruitment
+
+Subtitle:
+
+Manage your complete hiring lifecycle from requisition to onboarding.
+
+On the right side add two primary actions:
+
++ New Requisition
+
++ New Job Opening
+
+Use existing button styles.
+
+Buttons should have subtle hover animations.
+
+==================================================
+
+TOP KPI SECTION
+
+==================================================
+
+Display ONLY six KPI cards.
+
+Open Positions
+
+Applications
+
+Interviews Today
+
+Offers Pending
+
+Joining This Month
+
+Positions Filled
+
+Each card should contain
+
+• small outline icon
+
+• KPI number
+
+• label
+
+• optional small trend text
+
+Example
+
++3 this week
+
+Do not use large colorful gradients.
+
+Cards should slightly elevate on hover.
+
+Hover animation:
+
+translateY(-2px)
+
+transition 200ms
+
+==================================================
+
+HIRING PIPELINE
+
+==================================================
+
+Below KPI cards.
+
+Create a horizontal hiring pipeline.
+
+Applied
+
+↓
+
+Screening
+
+↓
+
+Interview
+
+↓
+
+Offer
+
+↓
+
+Joined
+
+Each stage should display:
+
+• Count
+
+• Colored indicator
+
+• Progress line
+
+Make it visually attractive but simple.
+
+Do not overdesign.
+
+Hovering a stage should slightly enlarge it.
+
+==================================================
+
+MAIN CONTENT
+
+==================================================
+
+Create a two-column responsive layout.
+
+LEFT (70%)
+
+Open Job Openings
+
+RIGHT (30%)
+
+Today's Recruitment Activities
+
+==================================================
+
+OPEN JOB OPENINGS
+
+==================================================
+
+Modern table/card list.
+
+Columns
+
+Position
+
+Department
+
+Vacancies
+
+Applications
+
+Status
+
+Small Action Button
+
+Each row should have
+
+small icon
+
+position title
+
+department badge
+
+vacancy count
+
+application count
+
+status pill
+
+View button
+
+Rows should have
+
+hover highlight
+
+soft transition
+
+rounded corners
+
+spacing
+
+No harsh borders.
+
+==================================================
+
+TODAY'S ACTIVITIES
+
+==================================================
+
+Timeline style.
+
+Examples
+
+10:00 AM
+
+Technical Interview
+
+John Smith
+
+--------------------------------
+
+2:00 PM
+
+HR Interview
+
+Sarah
+
+--------------------------------
+
+Offer Pending Approval
+
+Alex
+
+--------------------------------
+
+Requisition Waiting Approval
+
+Sales Executive
+
+Each activity should use:
+
+small colored dot
+
+time
+
+title
+
+description
+
+Hover should slightly brighten card.
+
+==================================================
+
+RECENT APPLICATIONS
+
+==================================================
+
+Below the table.
+
+Display latest candidates.
+
+Columns
+
+Candidate
+
+Applied For
+
+Source
+
+Applied Date
+
+Status
+
+Candidate Avatar
+
+Use initials if no image.
+
+Status badges
+
+Applied
+
+Screening
+
+Interview
+
+Offer
+
+Joined
+
+Each row clickable.
+
+==================================================
+
+EMPTY STATES
+
+==================================================
+
+If no data exists
+
+show beautiful empty states.
+
+Example
+
+No Candidates Yet
+
+Start by creating a Job Opening or adding candidates.
+
+Use simple illustration icon.
+
+Do not leave empty tables.
+
+==================================================
+
+ANIMATIONS
+
+==================================================
+
+Use Framer Motion if already installed.
+
+Otherwise use CSS transitions.
+
+Animations:
+
+Cards
+
+Fade + Slide Up
+
+Pipeline
+
+Fade Left
+
+Tables
+
+Fade Up
+
+Timeline
+
+Fade In
+
+Buttons
+
+Scale 1.02
+
+Cards
+
+translateY(-2px)
+
+Duration
+
+200-300ms
+
+No excessive animation.
+
+==================================================
+
+THEME
+
+==================================================
+
+Use Office Repo color palette.
+
+No random colors.
+
+Status Colors
+
+Green
+
+Completed
+
+Blue
+
+Information
+
+Orange
+
+Pending
+
+Red
+
+Urgent
+
+Maintain consistency across the portal.
+
+==================================================
+
+SPACING
+
+==================================================
+
+Use generous whitespace.
+
+Dashboard should breathe.
+
+Avoid cramped layouts.
+
+==================================================
+
+REMOVE
+
+==================================================
+
+Remove the current "Quick Access" cards completely.
+
+Those pages are already accessible from the left sidebar.
+
+Dashboard should NOT behave like a menu.
+
+It should behave like an HR command center.
+
+==================================================
+
+RESPONSIVE
+
+==================================================
+
+Desktop
+
+Two-column layout.
+
+Tablet
+
+Single column.
+
+Mobile
+
+Cards stack vertically.
+
+==================================================
+
+QUALITY
+
+==================================================
+
+The final result should look comparable to products like:
+
+Freshteam
+
+Zoho Recruit
+
+Rippling
+
+BambooHR
+
+HiBob
+
+while maintaining the existing Office Repo branding, typography and dark theme.
+
+Do not modify any backend logic.
+
+Only improve the UI/UX, layout, responsiveness and user experience.
