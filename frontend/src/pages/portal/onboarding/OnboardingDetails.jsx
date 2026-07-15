@@ -588,7 +588,7 @@ export default function OnboardingDetails() {
                 ) : (
                   <div key={a.id} className="card" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>{a.account_type}</div>
+                      <div style={{ fontWeight: 600, fontSize: 13, wordBreak: "break-word", overflowWrap: "break-word" }}>{a.account_type}</div>
                       <div className="t-muted" style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {a.username || "No username set"}
                         {a.notes ? ` · ${a.notes}` : ""}
@@ -687,7 +687,7 @@ export default function OnboardingDetails() {
                 ) : (
                   <div key={tr.id} className="card" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, wordBreak: "break-word", overflowWrap: "break-word" }}>
                         {tr.course_name}
                         {tr.is_mandatory && <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 700, marginLeft: 8 }}>REQUIRED</span>}
                       </div>
