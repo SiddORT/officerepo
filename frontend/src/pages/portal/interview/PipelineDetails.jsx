@@ -73,8 +73,8 @@ export default function PipelineDetails() {
         </>}
       />
 
-      {/* Meta card */}
-      <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+      {/* Header card — stacks to column at ≤640px */}
+      <div className="card detail-header-card" style={{ padding: 20, marginBottom: 16 }}>
         <div className="form-grid-3">
           <div>
             <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Status</div>

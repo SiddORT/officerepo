@@ -298,4 +298,9 @@ html.theme-light .input-bg     { background-color: #ffffff !important; }
   .portal-page-header-actions .btn-secondary { width: 100%; justify-content: center; }
   .ob-header-card { flex-direction: column !important; align-items: flex-start !important; }
   .ob-header-card .ob-header-template { text-align: left !important; }
+  /* Force single-column for all portal form rows — overrides any inline gridTemplateColumns */
+  .portal-form-row { grid-template-columns: 1fr !important; }
+  /* Detail header cards that use a flex row layout (interviews, recruitment, assets, etc.) */
+  .detail-header-card { flex-direction: column !important; align-items: flex-start !important; }
+  .detail-header-card .detail-header-meta { flex-wrap: wrap !important; }
 }

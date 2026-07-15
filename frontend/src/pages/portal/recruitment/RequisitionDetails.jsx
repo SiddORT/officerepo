@@ -82,6 +82,30 @@ export default function RequisitionDetails() {
         </>}
       />
 
+      {/* Header card — status + key meta; stacks to column at ≤640px */}
+      <div className="card detail-header-card" style={{ padding: "14px 20px", marginBottom: 16, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <div className="detail-header-meta" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <Badge status={req.status} />
+            {req.requisition_number && <span className="t-muted" style={{ fontSize: 12, fontFamily: "monospace" }}>{req.requisition_number}</span>}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+          {req.number_of_positions && (
+            <div>
+              <div style={{ fontSize: 11, color: "var(--c-muted)" }}>Positions</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }} className="t-heading">{req.number_of_positions}</div>
+            </div>
+          )}
+          {req.employment_type && (
+            <div>
+              <div style={{ fontSize: 11, color: "var(--c-muted)" }}>Type</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }} className="t-heading">{req.employment_type}</div>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <InfoCard title="Position Details">
           <Row>

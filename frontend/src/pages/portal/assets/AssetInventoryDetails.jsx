@@ -22,8 +22,7 @@ function InfoCard({ title, children, extra }) {
         <span>{title}</span>
         {extra}
       </div>
-      {/* Non-standard portal-form-row override: forces exactly 2 cols instead of auto-fill */}
-      <div className="portal-form-row" style={{ gridTemplateColumns: "1fr 1fr" }}>{children}</div>
+      <div className="portal-form-row">{children}</div>
     </div>
   );
 }
@@ -139,6 +138,30 @@ export default function AssetInventoryDetails() {
           </>
         }
       />
+
+      {/* Header card — status + key meta; stacks to column at ≤640px */}
+      <div className="card detail-header-card" style={{ padding: "14px 20px", marginBottom: 16, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <div className="detail-header-meta" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <Badge status={asset.status} />
+            {asset.category_name && <span className="t-muted" style={{ fontSize: 12 }}>{asset.category_name}{asset.sub_category_name ? ` › ${asset.sub_category_name}` : ""}</span>}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+          {asset.brand && (
+            <div>
+              <div style={{ fontSize: 11, color: "var(--c-muted)" }}>Brand</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }} className="t-heading">{asset.brand}</div>
+            </div>
+          )}
+          {asset.status === "Assigned" && asset.assigned_employee_name && (
+            <div>
+              <div style={{ fontSize: 11, color: "var(--c-muted)" }}>Assigned To</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }} className="t-heading">{asset.assigned_employee_name}</div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 0, borderBottom: "2px solid var(--c-border)", marginBottom: 20 }}>

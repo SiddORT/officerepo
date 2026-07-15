@@ -207,23 +207,47 @@ export default function InterviewDetails() {
         }
       />
 
-      {/* Status pills */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{
-          background: `${STATUS_COLOR[iv.status] || "#6b7280"}22`, color: STATUS_COLOR[iv.status] || "#6b7280",
-          padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700,
-          border: `1px solid ${STATUS_COLOR[iv.status] || "#6b7280"}44`,
-        }}>{iv.status}</span>
-        {iv.result && iv.result !== "Pending" && (
-          <span style={{
-            background: `${RESULT_COLOR[iv.result] || "#6b7280"}22`, color: RESULT_COLOR[iv.result] || "#6b7280",
-            padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700,
-            border: `1px solid ${RESULT_COLOR[iv.result] || "#6b7280"}44`,
-          }}>{iv.result}</span>
-        )}
-        {iv.reschedule_count > 0 && (
-          <span className="t-muted" style={{ fontSize: 12 }}>Rescheduled {iv.reschedule_count}×</span>
-        )}
+      {/* Header card — status + key meta; stacks to column at ≤640px */}
+      <div className="card detail-header-card" style={{ padding: "14px 20px", marginBottom: 20, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <div className="detail-header-meta" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{
+              background: `${STATUS_COLOR[iv.status] || "#6b7280"}22`, color: STATUS_COLOR[iv.status] || "#6b7280",
+              padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700,
+              border: `1px solid ${STATUS_COLOR[iv.status] || "#6b7280"}44`,
+            }}>{iv.status}</span>
+            {iv.result && iv.result !== "Pending" && (
+              <span style={{
+                background: `${RESULT_COLOR[iv.result] || "#6b7280"}22`, color: RESULT_COLOR[iv.result] || "#6b7280",
+                padding: "4px 12px", borderRadius: 20, fontSize: 12, fontWeight: 700,
+                border: `1px solid ${RESULT_COLOR[iv.result] || "#6b7280"}44`,
+              }}>{iv.result}</span>
+            )}
+            {iv.reschedule_count > 0 && (
+              <span className="t-muted" style={{ fontSize: 12 }}>Rescheduled {iv.reschedule_count}×</span>
+            )}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+          {iv.interview_date && (
+            <div>
+              <div style={{ fontSize: 11, color: "var(--c-muted)" }}>Date</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }} className="t-heading">{iv.interview_date}</div>
+            </div>
+          )}
+          {iv.mode && (
+            <div>
+              <div style={{ fontSize: 11, color: "var(--c-muted)" }}>Mode</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }} className="t-heading">{iv.mode}</div>
+            </div>
+          )}
+          {iv.round_number && (
+            <div>
+              <div style={{ fontSize: 11, color: "var(--c-muted)" }}>Round</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }} className="t-heading">{iv.round_number}</div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}

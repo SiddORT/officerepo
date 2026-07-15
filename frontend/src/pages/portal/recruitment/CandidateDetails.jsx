@@ -139,6 +139,30 @@ export default function CandidateDetails() {
         </>}
       />
 
+      {/* Header card — status + key meta; stacks to column at ≤640px */}
+      <div className="card detail-header-card" style={{ padding: "14px 20px", marginBottom: 16, display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <div className="detail-header-meta" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <Badge status={cand.status} />
+            {cand.candidate_number && <span className="t-muted" style={{ fontSize: 12, fontFamily: "monospace" }}>{cand.candidate_number}</span>}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+          {cand.current_company && (
+            <div>
+              <div style={{ fontSize: 11, color: "var(--c-muted)" }}>Current Company</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }} className="t-heading">{cand.current_company}</div>
+            </div>
+          )}
+          {cand.source && (
+            <div>
+              <div style={{ fontSize: 11, color: "var(--c-muted)" }}>Source</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }} className="t-heading">{cand.source}</div>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "1px solid var(--c-border)", overflowX: "auto" }}>
         {[["overview","Overview"],["documents","Documents"],["activities","Activity"]].map(([key,label]) => (
           <button key={key} onClick={() => setTab(key)} style={tabStyle(tab === key)}>{label}</button>
