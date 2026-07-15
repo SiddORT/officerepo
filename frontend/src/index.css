@@ -292,4 +292,10 @@ html.theme-light .input-bg     { background-color: #ffffff !important; }
 @media (max-width: 640px) {
   .form-grid-4 { grid-template-columns: 1fr; }
   .form-grid-3 { grid-template-columns: 1fr; }
+  .portal-page-header { flex-direction: column; }
+  .portal-page-header-actions { width: 100%; }
+  .portal-page-header-actions .btn-primary,
+  .portal-page-header-actions .btn-secondary { width: 100%; justify-content: center; }
+  .ob-header-card { flex-direction: column !important; align-items: flex-start !important; }
+  .ob-header-card .ob-header-template { text-align: left !important; }
 }

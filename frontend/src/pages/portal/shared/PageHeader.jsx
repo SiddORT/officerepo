@@ -22,7 +22,7 @@ export default function PageHeader({ title, subtitle, actions, breadcrumbs }) {
         {subtitle && <p className="portal-page-subtitle">{subtitle}</p>}
       </div>
       {actions && (
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="portal-page-header-actions" style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           {actions}
         </div>
       )}

@@ -235,7 +235,7 @@ export default function OnboardingDetails() {
       />
 
       {/* Header card */}
-      <div className="card" style={{ padding: "16px 20px", marginBottom: 20, display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+      <div className="card ob-header-card" style={{ padding: "16px 20px", marginBottom: 20, display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
             <span style={{
@@ -247,7 +247,7 @@ export default function OnboardingDetails() {
           <ProgressBar pct={ob.progress_percent || 0} status={ob.status} />
         </div>
         {ob.template_name && (
-          <div style={{ textAlign: "right" }}>
+          <div className="ob-header-template" style={{ textAlign: "right" }}>
             <div style={{ fontSize: 11, color: "var(--c-muted)" }}>Template</div>
             <div style={{ fontSize: 13, fontWeight: 600 }}>{ob.template_name}</div>
           </div>
