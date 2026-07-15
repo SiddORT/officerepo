@@ -29,9 +29,9 @@ export default function InterviewScheduleForm({ editMode = false }) {
   useEffect(() => {
     portalInterviewApi.metaOptions(subdomain, token)
       .then(r => setMeta(r.data?.data || {})).catch(() => {});
-    portalRecruitmentApi.listCandidates(subdomain, token, { page: 1, page_size: 200 })
+    portalRecruitmentApi.listCandidates(subdomain, token, { page: 1, page_size: 100 })
       .then(r => setCandidates(r.data?.data?.items || [])).catch(() => {});
-    portalRecruitmentApi.listOpenings(subdomain, token, { page: 1, page_size: 200 })
+    portalRecruitmentApi.listOpenings(subdomain, token, { page: 1, page_size: 100 })
       .then(r => setOpenings(r.data?.data?.items || [])).catch(() => {});
     portalInterviewApi.listPipelines(subdomain, token, { active_only: true })
       .then(r => setPipelines(r.data?.data || [])).catch(() => {});
