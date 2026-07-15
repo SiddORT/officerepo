@@ -4,6 +4,15 @@ import { portalInterviewApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
 
+const F = ({ label, required, children, style }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 5, ...style }}>
+    <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>
+      {label}{required && <span style={{ color: "#ef4444" }}> *</span>}
+    </label>
+    {children}
+  </div>
+);
+
 export default function InterviewReschedule() {
   const { subdomain, interviewId } = useParams();
   const { token } = usePortalAuth();
@@ -66,18 +75,23 @@ export default function InterviewReschedule() {
   if (!interview) return <div className="t-muted" style={{ padding: 32 }}>Loading…</div>;
 
   const iv = interview;
-  const GRID2 = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 };
-  const F = ({ label, required, children }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>
-        {label}{required && <span style={{ color: "#ef4444" }}> *</span>}
-      </label>
-      {children}
-    </div>
-  );
 
   return (
     <div>
+      <style>{`
+        .form-grid-4 {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr 1fr;
+          gap: 16px;
+        }
+        @media (max-width: 900px) {
+          .form-grid-4 { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 520px) {
+          .form-grid-4 { grid-template-columns: 1fr; }
+        }
+      `}</style>
+
       <PageHeader
         title="Reschedule Interview"
         breadcrumbs={[
@@ -99,10 +113,17 @@ export default function InterviewReschedule() {
       </div>
 
       <form onSubmit={handleSubmit} className="card" style={{ padding: 24 }}>
-        {error && <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", color: "#991b1b", padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: 13 }}>{error}</div>}
+        {error && (
+          <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", color: "#991b1b", padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
+            {error}
+          </div>
+        )}
 
-        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 12 }}>New Schedule</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 16 }}>
+        {/* New Schedule */}
+        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 12 }}>
+          New Schedule
+        </div>
+        <div className="form-grid-4">
           <F label="New Date" required>
             <input type="date" value={form.interview_date} onChange={e => set("interview_date", e.target.value)} className="input-field" />
           </F>
@@ -112,15 +133,19 @@ export default function InterviewReschedule() {
           <F label="End Time">
             <input type="time" value={form.end_time} onChange={e => set("end_time", e.target.value)} className="input-field" />
           </F>
-        </div>
-
-        <div style={GRID2}>
           <F label="Mode">
             <select value={form.mode} onChange={e => set("mode", e.target.value)} className="input-field">
               <option value="">Keep same</option>
               {(meta.interview_modes || []).map(m => <option key={m}>{m}</option>)}
             </select>
           </F>
+        </div>
+
+        {/* Location / Meeting */}
+        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "20px 0 12px" }}>
+          Location / Meeting <span style={{ fontWeight: 400, fontSize: 11, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
+        </div>
+        <div className="form-grid-4">
           <F label="Location / Room">
             <input value={form.location} onChange={e => set("location", e.target.value)} className="input-field" placeholder="e.g. Conference Room B" />
           </F>
@@ -129,12 +154,20 @@ export default function InterviewReschedule() {
           </F>
         </div>
 
-        <div style={{ marginTop: 16, marginBottom: 20 }}>
-          <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)", display: "block", marginBottom: 6 }}>Reason for Rescheduling</label>
-          <textarea value={form.reschedule_reason} onChange={e => set("reschedule_reason", e.target.value)} className="input-field" rows={3} style={{ resize: "vertical", width: "100%", boxSizing: "border-box" }} placeholder="Reason for rescheduling…" />
+        {/* Reason */}
+        <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", margin: "20px 0 12px" }}>
+          Reason for Rescheduling
         </div>
+        <textarea
+          value={form.reschedule_reason}
+          onChange={e => set("reschedule_reason", e.target.value)}
+          className="input-field"
+          rows={3}
+          style={{ resize: "vertical", width: "100%", boxSizing: "border-box" }}
+          placeholder="Reason for rescheduling…"
+        />
 
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, marginTop: 24 }}>
           <button type="submit" className="btn-primary" disabled={saving}>{saving ? "Rescheduling…" : "Confirm Reschedule"}</button>
           <button type="button" className="btn-secondary" onClick={() => navigate(-1)}>Cancel</button>
         </div>
