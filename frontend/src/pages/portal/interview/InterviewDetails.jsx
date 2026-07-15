@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { portalInterviewApi } from "../../../services/apiClient";
+import { portalInterviewApi, portalOrgApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
@@ -52,8 +52,9 @@ export default function InterviewDetails() {
 
   // Panel form state
   const [showPanelForm, setShowPanelForm] = useState(false);
-  const [panelForm, setPanelForm]         = useState({ employee_name: "", employee_email: "", role: "Panel Member", weightage: "" });
+  const [panelForm, setPanelForm]         = useState({ employee_id: "", employee_name: "", role: "Panel Member" });
   const [panelSaving, setPanelSaving]     = useState(false);
+  const [employees, setEmployees]         = useState([]);
 
   // Confirm dialog
   const [confirmDlg, setConfirmDlg] = useState({ open: false, title: "", message: "", fn: null, loading: false });
@@ -84,7 +85,13 @@ export default function InterviewDetails() {
 
   useEffect(() => {
     if (!iv) return;
-    if (tab === "Panel")    loadPanel();
+    if (tab === "Panel") {
+      loadPanel();
+      if (employees.length === 0) {
+        portalOrgApi.listActiveEmployees(subdomain, token, { page_size: 200 })
+          .then(r => setEmployees(r.data?.data?.items || r.data?.data || [])).catch(() => {});
+      }
+    }
     if (tab === "Feedback") loadFeedback();
     if (tab === "Timeline") loadTimeline();
   }, [tab, iv]);
@@ -122,15 +129,16 @@ export default function InterviewDetails() {
     e.preventDefault();
     if (!panelForm.employee_name) return;
     setPanelSaving(true);
+    const emp = employees.find(x => x.id === panelForm.employee_id);
     try {
       await portalInterviewApi.addPanel(subdomain, token, interviewId, {
         employee_name: panelForm.employee_name,
-        employee_email: panelForm.employee_email || null,
-        role: panelForm.role,
-        weightage: panelForm.weightage ? parseInt(panelForm.weightage) : null,
+        employee_email: emp?.work_email || emp?.email || null,
+        role: panelForm.role || "Panel Member",
+        weightage: null,
       });
       setShowPanelForm(false);
-      setPanelForm({ employee_name: "", employee_email: "", role: "Panel Member", weightage: "" });
+      setPanelForm({ employee_id: "", employee_name: "", role: "Panel Member" });
       loadPanel();
     } catch (err) {
       alert(err.response?.data?.message || "Failed to add panel member.");
@@ -291,12 +299,28 @@ export default function InterviewDetails() {
             <form onSubmit={addPanelMember} className="card" style={{ padding: 20, marginBottom: 16 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>Name *</label>
-                  <input value={panelForm.employee_name} onChange={e => setPanelForm(f => ({ ...f, employee_name: e.target.value }))} className="input-field" placeholder="Interviewer name" required />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>Email</label>
-                  <input type="email" value={panelForm.employee_email} onChange={e => setPanelForm(f => ({ ...f, employee_email: e.target.value }))} className="input-field" placeholder="email@company.com" />
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>Employee *</label>
+                  <select
+                    value={panelForm.employee_id}
+                    onChange={e => {
+                      const emp = employees.find(x => x.id === e.target.value);
+                      setPanelForm(f => ({
+                        ...f,
+                        employee_id: e.target.value,
+                        employee_name: emp ? `${emp.first_name || ""} ${emp.last_name || ""}`.trim() || emp.full_name || "" : "",
+                      }));
+                    }}
+                    className="input-field"
+                    required
+                  >
+                    <option value="">Select employee…</option>
+                    {employees.map(emp => (
+                      <option key={emp.id} value={emp.id}>
+                        {`${emp.first_name || ""} ${emp.last_name || ""}`.trim() || emp.full_name || emp.employee_number}
+                        {emp.designation_name ? ` — ${emp.designation_name}` : ""}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>Role</label>
@@ -304,13 +328,11 @@ export default function InterviewDetails() {
                     {(meta.panel_roles || ["Lead Interviewer", "Panel Member", "Observer"]).map(r => <option key={r}>{r}</option>)}
                   </select>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--c-muted)" }}>Weightage (%)</label>
-                  <input type="number" min={0} max={100} value={panelForm.weightage} onChange={e => setPanelForm(f => ({ ...f, weightage: e.target.value }))} className="input-field" placeholder="e.g. 40" />
-                </div>
               </div>
               <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-                <button type="submit" className="btn-primary" disabled={panelSaving}>{panelSaving ? "Adding…" : "Add to Panel"}</button>
+                <button type="submit" className="btn-primary" disabled={panelSaving || !panelForm.employee_id}>
+                  {panelSaving ? "Adding…" : "Add to Panel"}
+                </button>
               </div>
             </form>
           )}

@@ -3,7 +3,6 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { portalInterviewApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import PageHeader from "../shared/PageHeader";
-import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 
@@ -17,6 +16,13 @@ const RESULT_COLOR = {
   Pending: "#6b7280", Pass: "#22c55e", Fail: "#ef4444",
   Hold: "#f59e0b", Selected: "#10b981", Rejected: "#ef4444",
 };
+
+const IBtn = ({ onClick, title, children, color = "var(--c-muted)" }) => (
+  <button onClick={onClick} title={title} style={{
+    background: "none", border: "none", cursor: "pointer",
+    fontSize: 17, padding: "2px 4px", color, lineHeight: 1, display: "inline-flex", alignItems: "center",
+  }}>{children}</button>
+);
 
 export default function InterviewList() {
   const { subdomain } = useParams();
@@ -66,6 +72,8 @@ export default function InterviewList() {
     try { await fn(); load(); } catch (e) { alert(e.response?.data?.message || "Action failed."); }
   };
 
+  const COL_COUNT = 9;
+
   return (
     <div>
       <PageHeader
@@ -108,19 +116,23 @@ export default function InterviewList() {
         onConfirm={confirmAction}
         onCancel={() => setConfirmDlg({ open: false, fn: null, message: "" })}
       />
+
       <div className="portal-table-wrap" style={{ overflowX: "auto" }}>
         <table className="portal-table">
           <thead><tr>
+            <th style={{ width: 40 }}>#</th>
             <th>Interview #</th><th>Candidate</th><th>Round</th>
-            <th>Date / Time</th><th>Mode</th><th>Status</th><th>Result</th><th style={{ textAlign: "right" }}>Actions</th>
+            <th>Date / Time</th><th>Mode</th><th>Status</th><th>Result</th>
+            <th style={{ textAlign: "right" }}>Actions</th>
           </tr></thead>
           <tbody>
             {loading
-              ? <tr><td colSpan={8} style={{ textAlign: "center", padding: 40 }} className="t-muted">Loading…</td></tr>
+              ? <tr><td colSpan={COL_COUNT} style={{ textAlign: "center", padding: 40 }} className="t-muted">Loading…</td></tr>
               : rows.length === 0
-              ? <tr><td colSpan={8} style={{ textAlign: "center", padding: 48 }} className="t-muted">No interviews found.</td></tr>
-              : rows.map(r => (
+              ? <tr><td colSpan={COL_COUNT} style={{ textAlign: "center", padding: 48 }} className="t-muted">No interviews found.</td></tr>
+              : rows.map((r, idx) => (
                 <tr key={r.id} onClick={() => navigate(`${base}/${r.id}`)} style={{ cursor: "pointer" }}>
+                  <td className="t-muted" style={{ fontSize: 12 }}>{(page - 1) * PAGE_SIZE + idx + 1}</td>
                   <td>
                     <span className="t-accent" style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700 }}>
                       {r.interview_number}
@@ -157,40 +169,22 @@ export default function InterviewList() {
                           padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
                           border: `1px solid ${RESULT_COLOR[r.result] || "#6b7280"}40`,
                         }}>{r.result}</span>
-                      : <span className="t-muted" style={{ fontSize: 11 }}>Pending</span>
-                    }
+                      : <span className="t-muted" style={{ fontSize: 11 }}>Pending</span>}
                   </td>
-                  <td style={{ textAlign: "right" }} onClick={e => e.stopPropagation()}>
+                  <td style={{ textAlign: "right", whiteSpace: "nowrap" }} onClick={e => e.stopPropagation()}>
                     {(r.status === "Scheduled" || r.status === "Rescheduled") && <>
-                      <button onClick={() => navigate(`${base}/${r.id}/complete`)}
-                        style={{ background: "none", border: "none", color: "#22c55e", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
-                        Complete
-                      </button>
-                      <button onClick={() => navigate(`${base}/${r.id}/reschedule`)}
-                        style={{ background: "none", border: "none", color: "#8b5cf6", cursor: "pointer", fontSize: 12, marginLeft: 10 }}>
-                        Reschedule
-                      </button>
-                      <button onClick={() => doAction(() => portalInterviewApi.noShow(subdomain, token, r.id), "Mark this interview as No Show?")}
-                        style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.35)", color: "#f59e0b", cursor: "pointer", fontSize: 11, fontWeight: 600, padding: "2px 9px", borderRadius: 20, marginLeft: 8 }}>
-                        No Show
-                      </button>
-                      <button onClick={() => doAction(() => portalInterviewApi.cancel(subdomain, token, r.id, {}), "Cancel this interview? This cannot be undone.")}
-                        style={{ background: "rgba(239,68,68,0.10)", border: "1px solid rgba(239,68,68,0.30)", color: "#ef4444", cursor: "pointer", fontSize: 11, fontWeight: 600, padding: "2px 9px", borderRadius: 20, marginLeft: 8 }}>
-                        Cancel
-                      </button>
+                      <IBtn onClick={() => navigate(`${base}/${r.id}/complete`)} title="Mark Complete" color="#22c55e">✅</IBtn>
+                      <IBtn onClick={() => navigate(`${base}/${r.id}/reschedule`)} title="Reschedule" color="#8b5cf6">📅</IBtn>
+                      <IBtn onClick={() => doAction(() => portalInterviewApi.noShow(subdomain, token, r.id), "Mark this interview as No Show?")} title="No Show" color="#f59e0b">🚫</IBtn>
+                      <IBtn onClick={() => doAction(() => portalInterviewApi.cancel(subdomain, token, r.id, {}), "Cancel this interview?")} title="Cancel" color="#ef4444">❌</IBtn>
                     </>}
                     {r.status === "Completed" && (
-                      <button onClick={() => navigate(`${base}/${r.id}?tab=feedback`)} className="t-accent"
-                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
-                        Feedback →
-                      </button>
+                      <IBtn onClick={() => navigate(`${base}/${r.id}?tab=feedback`)} title="View Feedback" color="var(--c-accent)">💬</IBtn>
                     )}
                     {["Cancelled", "No Show"].includes(r.status) && (
-                      <button onClick={() => navigate(`${base}/${r.id}`)} className="t-accent"
-                        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
-                        View →
-                      </button>
+                      <IBtn onClick={() => navigate(`${base}/${r.id}`)} title="View Details" color="var(--c-accent)">👁</IBtn>
                     )}
+                    <IBtn onClick={() => navigate(`${base}/${r.id}`)} title="View Details" color="var(--c-muted)">→</IBtn>
                   </td>
                 </tr>
               ))}
