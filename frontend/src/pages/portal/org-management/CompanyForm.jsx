@@ -143,6 +143,11 @@ export default function CompanyForm({ editMode }) {
   const [newDoc,    setNewDoc]    = useState(EMPTY_DOC);
   const [logoPreview, setLogoPreview] = useState(null);
 
+  // When a new company is created but doc uploads partially fail, we store the
+  // created id here so subsequent retries upload against that record instead of
+  // creating a duplicate.
+  const [savedCompanyId, setSavedCompanyId] = useState(null);
+
   const [industries, setIndustries] = useState([]);
   const [saving, setSaving]   = useState(false);
   const [loading, setLoading] = useState(editMode);
@@ -242,13 +247,18 @@ export default function CompanyForm({ editMode }) {
     });
     if (payload.pan_number) payload.pan_number = payload.pan_number.toUpperCase();
     try {
-      let savedId = companyId;
-      if (editMode) {
-        await portalOrgApi.updateCompany(subdomain, token, companyId, payload);
-      } else {
+      // savedCompanyId is set when a previous attempt created the company but
+      // some doc uploads failed — reuse that id so we don't create a duplicate.
+      let savedId = savedCompanyId || companyId;
+      if (!savedId) {
+        // First attempt in create mode: create the company record
         const res = await portalOrgApi.createCompany(subdomain, token, payload);
         savedId = res.data?.data?.id;
+      } else if (editMode) {
+        // Normal edit save (or retry in edit mode)
+        await portalOrgApi.updateCompany(subdomain, token, companyId, payload);
       }
+      // (Retry in create mode: company already exists, skip create/update above)
 
       if (savedId) {
         // Delete removed existing documents
@@ -256,16 +266,42 @@ export default function CompanyForm({ editMode }) {
           removedExistingIds.map(id => portalOrgApi.deleteCompanyDoc(subdomain, token, savedId, id))
         );
 
-        // Upload pending new documents
-        for (const doc of pendingDocs) {
-          const fd = new FormData();
-          fd.append("doc_type", doc.doc_type || "Other");
-          if (doc.doc_number) fd.append("doc_number", doc.doc_number);
-          if (doc.issue_date) fd.append("issue_date", doc.issue_date);
-          if (doc.expiry_date) fd.append("expiry_date", doc.expiry_date);
-          if (doc.remarks) fd.append("remarks", doc.remarks);
-          if (doc.file) fd.append("file", doc.file);
-          await portalOrgApi.uploadCompanyDoc(subdomain, token, savedId, fd);
+        // Upload all pending new documents concurrently; collect results to detect partial failures
+        if (pendingDocs.length > 0) {
+          const uploadResults = await Promise.allSettled(
+            pendingDocs.map(doc => {
+              const fd = new FormData();
+              fd.append("doc_type", doc.doc_type || "Other");
+              if (doc.doc_number) fd.append("doc_number", doc.doc_number);
+              if (doc.issue_date) fd.append("issue_date", doc.issue_date);
+              if (doc.expiry_date) fd.append("expiry_date", doc.expiry_date);
+              if (doc.remarks) fd.append("remarks", doc.remarks);
+              if (doc.file) fd.append("file", doc.file);
+              return portalOrgApi.uploadCompanyDoc(subdomain, token, savedId, fd);
+            })
+          );
+
+          const failed = uploadResults
+            .map((r, i) => r.status === "rejected" ? pendingDocs[i] : null)
+            .filter(Boolean);
+
+          if (failed.length > 0) {
+            const names = failed.map(d => d.fileName || d.doc_type || "document").join(", ");
+            const word  = failed.length === 1 ? "document" : "documents";
+            setError(
+              `Company saved, but ${failed.length} ${word} failed to upload: ${names}. ` +
+              `Please remove the failed ${word} and try uploading again.`
+            );
+            // Keep only the failed docs in pendingDocs so the user can retry them
+            setPendingDocs(failed);
+            // Remember the created id so a retry doesn't create a duplicate company
+            if (!editMode) setSavedCompanyId(savedId);
+            // Reload existing docs to reflect what was actually persisted
+            portalOrgApi.listCompanyDocs(subdomain, token, savedId)
+              .then(r => setExistingDocs(r.data?.data || []))
+              .catch(() => {});
+            return;
+          }
         }
       }
 
