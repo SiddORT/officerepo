@@ -43,7 +43,7 @@ export default function OfferForm({ editMode = false }) {
   };
 
   return (
-    <div style={{ maxWidth: 700 }}>
+    <div>
       <PageHeader
         title={editMode ? "Edit Offer" : "Create Offer"}
         breadcrumbs={[{ label: "Offers", path: `/portal/${subdomain}/recruitment/offers` }, { label: editMode ? "Edit" : "New" }]}

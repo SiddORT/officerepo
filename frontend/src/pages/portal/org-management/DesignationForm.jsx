@@ -74,7 +74,7 @@ export default function DesignationForm({ editMode }) {
 
   return (
     <OrgLayout title={editMode ? "Edit Designation" : "Add Designation"}>
-      <div style={{ maxWidth: 560 }}>
+      <div>
         <PageHeader
           title={editMode ? "Edit Designation" : "Add Designation"}
           subtitle="Job title or role within the organization"

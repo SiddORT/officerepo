@@ -67,7 +67,7 @@ export default function InterviewComplete() {
         ]}
       />
 
-      <div className="card" style={{ padding: 20, maxWidth: 520, marginBottom: 20 }}>
+      <div className="card" style={{ padding: 20, marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>
           Interview Summary
         </div>
@@ -76,7 +76,7 @@ export default function InterviewComplete() {
         <div style={{ fontSize: 13 }}><span className="t-muted">Date: </span>{iv.interview_date}{iv.start_time ? ` at ${iv.start_time}` : ""}</div>
       </div>
 
-      <form onSubmit={handleSubmit} className="card" style={{ padding: 24, maxWidth: 520 }}>
+      <form onSubmit={handleSubmit} className="card" style={{ padding: 24 }}>
         {error && (
           <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", color: "#991b1b", padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
             {error}

@@ -53,7 +53,7 @@ export default function CandidateForm({ editMode = false }) {
   };
 
   return (
-    <div style={{ maxWidth: 800 }}>
+    <div>
       <PageHeader
         title={editMode ? "Edit Candidate" : "Add Candidate"}
         breadcrumbs={[{ label: "Candidates", path: `/portal/${subdomain}/recruitment/candidates` }, { label: editMode ? "Edit" : "Add New" }]}

@@ -125,7 +125,7 @@ export default function UserForm({ editMode = false }) {
   if (inviteResult) {
     return (
       <UserManagementLayout title="Invite Sent">
-        <div style={{ maxWidth: 520 }}>
+        <div>
           <div style={{ background: "var(--c-surface)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 12, padding: 24 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
               <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(74,222,128,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -170,7 +170,7 @@ export default function UserForm({ editMode = false }) {
 
   return (
     <UserManagementLayout title={editMode ? "Edit User" : "Invite User"}>
-      <div style={{ maxWidth: 560 }}>
+      <div>
         <PageHeader 
           title={editMode ? "Edit User" : "Invite User"} 
           subtitle={editMode ? "Update user information and role assignments." : "An invitation link will be generated for the user to set their own password."} 

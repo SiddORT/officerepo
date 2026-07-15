@@ -88,7 +88,7 @@ export default function InterviewReschedule() {
         ]}
       />
 
-      <div className="card" style={{ padding: 20, maxWidth: 580, marginBottom: 20 }}>
+      <div className="card" style={{ padding: 20, marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>
           Current Schedule
         </div>
@@ -98,7 +98,7 @@ export default function InterviewReschedule() {
         {iv.reschedule_count > 0 && <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 6 }}>Already rescheduled {iv.reschedule_count} time(s)</div>}
       </div>
 
-      <form onSubmit={handleSubmit} className="card" style={{ padding: 24, maxWidth: 580 }}>
+      <form onSubmit={handleSubmit} className="card" style={{ padding: 24 }}>
         {error && <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", color: "#991b1b", padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: 13 }}>{error}</div>}
 
         <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 12 }}>New Schedule</div>

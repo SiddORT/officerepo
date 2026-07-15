@@ -110,7 +110,7 @@ export default function EmployeeDocForm() {
 
       {error && <div style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: 13 }}>{error}</div>}
 
-      <div style={{ maxWidth: 800, display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <div className="portal-form-card">
           <div className="portal-form-title">Document Information</div>
           <div className="portal-form-row">

@@ -117,7 +117,7 @@ export default function TemplateForm({ editMode = false }) {
         ]}
       />
 
-      <form onSubmit={handleSubmit} style={{ maxWidth: 760 }}>
+      <form onSubmit={handleSubmit}>
         {error && (
           <div style={{ background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, padding: "10px 14px", marginBottom: 18, color: "#991b1b", fontSize: 13 }}>
             {error}

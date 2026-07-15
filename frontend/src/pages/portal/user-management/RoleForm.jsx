@@ -129,7 +129,7 @@ export default function RoleForm({ editMode = false }) {
 
   return (
     <UserManagementLayout title={editMode ? "Edit Role" : "Create Role"}>
-      <div style={{ maxWidth: 680 }}>
+      <div>
         <PageHeader 
           title={editMode ? "Edit Role" : "Create Role"} 
           subtitle={editMode ? "Update role details and permissions." : "Define a new role and assign permissions."} 

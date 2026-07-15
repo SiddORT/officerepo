@@ -77,7 +77,7 @@ export default function JobOpeningForm({ editMode = false }) {
   };
 
   return (
-    <div style={{ maxWidth: 800 }}>
+    <div>
       <PageHeader
         title={editMode ? "Edit Job Opening" : "New Job Opening"}
         breadcrumbs={[{ label: "Job Openings", path: `/portal/${subdomain}/recruitment/openings` }, { label: editMode ? "Edit" : "New" }]}

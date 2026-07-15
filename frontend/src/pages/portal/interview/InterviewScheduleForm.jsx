@@ -156,7 +156,7 @@ export default function InterviewScheduleForm({ editMode = false }) {
         ]}
       />
 
-      <form onSubmit={handleSubmit} className="card" style={{ padding: 24, maxWidth: 800 }}>
+      <form onSubmit={handleSubmit} className="card" style={{ padding: 24 }}>
         {error && (
           <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", color: "#991b1b", padding: "10px 14px", borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
             {error}

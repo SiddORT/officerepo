@@ -79,7 +79,7 @@ export default function DepartmentForm({ editMode }) {
 
   return (
     <OrgLayout title={editMode ? "Edit Department" : "Add Department"}>
-      <div style={{ maxWidth: 560 }}>
+      <div>
         <PageHeader
           title={editMode ? "Edit Department" : "Add Department"}
           subtitle="Functional unit within a company"
