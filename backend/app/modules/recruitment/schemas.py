@@ -136,6 +136,7 @@ class CandidateStatusChange(BaseModel):
 class OfferCreate(BaseModel):
     candidate_id: str
     opening_id: Optional[str] = None
+    offered_company_id: Optional[str] = None
     offered_designation_id: Optional[str] = None
     offered_department_id: Optional[str] = None
     offered_branch_id: Optional[str] = None
@@ -145,6 +146,7 @@ class OfferCreate(BaseModel):
 
 
 class OfferUpdate(BaseModel):
+    offered_company_id: Optional[str] = None
     offered_designation_id: Optional[str] = None
     offered_department_id: Optional[str] = None
     offered_branch_id: Optional[str] = None

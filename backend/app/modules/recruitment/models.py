@@ -187,6 +187,8 @@ class Offer(ClientBase):
 
     opening_id          = Column(String(36),  nullable=True, index=True)
 
+    offered_company_id       = Column(String(36),  nullable=True)
+    offered_company_name     = Column(String(200), nullable=True)
     offered_designation_id   = Column(String(36),  nullable=True)
     offered_designation_name = Column(String(200), nullable=True)
     offered_department_id    = Column(String(36),  nullable=True)

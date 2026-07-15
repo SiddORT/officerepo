@@ -169,6 +169,9 @@ _COLUMN_MIGRATIONS = [
     # JobOpening — hiring manager + expected joining date
     ("job_openings", "hiring_manager",       "VARCHAR(200)"),
     ("job_openings", "expected_joining_date", "DATE"),
+    # Offer — company association
+    ("offers", "offered_company_id",   "VARCHAR(36)"),
+    ("offers", "offered_company_name", "VARCHAR(200)"),
 ]
 
 

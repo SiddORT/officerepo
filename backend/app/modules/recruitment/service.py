@@ -108,6 +108,8 @@ def _offer_dict(o) -> Dict[str, Any]:
         "offer_number": o.offer_number,
         "candidate_id": o.candidate_id, "candidate_name": o.candidate_name,
         "opening_id": o.opening_id,
+        "offered_company_id": o.offered_company_id,
+        "offered_company_name": o.offered_company_name,
         "offered_designation_id": o.offered_designation_id,
         "offered_designation_name": o.offered_designation_name,
         "offered_department_id": o.offered_department_id,
@@ -185,6 +187,39 @@ def _resolve_org_names(db_client: Session, data: Dict[str, Any]) -> Dict[str, An
             br = db_client.query(OrgBranch).filter(OrgBranch.id == data["branch_id"]).first()
             if br:
                 data["branch_name"] = br.branch_name
+    except Exception:
+        pass
+    # Offer-specific offered_* keys
+    try:
+        if data.get("offered_company_id"):
+            from backend.app.modules.organization_management.models import OrgCompany
+            co = db_client.query(OrgCompany).filter(OrgCompany.id == data["offered_company_id"]).first()
+            if co:
+                data["offered_company_name"] = co.company_name
+    except Exception:
+        pass
+    try:
+        if data.get("offered_department_id"):
+            from backend.app.modules.organization_management.models import OrgDepartment
+            dept = db_client.query(OrgDepartment).filter(OrgDepartment.id == data["offered_department_id"]).first()
+            if dept:
+                data["offered_department_name"] = dept.department_name
+    except Exception:
+        pass
+    try:
+        if data.get("offered_designation_id"):
+            from backend.app.modules.organization_management.models import OrgDesignation
+            desig = db_client.query(OrgDesignation).filter(OrgDesignation.id == data["offered_designation_id"]).first()
+            if desig:
+                data["offered_designation_name"] = desig.designation_name
+    except Exception:
+        pass
+    try:
+        if data.get("offered_branch_id"):
+            from backend.app.modules.organization_management.models import OrgBranch
+            br = db_client.query(OrgBranch).filter(OrgBranch.id == data["offered_branch_id"]).first()
+            if br:
+                data["offered_branch_name"] = br.branch_name
     except Exception:
         pass
     return data
