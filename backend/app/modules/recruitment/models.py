@@ -203,6 +203,10 @@ class Offer(ClientBase):
     status              = Column(String(30),  nullable=False, default="Draft", index=True)
     rejection_reason    = Column(Text, nullable=True)
 
+    # Offer letter file (private storage)
+    offer_letter_key    = Column(String(500), nullable=True)
+    offer_letter_name   = Column(String(255), nullable=True)
+
     # Employee created on acceptance
     employee_id         = Column(String(36),  nullable=True)
 

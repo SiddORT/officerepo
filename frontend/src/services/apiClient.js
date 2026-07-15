@@ -783,6 +783,9 @@ export const portalRecruitmentApi = {
   sendOffer:   (sd, tk, id)         => axios.post(_rurl(sd, `/offers/${id}/send`), {}, _rh(sd, tk)),
   acceptOffer: (sd, tk, id)         => axios.post(_rurl(sd, `/offers/${id}/accept`), {}, _rh(sd, tk)),
   rejectOffer: (sd, tk, id, d)      => axios.post(_rurl(sd, `/offers/${id}/reject`), d, _rh(sd, tk)),
+  uploadOfferLetter:   (sd, tk, id, fd) => axios.post(_rurl(sd, `/offers/${id}/letter`), fd, { headers: { Authorization: `Bearer ${tk}`, "Content-Type": "multipart/form-data" } }),
+  downloadOfferLetter: (sd, tk, id)     => axios.get(_rurl(sd, `/offers/${id}/letter/download`), { ..._rh(sd, tk), responseType: "blob" }),
+  deleteOfferLetter:   (sd, tk, id)     => axios.delete(_rurl(sd, `/offers/${id}/letter`), _rh(sd, tk)),
 };
 
 // ── Interview Management (portal) ─────────────────────────────────────────────

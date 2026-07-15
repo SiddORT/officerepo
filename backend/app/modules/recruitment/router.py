@@ -28,6 +28,9 @@ from backend.app.modules.recruitment.schemas import (
     OfferCreate, OfferUpdate, OfferAction,
 )
 from backend.shared.response import ApiResponse
+from backend.shared.storage.file_handler import (
+    Visibility, delete_file, physical_path, save_document,
+)
 
 router = APIRouter()
 
@@ -518,3 +521,45 @@ def reject_offer(
     _sub(portal_user, subdomain)
     result = svc.reject_offer(db, _cid(portal_user), offer_id, body.rejection_reason, _actor(portal_user))
     return ApiResponse.ok(data=result, message="Offer rejected.")
+
+
+@router.post("/{subdomain}/recruitment/offers/{offer_id}/letter")
+def upload_offer_letter(
+    subdomain: str, offer_id: str,
+    file: UploadFile = File(...),
+    portal_user: dict = Depends(_portal_jwt),
+    db: Session = Depends(_client_db_dep),
+):
+    _sub(portal_user, subdomain)
+    key, original = save_document(file, "platform", "offer_letters")
+    try:
+        result = svc.upload_offer_letter(db, _cid(portal_user), offer_id, key, original)
+    except Exception:
+        delete_file(key, Visibility.PRIVATE)
+        raise
+    return ApiResponse.ok(data=result, message="Offer letter uploaded.")
+
+
+@router.get("/{subdomain}/recruitment/offers/{offer_id}/letter/download")
+def download_offer_letter(
+    subdomain: str, offer_id: str,
+    portal_user: dict = Depends(_portal_jwt),
+    db: Session = Depends(_client_db_dep),
+):
+    _sub(portal_user, subdomain)
+    key, name = svc.get_offer_letter_file(db, _cid(portal_user), offer_id)
+    path = physical_path(key, Visibility.PRIVATE)
+    if not path.is_file():
+        raise HTTPException(404, "File no longer available.")
+    return FileResponse(str(path), filename=name)
+
+
+@router.delete("/{subdomain}/recruitment/offers/{offer_id}/letter")
+def delete_offer_letter(
+    subdomain: str, offer_id: str,
+    portal_user: dict = Depends(_portal_jwt),
+    db: Session = Depends(_client_db_dep),
+):
+    _sub(portal_user, subdomain)
+    result = svc.delete_offer_letter(db, _cid(portal_user), offer_id)
+    return ApiResponse.ok(data=result, message="Offer letter removed.")

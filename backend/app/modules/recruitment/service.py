@@ -119,6 +119,8 @@ def _offer_dict(o) -> Dict[str, Any]:
         "joining_date": o.joining_date.isoformat() if o.joining_date else None,
         "offered_salary": float(o.offered_salary) if o.offered_salary else None,
         "offer_expiry_date": o.offer_expiry_date.isoformat() if o.offer_expiry_date else None,
+        "offer_letter_key": o.offer_letter_key,
+        "offer_letter_name": o.offer_letter_name,
         "status": o.status,
         "rejection_reason": o.rejection_reason,
         "employee_id": o.employee_id,
@@ -542,6 +544,44 @@ def reject_offer(db: Session, client_id: str, offer_id: str, reason: Optional[st
     if cand:
         repo.update_candidate(db, cand, {"status": "Rejected"})
     repo.add_activity(db, client_id, obj.candidate_id, ACT_OFFER_REJECTED, actor, notes=reason)
+    return _offer_dict(obj)
+
+
+def upload_offer_letter(db: Session, client_id: str, offer_id: str, key: str, filename: str) -> Dict[str, Any]:
+    obj = repo.get_offer(db, client_id, offer_id)
+    if not obj:
+        raise HTTPException(404, "Offer not found.")
+    # Remove old file if present
+    if obj.offer_letter_key:
+        try:
+            from backend.shared.storage.file_handler import delete_file, Visibility as _V
+            delete_file(obj.offer_letter_key, _V.PRIVATE)
+        except Exception:
+            pass
+    obj = repo.update_offer(db, obj, {"offer_letter_key": key, "offer_letter_name": filename})
+    return _offer_dict(obj)
+
+
+def get_offer_letter_file(db: Session, client_id: str, offer_id: str):
+    obj = repo.get_offer(db, client_id, offer_id)
+    if not obj:
+        raise HTTPException(404, "Offer not found.")
+    if not obj.offer_letter_key:
+        raise HTTPException(404, "No offer letter uploaded.")
+    return obj.offer_letter_key, obj.offer_letter_name or "offer_letter"
+
+
+def delete_offer_letter(db: Session, client_id: str, offer_id: str) -> Dict[str, Any]:
+    obj = repo.get_offer(db, client_id, offer_id)
+    if not obj:
+        raise HTTPException(404, "Offer not found.")
+    if obj.offer_letter_key:
+        try:
+            from backend.shared.storage.file_handler import delete_file, Visibility as _V
+            delete_file(obj.offer_letter_key, _V.PRIVATE)
+        except Exception:
+            pass
+    obj = repo.update_offer(db, obj, {"offer_letter_key": None, "offer_letter_name": None})
     return _offer_dict(obj)
 
 

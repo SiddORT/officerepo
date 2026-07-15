@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { portalRecruitmentApi } from "../../../services/apiClient";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
@@ -13,14 +13,19 @@ export default function OfferList() {
   const { subdomain } = useParams();
   const { token } = usePortalAuth();
   const navigate = useNavigate();
-  const [rows, setRows] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [status, setStatus] = useState("");
+  const fileInputRef = useRef(null);
+  const [uploadTargetId, setUploadTargetId] = useState(null);
+
+  const [rows, setRows]       = useState([]);
+  const [total, setTotal]     = useState(0);
+  const [page, setPage]       = useState(1);
+  const [status, setStatus]   = useState("");
   const [loading, setLoading] = useState(true);
-  const [rejectModal, setRejectModal] = useState({ open: false, offerId: null });
+  const [uploading, setUploading] = useState(null);
+
+  const [rejectModal, setRejectModal]   = useState({ open: false, offerId: null });
   const [rejectReason, setRejectReason] = useState("");
-  const [rejecting, setRejecting] = useState(false);
+  const [rejecting, setRejecting]       = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -40,31 +45,69 @@ export default function OfferList() {
     setRejectReason("");
     setRejectModal({ open: true, offerId });
   };
-
-  const closeRejectModal = () => {
-    if (rejecting) return;
-    setRejectModal({ open: false, offerId: null });
-  };
-
+  const closeRejectModal = () => { if (rejecting) return; setRejectModal({ open: false, offerId: null }); };
   const confirmReject = async () => {
     setRejecting(true);
     try {
       await portalRecruitmentApi.rejectOffer(subdomain, token, rejectModal.offerId, { rejection_reason: rejectReason });
       setRejectModal({ open: false, offerId: null });
       load();
-    } catch (e) {
-      alert(e.response?.data?.message || "Reject failed.");
+    } catch (e) { alert(e.response?.data?.message || "Reject failed."); }
+    finally { setRejecting(false); }
+  };
+
+  const triggerUpload = (offerId) => {
+    setUploadTargetId(offerId);
+    fileInputRef.current.value = "";
+    fileInputRef.current.click();
+  };
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadTargetId) return;
+    const fd = new FormData();
+    fd.append("file", file);
+    setUploading(uploadTargetId);
+    try {
+      await portalRecruitmentApi.uploadOfferLetter(subdomain, token, uploadTargetId, fd);
+      load();
+    } catch (err) {
+      alert(err.response?.data?.message || "Upload failed.");
     } finally {
-      setRejecting(false);
+      setUploading(null);
+      setUploadTargetId(null);
     }
   };
 
-  const iconBtn = (emoji, title, onClick, color = "var(--c-accent)") => (
-    <button onClick={onClick} title={title} style={{ background: "none", border: "none", cursor: "pointer", color, fontSize: 15, padding: "2px 5px", lineHeight: 1 }}>{emoji}</button>
+  const downloadLetter = async (r) => {
+    try {
+      const res = await portalRecruitmentApi.downloadOfferLetter(subdomain, token, r.id);
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url; a.download = r.offer_letter_name || "offer_letter";
+      a.click(); URL.revokeObjectURL(url);
+    } catch { alert("Download failed."); }
+  };
+
+  const removeLetter = async (offerId) => {
+    if (!window.confirm("Remove the uploaded offer letter?")) return;
+    await doAction(() => portalRecruitmentApi.deleteOfferLetter(subdomain, token, offerId));
+  };
+
+  const iconBtn = (emoji, title, onClick, color = "var(--c-accent)", disabled = false) => (
+    <button
+      onClick={disabled ? undefined : onClick}
+      title={title}
+      disabled={disabled}
+      style={{ background: "none", border: "none", cursor: disabled ? "default" : "pointer", color, fontSize: 15, padding: "2px 5px", lineHeight: 1, opacity: disabled ? 0.4 : 1 }}
+    >{emoji}</button>
   );
 
   return (
     <div>
+      {/* hidden file input for offer letter upload */}
+      <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style={{ display: "none" }} onChange={handleFileChange} />
+
       <PageHeader
         title="Offers"
         subtitle={`${total} offers`}
@@ -95,7 +138,14 @@ export default function OfferList() {
               : rows.map((r, idx) => (
                 <tr key={r.id}>
                   <td style={{ textAlign: "center" }} className="t-muted">{(page - 1) * PAGE_SIZE + idx + 1}</td>
-                  <td><span className="t-accent" style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700 }}>{r.offer_number}</span></td>
+                  <td>
+                    <button
+                      onClick={() => navigate(`/portal/${subdomain}/recruitment/offers/${r.id}`)}
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                    >
+                      <span className="t-accent" style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700 }}>{r.offer_number}</span>
+                    </button>
+                  </td>
                   <td><span style={{ fontWeight: 600 }}>{r.candidate_name || "—"}</span></td>
                   <td><span style={{ fontSize: 12 }}>{r.offered_designation_name || "—"}</span></td>
                   <td><span style={{ fontSize: 12 }}>{r.offered_salary ? `₹${Number(r.offered_salary).toLocaleString()}` : "—"}</span></td>
@@ -111,7 +161,15 @@ export default function OfferList() {
                       {iconBtn("✅", "Accept", () => doAction(() => portalRecruitmentApi.acceptOffer(subdomain, token, r.id)), "#22c55e")}
                       {iconBtn("❌", "Reject", () => openRejectModal(r.id), "#ef4444")}
                     </>}
-                    {iconBtn("👁", "View", () => navigate(`/portal/${subdomain}/recruitment/offers/${r.id}`))}
+                    {/* Offer letter — upload or download+remove */}
+                    {uploading === r.id
+                      ? <span style={{ fontSize: 11, color: "var(--c-muted)", padding: "0 4px" }}>…</span>
+                      : r.offer_letter_key
+                        ? <>
+                            {iconBtn("📄", `Download: ${r.offer_letter_name || "offer letter"}`, () => downloadLetter(r), "var(--c-accent)")}
+                            {iconBtn("🗑️", "Remove letter", () => removeLetter(r.id), "#ef4444")}
+                          </>
+                        : iconBtn("📎", "Upload Offer Letter", () => triggerUpload(r.id), "var(--c-muted)")}
                   </td>
                 </tr>
               ))}

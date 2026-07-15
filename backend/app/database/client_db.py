@@ -172,6 +172,9 @@ _COLUMN_MIGRATIONS = [
     # Offer — company association
     ("offers", "offered_company_id",   "VARCHAR(36)"),
     ("offers", "offered_company_name", "VARCHAR(200)"),
+    # Offer — letter file
+    ("offers", "offer_letter_key",  "VARCHAR(500)"),
+    ("offers", "offer_letter_name", "VARCHAR(255)"),
 ]
 
 
