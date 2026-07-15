@@ -149,6 +149,9 @@ export default function RequisitionForm({ editMode = false }) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
+        {/* ── Top row: Org + Budget side by side ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 16, alignItems: "start" }}>
+
         {/* ── Section 1: Organisation & Position ── */}
         <Section icon="🏢" title="Organisation & Position" accent="#00aeec">
           {/* Row 1 — Company + Department + Designation + Branch */}
@@ -248,6 +251,8 @@ export default function RequisitionForm({ editMode = false }) {
             </div>
           </Row3>
         </Section>
+
+        </div>{/* end top grid */}
 
         {/* ── Section 3: Job Details ── */}
         <Section icon="📄" title="Job Details" accent="#8b5cf6">
