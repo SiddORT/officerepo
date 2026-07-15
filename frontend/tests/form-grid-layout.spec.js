@@ -48,14 +48,14 @@ const FORM_GRID_CSS = `
   body { width: 100%; }
 `;
 
-function buildPageHtml(gridClass, formName, fieldCount = 4) {
+function buildPageHtml(gridClass, formName, fieldCount = 4, extraStyle = "") {
   const fields = Array.from({ length: fieldCount }, (_, i) => `<div class="field">Field ${i + 1}</div>`).join("\n    ");
   return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>${FORM_GRID_CSS}</style>
+  <style>${FORM_GRID_CSS}${extraStyle}</style>
 </head>
 <body>
   <div class="${gridClass}" data-form="${formName}">
@@ -63,6 +63,25 @@ function buildPageHtml(gridClass, formName, fieldCount = 4) {
   </div>
 </body>
 </html>`;
+}
+
+/**
+ * Returns whether the grid container or document body has horizontal overflow.
+ * scrollWidth > clientWidth indicates content is wider than the visible area.
+ */
+async function getOverflowInfo(page, gridClass) {
+  return page.evaluate((cls) => {
+    const el = document.querySelector(`.${cls}`);
+    const body = document.body;
+    return {
+      gridScrollWidth: el.scrollWidth,
+      gridClientWidth: el.clientWidth,
+      gridOverflows: el.scrollWidth > el.clientWidth,
+      bodyScrollWidth: body.scrollWidth,
+      bodyClientWidth: body.clientWidth,
+      bodyOverflows: body.scrollWidth > body.clientWidth,
+    };
+  }, gridClass);
 }
 
 /**
@@ -194,3 +213,98 @@ for (const formName of FORMS_GRID2) {
     }
   });
 }
+
+// ── Enlarged font size — no horizontal overflow ───────────────────────────────
+//
+// When a user increases their browser's base font size (an accessibility need),
+// `1fr` columns can compute to widths that overflow the viewport even though the
+// pixel-width breakpoint is technically satisfied. These tests inject
+// `html { font-size: 20px }` (25 % above the 16 px default) and verify that
+// neither the grid container nor the document body gains a horizontal scrollbar
+// at the two critical "middle tier" viewport widths: portrait tablet (1024 px)
+// and landscape phone (640 px).
+//
+// Note: CSS px-based media queries are NOT affected by font-size changes, so the
+// expected column counts remain the same as in the default-font tests above.
+// The new assertion here is that scrollWidth ≤ clientWidth (no overflow).
+
+const LARGE_FONT_STYLE = `html { font-size: 20px; }`;
+
+const ENLARGED_FONT_VIEWPORTS = [
+  {
+    width: 1024,
+    height: 900,
+    label: "1024px portrait-tablet — enlarged font (no overflow)",
+  },
+  {
+    width: 640,
+    height: 900,
+    label: "640px landscape-phone — enlarged font (no overflow)",
+  },
+];
+
+// Expected column counts at each viewport (unchanged — media queries use px)
+const ENLARGED_FONT_EXPECTED_COLS = {
+  "form-grid-2": { 1024: 1, 640: 1 },
+  "form-grid-3": { 1024: 2, 640: 1 },
+};
+
+test.describe("Enlarged browser font — .form-grid-2 no horizontal overflow", () => {
+  for (const vp of ENLARGED_FONT_VIEWPORTS) {
+    test(vp.label, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+      await page.setContent(
+        buildPageHtml("form-grid-2", "overflow-check", 2, LARGE_FONT_STYLE)
+      );
+
+      const expectedCols = ENLARGED_FONT_EXPECTED_COLS["form-grid-2"][vp.width];
+      const cols = await getColumnCount(page, "form-grid-2");
+      expect(
+        cols,
+        `Expected ${expectedCols} column(s) at ${vp.width}px (large font) for form-grid-2, got ${cols}`
+      ).toBe(expectedCols);
+
+      const overflow = await getOverflowInfo(page, "form-grid-2");
+      expect(
+        overflow.gridOverflows,
+        `form-grid-2 grid container overflows at ${vp.width}px with enlarged font ` +
+          `(scrollWidth=${overflow.gridScrollWidth}, clientWidth=${overflow.gridClientWidth})`
+      ).toBe(false);
+      expect(
+        overflow.bodyOverflows,
+        `body overflows at ${vp.width}px with enlarged font on form-grid-2 ` +
+          `(scrollWidth=${overflow.bodyScrollWidth}, clientWidth=${overflow.bodyClientWidth})`
+      ).toBe(false);
+    });
+  }
+});
+
+test.describe("Enlarged browser font — .form-grid-3 no horizontal overflow", () => {
+  for (const vp of ENLARGED_FONT_VIEWPORTS) {
+    test(vp.label, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+      await page.setContent(
+        buildPageHtml("form-grid-3", "overflow-check", 3, LARGE_FONT_STYLE)
+      );
+
+      const expectedCols = ENLARGED_FONT_EXPECTED_COLS["form-grid-3"][vp.width];
+      const cols = await getColumnCount(page, "form-grid-3");
+      expect(
+        cols,
+        `Expected ${expectedCols} column(s) at ${vp.width}px (large font) for form-grid-3, got ${cols}`
+      ).toBe(expectedCols);
+
+      const overflow = await getOverflowInfo(page, "form-grid-3");
+      expect(
+        overflow.gridOverflows,
+        `form-grid-3 grid container overflows at ${vp.width}px with enlarged font ` +
+          `(scrollWidth=${overflow.gridScrollWidth}, clientWidth=${overflow.gridClientWidth})`
+      ).toBe(false);
+      expect(
+        overflow.bodyOverflows,
+        `body overflows at ${vp.width}px with enlarged font on form-grid-3 ` +
+          `(scrollWidth=${overflow.bodyScrollWidth}, clientWidth=${overflow.bodyClientWidth})`
+      ).toBe(false);
+    });
+  }
+});
