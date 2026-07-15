@@ -209,5 +209,86 @@ class TestListExpiringDocumentsExpiryStatusField(unittest.TestCase):
         self.assertEqual(rows, [])
 
 
+# ---------------------------------------------------------------------------
+# Agreement test — repository output must match _compute_expiry_status exactly
+# ---------------------------------------------------------------------------
+
+class TestRepositoryAgreesWithServiceHelper(unittest.TestCase):
+    """
+    Confirm that expiry_status values returned by list_expiring_documents
+    (repository) agree with _compute_expiry_status (service) for every
+    boundary date.  If someone changes _EXPIRY_SOON_DAYS in service.py this
+    test will fail, making the drift visible immediately.
+    """
+
+    def _run_list(self, expiry_dates):
+        from backend.app.modules.organization_management import repository as repo
+        from unittest.mock import MagicMock
+        from datetime import date as _date
+
+        fake_rows = []
+        for ed in expiry_dates:
+            doc = MagicMock()
+            doc.id = "doc-1"
+            doc.company_id = "co-1"
+            doc.doc_type = "GST Certificate"
+            doc.doc_number = "NUM"
+            doc.expiry_date = ed
+            doc.issue_date = _date(2023, 1, 1)
+            doc.file_name = "f.pdf"
+            doc.file_path = "/private_storage/f.pdf"
+            doc.is_deleted = False
+            company = MagicMock()
+            company.company_name = "Acme"
+            company.is_deleted = False
+            fake_rows.append((doc, company))
+
+        db = MagicMock()
+        q = MagicMock()
+        db.query.return_value = q
+        q.join.return_value = q
+        q.filter.return_value = q
+        q.order_by.return_value = q
+        q.all.return_value = fake_rows
+
+        return repo.list_expiring_documents(db, client_id="c1", days_ahead=30)
+
+    def test_boundary_dates_agree_with_service_helper(self):
+        """
+        For every boundary date the expiry_status from list_expiring_documents
+        (repository) must equal the value produced by _compute_expiry_status
+        (service).  This is the single assertion that catches any divergence
+        between the two implementations.
+        """
+        from backend.app.modules.organization_management.service import (
+            _compute_expiry_status,
+        )
+
+        boundary_dates = [
+            date.today() - timedelta(days=730),
+            date.today() - timedelta(days=1),
+            date.today(),
+            date.today() + timedelta(days=1),
+            date.today() + timedelta(days=15),
+            date.today() + timedelta(days=30),
+        ]
+
+        rows = self._run_list(boundary_dates)
+        self.assertEqual(len(rows), len(boundary_dates))
+
+        for row, bd in zip(rows, boundary_dates):
+            expected = _compute_expiry_status(bd)
+            with self.subTest(expiry_date=bd, expected=expected):
+                self.assertEqual(
+                    row["expiry_status"],
+                    expected,
+                    msg=(
+                        f"list_expiring_documents returned '{row['expiry_status']}' "
+                        f"but _compute_expiry_status returned '{expected}' "
+                        f"for expiry_date={bd}"
+                    ),
+                )
+
+
 if __name__ == "__main__":
     unittest.main()
