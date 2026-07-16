@@ -169,7 +169,8 @@ export default function PortalLayout({ children, title }) {
   const { user, logout, token } = usePortalAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(() => window.innerWidth <= 640);
+  const [collapsed, setCollapsed] = useState(() => window.innerWidth <= 640);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
   const { navModules, workspaceName } = usePortalNav();
@@ -181,6 +182,16 @@ export default function PortalLayout({ children, title }) {
     }
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  useEffect(() => {
+    function onResize() {
+      const mobile = window.innerWidth <= 640;
+      setIsMobileView(mobile);
+      if (mobile) setCollapsed(true);
+    }
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   const handleLogout = () => {
@@ -212,15 +223,27 @@ export default function PortalLayout({ children, title }) {
   });
 
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--c-bg)", color: "var(--c-text)" }}>
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "var(--c-bg)", color: "var(--c-text)", position: "relative" }}>
+      {/* ── Mobile backdrop (tap outside to close sidebar) ───────────────── */}
+      {isMobileView && !collapsed && (
+        <div onClick={() => setCollapsed(true)} style={{
+          position: "absolute", inset: 0, zIndex: 199,
+          background: "rgba(0,0,0,0.4)",
+        }} />
+      )}
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       <aside style={{
-        width: collapsed ? 56 : 220, flexShrink: 0,
+        width: collapsed ? 56 : 220,
+        flexShrink: isMobileView ? 0 : 0,
         display: "flex", flexDirection: "column",
         transition: "width 0.2s",
         borderRight: "1px solid var(--c-border)",
         background: "var(--c-surface)",
-        position: "relative",
+        position: isMobileView ? "absolute" : "relative",
+        zIndex: isMobileView ? 200 : "auto",
+        top: isMobileView ? 0 : undefined,
+        left: isMobileView ? 0 : undefined,
+        height: isMobileView ? "100%" : undefined,
       }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, #00aeec, #ff7a1a)", zIndex: 1 }} />
         {/* Logo / workspace name */}
