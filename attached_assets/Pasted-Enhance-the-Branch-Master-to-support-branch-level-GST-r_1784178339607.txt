@@ -1,0 +1,126 @@
+Enhance the Branch Master to support branch-level GST registration and statutory compliance.
+
+IMPORTANT
+
+Do NOT store GST details at the Company level.
+
+A Company represents the legal entity.
+
+Each Branch represents a business location and may have its own GST registration.
+
+==================================================
+
+Update Branch Master
+
+==================================================
+
+Add the following sections.
+
+1. Basic Information
+
+• Branch Name
+• Branch Code
+• Company
+• Branch Type
+
+Values
+
+- Head Office
+- Regional Office
+- Branch Office
+- Factory
+- Warehouse
+- Project Office
+- Sales Office
+
+--------------------------------------------------
+
+2. Address
+
+• Address Line 1
+• Address Line 2
+• City
+• State
+• Country
+• Pincode
+
+--------------------------------------------------
+
+3. GST & Tax Details
+
+• GST Registered (Yes/No)
+
+If Yes
+
+Display
+
+• GSTIN
+• GST Registration Date
+• GST Jurisdiction
+• State Code
+• GST Registration Certificate Upload
+
+Validate GSTIN format.
+
+Hide GST fields if "GST Registered" is No.
+
+--------------------------------------------------
+
+4. Contact Information
+
+• Phone
+• Email
+• Branch Manager
+
+--------------------------------------------------
+
+5. Financial Details
+
+• Cost Center
+• Profit Center
+
+Reserve Currency and Time Zone fields for future implementation.
+
+--------------------------------------------------
+
+6. Compliance Documents
+
+Allow document uploads for:
+
+• GST Certificate
+• Shop & Establishment License
+• Trade License
+• Factory License
+• Fire NOC
+• Other Documents
+
+Display uploaded documents in a clean document section with preview and download options.
+
+--------------------------------------------------
+
+7. Status
+
+• Active
+• Inactive
+
+==================================================
+
+Future Integrations
+
+==================================================
+
+Design Branch Master so it can be reused by:
+
+• Payroll
+• Procurement
+• Finance
+• Asset Management
+• Visitor Management
+• Attendance
+• CRM
+
+Each module should use the Branch GSTIN wherever branch-specific statutory or financial documents are generated.
+
+Do not modify existing APIs unnecessarily.
+
+Follow the existing Office Repo UI, validation rules, dark theme and responsive layout.
