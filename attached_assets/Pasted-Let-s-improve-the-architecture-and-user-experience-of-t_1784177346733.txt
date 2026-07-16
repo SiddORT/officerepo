@@ -1,0 +1,430 @@
+Let's improve the architecture and user experience of the Recruitment and Interview Management modules.
+
+IMPORTANT
+
+This is primarily a UI/UX and navigation enhancement.
+
+Do NOT redesign the database.
+Do NOT break existing APIs.
+Do NOT duplicate interview data.
+
+Interview Management must remain an independent module, but Recruitment should seamlessly integrate with it so users never feel they are switching between unrelated modules.
+
+==================================================
+OBJECTIVE
+==================================================
+
+The hiring lifecycle should feel continuous.
+
+Job Requisition
+↓
+
+Job Opening
+↓
+
+Candidate
+
+↓
+
+Interview
+
+↓
+
+Offer
+
+↓
+
+Employee Onboarding
+
+Interview Management remains a standalone module but Candidate becomes the bridge between Recruitment and Interview Management.
+
+==================================================
+RECRUITMENT SIDEBAR
+==================================================
+
+Keep Recruitment sidebar as:
+
+Recruitment
+
+• Dashboard
+• Job Requisitions
+• Job Openings
+• Candidate Master
+• Offers
+• Reports
+• Settings
+
+Do NOT add Interview inside Recruitment.
+
+Interview remains its own module.
+
+==================================================
+INTERVIEW MODULE
+==================================================
+
+Keep Interview Management as a separate module.
+
+Interview Management
+
+• Dashboard
+• Interview Schedule
+• Calendar
+• Interview Pipelines
+• Interview Panels
+• Feedback
+• Reports
+• Settings
+
+==================================================
+CANDIDATE PROFILE
+==================================================
+
+Completely redesign Candidate Detail page.
+
+Candidate Profile becomes the central workspace for everything related to that candidate.
+
+Create modern tabs.
+
+Tabs:
+
+Overview
+
+Applications
+
+Interview
+
+Offer
+
+Documents
+
+Timeline
+
+Notes
+
+Activities
+
+==================================================
+OVERVIEW TAB
+==================================================
+
+Display:
+
+Candidate Photo / Initials
+
+Candidate Name
+
+Applied Position
+
+Current Stage
+
+Current Status
+
+Recruiter
+
+Source
+
+Experience
+
+Notice Period
+
+Expected Salary
+
+Contact Information
+
+Quick Stats
+
+Application Date
+
+Last Activity
+
+Upcoming Interview
+
+Offer Status
+
+Use a premium card layout.
+
+==================================================
+APPLICATIONS TAB
+==================================================
+
+Display every Job Opening the candidate has applied for.
+
+Columns:
+
+Job Opening
+
+Department
+
+Applied Date
+
+Current Stage
+
+Status
+
+Support multiple applications.
+
+Do not assume one candidate = one job opening.
+
+==================================================
+INTERVIEW TAB
+==================================================
+
+This is the most important enhancement.
+
+Do NOT recreate Interview Management here.
+
+Instead embed a summarized interview workspace.
+
+Display:
+
+Interview Progress
+
+Screening
+
+Technical Round
+
+Manager Round
+
+HR Round
+
+Final Round
+
+Each stage should show:
+
+Status
+
+Completed Date
+
+Interviewer
+
+Feedback Status
+
+Buttons:
+
+Open Interview Workspace
+
+Schedule Interview (only if permitted)
+
+View Calendar
+
+The "Open Interview Workspace" button should navigate directly to the Interview Management module for this candidate.
+
+The user should feel this is one continuous workflow.
+
+==================================================
+OFFER TAB
+==================================================
+
+Display:
+
+Offer Status
+
+Offer Date
+
+Joining Date
+
+Salary Offered
+
+Offer Version
+
+Candidate Response
+
+Buttons:
+
+Generate Offer
+
+View Offer
+
+Resend Offer
+
+Withdraw Offer
+
+Only available when candidate reaches the appropriate stage.
+
+==================================================
+DOCUMENTS TAB
+==================================================
+
+Display:
+
+Resume
+
+Cover Letter
+
+Certificates
+
+Portfolio
+
+Offer Letter
+
+Other Attachments
+
+Support drag-and-drop uploads.
+
+==================================================
+TIMELINE TAB
+==================================================
+
+Display chronological activity.
+
+Examples
+
+Candidate Applied
+
+Resume Reviewed
+
+Interview Scheduled
+
+Interview Completed
+
+Feedback Submitted
+
+Offer Generated
+
+Offer Accepted
+
+Joined
+
+Timeline should use a vertical activity design.
+
+Each event displays:
+
+Icon
+
+Title
+
+Description
+
+User
+
+Date & Time
+
+==================================================
+NOTES TAB
+==================================================
+
+Allow HR and interviewers to maintain notes.
+
+Each note displays:
+
+Author
+
+Date
+
+Rich text
+
+Attachments (future)
+
+==================================================
+ACTIVITIES TAB
+==================================================
+
+Display audit logs.
+
+Examples
+
+Candidate Updated
+
+Resume Uploaded
+
+Interview Rescheduled
+
+Offer Sent
+
+Offer Accepted
+
+This is a system activity log.
+
+==================================================
+INTERVIEW INTEGRATION
+==================================================
+
+Interview data must always come from Interview Management.
+
+Do NOT duplicate interview records.
+
+Candidate Profile should simply consume interview APIs.
+
+All updates happen inside Interview Management.
+
+==================================================
+OFFER INTEGRATION
+==================================================
+
+Offer Management remains inside Recruitment.
+
+Candidate Profile simply exposes Offer functionality in context.
+
+==================================================
+VISUAL DESIGN
+==================================================
+
+Modern enterprise UI.
+
+Large candidate header.
+
+Progress indicator across hiring stages.
+
+Elegant status badges.
+
+Rounded cards.
+
+Generous spacing.
+
+Responsive layout.
+
+==================================================
+MICRO ANIMATIONS
+==================================================
+
+Use subtle animations.
+
+Cards fade in.
+
+Tabs animate smoothly.
+
+Timeline fades upward.
+
+Buttons scale slightly on hover.
+
+Progress indicator animates when status changes.
+
+Animation duration:
+
+200–250ms
+
+No excessive motion.
+
+==================================================
+RESULT
+==================================================
+
+The user should never feel they are jumping between Recruitment and Interview Management.
+
+Instead, Candidate Profile should act as the central workspace that connects both modules.
+
+Recruitment owns:
+
+Requisitions
+
+Job Openings
+
+Candidates
+
+Offers
+
+Interview Management owns:
+
+Scheduling
+
+Calendar
+
+Pipelines
+
+Panels
+
+Feedback
+
+Candidate Profile provides a seamless experience by integrating both modules without duplicating functionality.
+
+The final design should feel similar to enterprise ATS platforms like Greenhouse, Lever, BambooHR and Workday while maintaining the existing Office Repo design language.
