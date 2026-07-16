@@ -289,6 +289,10 @@ html.theme-light .input-bg     { background-color: #ffffff !important; }
   .form-grid-3 { grid-template-columns: 1fr 1fr; }
   .form-grid-2 { grid-template-columns: 1fr; }
 }
+/* Small tablets / landscape phones (641–768px): collapse portal info cards to single column */
+@media (max-width: 768px) {
+  .portal-form-row { grid-template-columns: 1fr !important; }
+}
 @media (max-width: 640px) {
   .form-grid-4 { grid-template-columns: 1fr; }
   .form-grid-3 { grid-template-columns: 1fr; }
