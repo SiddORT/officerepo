@@ -177,6 +177,17 @@ _COLUMN_MIGRATIONS = [
     ("offers", "offer_letter_name", "VARCHAR(255)"),
     # Offer — provisioned employee back-link
     ("offers", "employee_id", "VARCHAR(36)"),
+    # OrgBranch — GST, contact, financial fields
+    ("org_branches", "branch_manager",       "VARCHAR(200)"),
+    ("org_branches", "gst_registered",       "BOOLEAN DEFAULT FALSE"),
+    ("org_branches", "gstin",                "VARCHAR(15)"),
+    ("org_branches", "gst_registration_date","DATE"),
+    ("org_branches", "gst_jurisdiction",     "VARCHAR(100)"),
+    ("org_branches", "state_code",           "VARCHAR(10)"),
+    ("org_branches", "gst_certificate_key",  "VARCHAR(500)"),
+    ("org_branches", "gst_certificate_name", "VARCHAR(255)"),
+    ("org_branches", "cost_center",          "VARCHAR(100)"),
+    ("org_branches", "profit_center",        "VARCHAR(100)"),
 ]
 
 

@@ -312,12 +312,17 @@ function PortalRoutes() {
       <Route path="/recruitment/candidates/:candId/edit"  element={<Protected><PortalLayout title="Edit Candidate"><CandidateForm editMode={true} /></PortalLayout></Protected>} />
       <Route path="/recruitment/candidates/:candId"       element={<Protected><PortalLayout title="Candidate Details"><CandidateDetails /></PortalLayout></Protected>} />
       <Route path="/recruitment/candidates"               element={<Protected><PortalLayout title="Candidates"><CandidateList /></PortalLayout></Protected>} />
-      <Route path="/recruitment/offers/new"               element={<Protected><PortalLayout title="Create Offer"><OfferForm editMode={false} /></PortalLayout></Protected>} />
-      <Route path="/recruitment/offers/:offerId/edit"     element={<Protected><PortalLayout title="Edit Offer"><OfferForm editMode={true} /></PortalLayout></Protected>} />
-      <Route path="/recruitment/offers"                   element={<Protected><PortalLayout title="Offers"><OfferList /></PortalLayout></Protected>} />
+      {/* Offers moved to Interview Management — redirect old paths */}
+      <Route path="/recruitment/offers/new"           element={<Navigate to={`/portal/${subdomain}/hrms/interviews/offers/new`} replace />} />
+      <Route path="/recruitment/offers/:offerId/edit" element={<Navigate to={`/portal/${subdomain}/hrms/interviews/offers`} replace />} />
+      <Route path="/recruitment/offers"               element={<Navigate to={`/portal/${subdomain}/hrms/interviews/offers`} replace />} />
       <Route path="/recruitment/*" element={<Navigate to={`/portal/${subdomain}/recruitment`} replace />} />
 
       {/* ── Interview Management ──────────────────────────────────────── */}
+      {/* Offers (moved from Recruitment) — static paths BEFORE /:interviewId */}
+      <Route path="/hrms/interviews/offers/new"               element={<Protected><PortalLayout title="Create Offer"><OfferForm editMode={false} /></PortalLayout></Protected>} />
+      <Route path="/hrms/interviews/offers/:offerId/edit"     element={<Protected><PortalLayout title="Edit Offer"><OfferForm editMode={true} /></PortalLayout></Protected>} />
+      <Route path="/hrms/interviews/offers"                   element={<Protected><PortalLayout title="Offers"><OfferList /></PortalLayout></Protected>} />
       {/* Static paths must come BEFORE /:interviewId */}
       <Route path="/hrms/interviews/list"                    element={<Protected><PortalLayout title="All Interviews"><InterviewList /></PortalLayout></Protected>} />
       <Route path="/hrms/interviews/schedule/new"            element={<Protected><PortalLayout title="Schedule Interview"><InterviewScheduleForm editMode={false} /></PortalLayout></Protected>} />

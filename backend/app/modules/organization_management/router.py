@@ -512,6 +512,169 @@ def delete_branch(
     return ApiResponse.ok(None, "Branch deleted.").model_dump()
 
 
+# ── Branch GST Certificate ──────────────────────────────────────────────────────
+
+@router.post("/{subdomain}/org/branches/{branch_id}/gst-certificate")
+def upload_branch_gst_certificate(
+    subdomain: str, branch_id: str, request: Request,
+    file: UploadFile = File(...),
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    from backend.app.modules.organization_management.constants import ORG_STORAGE_SCOPE, ORG_DOCUMENTS_MODULE
+    from backend.shared.storage.file_handler import Visibility, save_document, delete_file
+    file_key, file_name = save_document(file, ORG_STORAGE_SCOPE, ORG_DOCUMENTS_MODULE)
+    try:
+        result = svc.upload_branch_gst_certificate(
+            client_db, portal_user["client_id"], branch_id,
+            file_name=file_name, file_key=file_key,
+            actor_id=portal_user["admin_user_id"], ip=_get_ip(request),
+        )
+    except Exception:
+        delete_file(file_key, Visibility.PRIVATE)
+        raise
+    if result.get("old_key"):
+        try:
+            delete_file(result["old_key"], Visibility.PRIVATE)
+        except Exception:
+            pass
+    return ApiResponse.ok(None, "GST certificate uploaded.").model_dump()
+
+
+@router.get("/{subdomain}/org/branches/{branch_id}/gst-certificate/download")
+def download_branch_gst_certificate(
+    subdomain: str, branch_id: str,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    from backend.shared.storage.file_handler import Visibility, physical_path
+    b = svc.get_branch(client_db, portal_user["client_id"], branch_id)
+    key = b.get("gst_certificate_key")
+    name = b.get("gst_certificate_name", "gst_certificate")
+    if not key:
+        raise HTTPException(404, "No GST certificate attached.")
+    path = physical_path(key, Visibility.PRIVATE)
+    if not path.is_file():
+        raise HTTPException(404, "File no longer available.")
+    return FileResponse(str(path), filename=name)
+
+
+@router.delete("/{subdomain}/org/branches/{branch_id}/gst-certificate")
+def delete_branch_gst_certificate(
+    subdomain: str, branch_id: str, request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    from backend.shared.storage.file_handler import Visibility, delete_file
+    old_key = svc.delete_branch_gst_certificate(
+        client_db, portal_user["client_id"], branch_id,
+        actor_id=portal_user["admin_user_id"], ip=_get_ip(request),
+    )
+    if old_key:
+        try:
+            delete_file(old_key, Visibility.PRIVATE)
+        except Exception:
+            pass
+    return ApiResponse.ok(None, "GST certificate removed.").model_dump()
+
+
+# ── Branch Compliance Documents ─────────────────────────────────────────────────
+
+@router.get("/{subdomain}/org/branches/{branch_id}/documents")
+def list_branch_documents(
+    subdomain: str, branch_id: str,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    docs = svc.list_branch_documents(client_db, portal_user["client_id"], branch_id)
+    return ApiResponse.ok(docs).model_dump()
+
+
+@router.post("/{subdomain}/org/branches/{branch_id}/documents")
+def upload_branch_document(
+    subdomain: str, branch_id: str, request: Request,
+    doc_type: str = Form(...),
+    doc_number: Optional[str] = Form(None),
+    issue_date: Optional[str] = Form(None),
+    expiry_date: Optional[str] = Form(None),
+    remarks: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    from backend.app.modules.organization_management.constants import ORG_STORAGE_SCOPE, ORG_DOCUMENTS_MODULE
+    from backend.shared.storage.file_handler import Visibility, save_document, delete_file
+    from datetime import date as _date
+
+    def _pd(s):
+        if not s:
+            return None
+        try:
+            return _date.fromisoformat(s)
+        except (ValueError, TypeError):
+            return None
+
+    file_key, file_name = None, None
+    if file and file.filename:
+        file_key, file_name = save_document(file, ORG_STORAGE_SCOPE, ORG_DOCUMENTS_MODULE)
+    try:
+        doc = svc.add_branch_document(
+            client_db, portal_user["client_id"], branch_id,
+            doc_type=doc_type, doc_number=doc_number,
+            issue_date=_pd(issue_date), expiry_date=_pd(expiry_date),
+            remarks=remarks, file_name=file_name, file_path=file_key,
+            actor_id=portal_user["admin_user_id"], ip=_get_ip(request),
+        )
+    except Exception:
+        if file_key:
+            try:
+                delete_file(file_key, Visibility.PRIVATE)
+            except Exception:
+                pass
+        raise
+    return ApiResponse.ok(doc, "Document uploaded.").model_dump()
+
+
+@router.get("/{subdomain}/org/branches/{branch_id}/documents/{doc_id}/download")
+def download_branch_document(
+    subdomain: str, branch_id: str, doc_id: str,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    from backend.shared.storage.file_handler import Visibility, physical_path
+    key, name = svc.get_branch_document_file(client_db, portal_user["client_id"], branch_id, doc_id)
+    path = physical_path(key, Visibility.PRIVATE)
+    if not path.is_file():
+        raise HTTPException(404, "File no longer available.")
+    return FileResponse(str(path), filename=name)
+
+
+@router.delete("/{subdomain}/org/branches/{branch_id}/documents/{doc_id}")
+def delete_branch_document(
+    subdomain: str, branch_id: str, doc_id: str, request: Request,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _subdomain_check(portal_user, subdomain)
+    from backend.shared.storage.file_handler import Visibility, delete_file
+    old_key = svc.delete_branch_document(
+        client_db, portal_user["client_id"], branch_id, doc_id,
+        actor_id=portal_user["admin_user_id"], ip=_get_ip(request),
+    )
+    if old_key:
+        try:
+            delete_file(old_key, Visibility.PRIVATE)
+        except Exception:
+            pass
+    return ApiResponse.ok(None, "Document deleted.").model_dump()
+
+
 # ── Departments — static routes FIRST to avoid {dept_id} clash ─────────────────
 
 @router.get("/{subdomain}/org/departments/hierarchy/{company_id}")

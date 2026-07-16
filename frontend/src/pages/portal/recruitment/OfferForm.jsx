@@ -95,7 +95,7 @@ export default function OfferForm({ editMode = false }) {
       Object.keys(payload).forEach(k => { if (payload[k] === "" || payload[k] === null) delete payload[k]; });
       if (editMode) await portalRecruitmentApi.updateOffer(subdomain, token, offerId, payload);
       else          await portalRecruitmentApi.createOffer(subdomain, token, payload);
-      navigate(`/portal/${subdomain}/recruitment/offers`);
+      navigate(`/portal/${subdomain}/hrms/interviews/offers`);
     } catch (e) { setError(e.response?.data?.message || "Failed to save."); }
     finally { setSaving(false); }
   };
@@ -113,7 +113,7 @@ export default function OfferForm({ editMode = false }) {
       <PageHeader
         title={editMode ? "Edit Offer" : "Create Offer"}
         breadcrumbs={[
-          { label: "Offers", path: `/portal/${subdomain}/recruitment/offers` },
+          { label: "Offers", path: `/portal/${subdomain}/hrms/interviews/offers` },
           { label: editMode ? "Edit" : "New" },
         ]}
       />

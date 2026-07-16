@@ -29,24 +29,40 @@ function genBranchCode(name) {
   return `${head}-${tail}`;
 }
 
+const SECTION_LABEL_STYLE = {
+  fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+  color: "var(--c-accent)", marginBottom: 10, paddingBottom: 6,
+  borderBottom: "1px solid var(--c-border)",
+};
+
 function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved }) {
   const isEdit = !!editBranch;
   const [form, setForm] = useState({
-    company_id:        editBranch?.company_id         || (companies[0]?.id || ""),
-    branch_code:       editBranch?.branch_code         || "",
-    branch_name:       editBranch?.branch_name         || "",
-    branch_type:       editBranch?.branch_type         || "",
-    postal_code:       editBranch?.postal_code         || "",
-    address_line1:     editBranch?.address_line_1      || "",
-    address_line2:     editBranch?.address_line_2      || "",
-    city:              editBranch?.city                || "",
-    district:          editBranch?.district            || "",
-    state:             editBranch?.state               || "",
-    country:           editBranch?.country             || "",
-    phone:             editBranch?.phone               || "",
-    phone_country_code: editBranch?.phone_country_code || "+91",
-    email:             editBranch?.email               || "",
-    description:       editBranch?.description         || "",
+    company_id:          editBranch?.company_id          || (companies[0]?.id || ""),
+    branch_code:         editBranch?.branch_code          || "",
+    branch_name:         editBranch?.branch_name          || "",
+    branch_type:         editBranch?.branch_type          || "",
+    postal_code:         editBranch?.postal_code          || "",
+    address_line1:       editBranch?.address_line_1       || "",
+    address_line2:       editBranch?.address_line_2       || "",
+    city:                editBranch?.city                 || "",
+    district:            editBranch?.district             || "",
+    state:               editBranch?.state                || "",
+    country:             editBranch?.country              || "",
+    phone:               editBranch?.phone                || "",
+    phone_country_code:  editBranch?.phone_country_code   || "+91",
+    email:               editBranch?.email                || "",
+    branch_manager:      editBranch?.branch_manager       || "",
+    description:         editBranch?.description          || "",
+    // GST & Tax
+    gst_registered:        editBranch?.gst_registered       || false,
+    gstin:                 editBranch?.gstin                || "",
+    gst_registration_date: editBranch?.gst_registration_date ? String(editBranch.gst_registration_date).slice(0,10) : "",
+    gst_jurisdiction:      editBranch?.gst_jurisdiction      || "",
+    state_code:            editBranch?.state_code            || "",
+    // Financial
+    cost_center:   editBranch?.cost_center   || "",
+    profit_center: editBranch?.profit_center || "",
   });
   const [autoCode, setAutoCode] = useState(!isEdit && !editBranch?.branch_code);
   const [saving, setSaving] = useState(false);
@@ -99,17 +115,29 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
   const handleSave = async () => {
     if (!form.branch_name.trim()) { setError("Branch name is required."); return; }
     if (!form.company_id) { setError("Please select a company."); return; }
+    if (form.gst_registered && form.gstin) {
+      const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+      if (!GSTIN_RE.test(form.gstin.trim().toUpperCase())) {
+        setError("Invalid GSTIN format. Expected: 22AAAAA0000A1Z5"); return;
+      }
+    }
     setSaving(true); setError("");
     try {
       const { address_line1, address_line2, ...rest } = form;
-      const payload = { ...rest, address_line_1: address_line1, address_line_2: address_line2 };
+      const payload = {
+        ...rest,
+        address_line_1: address_line1,
+        address_line_2: address_line2,
+        gstin: form.gstin ? form.gstin.trim().toUpperCase() : null,
+      };
       Object.keys(payload).forEach(k => { if (payload[k] === "") payload[k] = null; });
       payload.branch_name = form.branch_name;
       payload.company_id = form.company_id;
+      payload.gst_registered = !!form.gst_registered;
       if (isEdit) await portalOrgApi.updateBranch(subdomain, token, editBranch.id, payload);
       else await portalOrgApi.createBranch(subdomain, token, payload);
       onSaved();
-    } catch (e) { setError(e?.response?.data?.detail || "Save failed."); }
+    } catch (e) { setError(e?.response?.data?.detail || e?.response?.data?.message || "Save failed."); }
     finally { setSaving(false); }
   };
 
@@ -117,13 +145,16 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div className="portal-form-card" style={{ width: "100%", maxWidth: 780, maxHeight: "90vh", overflow: "auto" }}>
+      <div className="portal-form-card" style={{ width: "100%", maxWidth: 820, maxHeight: "90vh", overflow: "auto" }}>
         <div style={{ paddingBottom: 10, borderBottom: "1px solid var(--c-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontWeight: 700, color: "var(--c-text)", fontSize: 15 }}>{isEdit ? "Edit Branch" : "Add Branch"}</span>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-muted)", fontSize: 20, lineHeight: 1 }}>×</button>
         </div>
         <div style={{ padding: "14px 0", display: "grid", gap: 14 }}>
           {error && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13 }}>{error}</div>}
+
+          {/* ── Basic Details ── */}
+          <div style={SECTION_LABEL_STYLE}>Basic Details</div>
           <div>
             <label className="portal-form-label">Company</label>
             <select value={form.company_id} onChange={e => set("company_id", e.target.value)} className="input-field">
@@ -157,10 +188,7 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
               </label>
               <input
                 value={form.branch_code}
-                onChange={e => {
-                  setAutoCode(false);
-                  set("branch_code", e.target.value.toUpperCase());
-                }}
+                onChange={e => { setAutoCode(false); set("branch_code", e.target.value.toUpperCase()); }}
                 className="input-field"
                 placeholder="MUM-HO"
                 style={{ textTransform: "uppercase" }}
@@ -174,6 +202,9 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
               {BRANCH_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
+
+          {/* ── Address ── */}
+          <div style={{ ...SECTION_LABEL_STYLE, marginTop: 4 }}>Address</div>
           <div className="portal-form-row">
             <div><label className="portal-form-label">Postal Code</label><input value={form.postal_code} onChange={handlePincodeChange} className="input-field" placeholder="400001" /></div>
           </div>
@@ -182,8 +213,7 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
           <div className="form-grid-4">
             <div>
               <label className="portal-form-label">City</label>
-              <select value={form.city} onChange={e => set("city", e.target.value)} className="input-field"
-                style={{ cursor: "pointer" }} disabled={!stateObj}>
+              <select value={form.city} onChange={e => set("city", e.target.value)} className="input-field" style={{ cursor: "pointer" }} disabled={!stateObj}>
                 <option value="">{stateObj ? "Select city…" : "Select state first"}</option>
                 {cityOptions.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -191,8 +221,7 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
             <div><label className="portal-form-label">District</label><input value={form.district} onChange={e => set("district", e.target.value)} className="input-field" placeholder="Mumbai Suburban" /></div>
             <div>
               <label className="portal-form-label">State</label>
-              <select value={form.state} onChange={handleStateChange} className="input-field"
-                style={{ cursor: "pointer" }} disabled={!countryObj}>
+              <select value={form.state} onChange={handleStateChange} className="input-field" style={{ cursor: "pointer" }} disabled={!countryObj}>
                 <option value="">{countryObj ? "Select state…" : "Select country first"}</option>
                 {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -205,6 +234,9 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
               </select>
             </div>
           </div>
+
+          {/* ── Contact ── */}
+          <div style={{ ...SECTION_LABEL_STYLE, marginTop: 4 }}>Contact</div>
           <PhoneInput
             label="Phone"
             dialCode={form.phone_country_code}
@@ -212,7 +244,66 @@ function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved
             number={form.phone}
             onNumberChange={v => set("phone", v)}
           />
-          <div><label className="portal-form-label">Email</label><input type="email" value={form.email} onChange={e => set("email", e.target.value)} className="input-field" placeholder="mumbai@acmetech.in" /></div>
+          <div className="portal-form-row">
+            <div><label className="portal-form-label">Email</label><input type="email" value={form.email} onChange={e => set("email", e.target.value)} className="input-field" placeholder="mumbai@acmetech.in" /></div>
+            <div><label className="portal-form-label">Branch Manager</label><input value={form.branch_manager} onChange={e => set("branch_manager", e.target.value)} className="input-field" placeholder="Name of the manager" /></div>
+          </div>
+
+          {/* ── GST & Tax ── */}
+          <div style={{ ...SECTION_LABEL_STYLE, marginTop: 4 }}>GST & Tax</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <input
+              type="checkbox"
+              id="gst_registered"
+              checked={!!form.gst_registered}
+              onChange={e => set("gst_registered", e.target.checked)}
+              style={{ width: 16, height: 16, cursor: "pointer" }}
+            />
+            <label htmlFor="gst_registered" style={{ fontSize: 13, color: "var(--c-text)", cursor: "pointer" }}>
+              This branch is GST registered
+            </label>
+          </div>
+          {form.gst_registered && (
+            <div style={{ display: "grid", gap: 14, paddingLeft: 4, borderLeft: "2px solid var(--c-accent)", paddingTop: 4 }}>
+              <div className="portal-form-row">
+                <div>
+                  <label className="portal-form-label">GSTIN</label>
+                  <input
+                    value={form.gstin}
+                    onChange={e => set("gstin", e.target.value.toUpperCase())}
+                    className="input-field"
+                    placeholder="22AAAAA0000A1Z5"
+                    maxLength={15}
+                    style={{ textTransform: "uppercase", fontFamily: "monospace" }}
+                  />
+                </div>
+                <div>
+                  <label className="portal-form-label">GST Registration Date</label>
+                  <input type="date" value={form.gst_registration_date} onChange={e => set("gst_registration_date", e.target.value)} className="input-field" />
+                </div>
+              </div>
+              <div className="portal-form-row">
+                <div>
+                  <label className="portal-form-label">GST Jurisdiction</label>
+                  <input value={form.gst_jurisdiction} onChange={e => set("gst_jurisdiction", e.target.value)} className="input-field" placeholder="e.g. Pune-I" />
+                </div>
+                <div>
+                  <label className="portal-form-label">State Code</label>
+                  <input value={form.state_code} onChange={e => set("state_code", e.target.value)} className="input-field" placeholder="e.g. 27" maxLength={3} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Financial ── */}
+          <div style={{ ...SECTION_LABEL_STYLE, marginTop: 4 }}>Financial</div>
+          <div className="portal-form-row">
+            <div><label className="portal-form-label">Cost Center</label><input value={form.cost_center} onChange={e => set("cost_center", e.target.value)} className="input-field" placeholder="CC-MUM-001" /></div>
+            <div><label className="portal-form-label">Profit Center</label><input value={form.profit_center} onChange={e => set("profit_center", e.target.value)} className="input-field" placeholder="PC-WEST-01" /></div>
+          </div>
+
+          {/* ── Notes ── */}
+          <div style={{ ...SECTION_LABEL_STYLE, marginTop: 4 }}>Notes</div>
           <div><label className="portal-form-label">Description</label><textarea value={form.description} onChange={e => set("description", e.target.value)} className="input-field" style={{ height: 72, resize: "vertical" }} placeholder="Optional notes about this branch…" /></div>
         </div>
         <div style={{ display: "flex", gap: 10, paddingTop: 14, borderTop: "1px solid var(--c-border)" }}>
@@ -422,39 +513,61 @@ export default function BranchList() {
                     {isExpanded && (
                       <tr style={{ background: "var(--c-surface2)" }}>
                         <td colSpan={8} style={{ padding: "16px 20px", borderBottom: "1px solid var(--c-border)" }}>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
+                          <div style={{ display: "grid", gap: 20 }}>
+                            {/* Address */}
                             <div>
-                              <div className="portal-form-label" style={{ marginBottom: 3 }}>Postal Code</div>
-                              <div style={{ fontSize: 13, color: b.postal_code ? "var(--c-text)" : "var(--c-muted)", opacity: b.postal_code ? 1 : 0.5 }}>{b.postal_code || "—"}</div>
+                              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-accent)", marginBottom: 10 }}>Address</div>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+                                {[
+                                  ["Postal Code", b.postal_code],
+                                  ["Address Line 1", b.address_line_1],
+                                  ["Address Line 2", b.address_line_2],
+                                  ["City", b.city],
+                                  ["District", b.district],
+                                  ["State", b.state],
+                                  ["Country", b.country],
+                                ].map(([label, val]) => (
+                                  <div key={label}>
+                                    <div className="portal-form-label" style={{ marginBottom: 3 }}>{label}</div>
+                                    <div style={{ fontSize: 13, color: val ? "var(--c-text)" : "var(--c-muted)", opacity: val ? 1 : 0.4 }}>{val || "—"}</div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
+                            {/* Contact */}
+                            {(b.phone || b.email || b.branch_manager) && (
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-accent)", marginBottom: 10 }}>Contact</div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
+                                  {b.branch_manager && <div><span className="portal-form-label">Manager: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.branch_manager}</span></div>}
+                                  {b.phone && <div><span className="portal-form-label">Phone: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.phone_country_code ? `${b.phone_country_code} ` : ""}{b.phone}</span></div>}
+                                  {b.email && <div><span className="portal-form-label">Email: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.email}</span></div>}
+                                </div>
+                              </div>
+                            )}
+                            {/* GST */}
                             <div>
-                              <div className="portal-form-label" style={{ marginBottom: 3 }}>Address Line 1</div>
-                              <div style={{ fontSize: 13, color: b.address_line_1 ? "var(--c-text)" : "var(--c-muted)", opacity: b.address_line_1 ? 1 : 0.5 }}>{b.address_line_1 || "—"}</div>
+                              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-accent)", marginBottom: 10 }}>GST & Tax</div>
+                              {b.gst_registered ? (
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
+                                  {b.gstin && <div><span className="portal-form-label">GSTIN: </span><span style={{ fontSize: 13, fontFamily: "monospace", color: "var(--c-text)" }}>{b.gstin}</span></div>}
+                                  {b.gst_registration_date && <div><span className="portal-form-label">Reg. Date: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{String(b.gst_registration_date).slice(0,10)}</span></div>}
+                                  {b.gst_jurisdiction && <div><span className="portal-form-label">Jurisdiction: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.gst_jurisdiction}</span></div>}
+                                  {b.state_code && <div><span className="portal-form-label">State Code: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.state_code}</span></div>}
+                                  {b.has_gst_certificate && <div><span className="portal-form-label">Certificate: </span><span className="badge-success" style={{ fontSize: 11 }}>✓ Uploaded</span></div>}
+                                </div>
+                              ) : (
+                                <span style={{ fontSize: 12, color: "var(--c-muted)", opacity: 0.6 }}>Not GST registered</span>
+                              )}
                             </div>
-                            <div>
-                              <div className="portal-form-label" style={{ marginBottom: 3 }}>Address Line 2</div>
-                              <div style={{ fontSize: 13, color: b.address_line_2 ? "var(--c-text)" : "var(--c-muted)", opacity: b.address_line_2 ? 1 : 0.5 }}>{b.address_line_2 || "—"}</div>
-                            </div>
-                            <div>
-                              <div className="portal-form-label" style={{ marginBottom: 3 }}>City</div>
-                              <div style={{ fontSize: 13, color: b.city ? "var(--c-text)" : "var(--c-muted)", opacity: b.city ? 1 : 0.5 }}>{b.city || "—"}</div>
-                            </div>
-                            <div>
-                              <div className="portal-form-label" style={{ marginBottom: 3 }}>District</div>
-                              <div style={{ fontSize: 13, color: b.district ? "var(--c-text)" : "var(--c-muted)", opacity: b.district ? 1 : 0.5 }}>{b.district || "—"}</div>
-                            </div>
-                            <div>
-                              <div className="portal-form-label" style={{ marginBottom: 3 }}>State</div>
-                              <div style={{ fontSize: 13, color: b.state ? "var(--c-text)" : "var(--c-muted)", opacity: b.state ? 1 : 0.5 }}>{b.state || "—"}</div>
-                            </div>
-                            <div>
-                              <div className="portal-form-label" style={{ marginBottom: 3 }}>Country</div>
-                              <div style={{ fontSize: 13, color: b.country ? "var(--c-text)" : "var(--c-muted)", opacity: b.country ? 1 : 0.5 }}>{b.country || "—"}</div>
-                            </div>
-                            {(b.phone || b.email) && (
-                              <div style={{ gridColumn: "1 / -1", paddingTop: 12, borderTop: "1px solid var(--c-border)", display: "flex", gap: 24 }}>
-                                {b.phone && <div><span className="portal-form-label">Phone: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.phone}</span></div>}
-                                {b.email && <div><span className="portal-form-label">Email: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.email}</span></div>}
+                            {/* Financial */}
+                            {(b.cost_center || b.profit_center) && (
+                              <div>
+                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-accent)", marginBottom: 10 }}>Financial</div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
+                                  {b.cost_center && <div><span className="portal-form-label">Cost Center: </span><span style={{ fontSize: 13, fontFamily: "monospace", color: "var(--c-text)" }}>{b.cost_center}</span></div>}
+                                  {b.profit_center && <div><span className="portal-form-label">Profit Center: </span><span style={{ fontSize: 13, fontFamily: "monospace", color: "var(--c-text)" }}>{b.profit_center}</span></div>}
+                                </div>
                               </div>
                             )}
                           </div>

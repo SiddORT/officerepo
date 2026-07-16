@@ -156,7 +156,7 @@ export default function OfferList() {
         title="Offers"
         subtitle={`${total} offers`}
         breadcrumbs={[{ label: "Recruitment", path: `/portal/${subdomain}/recruitment` }, { label: "Offers" }]}
-        actions={<button onClick={() => navigate(`/portal/${subdomain}/recruitment/offers/new`)} className="btn-primary">+ Create Offer</button>}
+        actions={<button onClick={() => navigate(`/portal/${subdomain}/hrms/interviews/offers/new`)} className="btn-primary">+ Create Offer</button>}
       />
 
       <div style={{ marginBottom: 14 }}>
@@ -183,7 +183,7 @@ export default function OfferList() {
                 <tr key={r.id}>
                   <td style={{ textAlign: "center" }} className="t-muted">{(page - 1) * PAGE_SIZE + idx + 1}</td>
                   <td>
-                    <button onClick={() => navigate(`/portal/${subdomain}/recruitment/offers/${r.id}`)}
+                    <button onClick={() => navigate(`/portal/${subdomain}/hrms/interviews/offers/${r.id}`)}
                       style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                       <span className="t-accent" style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700 }}>{r.offer_number}</span>
                     </button>
@@ -196,7 +196,7 @@ export default function OfferList() {
                   <td><Badge status={r.status} /></td>
                   <td style={{ textAlign: "center" }} onClick={e => e.stopPropagation()}>
                     {r.status === "Draft" && <>
-                      {iconBtn("✏️", "Edit", () => navigate(`/portal/${subdomain}/recruitment/offers/${r.id}/edit`))}
+                      {iconBtn("✏️", "Edit", () => navigate(`/portal/${subdomain}/hrms/interviews/offers/${r.id}/edit`))}
                       {iconBtn("📤", "Send Offer", () => openConfirm({
                         title: "Send Offer",
                         message: `Send this offer to ${r.candidate_name || "the candidate"}? They will be notified.`,

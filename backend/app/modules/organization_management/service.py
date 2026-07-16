@@ -251,19 +251,33 @@ def delete_company(
 
 # ── Branches ───────────────────────────────────────────────────────────────────
 
-def _branch_dict(b, company_name: Optional[str] = None, total_employees: int = 0, active_employees: int = 0) -> Dict[str, Any]:
+def _branch_dict(b, company_name: Optional[str] = None, total_employees: int = 0, active_employees: int = 0, documents: Optional[list] = None) -> Dict[str, Any]:
     return {
         "id": b.id, "client_id": b.client_id, "company_id": b.company_id,
         "company_name": company_name,
         "branch_code": b.branch_code, "branch_name": b.branch_name,
         "branch_type": b.branch_type,
         "email": b.email, "phone": b.phone, "phone_country_code": getattr(b, "phone_country_code", None),
+        "branch_manager": getattr(b, "branch_manager", None),
         "address_line_1": b.address_line_1, "address_line_2": b.address_line_2,
         "city": b.city, "district": getattr(b, "district", None),
         "state": b.state, "country": b.country, "postal_code": b.postal_code,
         "description": getattr(b, "description", None),
+        # GST & Tax
+        "gst_registered": getattr(b, "gst_registered", False),
+        "gstin": getattr(b, "gstin", None),
+        "gst_registration_date": getattr(b, "gst_registration_date", None),
+        "gst_jurisdiction": getattr(b, "gst_jurisdiction", None),
+        "state_code": getattr(b, "state_code", None),
+        "gst_certificate_key": getattr(b, "gst_certificate_key", None),
+        "gst_certificate_name": getattr(b, "gst_certificate_name", None),
+        "has_gst_certificate": bool(getattr(b, "gst_certificate_key", None)),
+        # Financial
+        "cost_center": getattr(b, "cost_center", None),
+        "profit_center": getattr(b, "profit_center", None),
         "is_active": b.is_active,
         "total_employees": total_employees, "active_employees": active_employees,
+        "documents": documents or [],
         "created_at": b.created_at, "updated_at": b.updated_at,
     }
 
@@ -295,7 +309,8 @@ def get_branch(client_db: Session, client_id: str, branch_id: str) -> Dict:
         raise HTTPException(404, "Branch not found.")
     counts = repo.get_branch_employee_count(client_db, client_id, branch_id)
     company_map = _branch_company_names(client_db, [b])
-    return _branch_dict(b, company_name=company_map.get(b.company_id), **counts)
+    docs = _list_branch_documents(client_db, client_id, branch_id)
+    return _branch_dict(b, company_name=company_map.get(b.company_id), documents=docs, **counts)
 
 
 def create_branch(
@@ -359,6 +374,147 @@ def delete_branch(
     repo.soft_delete_branch(client_db, b)
     _log(client_db, client_id, c.ACTION_BRANCH_DELETED, actor_id, ip, {"branch_name": b.branch_name})
     client_db.commit()
+
+
+# ── Branch GST Certificate ──────────────────────────────────────────────────────
+
+def upload_branch_gst_certificate(
+    client_db: Session, client_id: str, branch_id: str,
+    file_name: str, file_key: str,
+    actor_id: Optional[str], ip: Optional[str],
+) -> Dict:
+    b = repo.get_branch(client_db, client_id, branch_id)
+    if not b:
+        raise HTTPException(404, "Branch not found.")
+    old_key = getattr(b, "gst_certificate_key", None)
+    b.gst_certificate_key  = file_key
+    b.gst_certificate_name = file_name
+    b.updated_at = datetime.utcnow()
+    _log(client_db, client_id, "BRANCH_GST_CERT_UPLOADED", actor_id, ip,
+         {"branch_name": b.branch_name})
+    client_db.commit()
+    return {"old_key": old_key}
+
+
+def delete_branch_gst_certificate(
+    client_db: Session, client_id: str, branch_id: str,
+    actor_id: Optional[str], ip: Optional[str],
+) -> str:
+    b = repo.get_branch(client_db, client_id, branch_id)
+    if not b:
+        raise HTTPException(404, "Branch not found.")
+    old_key = getattr(b, "gst_certificate_key", None)
+    if not old_key:
+        raise HTTPException(404, "No GST certificate attached.")
+    b.gst_certificate_key  = None
+    b.gst_certificate_name = None
+    b.updated_at = datetime.utcnow()
+    _log(client_db, client_id, "BRANCH_GST_CERT_DELETED", actor_id, ip,
+         {"branch_name": b.branch_name})
+    client_db.commit()
+    return old_key
+
+
+# ── Branch Compliance Documents ─────────────────────────────────────────────────
+
+def _branch_doc_dict(d) -> Dict[str, Any]:
+    return {
+        "id": d.id, "branch_id": d.branch_id,
+        "doc_type": d.doc_type, "doc_number": d.doc_number,
+        "issue_date": d.issue_date, "expiry_date": d.expiry_date,
+        "remarks": d.remarks,
+        "file_name": d.file_name, "has_file": bool(d.file_path),
+        "uploaded_by": d.uploaded_by,
+        "created_at": d.created_at, "updated_at": d.updated_at,
+    }
+
+
+def _list_branch_documents(client_db: Session, client_id: str, branch_id: str) -> list:
+    from backend.app.modules.organization_management.models import OrgBranchDocument
+    rows = (
+        client_db.query(OrgBranchDocument)
+        .filter(
+            OrgBranchDocument.client_id == client_id,
+            OrgBranchDocument.branch_id == branch_id,
+            OrgBranchDocument.is_deleted == False,
+        )
+        .order_by(OrgBranchDocument.created_at)
+        .all()
+    )
+    return [_branch_doc_dict(d) for d in rows]
+
+
+def list_branch_documents(client_db: Session, client_id: str, branch_id: str) -> list:
+    b = repo.get_branch(client_db, client_id, branch_id)
+    if not b:
+        raise HTTPException(404, "Branch not found.")
+    return _list_branch_documents(client_db, client_id, branch_id)
+
+
+def add_branch_document(
+    client_db: Session, client_id: str, branch_id: str,
+    doc_type: str, doc_number, issue_date, expiry_date, remarks,
+    file_name: Optional[str], file_path: Optional[str],
+    actor_id: Optional[str], ip: Optional[str],
+) -> Dict:
+    from backend.app.modules.organization_management.models import OrgBranchDocument
+    b = repo.get_branch(client_db, client_id, branch_id)
+    if not b:
+        raise HTTPException(404, "Branch not found.")
+    import uuid as _uuid_mod
+    doc = OrgBranchDocument(
+        id=str(_uuid_mod.uuid4()),
+        client_id=client_id, branch_id=branch_id,
+        doc_type=doc_type, doc_number=doc_number,
+        issue_date=issue_date, expiry_date=expiry_date,
+        remarks=remarks, file_name=file_name, file_path=file_path,
+        uploaded_by=actor_id,
+    )
+    client_db.add(doc)
+    _log(client_db, client_id, "BRANCH_DOCUMENT_UPLOADED", actor_id, ip,
+         {"branch_name": b.branch_name, "doc_type": doc_type})
+    client_db.commit()
+    client_db.refresh(doc)
+    return _branch_doc_dict(doc)
+
+
+def get_branch_document_file(
+    client_db: Session, client_id: str, branch_id: str, doc_id: str,
+):
+    from backend.app.modules.organization_management.models import OrgBranchDocument
+    doc = client_db.query(OrgBranchDocument).filter(
+        OrgBranchDocument.id == doc_id,
+        OrgBranchDocument.client_id == client_id,
+        OrgBranchDocument.branch_id == branch_id,
+        OrgBranchDocument.is_deleted == False,
+    ).first()
+    if not doc:
+        raise HTTPException(404, "Document not found.")
+    if not doc.file_path:
+        raise HTTPException(404, "No file attached to this document.")
+    return doc.file_path, (doc.file_name or "document")
+
+
+def delete_branch_document(
+    client_db: Session, client_id: str, branch_id: str, doc_id: str,
+    actor_id: Optional[str], ip: Optional[str],
+) -> str:
+    from backend.app.modules.organization_management.models import OrgBranchDocument
+    doc = client_db.query(OrgBranchDocument).filter(
+        OrgBranchDocument.id == doc_id,
+        OrgBranchDocument.client_id == client_id,
+        OrgBranchDocument.branch_id == branch_id,
+        OrgBranchDocument.is_deleted == False,
+    ).first()
+    if not doc:
+        raise HTTPException(404, "Document not found.")
+    old_key = doc.file_path
+    doc.is_deleted = True
+    doc.deleted_at = datetime.utcnow()
+    _log(client_db, client_id, "BRANCH_DOCUMENT_DELETED", actor_id, ip,
+         {"branch_id": branch_id, "doc_type": doc.doc_type})
+    client_db.commit()
+    return old_key or ""
 
 
 # ── Departments ────────────────────────────────────────────────────────────────

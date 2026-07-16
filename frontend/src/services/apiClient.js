@@ -482,6 +482,15 @@ export const portalOrgApi = {
   activateBranch:  (sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/branches/${id}/activate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
   deactivateBranch:(sd, tk, id) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/branches/${id}/deactivate`, {}, { headers: { Authorization: `Bearer ${tk}` } }),
   deleteBranch:    (sd, tk, id) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/org/branches/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
+  // Branch GST Certificate
+  uploadBranchGstCert:   (sd, tk, id, formData) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/branches/${id}/gst-certificate`, formData, { headers: { Authorization: `Bearer ${tk}`, "Content-Type": "multipart/form-data" } }),
+  downloadBranchGstCert: (sd, tk, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/branches/${id}/gst-certificate/download`, { headers: { Authorization: `Bearer ${tk}` }, responseType: "blob" }),
+  deleteBranchGstCert:   (sd, tk, id) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/org/branches/${id}/gst-certificate`, { headers: { Authorization: `Bearer ${tk}` } }),
+  // Branch Compliance Documents
+  listBranchDocs:       (sd, tk, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/branches/${id}/documents`, { headers: { Authorization: `Bearer ${tk}` } }),
+  uploadBranchDoc:      (sd, tk, id, formData) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/org/branches/${id}/documents`, formData, { headers: { Authorization: `Bearer ${tk}`, "Content-Type": "multipart/form-data" } }),
+  downloadBranchDoc:    (sd, tk, id, docId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/branches/${id}/documents/${docId}/download`, { headers: { Authorization: `Bearer ${tk}` }, responseType: "blob" }),
+  deleteBranchDoc:      (sd, tk, id, docId) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/org/branches/${id}/documents/${docId}`, { headers: { Authorization: `Bearer ${tk}` } }),
 
   // Full hierarchy (company + dept tree + designations)
   hierarchy: (sd, tk, companyId) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/org/hierarchy/${companyId}`, { headers: { Authorization: `Bearer ${tk}` } }),

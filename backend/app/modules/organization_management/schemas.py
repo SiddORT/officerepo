@@ -118,6 +118,9 @@ class CompanyUpdate(BaseModel):
 
 # ── Branches ───────────────────────────────────────────────────────────────────
 
+_GSTIN_RE = r"^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"
+
+
 class BranchCreate(BaseModel):
     company_id:    str
     branch_code:   str = Field(..., max_length=60)
@@ -126,6 +129,7 @@ class BranchCreate(BaseModel):
     email:         Optional[str] = Field(None, max_length=254)
     phone:         Optional[str] = Field(None, max_length=30)
     phone_country_code: Optional[str] = Field(None, max_length=10)
+    branch_manager: Optional[str] = Field(None, max_length=200)
     address_line_1: Optional[str] = Field(None, max_length=255)
     address_line_2: Optional[str] = Field(None, max_length=255)
     city:          Optional[str] = Field(None, max_length=100)
@@ -134,11 +138,30 @@ class BranchCreate(BaseModel):
     country:       Optional[str] = Field(None, max_length=100)
     postal_code:   Optional[str] = Field(None, max_length=20)
     description:   Optional[str] = None
+    # GST & Tax
+    gst_registered:        Optional[bool]  = None
+    gstin:                 Optional[str]   = Field(None, max_length=15)
+    gst_registration_date: Optional[date]  = None
+    gst_jurisdiction:      Optional[str]   = Field(None, max_length=100)
+    state_code:            Optional[str]   = Field(None, max_length=10)
+    # Financial
+    cost_center:   Optional[str] = Field(None, max_length=100)
+    profit_center: Optional[str] = Field(None, max_length=100)
 
     @field_validator("branch_code")
     @classmethod
     def strip_code(cls, v: str) -> str:
         return v.strip().upper()
+
+    @field_validator("gstin")
+    @classmethod
+    def validate_gstin(cls, v):
+        if v:
+            import re
+            if not re.match(_GSTIN_RE, v.strip().upper()):
+                raise ValueError("Invalid GSTIN format. Expected format: 22AAAAA0000A1Z5")
+            return v.strip().upper()
+        return v
 
 
 class BranchUpdate(BaseModel):
@@ -147,6 +170,7 @@ class BranchUpdate(BaseModel):
     email:         Optional[str] = Field(None, max_length=254)
     phone:         Optional[str] = Field(None, max_length=30)
     phone_country_code: Optional[str] = Field(None, max_length=10)
+    branch_manager: Optional[str] = Field(None, max_length=200)
     address_line_1: Optional[str] = Field(None, max_length=255)
     address_line_2: Optional[str] = Field(None, max_length=255)
     city:          Optional[str] = Field(None, max_length=100)
@@ -155,6 +179,25 @@ class BranchUpdate(BaseModel):
     country:       Optional[str] = Field(None, max_length=100)
     postal_code:   Optional[str] = Field(None, max_length=20)
     description:   Optional[str] = None
+    # GST & Tax
+    gst_registered:        Optional[bool]  = None
+    gstin:                 Optional[str]   = Field(None, max_length=15)
+    gst_registration_date: Optional[date]  = None
+    gst_jurisdiction:      Optional[str]   = Field(None, max_length=100)
+    state_code:            Optional[str]   = Field(None, max_length=10)
+    # Financial
+    cost_center:   Optional[str] = Field(None, max_length=100)
+    profit_center: Optional[str] = Field(None, max_length=100)
+
+    @field_validator("gstin")
+    @classmethod
+    def validate_gstin(cls, v):
+        if v:
+            import re
+            if not re.match(_GSTIN_RE, v.strip().upper()):
+                raise ValueError("Invalid GSTIN format. Expected format: 22AAAAA0000A1Z5")
+            return v.strip().upper()
+        return v
 
 
 # ── Departments ────────────────────────────────────────────────────────────────

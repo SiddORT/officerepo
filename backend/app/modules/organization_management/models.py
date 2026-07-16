@@ -142,6 +142,7 @@ class OrgBranch(ClientBase):
     email               = Column(String(254), nullable=True)
     phone               = Column(String(30),  nullable=True)
     phone_country_code  = Column(String(10),  nullable=True)
+    branch_manager      = Column(String(200), nullable=True)
 
     # Address
     address_line_1      = Column(String(255), nullable=True)
@@ -153,11 +154,52 @@ class OrgBranch(ClientBase):
     postal_code         = Column(String(20),  nullable=True)
     description         = Column(Text, nullable=True)
 
+    # GST & Tax
+    gst_registered         = Column(Boolean,     nullable=False, default=False)
+    gstin                  = Column(String(15),  nullable=True)
+    gst_registration_date  = Column(Date,        nullable=True)
+    gst_jurisdiction       = Column(String(100), nullable=True)
+    state_code             = Column(String(10),  nullable=True)
+    gst_certificate_key    = Column(String(500), nullable=True)   # rootless private-storage key
+    gst_certificate_name   = Column(String(255), nullable=True)   # original filename
+
+    # Financial
+    cost_center         = Column(String(100), nullable=True)
+    profit_center       = Column(String(100), nullable=True)
+
     is_active           = Column(Boolean, nullable=False, default=True)
     is_deleted          = Column(Boolean, nullable=False, default=False)
     deleted_at          = Column(DateTime, nullable=True)
     created_at          = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at          = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class OrgBranchDocument(ClientBase):
+    """Compliance documents attached to a branch (Shop & Establishment, Trade License, etc.).
+
+    File is stored in private storage. `file_path` holds the rootless storage key.
+    """
+    __tablename__ = "org_branch_documents"
+
+    id          = Column(String(36), primary_key=True, default=_uuid)
+    client_id   = Column(String(36), nullable=False, index=True)
+    branch_id   = Column(String(36), ForeignKey("org_branches.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    doc_type    = Column(String(100), nullable=False)   # GST Certificate / Shop & Establishment / …
+    doc_number  = Column(String(100), nullable=True)
+    issue_date  = Column(Date, nullable=True)
+    expiry_date = Column(Date, nullable=True)
+    remarks     = Column(Text, nullable=True)
+
+    file_name   = Column(String(500), nullable=True)   # original filename shown to user
+    file_path   = Column(String(500), nullable=True)   # rootless storage key
+
+    uploaded_by = Column(String(36), nullable=True)    # admin_user_id
+
+    is_deleted  = Column(Boolean, nullable=False, default=False)
+    deleted_at  = Column(DateTime, nullable=True)
+    created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
 
 class OrgDepartment(ClientBase):
