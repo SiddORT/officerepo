@@ -1,0 +1,534 @@
+Let's redesign the Recruitment and Interview Management architecture to create a seamless hiring workflow and eliminate duplicate candidate management.
+
+IMPORTANT
+
+This is an architecture and UI/UX improvement.
+
+Do NOT redesign existing database tables unless absolutely necessary.
+
+Do NOT duplicate candidate information.
+
+Reuse existing APIs wherever possible.
+
+Maintain backward compatibility.
+
+==================================================
+NEW HIRING ARCHITECTURE
+==================================================
+
+The hiring lifecycle should now follow this flow:
+
+Job Requisition
+↓
+
+Job Opening
+↓
+
+Candidate Master
+
+↓
+
+Interview Management
+
+↓
+
+Offer Management
+
+↓
+
+Employee Onboarding
+
+↓
+
+Employee Master
+
+Ownership of modules should be clearly separated.
+
+Recruitment owns talent acquisition.
+
+Interview Management owns candidate evaluation and selection.
+
+Employee Onboarding owns employee conversion.
+
+Organization owns Employee Master.
+
+==================================================
+RECRUITMENT MODULE
+==================================================
+
+Recruitment should ONLY contain:
+
+• Dashboard
+• Job Requisitions
+• Job Openings
+• Candidate Master
+• Reports
+• Settings
+
+Remove Offer Management from Recruitment.
+
+Recruitment ends once a candidate is ready for interview.
+
+==================================================
+CANDIDATE MASTER
+==================================================
+
+Candidate Master should become a repository of all candidates.
+
+It should NOT contain interview workflows.
+
+It should NOT contain offer workflows.
+
+It should store only candidate information.
+
+Examples
+
+Personal Details
+
+Contact Information
+
+Resume
+
+Education
+
+Experience
+
+Skills
+
+Current Salary
+
+Expected Salary
+
+Notice Period
+
+Source
+
+Documents
+
+Portfolio
+
+LinkedIn
+
+GitHub
+
+Status
+
+Candidate Master should support multiple applications for the same candidate.
+
+One candidate can apply to multiple job openings.
+
+Do not duplicate candidate records.
+
+==================================================
+INTERVIEW MANAGEMENT
+==================================================
+
+Interview Management becomes the operational workspace.
+
+Sidebar
+
+• Dashboard
+• Interview Schedule
+• Calendar
+• Candidate Workspace
+• Offers
+• Reports
+• Settings
+
+Interview Management now owns:
+
+Interview Scheduling
+
+Interview Calendar
+
+Interview Pipelines
+
+Interview Panels
+
+Interview Feedback
+
+Candidate Evaluation
+
+Offer Management
+
+==================================================
+CANDIDATE WORKSPACE
+==================================================
+
+Create a completely new screen called
+
+Candidate Workspace
+
+This is NOT Candidate Master.
+
+Candidate Workspace is where HR performs all hiring activities.
+
+Tabs
+
+Overview
+
+Interview Progress
+
+Offers
+
+Documents
+
+Timeline
+
+Notes
+
+Activities
+
+==================================================
+OVERVIEW
+==================================================
+
+Display
+
+Candidate Photo
+
+Candidate Name
+
+Applied Position
+
+Department
+
+Recruiter
+
+Current Stage
+
+Current Status
+
+Experience
+
+Notice Period
+
+Expected Salary
+
+Upcoming Interview
+
+Offer Status
+
+Application Date
+
+Current Hiring Stage
+
+Display a horizontal hiring progress indicator.
+
+Example
+
+Application
+
+↓
+
+Interview
+
+↓
+
+Offer
+
+↓
+
+Onboarding
+
+↓
+
+Employee
+
+==================================================
+INTERVIEW PROGRESS
+==================================================
+
+Display every interview round.
+
+Examples
+
+Screening
+
+Technical
+
+Manager
+
+HR
+
+Final
+
+Each round should show
+
+Status
+
+Scheduled Date
+
+Completed Date
+
+Interviewer
+
+Feedback Status
+
+Buttons
+
+View Interview
+
+Reschedule
+
+Open Calendar
+
+All interview information should come directly from Interview Management.
+
+Do NOT duplicate interview data.
+
+==================================================
+OFFERS
+==================================================
+
+Move Offer Management here.
+
+Display
+
+Offer Status
+
+Salary Offered
+
+Offer Version
+
+Offer Date
+
+Joining Date
+
+Candidate Response
+
+Buttons
+
+Generate Offer
+
+View Offer
+
+Resend Offer
+
+Withdraw Offer
+
+Accept Offer
+
+Reject Offer
+
+Only candidates who successfully complete interviews should reach this section.
+
+==================================================
+DOCUMENTS
+==================================================
+
+Display
+
+Resume
+
+Certificates
+
+Portfolio
+
+Offer Letter
+
+Additional Documents
+
+Allow uploads.
+
+==================================================
+TIMELINE
+==================================================
+
+Display complete hiring history.
+
+Examples
+
+Candidate Created
+
+Applied To Job
+
+Resume Reviewed
+
+Interview Scheduled
+
+Interview Completed
+
+Offer Generated
+
+Offer Accepted
+
+Onboarding Created
+
+Joined
+
+Use a beautiful chronological timeline.
+
+==================================================
+NOTES
+==================================================
+
+Allow HR and interviewers to add notes.
+
+Display
+
+Author
+
+Date
+
+Rich Text
+
+Future support
+
+Attachments
+
+==================================================
+ACTIVITIES
+==================================================
+
+System-generated audit logs.
+
+Examples
+
+Candidate Updated
+
+Interview Rescheduled
+
+Feedback Submitted
+
+Offer Sent
+
+Offer Accepted
+
+==================================================
+ONBOARDING INTEGRATION
+==================================================
+
+When Offer Status becomes
+
+Accepted
+
+Display button
+
+Create Employee Onboarding
+
+Clicking this should automatically create an onboarding record.
+
+Do NOT ask HR to enter candidate details again.
+
+Automatically transfer
+
+Personal Information
+
+Education
+
+Experience
+
+Resume
+
+Offer Information
+
+Documents
+
+Only ask HR to complete onboarding-specific details.
+
+Examples
+
+Employee Code
+
+Company
+
+Branch
+
+Department
+
+Designation
+
+Reporting Manager
+
+Joining Date
+
+Salary Structure
+
+Assets Required
+
+==================================================
+EMPLOYEE MASTER INTEGRATION
+==================================================
+
+When onboarding completes
+
+Automatically create Employee.
+
+Employee Master should inherit all candidate information.
+
+No duplicate data entry.
+
+No duplicate uploads.
+
+==================================================
+VISUAL DESIGN
+==================================================
+
+Candidate Workspace should become the center of the hiring journey.
+
+Modern enterprise layout.
+
+Large candidate header.
+
+Beautiful hiring progress bar.
+
+Rounded cards.
+
+Soft shadows.
+
+Generous spacing.
+
+Responsive.
+
+==================================================
+MICRO ANIMATIONS
+==================================================
+
+Fade-in cards
+
+Smooth tab transitions
+
+Timeline animations
+
+Progress bar animation
+
+Hover elevation
+
+200-250ms duration
+
+No excessive motion.
+
+==================================================
+RESULT
+==================================================
+
+The final architecture should feel like:
+
+Recruitment
+
+↓
+
+Candidate Master
+
+↓
+
+Interview Management (Candidate Workspace)
+
+↓
+
+Offer Management
+
+↓
+
+Employee Onboarding
+
+↓
+
+Employee Master
+
+The user should never feel that they are switching between disconnected modules.
+
+Candidate Workspace should become the single operational screen for HR after recruitment.
+
+The final experience should be comparable to enterprise ATS products such as Greenhouse, Lever, Workday and BambooHR while maintaining the Office Repo branding, design language and existing dark theme.
