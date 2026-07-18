@@ -68,6 +68,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_BASE_DOMAIN: ${VITE_BASE_DOMAIN}
 
     restart: unless-stopped
 
