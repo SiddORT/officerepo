@@ -67,7 +67,7 @@ function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/contact" element={<EnquiryPage />} />
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <AdminLoginPage />} />
+      <Route path="/login" element={<ClientLoginPage />} />
       <Route path="/admin" element={user ? <Navigate to="/dashboard" replace /> : <AdminLoginPage />} />
       <Route path="/client-login" element={<ClientLoginPage />} />
       <Route path="/accept-invite" element={<AcceptInvitePage />} />
