@@ -9,6 +9,7 @@ import {
   useReducedMotion,
 } from "framer-motion";
 import { portalLookupApi } from "../../services/apiClient";
+import { useTenant } from "../../contexts/TenantContext";
 
 const ACCENT = "#00aeec";
 const ORANGE = "#ff7a1a";
@@ -52,6 +53,7 @@ const fadeSlide = {
 
 export default function ClientLoginPage() {
   const navigate = useNavigate();
+  const { mode, baseDomain } = useTenant();
   const reduced  = useReducedMotion();
 
   const [email,   setEmail]   = useState("");
@@ -84,7 +86,11 @@ export default function ClientLoginPage() {
     try {
       const res = await portalLookupApi.lookupWorkspace(email.trim());
       const { subdomain } = res.data.data;
-      navigate(`/portal/${subdomain}/login?email=${encodeURIComponent(email.trim())}`);
+      if (mode === "hostname" && baseDomain) {
+        window.location.href = `${window.location.protocol}//${subdomain}.${baseDomain}/login?email=${encodeURIComponent(email.trim())}`;
+      } else {
+        navigate(`/portal/${subdomain}/login?email=${encodeURIComponent(email.trim())}`);
+      }
     } catch (err) {
       if (err?.response?.status === 404) {
         setError("No workspace found for this email. Check the email or contact your admin.");

@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate, useParams } from "react-router-dom";
 import { PortalAuthProvider, usePortalAuth } from "../../contexts/PortalAuthContext";
+import { useTenant } from "../../contexts/TenantContext";
 import { PortalNavProvider } from "../../contexts/PortalNavContext";
 import PortalLoginPage from "./PortalLoginPage";
 import PortalLayout from "./PortalLayout";
@@ -161,13 +162,13 @@ import OrgHierarchy from "./org-management/OrgHierarchy";
 
 function PortalProtectedRoute({ children }) {
   const { user, subdomain } = usePortalAuth();
-  if (!user) return <Navigate to={`/portal/${subdomain}`} replace />;
+  const { mode } = useTenant();
+  if (!user) return <Navigate to={mode === "hostname" ? "/login" : `/portal/${subdomain}`} replace />;
   return children;
 }
 
 function PortalProfilePage() {
-  const { user } = usePortalAuth();
-  const { subdomain } = useParams();
+  const { user, subdomain } = usePortalAuth();
   return (
     <PortalLayout title="My Profile">
       <div className="max-w-lg space-y-4">
@@ -210,12 +211,14 @@ function CS({ module, submodule, description }) {
 
 function PortalRoutes() {
   const { user, subdomain } = usePortalAuth();
+  const { mode } = useTenant();
+  const pp = (path) => mode === "hostname" ? path : `/portal/${subdomain}${path}`;
 
   return (
     <Routes>
       {/* Auth */}
-      <Route path="/" element={user ? <Navigate to={`/portal/${subdomain}/dashboard`} replace /> : <PortalLoginPage />} />
-      <Route path="/login" element={user ? <Navigate to={`/portal/${subdomain}/dashboard`} replace /> : <PortalLoginPage />} />
+      <Route path="/" element={user ? <Navigate to={pp("/dashboard")} replace /> : <PortalLoginPage />} />
+      <Route path="/login" element={user ? <Navigate to={pp("/dashboard")} replace /> : <PortalLoginPage />} />
       <Route path="/accept-invite" element={<PortalAcceptInvitePage />} />
 
       {/* Dashboard + profile */}
@@ -233,15 +236,15 @@ function PortalRoutes() {
       <Route path="/user-management/login-logs"          element={<Protected><LoginLogs /></Protected>} />
       <Route path="/user-management/sessions"            element={<Protected><Sessions /></Protected>} />
       <Route path="/user-management/activity"            element={<Protected><ActivityLogs /></Protected>} />
-      <Route path="/user-management"  element={<Navigate to={`/portal/${subdomain}/user-management/users`} replace />} />
-      <Route path="/user-management/*" element={<Navigate to={`/portal/${subdomain}/user-management/users`} replace />} />
+      <Route path="/user-management"  element={<Navigate to={pp("/user-management/users")} replace />} />
+      <Route path="/user-management/*" element={<Navigate to={pp("/user-management/users")} replace />} />
 
       {/* ── Employee Management ──────────────────────────────────────── */}
       <Route path="/employees"             element={<Protected><EmployeeList /></Protected>} />
       <Route path="/employees/new"         element={<Protected><EmployeeForm editMode={false} /></Protected>} />
       <Route path="/employees/:empId"      element={<Protected><EmployeeDetails /></Protected>} />
       <Route path="/employees/:empId/edit" element={<Protected><EmployeeForm editMode={true} /></Protected>} />
-      <Route path="/employees/*"           element={<Navigate to={`/portal/${subdomain}/employees`} replace />} />
+      <Route path="/employees/*"           element={<Navigate to={pp("/employees")} replace />} />
 
       {/* ── Organization Management ──────────────────────────────────── */}
       <Route path="/org/companies"                       element={<Protected><CompanyList /></Protected>} />
@@ -259,8 +262,8 @@ function PortalRoutes() {
       <Route path="/org/designations/:desigId"           element={<Protected><DesignationDetails /></Protected>} />
       <Route path="/org/designations/:desigId/edit"      element={<Protected><DesignationForm editMode={true} /></Protected>} />
       <Route path="/org/hierarchy/:companyId"            element={<Protected><OrgHierarchy /></Protected>} />
-      <Route path="/org"   element={<Navigate to={`/portal/${subdomain}/org/companies`} replace />} />
-      <Route path="/org/*" element={<Navigate to={`/portal/${subdomain}/org/companies`} replace />} />
+      <Route path="/org"   element={<Navigate to={pp("/org/companies")} replace />} />
+      <Route path="/org/*" element={<Navigate to={pp("/org/companies")} replace />} />
 
       {/* ── Employee Documents ───────────────────────────────────────── */}
       <Route path="/employee-documents/types"       element={<Protected><PortalLayout title="Document Types"><DocTypeList /></PortalLayout></Protected>} />
@@ -268,7 +271,7 @@ function PortalRoutes() {
       <Route path="/employee-documents/:docId/edit" element={<Protected><EmployeeDocForm /></Protected>} />
       <Route path="/employee-documents/:docId"      element={<Protected><EmployeeDocDetails /></Protected>} />
       <Route path="/employee-documents"             element={<Protected><EmployeeDocList /></Protected>} />
-      <Route path="/employee-documents/*"           element={<Navigate to={`/portal/${subdomain}/employee-documents`} replace />} />
+      <Route path="/employee-documents/*"           element={<Navigate to={pp("/employee-documents")} replace />} />
 
       {/* ── Asset Management ─────────────────────────────────────────── */}
       <Route path="/assets/categories"              element={<Protected><AssetCategories /></Protected>} />
@@ -296,8 +299,8 @@ function PortalRoutes() {
       <Route path="/assets/returns/:returnId"      element={<Protected><ReturnDetails /></Protected>} />
       <Route path="/assets/returns"                element={<Protected><ReturnList /></Protected>} />
       <Route path="/assets/disposal"     element={<CS module="Asset Management" submodule="Asset Disposal" />} />
-      <Route path="/assets"   element={<Navigate to={`/portal/${subdomain}/assets/inventory`} replace />} />
-      <Route path="/assets/*" element={<Navigate to={`/portal/${subdomain}/assets/inventory`} replace />} />
+      <Route path="/assets"   element={<Navigate to={pp("/assets/inventory")} replace />} />
+      <Route path="/assets/*" element={<Navigate to={pp("/assets/inventory")} replace />} />
 
       {/* ── Recruitment ───────────────────────────────────────────── */}
       <Route path="/recruitment" element={<Protected><PortalLayout title="Recruitment"><RecruitmentDashboard /></PortalLayout></Protected>} />
@@ -313,10 +316,10 @@ function PortalRoutes() {
       <Route path="/recruitment/candidates/:candId"       element={<Protected><PortalLayout title="Candidate Details"><CandidateDetails /></PortalLayout></Protected>} />
       <Route path="/recruitment/candidates"               element={<Protected><PortalLayout title="Candidates"><CandidateList /></PortalLayout></Protected>} />
       {/* Offers moved to Interview Management — redirect old paths */}
-      <Route path="/recruitment/offers/new"           element={<Navigate to={`/portal/${subdomain}/hrms/interviews/offers/new`} replace />} />
-      <Route path="/recruitment/offers/:offerId/edit" element={<Navigate to={`/portal/${subdomain}/hrms/interviews/offers`} replace />} />
-      <Route path="/recruitment/offers"               element={<Navigate to={`/portal/${subdomain}/hrms/interviews/offers`} replace />} />
-      <Route path="/recruitment/*" element={<Navigate to={`/portal/${subdomain}/recruitment`} replace />} />
+      <Route path="/recruitment/offers/new"           element={<Navigate to={pp("/hrms/interviews/offers/new")} replace />} />
+      <Route path="/recruitment/offers/:offerId/edit" element={<Navigate to={pp("/hrms/interviews/offers")} replace />} />
+      <Route path="/recruitment/offers"               element={<Navigate to={pp("/hrms/interviews/offers")} replace />} />
+      <Route path="/recruitment/*" element={<Navigate to={pp("/recruitment")} replace />} />
 
       {/* ── Interview Management ──────────────────────────────────────── */}
       {/* Offers (moved from Recruitment) — static paths BEFORE /:interviewId */}
@@ -400,8 +403,8 @@ function PortalRoutes() {
       <Route path="/hrms/exit/documents"                             element={<Protected><ResignationList /></Protected>} />
       <Route path="/hrms/exit"                                       element={<Protected><ExitDashboard /></Protected>} />
       <Route path="/hrms/ess"         element={<CS module="HRMS" submodule="Employee Self Service" />} />
-      <Route path="/hrms"             element={<Navigate to={`/portal/${subdomain}/recruitment`} replace />} />
-      <Route path="/hrms/*"           element={<Navigate to={`/portal/${subdomain}/recruitment`} replace />} />
+      <Route path="/hrms"             element={<Navigate to={pp("/recruitment")} replace />} />
+      <Route path="/hrms/*"           element={<Navigate to={pp("/recruitment")} replace />} />
 
       {/* ── CRM ──────────────────────────────────────────────────────── */}
       <Route path="/crm/leads"         element={<CS module="CRM" submodule="CRM Leads" />} />
@@ -411,16 +414,16 @@ function PortalRoutes() {
       <Route path="/crm/activities"    element={<CS module="CRM" submodule="CRM Activities" />} />
       <Route path="/crm/quotes"        element={<CS module="CRM" submodule="Quotes" />} />
       <Route path="/crm/customers"     element={<CS module="CRM" submodule="Customers" />} />
-      <Route path="/crm"               element={<Navigate to={`/portal/${subdomain}/crm/leads`} replace />} />
-      <Route path="/crm/*"             element={<Navigate to={`/portal/${subdomain}/crm/leads`} replace />} />
+      <Route path="/crm"               element={<Navigate to={pp("/crm/leads")} replace />} />
+      <Route path="/crm/*"             element={<Navigate to={pp("/crm/leads")} replace />} />
 
       {/* ── LMS ──────────────────────────────────────────────────────── */}
       <Route path="/lms/courses"        element={<CS module="LMS" submodule="Courses" />} />
       <Route path="/lms/paths"          element={<CS module="LMS" submodule="Learning Paths" />} />
       <Route path="/lms/assessments"    element={<CS module="LMS" submodule="Assessments" />} />
       <Route path="/lms/certifications" element={<CS module="LMS" submodule="Certifications" />} />
-      <Route path="/lms"                element={<Navigate to={`/portal/${subdomain}/lms/courses`} replace />} />
-      <Route path="/lms/*"              element={<Navigate to={`/portal/${subdomain}/lms/courses`} replace />} />
+      <Route path="/lms"                element={<Navigate to={pp("/lms/courses")} replace />} />
+      <Route path="/lms/*"              element={<Navigate to={pp("/lms/courses")} replace />} />
 
       {/* ── BMS ──────────────────────────────────────────────────────── */}
       <Route path="/bms/products"   element={<CS module="BMS" submodule="Products" />} />
@@ -428,8 +431,8 @@ function PortalRoutes() {
       <Route path="/bms/categories" element={<CS module="BMS" submodule="BMS Categories" />} />
       <Route path="/bms/customers"  element={<CS module="BMS" submodule="BMS Customers" />} />
       <Route path="/bms/contracts"  element={<CS module="BMS" submodule="Contracts" />} />
-      <Route path="/bms"            element={<Navigate to={`/portal/${subdomain}/bms/products`} replace />} />
-      <Route path="/bms/*"          element={<Navigate to={`/portal/${subdomain}/bms/products`} replace />} />
+      <Route path="/bms"            element={<Navigate to={pp("/bms/products")} replace />} />
+      <Route path="/bms/*"          element={<Navigate to={pp("/bms/products")} replace />} />
 
       {/* ── Finance & Procurement ────────────────────────────────────── */}
       <Route path="/finance/vendors"           element={<CS module="Finance & Procurement" submodule="Vendors" />} />
@@ -439,8 +442,8 @@ function PortalRoutes() {
       <Route path="/finance/payments"          element={<CS module="Finance & Procurement" submodule="Payments" />} />
       <Route path="/finance/budgets"           element={<CS module="Finance & Procurement" submodule="Budgets" />} />
       <Route path="/finance/cost-centers"      element={<CS module="Finance & Procurement" submodule="Cost Centers" />} />
-      <Route path="/finance"                   element={<Navigate to={`/portal/${subdomain}/finance/vendors`} replace />} />
-      <Route path="/finance/*"                 element={<Navigate to={`/portal/${subdomain}/finance/vendors`} replace />} />
+      <Route path="/finance"                   element={<Navigate to={pp("/finance/vendors")} replace />} />
+      <Route path="/finance/*"                 element={<Navigate to={pp("/finance/vendors")} replace />} />
 
       {/* ── Task & Project Management ────────────────────────────────── */}
       <Route path="/tasks/projects"   element={<CS module="Task & Project Management" submodule="Projects" />} />
@@ -448,8 +451,8 @@ function PortalRoutes() {
       <Route path="/tasks/list"       element={<CS module="Task & Project Management" submodule="Task List" />} />
       <Route path="/tasks/sprints"    element={<CS module="Task & Project Management" submodule="Sprints" />} />
       <Route path="/tasks/timesheets" element={<CS module="Task & Project Management" submodule="Timesheets" />} />
-      <Route path="/tasks"            element={<Navigate to={`/portal/${subdomain}/tasks/projects`} replace />} />
-      <Route path="/tasks/*"          element={<Navigate to={`/portal/${subdomain}/tasks/projects`} replace />} />
+      <Route path="/tasks"            element={<Navigate to={pp("/tasks/projects")} replace />} />
+      <Route path="/tasks/*"          element={<Navigate to={pp("/tasks/projects")} replace />} />
 
       {/* ── Helpdesk ─────────────────────────────────────────────────── */}
       <Route path="/helpdesk/tickets"     element={<CS module="Helpdesk" submodule="Tickets" />} />
@@ -457,16 +460,16 @@ function PortalRoutes() {
       <Route path="/helpdesk/sla"         element={<CS module="Helpdesk" submodule="SLA Management" />} />
       <Route path="/helpdesk/escalations" element={<CS module="Helpdesk" submodule="Escalations" />} />
       <Route path="/helpdesk/knowledge"   element={<CS module="Helpdesk" submodule="Knowledge Articles" />} />
-      <Route path="/helpdesk"             element={<Navigate to={`/portal/${subdomain}/helpdesk/tickets`} replace />} />
-      <Route path="/helpdesk/*"           element={<Navigate to={`/portal/${subdomain}/helpdesk/tickets`} replace />} />
+      <Route path="/helpdesk"             element={<Navigate to={pp("/helpdesk/tickets")} replace />} />
+      <Route path="/helpdesk/*"           element={<Navigate to={pp("/helpdesk/tickets")} replace />} />
 
       {/* ── Visitor Management ───────────────────────────────────────── */}
       <Route path="/visitors/registration"  element={<CS module="Visitor Management" submodule="Visitor Registration" />} />
       <Route path="/visitors/pre-approvals" element={<CS module="Visitor Management" submodule="Pre-Approvals" />} />
       <Route path="/visitors/check-in"      element={<CS module="Visitor Management" submodule="Check-In / Check-Out" />} />
       <Route path="/visitors/passes"        element={<CS module="Visitor Management" submodule="Visitor Passes" />} />
-      <Route path="/visitors"               element={<Navigate to={`/portal/${subdomain}/visitors/registration`} replace />} />
-      <Route path="/visitors/*"             element={<Navigate to={`/portal/${subdomain}/visitors/registration`} replace />} />
+      <Route path="/visitors"               element={<Navigate to={pp("/visitors/registration")} replace />} />
+      <Route path="/visitors/*"             element={<Navigate to={pp("/visitors/registration")} replace />} />
 
       {/* ── Billing Management ───────────────────────────────────────── */}
       <Route path="/billing"   element={<CS module="Billing Management" />} />
@@ -478,8 +481,8 @@ function PortalRoutes() {
       <Route path="/reports/assets"    element={<CS module="Reports" submodule="Asset Reports" />} />
       <Route path="/reports/finance"   element={<CS module="Reports" submodule="Finance Reports" />} />
       <Route path="/reports/scheduled" element={<CS module="Reports" submodule="Scheduled Reports" />} />
-      <Route path="/reports"           element={<Navigate to={`/portal/${subdomain}/reports/org`} replace />} />
-      <Route path="/reports/*"         element={<Navigate to={`/portal/${subdomain}/reports/org`} replace />} />
+      <Route path="/reports"           element={<Navigate to={pp("/reports/org")} replace />} />
+      <Route path="/reports/*"         element={<Navigate to={pp("/reports/org")} replace />} />
 
       {/* ── Knowledge Base ───────────────────────────────────────────── */}
       <Route path="/knowledge"   element={<CS module="Knowledge Base" />} />
@@ -490,17 +493,19 @@ function PortalRoutes() {
       <Route path="/workflow/automation"    element={<CS module="Workflow Engine" submodule="Automation Rules" />} />
       <Route path="/workflow/notifications" element={<CS module="Workflow Engine" submodule="Notification Templates" />} />
       <Route path="/workflow/escalations"   element={<CS module="Workflow Engine" submodule="Escalation Rules" />} />
-      <Route path="/workflow"               element={<Navigate to={`/portal/${subdomain}/workflow/approvals`} replace />} />
-      <Route path="/workflow/*"             element={<Navigate to={`/portal/${subdomain}/workflow/approvals`} replace />} />
+      <Route path="/workflow"               element={<Navigate to={pp("/workflow/approvals")} replace />} />
+      <Route path="/workflow/*"             element={<Navigate to={pp("/workflow/approvals")} replace />} />
 
       {/* Fallback */}
-      <Route path="*" element={<Navigate to={user ? `/portal/${subdomain}/dashboard` : `/portal/${subdomain}`} replace />} />
+      <Route path="*" element={<Navigate to={user ? pp("/dashboard") : pp("/")} replace />} />
     </Routes>
   );
 }
 
 export default function ClientPortalPage() {
-  const { subdomain } = useParams();
+  const { tenant: tenantFromCtx } = useTenant();
+  const { subdomain: subFromUrl } = useParams();
+  const subdomain = tenantFromCtx ?? subFromUrl;
   return (
     <PortalAuthProvider subdomain={subdomain}>
       <PortalNavProvider>

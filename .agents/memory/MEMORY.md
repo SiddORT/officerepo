@@ -39,3 +39,4 @@
 - [Global portal email uniqueness](portal-global-email-uniqueness.md) — email_hash (SHA-256) on client_admin_users enforces cross-workspace uniqueness; lookup-workspace endpoint resolves email→subdomain for email-first login.
 - [Portal bare-axios API_BASE_URL must be empty string](portal-api-base-url.md) — all portal bare-axios calls prefix full paths (/api/v1/portal/...); API_BASE_URL must be "" not VITE_API_BASE_URL (which is /api/v1) or every URL double-prefixes and 405s.
 - [Duplicate SQLAlchemy index naming](duplicate-index-naming.md) — column index=True + explicit same-named Index() in __table_args__ crashes create_all for ALL client-DB tables, not just the offending module; recurs across modules, grep the whole tree.
+- [Hostname vs path tenant routing](hostname-tenant-routing.md) — VITE_BASE_DOMAIN controls mode; TenantContext is single source of truth; pp() helper in PortalRoutes; ClientPortalPage export reads tenantFromCtx ?? subFromUrl.

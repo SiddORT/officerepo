@@ -55,7 +55,7 @@ export default function PortalLoginPage() {
   const [searchParams] = useSearchParams();
   const { login, subdomain } = usePortalAuth();
   const navigate = useNavigate();
-  const { mode } = (typeof useTenant === "function" ? useTenant() : { mode: "path" });
+  const { mode } = useTenant();
 
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
   const [password, setPassword] = useState("");
@@ -82,7 +82,7 @@ export default function PortalLoginPage() {
   };
   const handleMouseLeave = () => { mvX.set(0); mvY.set(0); };
 
-  const workspaceName = subdomain.charAt(0).toUpperCase() + subdomain.slice(1);
+  const workspaceName = subdomain ? subdomain.charAt(0).toUpperCase() + subdomain.slice(1) : "";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -93,7 +93,7 @@ export default function PortalLoginPage() {
       const res = await portalAuthApi.login(subdomain, email, password);
       const data = res.data.data;
       login({ email: data.email, name: data.name, client_id: data.client_id, admin_user_id: data.admin_user_id, workspace_name: data.workspace_name }, data.access_token);
-      navigate(`/portal/${subdomain}/dashboard`);
+      navigate(mode === "hostname" ? "/dashboard" : `/portal/${subdomain}/dashboard`);
     } catch (err) {
       setError(err.response?.data?.detail || "Invalid credentials.");
     } finally {

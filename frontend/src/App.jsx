@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { TenantProvider, useTenant } from "./contexts/TenantContext";
 import LandingPage from "./pages/landing/LandingPage";
 import EnquiryPage from "./pages/enquiry/EnquiryPage";
 import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
@@ -54,6 +55,12 @@ function ProtectedRoute({ children, requireRole }) {
 
 function AppRoutes() {
   const { user } = useAuth();
+  const { mode, tenant } = useTenant();
+
+  if (mode === "hostname" && tenant) {
+    return <ClientPortalPage />;
+  }
+
   return (
     <Routes>
       {/* Public */}
@@ -351,10 +358,12 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </ThemeProvider>
+    <TenantProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </ThemeProvider>
+    </TenantProvider>
   );
 }
