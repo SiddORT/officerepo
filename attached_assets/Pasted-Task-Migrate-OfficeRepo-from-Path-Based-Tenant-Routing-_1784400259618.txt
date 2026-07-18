@@ -1,0 +1,221 @@
+Task: Migrate OfficeRepo from Path-Based Tenant Routing to Hostname-Based Routing
+
+We have successfully deployed the application on our VPS.
+
+IMPORTANT
+
+The VPS infrastructure is COMPLETE and WORKING.
+
+Do NOT modify or regenerate:
+
+Docker Compose
+Dockerfiles
+Nginx
+SSL configuration
+DNS
+GitHub Actions
+Deployment scripts
+VPS configuration
+
+Only modify the application code (React + FastAPI).
+
+Current Architecture
+
+Today tenant routing is path-based.
+
+Examples:
+
+uat.officerepo.com/portal/xyz/dashboard
+
+/api/v1/portal/xyz/auth/login
+/api/v1/portal/xyz/navigation
+/api/v1/portal/xyz/employees
+
+The frontend uses
+
+/portal/:subdomain/*
+
+and
+
+useParams().subdomain
+
+The backend also receives the tenant as a URL path parameter.
+
+Required Architecture
+
+Move to hostname-based tenant routing while maintaining backward compatibility.
+
+Main domain:
+
+https://uat.officerepo.com/
+
+Landing page.
+
+https://uat.officerepo.com/admin
+
+Admin login.
+
+https://uat.officerepo.com/login
+
+Common client login (workspace/email discovery).
+
+Tenant domains:
+
+https://xyz.uat.officerepo.com/login
+
+https://xyz.uat.officerepo.com/dashboard
+
+https://xyz.uat.officerepo.com/employees
+
+https://xyz.uat.officerepo.com/settings
+
+Notice there must NOT be
+
+/portal/xyz/
+
+in the URL anymore.
+
+Requirements
+1. Detect tenant from hostname
+
+Read
+
+window.location.hostname
+
+Example:
+
+uat.officerepo.com
+
+means
+
+tenant = null
+
+Example:
+
+xyz.uat.officerepo.com
+
+means
+
+tenant = "xyz"
+
+Use
+
+VITE_BASE_DOMAIN
+
+so the code works in every environment.
+
+Example
+
+VITE_BASE_DOMAIN=uat.officerepo.com
+2. Create a global Tenant Context
+
+Create a reusable tenant provider.
+
+The rest of the application should obtain the tenant from this context instead of reading URL parameters.
+
+Avoid duplicating hostname parsing.
+
+3. Keep old routes working
+
+Existing routes like
+
+/portal/:subdomain/*
+
+must continue working temporarily.
+
+Do NOT break existing functionality.
+
+They can internally use the same tenant context.
+
+This allows gradual migration.
+
+4. API Layer
+
+Do NOT change backend business logic.
+
+Continue calling the existing APIs.
+
+If the backend still requires
+
+/api/v1/portal/{subdomain}/...
+
+then automatically inject the detected tenant into API requests.
+
+The UI should never expose /portal/{subdomain} in browser URLs.
+
+5. Routing
+
+Support
+
+uat.officerepo.com/
+
+Marketing site.
+
+uat.officerepo.com/login
+
+Common login.
+
+uat.officerepo.com/admin
+
+Admin.
+
+xyz.uat.officerepo.com/login
+
+Tenant login.
+
+xyz.uat.officerepo.com/dashboard
+
+Tenant dashboard.
+
+xyz.uat.officerepo.com/employees
+
+Tenant employees.
+
+etc.
+
+6. Development Compatibility
+
+The application must continue working on Replit.
+
+If running on:
+
+localhost
+
+or
+
+*.replit.dev
+
+the existing path-based routing should continue working.
+
+Hostname routing should activate only when the hostname matches
+
+VITE_BASE_DOMAIN
+
+This allows developers to continue using Replit without requiring wildcard DNS.
+
+7. Deployment Compatibility
+
+Do NOT modify deployment.
+
+The application must continue deploying using our existing GitHub Actions pipeline.
+
+The same build should work on:
+
+Replit
+Localhost
+VPS
+
+without separate branches.
+
+Deliverables
+
+Please provide:
+
+List of files changed.
+Explanation of the routing changes.
+Migration strategy.
+Confirmation that:
+Existing /portal/:subdomain/* URLs still work.
+New hostname routing works.
+Replit development still works.
+VPS deployment requires no infrastructure changes.
