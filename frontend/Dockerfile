@@ -11,7 +11,7 @@ COPY . .
 ARG VITE_BASE_DOMAIN
 ENV VITE_BASE_DOMAIN=$VITE_BASE_DOMAIN
 
-RUN npm run build
+RUN NODE_OPTIONS=--max-old-space-size=2048 npm run build
 
 FROM nginx:alpine AS runtime
 
