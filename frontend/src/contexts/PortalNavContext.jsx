@@ -1,6 +1,5 @@
 // @refresh reset
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { useParams } from "react-router-dom";
 import { usePortalAuth } from "./PortalAuthContext";
 import { portalNavigationApi } from "../services/apiClient";
 
@@ -12,8 +11,7 @@ const PortalNavContext = createContext({
 });
 
 export function PortalNavProvider({ children }) {
-  const { token } = usePortalAuth();
-  const { subdomain } = useParams();
+  const { token, subdomain } = usePortalAuth();
   const [navModules, setNavModules] = useState([]);
   const [workspaceName, setWorkspaceName] = useState(
     subdomain ? subdomain.charAt(0).toUpperCase() + subdomain.slice(1) : ""
