@@ -18,6 +18,8 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.PORT }}
+          command_timeout: 30m
+
           script: |
             set -e
 
@@ -29,14 +31,9 @@ jobs:
             git pull origin main
 
             echo "========================================"
-            echo "Building backend..."
+            echo "Building Docker images..."
             echo "========================================"
-            docker compose build --pull backend
-
-            echo "========================================"
-            echo "Building frontend..."
-            echo "========================================"
-            DOCKER_BUILDKIT=0 docker compose build --pull frontend
+            docker compose build --pull
 
             echo "========================================"
             echo "Restarting containers..."
