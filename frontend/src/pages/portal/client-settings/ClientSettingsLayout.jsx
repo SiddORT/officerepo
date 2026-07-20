@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link, Outlet, useLocation, useParams } from "react-router-dom";
-import { useTheme } from "../../../contexts/ThemeContext";
+import PortalLayout from "../PortalLayout";
 
 const SI = ({ d }) => (
-  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={d} />
   </svg>
 );
@@ -25,12 +25,12 @@ const NAV_ITEMS = [
     icon: <SI d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
   },
   {
-    label: "Notification Management",
+    label: "Notifications",
     path: "notifications",
     icon: <SI d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />,
   },
   {
-    label: "Credentials & Integrations",
+    label: "Credentials",
     path: "credentials",
     icon: <SI d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />,
   },
@@ -40,7 +40,7 @@ const NAV_ITEMS = [
     icon: <SI d="M4 6h16M4 10h16M4 14h10M4 18h6" />,
   },
   {
-    label: "Document Templates",
+    label: "Doc Templates",
     path: "doc-templates",
     icon: <SI d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />,
   },
@@ -54,69 +54,54 @@ const NAV_ITEMS = [
 export default function ClientSettingsLayout() {
   const { subdomain } = useParams();
   const location = useLocation();
-  const { isDark } = useTheme();
-  const [collapsed, setCollapsed] = useState(false);
-
   const base = `/portal/${subdomain}/client-settings`;
-  const activePath = location.pathname.split("/").pop();
+  const activeSegment = location.pathname.replace(base + "/", "").split("/")[0];
 
   return (
-    <div className="flex h-full min-h-0 overflow-hidden">
-      {/* ── Inner sidebar ── */}
-      <aside
-        className={`flex-shrink-0 flex flex-col border-r transition-all duration-200
-          ${isDark ? "bg-gray-900 border-gray-700" : "bg-white border-gray-200"}
-          ${collapsed ? "w-14" : "w-56"}`}
-      >
-        {/* Header */}
-        <div className={`flex items-center justify-between px-3 py-3 border-b ${isDark ? "border-gray-700" : "border-gray-200"}`}>
-          {!collapsed && (
-            <span className={`text-xs font-semibold uppercase tracking-wider ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-              Settings
-            </span>
-          )}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className={`p-1 rounded hover:bg-opacity-10 hover:bg-gray-500 transition-colors ${collapsed ? "mx-auto" : ""}`}
-          >
-            <svg width="14" height="14" fill="none" stroke={isDark ? "#9ca3af" : "#6b7280"} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d={collapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"} />
-            </svg>
-          </button>
-        </div>
-
-        {/* Nav items */}
-        <nav className="flex-1 py-2 overflow-y-auto">
+    <PortalLayout title="Settings">
+      {/* Pull the tab bar flush with PortalLayout's 24px padding so it looks built-in */}
+      <div style={{ margin: "-24px -24px 0" }}>
+        <div style={{
+          display: "flex", alignItems: "center",
+          borderBottom: "1px solid var(--c-border)",
+          background: "var(--c-surface)",
+          padding: "0 24px",
+          overflowX: "auto",
+          scrollbarWidth: "none",
+        }}>
           {NAV_ITEMS.map((item) => {
-            const isActive = location.pathname.endsWith(`/${item.path}`);
+            const isActive = activeSegment === item.path;
             return (
               <Link
                 key={item.path}
                 to={`${base}/${item.path}`}
-                title={collapsed ? item.label : undefined}
-                className={`flex items-center gap-2.5 px-3 py-2 mx-1 my-0.5 rounded-md text-sm transition-colors
-                  ${isActive
-                    ? isDark
-                      ? "bg-blue-600/20 text-blue-400"
-                      : "bg-blue-50 text-blue-700"
-                    : isDark
-                      ? "text-gray-300 hover:bg-gray-800 hover:text-white"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                  }`}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "11px 14px",
+                  fontSize: 12, fontWeight: isActive ? 600 : 400,
+                  color: isActive ? "var(--c-accent)" : "var(--c-muted)",
+                  borderBottom: isActive ? "2px solid var(--c-accent)" : "2px solid transparent",
+                  marginBottom: -1,
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                  transition: "color 0.12s",
+                  flexShrink: 0,
+                }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.color = "var(--c-text)"; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.color = "var(--c-muted)"; }}
               >
-                <span className="flex-shrink-0">{item.icon}</span>
-                {!collapsed && <span className="truncate">{item.label}</span>}
+                <span style={{ opacity: isActive ? 1 : 0.6 }}>{item.icon}</span>
+                {item.label}
               </Link>
             );
           })}
-        </nav>
-      </aside>
+        </div>
+      </div>
 
-      {/* ── Content ── */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Section content — restore padding for the page body */}
+      <div style={{ paddingTop: 24 }}>
         <Outlet />
       </div>
-    </div>
+    </PortalLayout>
   );
 }
