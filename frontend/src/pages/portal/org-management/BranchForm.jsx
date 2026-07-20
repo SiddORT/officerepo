@@ -347,7 +347,11 @@ export default function BranchForm({ editMode }) {
             </label>
             <input
               value={form.branch_code}
-              onChange={e => { setAutoCode(false); set("branch_code", e.target.value.toUpperCase()); }}
+              onChange={e => {
+                const v = e.target.value.toUpperCase();
+                setAutoCode(!v);
+                set("branch_code", v);
+              }}
               className="input-field"
               placeholder="MUM-HO"
               style={{ textTransform: "uppercase" }}
