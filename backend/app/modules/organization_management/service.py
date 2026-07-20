@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from backend.app.modules.organization_management import constants as c
 from backend.app.modules.organization_management import repository as repo
 from backend.app.modules.organization_management.models import OrgCompany
+from backend.app.modules.employee_management.models import Employee
 from backend.app.modules.portal_user_management import repository as uum_repo
 
 
@@ -251,15 +252,17 @@ def delete_company(
 
 # ── Branches ───────────────────────────────────────────────────────────────────
 
-def _branch_dict(b, company_name: Optional[str] = None, total_employees: int = 0, active_employees: int = 0, documents: Optional[list] = None) -> Dict[str, Any]:
+def _branch_dict(b, company_name: Optional[str] = None, total_employees: int = 0, active_employees: int = 0, documents: Optional[list] = None, manager_name: Optional[str] = None) -> Dict[str, Any]:
+    branch_manager_id = getattr(b, "branch_manager_id", None)
+    resolved_manager = manager_name if branch_manager_id else getattr(b, "branch_manager", None)
     return {
         "id": b.id, "client_id": b.client_id, "company_id": b.company_id,
         "company_name": company_name,
         "branch_code": b.branch_code, "branch_name": b.branch_name,
         "branch_type": b.branch_type,
         "email": b.email, "phone": b.phone, "phone_country_code": getattr(b, "phone_country_code", None),
-        "branch_manager": getattr(b, "branch_manager", None),
-        "branch_manager_id": getattr(b, "branch_manager_id", None),
+        "branch_manager": resolved_manager,
+        "branch_manager_id": branch_manager_id,
         "landline": getattr(b, "landline", None),
         "landline_country_code": getattr(b, "landline_country_code", None),
         "additional_emails": getattr(b, "additional_emails", None) or [],
@@ -293,14 +296,37 @@ def _branch_company_names(client_db: Session, rows) -> Dict[str, str]:
     return {c.id: c.company_name for c in cos}
 
 
+def _employee_display_name(emp: Employee) -> str:
+    """Return the best available display name for an employee."""
+    if emp.display_name:
+        return emp.display_name
+    parts = [emp.first_name, getattr(emp, "middle_name", None), emp.last_name]
+    return " ".join(p for p in parts if p).strip()
+
+
+def _resolve_manager_names(client_db: Session, rows) -> Dict[str, str]:
+    """Batch-fetch live employee names keyed by employee id for a list of branch rows."""
+    manager_ids = {b.branch_manager_id for b in rows if getattr(b, "branch_manager_id", None)}
+    if not manager_ids:
+        return {}
+    emps = client_db.query(Employee).filter(Employee.id.in_(manager_ids)).all()
+    return {e.id: _employee_display_name(e) for e in emps}
+
+
 def list_branches(client_db: Session, client_id: str, **kwargs) -> Dict:
     rows, total = repo.list_branches(client_db, client_id, **kwargs)
     company_map = _branch_company_names(client_db, rows)
     counts_map = repo.get_branch_employee_counts_batch(client_db, client_id, [b.id for b in rows])
+    manager_map = _resolve_manager_names(client_db, rows)
     result = []
     for b in rows:
         counts = counts_map.get(b.id, {"total_employees": 0, "active_employees": 0})
-        result.append(_branch_dict(b, company_name=company_map.get(b.company_id), **counts))
+        result.append(_branch_dict(
+            b,
+            company_name=company_map.get(b.company_id),
+            manager_name=manager_map.get(getattr(b, "branch_manager_id", None)),
+            **counts,
+        ))
     return {"data": result, "total": total,
             "page": kwargs.get("page", 1), "page_size": kwargs.get("page_size", 50)}
 
@@ -311,8 +337,15 @@ def get_branch(client_db: Session, client_id: str, branch_id: str) -> Dict:
         raise HTTPException(404, "Branch not found.")
     counts = repo.get_branch_employee_count(client_db, client_id, branch_id)
     company_map = _branch_company_names(client_db, [b])
+    manager_map = _resolve_manager_names(client_db, [b])
     docs = _list_branch_documents(client_db, client_id, branch_id)
-    return _branch_dict(b, company_name=company_map.get(b.company_id), documents=docs, **counts)
+    return _branch_dict(
+        b,
+        company_name=company_map.get(b.company_id),
+        manager_name=manager_map.get(getattr(b, "branch_manager_id", None)),
+        documents=docs,
+        **counts,
+    )
 
 
 def create_branch(
@@ -326,7 +359,8 @@ def create_branch(
     _log(client_db, client_id, c.ACTION_BRANCH_CREATED, actor_id, ip,
          {"branch_name": b.branch_name, "branch_code": b.branch_code})
     client_db.commit()
-    return _branch_dict(b)
+    manager_map = _resolve_manager_names(client_db, [b])
+    return _branch_dict(b, manager_name=manager_map.get(getattr(b, "branch_manager_id", None)))
 
 
 def update_branch(
@@ -341,7 +375,8 @@ def update_branch(
     _log(client_db, client_id, c.ACTION_BRANCH_UPDATED, actor_id, ip,
          {"branch_name": b.branch_name})
     client_db.commit()
-    return _branch_dict(b)
+    manager_map = _resolve_manager_names(client_db, [b])
+    return _branch_dict(b, manager_name=manager_map.get(getattr(b, "branch_manager_id", None)))
 
 
 def set_branch_status(
@@ -358,7 +393,8 @@ def set_branch_status(
     action = c.ACTION_BRANCH_ACTIVATED if is_active else c.ACTION_BRANCH_DEACTIVATED
     _log(client_db, client_id, action, actor_id, ip, {"branch_name": b.branch_name})
     client_db.commit()
-    return _branch_dict(b)
+    manager_map = _resolve_manager_names(client_db, [b])
+    return _branch_dict(b, manager_name=manager_map.get(getattr(b, "branch_manager_id", None)))
 
 
 def delete_branch(
