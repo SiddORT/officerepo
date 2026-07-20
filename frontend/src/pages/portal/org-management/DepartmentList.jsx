@@ -108,6 +108,20 @@ function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) 
 
           <div className="form-grid-2" style={{ gap: 12 }}>
             <div>
+              <label className="portal-form-label">Department Name *</label>
+              <input
+                value={form.department_name}
+                onChange={e => {
+                  const name = e.target.value;
+                  setForm(f => ({
+                    ...f,
+                    department_name: name,
+                    department_code: autoCode ? genDeptCode(name) : f.department_code,
+                  }));
+                }}
+                placeholder="Human Resources" className="input-field" />
+            </div>
+            <div>
               <label className="portal-form-label">
                 Code *
                 {autoCode && !isEdit && (
@@ -121,20 +135,6 @@ function DeptModal({ subdomain, token, companies, editDept, onClose, onSaved }) 
                   set("department_code", e.target.value.toUpperCase());
                 }}
                 placeholder="e.g. HR" disabled={isEdit} className="input-field" style={{ fontFamily: "monospace", cursor: isEdit ? "not-allowed" : "text" }} />
-            </div>
-            <div>
-              <label className="portal-form-label">Department Name *</label>
-              <input
-                value={form.department_name}
-                onChange={e => {
-                  const name = e.target.value;
-                  setForm(f => ({
-                    ...f,
-                    department_name: name,
-                    department_code: autoCode ? genDeptCode(name) : f.department_code,
-                  }));
-                }}
-                placeholder="Human Resources" className="input-field" />
             </div>
           </div>
 

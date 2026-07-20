@@ -110,6 +110,21 @@ export default function DepartmentForm({ editMode }) {
 
           <div className="portal-form-row">
             <div>
+              <label className="portal-form-label">Department Name *</label>
+              <input
+                value={form.department_name}
+                onChange={e => {
+                  const name = e.target.value;
+                  setForm(f => ({
+                    ...f,
+                    department_name: name,
+                    department_code: autoCode ? genDeptCode(name) : f.department_code,
+                  }));
+                }}
+                placeholder="Human Resources" className="input-field"
+              />
+            </div>
+            <div>
               <label className="portal-form-label">
                 Code *
                 {autoCode && !editMode && (
@@ -123,21 +138,6 @@ export default function DepartmentForm({ editMode }) {
                   set("department_code", e.target.value.toUpperCase());
                 }}
                 placeholder="e.g. HR" className="input-field" style={{ fontFamily: "monospace" }}
-              />
-            </div>
-            <div>
-              <label className="portal-form-label">Department Name *</label>
-              <input
-                value={form.department_name}
-                onChange={e => {
-                  const name = e.target.value;
-                  setForm(f => ({
-                    ...f,
-                    department_name: name,
-                    department_code: autoCode ? genDeptCode(name) : f.department_code,
-                  }));
-                }}
-                placeholder="Human Resources" className="input-field"
               />
             </div>
           </div>
