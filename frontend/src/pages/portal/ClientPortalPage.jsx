@@ -259,6 +259,8 @@ export function PortalProfilePage() {
   const [loading, setLoading] = useState(true);
   const [empStatus, setEmpStatus] = useState(null);
   const [retrying, setRetrying] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
   // Edit modal state: "personal" | "contact" | "current_address" | "permanent_address" | null
   const [editModal, setEditModal] = useState(null);
@@ -278,8 +280,10 @@ export function PortalProfilePage() {
       } else if (payload?.data) {
         setEmp(payload.data);
         setEmpStatus("found");
+        setRetryCount(0);
       } else {
         setEmpStatus("no_record");
+        setRetryCount(0);
       }
     } catch {
       setEmpStatus("error");
@@ -289,13 +293,15 @@ export function PortalProfilePage() {
   }, [subdomain, token]);
 
   const handleRetry = useCallback(async () => {
+    if (retryCount >= MAX_RETRIES) return;
     setRetrying(true);
     try {
       await load();
     } finally {
+      setRetryCount(c => c + 1);
       setRetrying(false);
     }
-  }, [load]);
+  }, [load, retryCount]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -437,17 +443,31 @@ export function PortalProfilePage() {
         {!loading && empStatus === "error" && (
           <div style={{ textAlign: "center", padding: 32, background: "var(--c-surface)", borderRadius: 12, border: "1px solid var(--c-border)" }}>
             <div style={{ color: "var(--c-danger, #ef4444)", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Something went wrong</div>
-            <div style={{ color: "var(--c-muted)", fontSize: 13, marginBottom: 16 }}>We couldn&apos;t load your profile. Please check your connection and try again.</div>
-            <button
-              onClick={handleRetry}
-              disabled={retrying}
-              style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface-raised, var(--c-surface))", color: retrying ? "var(--c-muted)" : "var(--c-text)", fontSize: 13, cursor: retrying ? "not-allowed" : "pointer", opacity: retrying ? 0.7 : 1, display: "inline-flex", alignItems: "center", gap: 6 }}
-            >
-              {retrying && (
-                <span style={{ width: 12, height: 12, border: "2px solid var(--c-muted)", borderTopColor: "var(--c-text)", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
-              )}
-              {retrying ? "Retrying…" : "Try again"}
-            </button>
+            {retryCount >= MAX_RETRIES ? (
+              <>
+                <div style={{ color: "var(--c-muted)", fontSize: 13, marginBottom: 4 }}>Still not working — please refresh the page.</div>
+                <div style={{ color: "var(--c-muted)", fontSize: 12 }}>If the problem persists, contact your administrator.</div>
+              </>
+            ) : (
+              <>
+                <div style={{ color: "var(--c-muted)", fontSize: 13, marginBottom: 16 }}>
+                  We couldn&apos;t load your profile. Please check your connection and try again.
+                  {retryCount > 0 && (
+                    <span style={{ display: "block", marginTop: 4, fontSize: 12 }}>Attempt {retryCount} of {MAX_RETRIES} failed.</span>
+                  )}
+                </div>
+                <button
+                  onClick={handleRetry}
+                  disabled={retrying}
+                  style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface-raised, var(--c-surface))", color: retrying ? "var(--c-muted)" : "var(--c-text)", fontSize: 13, cursor: retrying ? "not-allowed" : "pointer", opacity: retrying ? 0.7 : 1, display: "inline-flex", alignItems: "center", gap: 6 }}
+                >
+                  {retrying && (
+                    <span style={{ width: 12, height: 12, border: "2px solid var(--c-muted)", borderTopColor: "var(--c-text)", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
+                  )}
+                  {retrying ? "Retrying…" : "Try again"}
+                </button>
+              </>
+            )}
           </div>
         )}
 
