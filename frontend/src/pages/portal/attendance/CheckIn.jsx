@@ -194,7 +194,7 @@ export default function CheckIn() {
         {selectedEmp && (
           <div className="p-3 rounded-lg bg-white/5 text-sm">
             <p className="t-heading font-medium">{selectedEmp.full_name}</p>
-            <p className="t-muted">{selectedEmp.employee_code} · {selectedEmp.department_name || selectedEmp.designation || ""}</p>
+            <p className="t-muted">{selectedEmp.employee_code} · {selectedEmp.department_name || selectedEmp.designation_name || ""}</p>
           </div>
         )}
       </div>
