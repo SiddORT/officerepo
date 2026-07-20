@@ -140,6 +140,29 @@ describe("PortalProfilePage", () => {
     });
   });
 
+  it("clicking Try again after an error loads the employee profile successfully", async () => {
+    portalEmployeeApi.me
+      .mockRejectedValueOnce(new Error("Network Error"))
+      .mockResolvedValueOnce(makeEmpResponse());
+
+    renderProfilePage();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /try again/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Jane Doe")).toBeInTheDocument();
+      expect(screen.getByText("EMP001")).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText(/Something went wrong/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /try again/i })).not.toBeInTheDocument();
+  });
+
   it("renders the employee card when employee data is present", async () => {
     portalEmployeeApi.me.mockResolvedValue({
       data: {
