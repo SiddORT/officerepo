@@ -2,9 +2,10 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
+import { portalEmployeeApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
-import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
+import OrgTreePanel from "./components/OrgTreePanel";
 
 function getExpiryStatus(dateStr) {
   if (!dateStr) return "valid";
@@ -21,46 +22,99 @@ function getExpiryStatus(dateStr) {
 function InfoRow({ label, value }) {
   return (
     <div>
-      <div className="portal-form-label" style={{ marginBottom: 3 }}>{label}</div>
-      <div style={{ fontSize: 13, color: value ? "var(--c-text)" : "var(--c-muted)", opacity: value ? 1 : 0.5 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: 13, color: value ? "var(--c-text)" : "var(--c-muted)", opacity: value ? 1 : 0.45 }}>
         {value || "—"}
       </div>
     </div>
   );
 }
 
-function AddressBlock({ title, postal_code, line1, line2, city, district, state, country }) {
-  const hasAny = postal_code || line1 || line2 || city || district || state || country;
+function SectionTitle({ children }) {
   return (
-    <div className="portal-form-card">
-      <div className="portal-form-title">{title}</div>
-      {!hasAny ? (
-        <div style={{ fontSize: 13, color: "var(--c-muted)", opacity: 0.5 }}>No address on record.</div>
-      ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
-          <InfoRow label="Postal Code" value={postal_code} />
-          <InfoRow label="Address Line 1" value={line1} />
-          <InfoRow label="Address Line 2" value={line2} />
-          <InfoRow label="City" value={city} />
-          <InfoRow label="District" value={district} />
-          <InfoRow label="State" value={state} />
-          <InfoRow label="Country" value={country} />
-        </div>
-      )}
+    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14, paddingBottom: 8, borderBottom: "1px solid var(--c-border)" }}>
+      {children}
     </div>
   );
 }
+
+function CompanyInitials({ name }) {
+  const initials = (name || "?")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0].toUpperCase())
+    .join("");
+  const colors = [
+    ["#6366f1", "#818cf8"],
+    ["#0891b2", "#22d3ee"],
+    ["#059669", "#34d399"],
+    ["#d97706", "#fbbf24"],
+    ["#dc2626", "#f87171"],
+    ["#7c3aed", "#a78bfa"],
+  ];
+  const idx = (name?.charCodeAt(0) || 0) % colors.length;
+  const [bg, fg] = colors[idx];
+  return (
+    <div style={{
+      width: 64, height: 64, borderRadius: "50%",
+      background: bg, color: fg,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em",
+      flexShrink: 0, boxShadow: `0 0 0 3px var(--c-surface), 0 0 0 5px ${bg}44`,
+    }}>
+      {initials}
+    </div>
+  );
+}
+
+function StatTile({ icon, value, sub, label, color }) {
+  return (
+    <div style={{
+      flex: 1, minWidth: 120,
+      background: "var(--c-surface)",
+      border: "1px solid var(--c-border)",
+      borderRadius: 10,
+      padding: "14px 16px",
+      display: "flex", alignItems: "center", gap: 12,
+    }}>
+      <div style={{
+        width: 38, height: 38, borderRadius: 9,
+        background: `${color}18`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 18, flexShrink: 0,
+      }}>
+        {icon}
+      </div>
+      <div>
+        <div style={{ fontSize: 20, fontWeight: 700, color: "var(--c-text)", lineHeight: 1.1 }}>
+          {value ?? <span style={{ fontSize: 13, opacity: 0.5 }}>…</span>}
+          {sub != null && value != null && (
+            <span style={{ fontSize: 12, fontWeight: 400, color: "var(--c-muted)", marginLeft: 4 }}>/ {sub}</span>
+          )}
+        </div>
+        <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 2 }}>{label}</div>
+      </div>
+    </div>
+  );
+}
+
+const TABS = ["Overview", "Compliance & Tax", "Addresses", "Documents", "Org Tree"];
 
 export default function CompanyDetails() {
   const { subdomain, companyId } = useParams();
   const { token } = usePortalAuth();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState(0);
+
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [docs, setDocs] = useState([]);
   const [docsLoading, setDocsLoading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
+
+  const [stats, setStats] = useState({ employees: null, activeEmployees: null, departments: null, branches: null, designations: null });
 
   const load = useCallback(() => {
     setLoading(true);
@@ -78,6 +132,27 @@ export default function CompanyDetails() {
   }, [subdomain, token, companyId]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (!companyId) return;
+    Promise.all([
+      portalOrgApi.listDepts(subdomain, token, { company_id: companyId, page_size: 1 }),
+      portalOrgApi.listBranches(subdomain, token, { company_id: companyId, page_size: 1 }),
+      portalOrgApi.listDesigs(subdomain, token, { company_id: companyId, page_size: 1 }),
+      portalEmployeeApi.list(subdomain, token, { company_id: companyId, page_size: 1 }),
+      portalEmployeeApi.list(subdomain, token, { company_id: companyId, page_size: 1, status: "Active" }),
+    ])
+      .then(([deptRes, branchRes, desigRes, empRes, activeEmpRes]) => {
+        setStats({
+          departments:     deptRes.data.data?.total ?? null,
+          branches:        branchRes.data.data?.total ?? null,
+          designations:    desigRes.data.data?.total ?? null,
+          employees:       empRes.data.data?.total ?? null,
+          activeEmployees: activeEmpRes.data.data?.total ?? null,
+        });
+      })
+      .catch(() => {});
+  }, [subdomain, token, companyId]);
 
   const handleDownload = async (doc) => {
     setDownloadError("");
@@ -113,59 +188,143 @@ export default function CompanyDetails() {
   }
 
   const officeIsSame = !company.off_address_line_1 && !company.off_postal_code && !company.off_city;
+  const isActive = company.is_active !== false;
 
   return (
     <OrgLayout title="Company Details">
-      <div>
-        <PageHeader
-          title={company.company_name}
-          subtitle={
-            <span>
-              <span style={{ fontFamily: "monospace", fontSize: 11, padding: "2px 6px", borderRadius: 4, background: "var(--c-surface2)", border: "1px solid var(--c-border)", color: "var(--c-muted)", marginRight: 10 }}>
-                {company.company_code}
-              </span>
-              <Badge status={company.is_active ? "Active" : "Inactive"} />
-            </span>
-          }
-          actions={
-            <>
-              <button onClick={() => navigate(`/portal/${subdomain}/org/companies`)} className="btn-secondary">
-                ← Back
-              </button>
-              <Link to={`/portal/${subdomain}/org/companies/${companyId}/edit`} className="btn-primary">
-                Edit
-              </Link>
-            </>
-          }
-        />
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 20 }}>
-
-          {/* General */}
-          <div className="portal-form-card">
-            <div className="portal-form-title">🏢 General Information</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
-              <InfoRow label="Legal / Registered Name" value={company.legal_name} />
-              <InfoRow label="Display Name" value={company.display_name} />
-              <InfoRow label="Company Type" value={company.company_type} />
-              <InfoRow label="Industry" value={company.industry} />
-              <InfoRow label="Date of Incorporation" value={company.date_of_incorporation} />
-              <InfoRow label="Status" value={
-                <Badge status={company.status || (company.is_active ? "Active" : "Inactive")} />
-              } />
-            </div>
-            {company.company_description && (
-              <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--c-border)" }}>
-                <div className="portal-form-label" style={{ marginBottom: 4 }}>Description</div>
-                <div style={{ fontSize: 13, color: "var(--c-text)", lineHeight: 1.6 }}>{company.company_description}</div>
-              </div>
-            )}
+        {/* ── Hero strip ──────────────────────────────────────────────── */}
+        <div style={{
+          background: "var(--c-surface)",
+          border: "1px solid var(--c-border)",
+          borderRadius: 12,
+          padding: "20px 24px",
+        }}>
+          {/* Back link */}
+          <div style={{ marginBottom: 16 }}>
+            <button onClick={() => navigate(`/portal/${subdomain}/org/companies`)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-muted)", fontSize: 12, padding: 0, display: "flex", alignItems: "center", gap: 4 }}>
+              ← Companies
+            </button>
           </div>
 
-          {/* Compliance */}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+            {/* Avatar + names */}
+            <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 220 }}>
+              <CompanyInitials name={company.company_name} />
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "var(--c-text)", lineHeight: 1.15 }}>
+                  {company.company_name}
+                </div>
+                {company.legal_name && (
+                  <div style={{ fontSize: 13, color: "var(--c-muted)", marginTop: 3 }}>{company.legal_name}</div>
+                )}
+              </div>
+            </div>
+
+            {/* Right cluster */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              {company.company_code && (
+                <span style={{ fontFamily: "monospace", fontSize: 11, padding: "3px 8px", borderRadius: 5, background: "var(--c-surface2)", color: "var(--c-muted)", border: "1px solid var(--c-border)", fontWeight: 600 }}>
+                  {company.company_code}
+                </span>
+              )}
+              {company.company_type && (
+                <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 12, background: "rgba(99,102,241,0.12)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.25)", fontWeight: 500 }}>
+                  {company.company_type}
+                </span>
+              )}
+              <Badge status={isActive ? "Active" : "Inactive"} />
+
+              <div style={{ width: 1, height: 24, background: "var(--c-border)", margin: "0 4px" }} />
+
+              <Link to={`/portal/${subdomain}/org/companies/${companyId}/edit`} className="btn-primary" style={{ fontSize: 12, padding: "5px 14px" }}>
+                Edit
+              </Link>
+
+              <div style={{ width: 1, height: 24, background: "var(--c-border)", margin: "0 4px" }} />
+
+              <button
+                onClick={() => setActiveTab(4)}
+                style={{ fontSize: 12, padding: "5px 12px", borderRadius: 6, background: "rgba(34,197,94,0.1)", color: "#4ade80", border: "1px solid rgba(34,197,94,0.25)", cursor: "pointer", fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+                🌳 Org Tree
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Stat tiles ──────────────────────────────────────────────── */}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <StatTile icon="👥" value={stats.activeEmployees} sub={stats.employees} label="Employees" color="#6366f1" />
+          <StatTile icon="🏗️" value={stats.departments} label="Departments" color="#0891b2" />
+          <StatTile icon="🏢" value={stats.branches} label="Branches" color="#059669" />
+          <StatTile icon="🏷️" value={stats.designations} label="Designations" color="#d97706" />
+        </div>
+
+        {/* ── Tab bar ─────────────────────────────────────────────────── */}
+        <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--c-border)" }}>
+          {TABS.map((tab, i) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(i)}
+              style={{
+                padding: "10px 18px",
+                fontSize: 13, fontWeight: activeTab === i ? 700 : 500,
+                color: activeTab === i ? "var(--c-accent)" : "var(--c-muted)",
+                background: "none", border: "none", cursor: "pointer",
+                borderBottom: activeTab === i ? "2px solid var(--c-accent)" : "2px solid transparent",
+                marginBottom: -1, transition: "color 0.15s",
+              }}>
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Tab 1 — Overview ────────────────────────────────────────── */}
+        {activeTab === 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+            <div className="portal-form-card">
+              <SectionTitle>General</SectionTitle>
+              <div style={{ display: "grid", gap: 14 }}>
+                <InfoRow label="Display Name" value={company.display_name} />
+                <InfoRow label="Legal / Registered Name" value={company.legal_name} />
+                <InfoRow label="Company Type" value={company.company_type} />
+                <InfoRow label="Industry" value={company.industry} />
+                <InfoRow label="Sub-Industry" value={company.sub_industry} />
+                <InfoRow label="Date of Incorporation" value={company.date_of_incorporation} />
+                {company.company_description && (
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "var(--c-muted)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 3 }}>Description</div>
+                    <div style={{ fontSize: 13, color: "var(--c-text)", lineHeight: 1.6 }}>{company.company_description}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="portal-form-card">
+              <SectionTitle>Contact</SectionTitle>
+              <div style={{ display: "grid", gap: 14 }}>
+                <InfoRow label="Primary Contact Person" value={company.primary_contact_person} />
+                <InfoRow label="Phone" value={[company.phone_country_code, company.phone].filter(Boolean).join(" ")} />
+                <InfoRow label="Email" value={company.email} />
+                <InfoRow label="Website" value={company.website ? (
+                  <a href={company.website} target="_blank" rel="noopener noreferrer" className="t-accent" style={{ fontSize: 13 }}>
+                    {company.website}
+                  </a>
+                ) : null} />
+                <InfoRow label="Support Email" value={company.support_email} />
+                <InfoRow label="HR Email" value={company.hr_email} />
+                <InfoRow label="Accounts Email" value={company.accounts_email} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Tab 2 — Compliance & Tax ─────────────────────────────────── */}
+        {activeTab === 1 && (
           <div className="portal-form-card">
-            <div className="portal-form-title">📋 Compliance & Tax</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
+            <SectionTitle>Compliance & Tax</SectionTitle>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
               <InfoRow label="Registration Number" value={company.registration_number} />
               <InfoRow label="CIN Number" value={company.cin_number} />
               <InfoRow label="PAN Number" value={company.pan_number} />
@@ -176,59 +335,68 @@ export default function CompanyDetails() {
               <InfoRow label="TIN" value={company.tax_identification_number} />
             </div>
           </div>
+        )}
 
-          {/* Contact */}
-          <div className="portal-form-card">
-            <div className="portal-form-title">📞 Contact Information</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
-              <InfoRow label="Primary Contact" value={company.primary_contact_person} />
-              <InfoRow label="Phone" value={[company.phone_country_code, company.phone].filter(Boolean).join(" ")} />
-              <InfoRow label="Email" value={company.email} />
-              <InfoRow label="Website" value={company.website ? (
-                <a href={company.website} target="_blank" rel="noopener noreferrer" className="t-accent" style={{ fontSize: 13 }}>
-                  {company.website}
-                </a>
-              ) : null} />
-              <InfoRow label="Support Email" value={company.support_email} />
-              <InfoRow label="HR Email" value={company.hr_email} />
-              <InfoRow label="Accounts Email" value={company.accounts_email} />
+        {/* ── Tab 3 — Addresses ────────────────────────────────────────── */}
+        {activeTab === 2 && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+            {/* Registered */}
+            <div className="portal-form-card">
+              <SectionTitle>📍 Registered Address</SectionTitle>
+              {!(company.postal_code || company.address_line_1 || company.city) ? (
+                <div style={{ fontSize: 13, color: "var(--c-muted)", opacity: 0.5 }}>No address on record.</div>
+              ) : (
+                <div style={{ display: "grid", gap: 12 }}>
+                  <InfoRow label="Postal Code" value={company.postal_code} />
+                  <InfoRow label="Address Line 1" value={company.address_line_1} />
+                  <InfoRow label="Address Line 2" value={company.address_line_2} />
+                  <InfoRow label="City" value={company.city} />
+                  <InfoRow label="District" value={company.district} />
+                  <InfoRow label="State" value={company.state} />
+                  <InfoRow label="Country" value={company.country} />
+                </div>
+              )}
+            </div>
+
+            {/* Office */}
+            <div className="portal-form-card">
+              <SectionTitle>🏬 Office Address</SectionTitle>
+              {officeIsSame ? (
+                <div>
+                  <span style={{ display: "inline-block", fontSize: 11, padding: "2px 8px", borderRadius: 10, background: "rgba(99,102,241,0.1)", color: "#818cf8", border: "1px solid rgba(99,102,241,0.2)", fontWeight: 500, marginBottom: 12 }}>
+                    Same as Registered
+                  </span>
+                  {(company.postal_code || company.address_line_1 || company.city) && (
+                    <div style={{ display: "grid", gap: 12 }}>
+                      <InfoRow label="Postal Code" value={company.postal_code} />
+                      <InfoRow label="Address Line 1" value={company.address_line_1} />
+                      <InfoRow label="Address Line 2" value={company.address_line_2} />
+                      <InfoRow label="City" value={company.city} />
+                      <InfoRow label="District" value={company.district} />
+                      <InfoRow label="State" value={company.state} />
+                      <InfoRow label="Country" value={company.country} />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ display: "grid", gap: 12 }}>
+                  <InfoRow label="Postal Code" value={company.off_postal_code} />
+                  <InfoRow label="Address Line 1" value={company.off_address_line_1} />
+                  <InfoRow label="Address Line 2" value={company.off_address_line_2} />
+                  <InfoRow label="City" value={company.off_city} />
+                  <InfoRow label="District" value={company.off_district} />
+                  <InfoRow label="State" value={company.off_state} />
+                  <InfoRow label="Country" value={company.off_country} />
+                </div>
+              )}
             </div>
           </div>
+        )}
 
-          {/* Registered Address */}
-          <AddressBlock
-            title="📍 Registered Address"
-            postal_code={company.postal_code}
-            line1={company.address_line_1}
-            line2={company.address_line_2}
-            city={company.city}
-            district={company.district}
-            state={company.state}
-            country={company.country}
-          />
-
-          {/* Office Address */}
-          {officeIsSame ? (
-            <div className="portal-form-card">
-              <div className="portal-form-title">🏬 Office Address</div>
-              <div style={{ fontSize: 13, color: "var(--c-muted)", opacity: 0.7 }}>Same as registered address.</div>
-            </div>
-          ) : (
-            <AddressBlock
-              title="🏬 Office Address"
-              postal_code={company.off_postal_code}
-              line1={company.off_address_line_1}
-              line2={company.off_address_line_2}
-              city={company.off_city}
-              district={company.off_district}
-              state={company.off_state}
-              country={company.off_country}
-            />
-          )}
-
-          {/* Documents */}
+        {/* ── Tab 4 — Documents ────────────────────────────────────────── */}
+        {activeTab === 3 && (
           <div className="portal-form-card">
-            <div className="portal-form-title">📁 Company Documents</div>
+            <SectionTitle>📁 Compliance Documents</SectionTitle>
             {downloadError && (
               <div style={{ padding: "8px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 6, fontSize: 12, color: "#f87171", marginBottom: 10 }}>
                 {downloadError}
@@ -316,12 +484,20 @@ export default function CompanyDetails() {
               </div>
             )}
           </div>
+        )}
 
-          {/* Timestamps */}
-          <div style={{ display: "flex", gap: 24, fontSize: 11, color: "var(--c-muted)", paddingTop: 4 }}>
-            {company.created_at && <span>Created: {new Date(company.created_at).toLocaleString()}</span>}
-            {company.updated_at && <span>Last updated: {new Date(company.updated_at).toLocaleString()}</span>}
+        {/* ── Tab 5 — Org Tree ─────────────────────────────────────────── */}
+        {activeTab === 4 && (
+          <div className="portal-form-card">
+            <SectionTitle>🌳 Department Hierarchy</SectionTitle>
+            <OrgTreePanel subdomain={subdomain} token={token} companyId={companyId} />
           </div>
+        )}
+
+        {/* Timestamps */}
+        <div style={{ display: "flex", gap: 24, fontSize: 11, color: "var(--c-muted)", paddingTop: 4 }}>
+          {company.created_at && <span>Created: {new Date(company.created_at).toLocaleString()}</span>}
+          {company.updated_at && <span>Last updated: {new Date(company.updated_at).toLocaleString()}</span>}
         </div>
       </div>
     </OrgLayout>

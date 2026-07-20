@@ -325,11 +325,6 @@ export default function DepartmentList() {
         subtitle={`Functional units within a company — ${total} total`}
         actions={
           <>
-            {selectedCompany && (
-              <Link to={`/portal/${subdomain}/org/departments/hierarchy/${selectedCompany}`} className="btn-secondary">
-                View Tree
-              </Link>
-            )}
             {selectedCompany && rows.length === 0 && !loading && (
               <button onClick={handleSeed} disabled={seeding} className="btn-secondary">
                 {seeding ? "Seeding…" : "✦ Seed Sample Data"}
