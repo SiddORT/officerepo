@@ -213,17 +213,43 @@ export default function BranchList() {
                               </div>
                             </div>
                             {/* Contact */}
-                            {(b.phone || b.email || b.branch_manager || b.landline) && (
-                              <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-accent)", marginBottom: 10 }}>Contact</div>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
-                                  {b.branch_manager && <div><span className="portal-form-label">Manager: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.branch_manager}</span></div>}
-                                  {b.phone && <div><span className="portal-form-label">Mobile: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.phone_country_code ? `${b.phone_country_code} ` : ""}{b.phone}</span></div>}
-                                  {b.landline && <div><span className="portal-form-label">Landline: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.landline_country_code ? `${b.landline_country_code} ` : ""}{b.landline}</span></div>}
-                                  {b.email && <div><span className="portal-form-label">Email: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.email}</span></div>}
+                            {(() => {
+                              const allPhones = [
+                                ...(b.phone ? [{ number: b.phone, country_code: b.phone_country_code || "" }] : []),
+                                ...(Array.isArray(b.additional_phones) ? b.additional_phones.filter(p => p && p.number) : []),
+                              ];
+                              const allEmails = [
+                                ...(b.email ? [b.email] : []),
+                                ...(Array.isArray(b.additional_emails) ? b.additional_emails.filter(Boolean) : []),
+                              ];
+                              const hasContact = b.branch_manager || allPhones.length || b.landline || allEmails.length;
+                              if (!hasContact) return null;
+                              return (
+                                <div>
+                                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-accent)", marginBottom: 10 }}>Contact</div>
+                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
+                                    {b.branch_manager && (
+                                      <div><span className="portal-form-label">Manager: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.branch_manager}</span></div>
+                                    )}
+                                    {allPhones.map((p, idx) => (
+                                      <div key={idx}>
+                                        <span className="portal-form-label">Mobile{allPhones.length > 1 ? ` ${idx + 1}` : ""}: </span>
+                                        <span style={{ fontSize: 13, color: "var(--c-text)" }}>{p.country_code ? `${p.country_code} ` : ""}{p.number}</span>
+                                      </div>
+                                    ))}
+                                    {b.landline && (
+                                      <div><span className="portal-form-label">Landline: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.landline_country_code ? `${b.landline_country_code} ` : ""}{b.landline}</span></div>
+                                    )}
+                                    {allEmails.map((em, idx) => (
+                                      <div key={idx}>
+                                        <span className="portal-form-label">Email{allEmails.length > 1 ? ` ${idx + 1}` : ""}: </span>
+                                        <span style={{ fontSize: 13, color: "var(--c-text)" }}>{em}</span>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              );
+                            })()}
                             {/* GST */}
                             <div>
                               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-accent)", marginBottom: 10 }}>GST & Tax</div>
