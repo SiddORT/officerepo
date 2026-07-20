@@ -19,24 +19,55 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.PORT }}
           script: |
+            set -e
+
             cd /opt/apps/uat.officerepo.com
 
+            echo "========================================"
             echo "Pulling latest code..."
+            echo "========================================"
             git pull origin main
 
-            echo "Rebuilding backend..."
+            echo "========================================"
+            echo "Building backend..."
+            echo "========================================"
             docker compose build --pull backend
-            
-            echo "Recreating containers..."
-            docker compose up -d --force-recreate backend
-            
-            echo "Pruning old images..."
-            docker image prune -f
 
-            echo "Waiting for backend..."
-            sleep 20
+            echo "========================================"
+            echo "Building frontend..."
+            echo "========================================"
+            DOCKER_BUILDKIT=0 docker compose build --pull frontend
 
-            echo "Checking backend health..."
+            echo "========================================"
+            echo "Restarting containers..."
+            echo "========================================"
+            docker compose up -d --force-recreate backend frontend
+
+            echo "========================================"
+            echo "Waiting for services..."
+            echo "========================================"
+            sleep 30
+
+            echo "========================================"
+            echo "Checking backend..."
+            echo "========================================"
             curl --fail http://localhost:9000/health
 
+            echo "========================================"
+            echo "Checking frontend..."
+            echo "========================================"
+            curl --fail http://localhost:3003/
+
+            echo "========================================"
+            echo "Container status"
+            echo "========================================"
+            docker compose ps
+
+            echo "========================================"
+            echo "Pruning unused images..."
+            echo "========================================"
+            docker image prune -f
+
+            echo "========================================"
             echo "Deployment completed successfully."
+            echo "========================================"
