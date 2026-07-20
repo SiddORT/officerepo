@@ -347,7 +347,7 @@ export default function PortalLayout({ children, title }) {
                   Modules
                 </div>
               )}
-              {navModules.map((mod) => {
+              {navModules.filter(mod => (mod.route || mod.code) !== "client-settings").map((mod) => {
                 const modRoute = mod.route || mod.code;
                 const enabledChildren = mod.enabled_children || [];
                 // Filter sub-nav items: show if no childModule (always visible) or childModule is in enabled_children
@@ -492,6 +492,7 @@ export default function PortalLayout({ children, title }) {
                 {[
                   { label: "My Profile", action: () => { setProfileOpen(false); navigate(`/portal/${subdomain}/profile`); }, color: "var(--c-text)" },
                   { label: "User Management", action: () => { setProfileOpen(false); navigate(`/portal/${subdomain}/user-management/users`); }, color: "var(--c-text)" },
+                  { label: "Settings", action: () => { setProfileOpen(false); navigate(`/portal/${subdomain}/client-settings/general`); }, color: "var(--c-text)" },
                   { label: "Sign Out", action: handleLogout, color: "#ef4444" },
                 ].map(item => (
                   <button key={item.label} onClick={item.action}
