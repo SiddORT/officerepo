@@ -38,7 +38,6 @@ const MODULE_SUB_NAV = {
   "hrms": [
     { label: "Recruitment",         path: "recruitment",     childModule: "Recruitment",           icon: <SI d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /> },
     { label: "Interviews",          path: "hrms/interviews", childModule: "Interview Management",   icon: <SI d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /> },
-    { label: "Offers",              path: "hrms/interviews/offers", childModule: "Recruitment",      icon: <SI d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /> },
     { label: "Onboarding",          path: "hrms/onboarding", childModule: "Employee Onboarding",   icon: <SI d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /> },
     { label: "Attendance",          path: "hrms/attendance", childModule: "Attendance Management", icon: <SI d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /> },
     { label: "Leave",               path: "hrms/leave",      childModule: "Leave Management",      icon: <SI d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /> },

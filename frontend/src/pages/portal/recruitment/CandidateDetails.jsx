@@ -135,7 +135,6 @@ export default function CandidateDetails() {
           <Badge status={cand.status} />
           <button onClick={() => navigate(`/portal/${subdomain}/recruitment/candidates/${candId}/edit`)} className="btn-secondary">Edit</button>
           <button onClick={() => setStatusModal(true)} className="btn-primary">Change Status</button>
-          <button onClick={() => navigate(`/portal/${subdomain}/hrms/interviews/offers/new?candidate_id=${candId}`)} className="btn-primary" style={{ background: "#10b981" }}>Create Offer</button>
         </>}
       />
 

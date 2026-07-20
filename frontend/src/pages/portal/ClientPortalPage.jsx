@@ -54,8 +54,6 @@ import JobOpeningForm from "./recruitment/JobOpeningForm";
 import CandidateList from "./recruitment/CandidateList";
 import CandidateForm from "./recruitment/CandidateForm";
 import CandidateDetails from "./recruitment/CandidateDetails";
-import OfferList from "./recruitment/OfferList";
-import OfferForm from "./recruitment/OfferForm";
 
 // Leave Management pages
 import LeaveDashboard      from "./leave/LeaveDashboard";
@@ -863,17 +861,9 @@ function PortalRoutes() {
       <Route path="/recruitment/candidates/:candId/edit"  element={<Protected><PortalLayout title="Edit Candidate"><CandidateForm editMode={true} /></PortalLayout></Protected>} />
       <Route path="/recruitment/candidates/:candId"       element={<Protected><PortalLayout title="Candidate Details"><CandidateDetails /></PortalLayout></Protected>} />
       <Route path="/recruitment/candidates"               element={<Protected><PortalLayout title="Candidates"><CandidateList /></PortalLayout></Protected>} />
-      {/* Offers moved to Interview Management — redirect old paths */}
-      <Route path="/recruitment/offers/new"           element={<Navigate to={pp("/hrms/interviews/offers/new")} replace />} />
-      <Route path="/recruitment/offers/:offerId/edit" element={<Navigate to={pp("/hrms/interviews/offers")} replace />} />
-      <Route path="/recruitment/offers"               element={<Navigate to={pp("/hrms/interviews/offers")} replace />} />
       <Route path="/recruitment/*" element={<Navigate to={pp("/recruitment")} replace />} />
 
       {/* ── Interview Management ──────────────────────────────────────── */}
-      {/* Offers (moved from Recruitment) — static paths BEFORE /:interviewId */}
-      <Route path="/hrms/interviews/offers/new"               element={<Protected><PortalLayout title="Create Offer"><OfferForm editMode={false} /></PortalLayout></Protected>} />
-      <Route path="/hrms/interviews/offers/:offerId/edit"     element={<Protected><PortalLayout title="Edit Offer"><OfferForm editMode={true} /></PortalLayout></Protected>} />
-      <Route path="/hrms/interviews/offers"                   element={<Protected><PortalLayout title="Offers"><OfferList /></PortalLayout></Protected>} />
       {/* Static paths must come BEFORE /:interviewId */}
       <Route path="/hrms/interviews/list"                    element={<Protected><PortalLayout title="All Interviews"><InterviewList /></PortalLayout></Protected>} />
       <Route path="/hrms/interviews/schedule/new"            element={<Protected><PortalLayout title="Schedule Interview"><InterviewScheduleForm editMode={false} /></PortalLayout></Protected>} />

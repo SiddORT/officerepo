@@ -9,7 +9,7 @@ import ActivityTimeline from "../../../components/ActivityTimeline";
 const STATUS_COLOR = {
   "Applied": "#06b6d4", "Screening": "#8b5cf6", "Shortlisted": "#8b5cf6",
   "Interview Scheduled": "#f59e0b", "Technical Round": "#f59e0b", "HR Round": "#f59e0b",
-  "Offer Sent": "#10b981", "Offer": "#10b981", "Selected": "#22c55e",
+  "Selected": "#22c55e",
   "Joined": "#22c55e", "Rejected": "#ef4444", "Not Selected": "#ef4444",
   "On Hold": "#f59e0b", "Withdrawn": "#64748b",
   "Open": "#22c55e", "Closed": "#64748b", "Filled": "#06b6d4",
@@ -21,7 +21,6 @@ const PIPELINE_STAGES = [
   { key: "Applied",   label: "Applied",   status: "Applied",             color: "#06b6d4" },
   { key: "Screening", label: "Screening", status: "Shortlisted",         color: "#8b5cf6" },
   { key: "Interview", label: "Interview", status: "Interview Scheduled", color: "#f59e0b" },
-  { key: "Offer",     label: "Offer",     status: "Offer Sent",          color: "#10b981" },
   { key: "Joined",    label: "Joined",    status: "Joined",              color: "#22c55e" },
 ];
 
@@ -29,7 +28,6 @@ const KPI_DEFS = [
   { icon: "🗂️", label: "Open Positions",    key: "open_positions",       color: "#00aeec" },
   { icon: "👤", label: "Applications",       key: "total_candidates",     color: "#8b5cf6" },
   { icon: "📅", label: "Interviews Today",   key: "interviews_scheduled", color: "#f59e0b" },
-  { icon: "📨", label: "Offers Pending",     key: "offers_sent",          color: "#10b981" },
   { icon: "📆", label: "Positions Filled",   key: "positions_filled",     color: "#22c55e" },
   { icon: "✅", label: "Joined",             key: "_joined",              color: "#6366f1" },
 ];
@@ -367,7 +365,6 @@ export default function RecruitmentDashboard() {
     open_positions:       stats?.open_positions ?? 0,
     total_candidates:     stats?.total_candidates ?? 0,
     interviews_scheduled: stats?.interviews_scheduled ?? 0,
-    offers_sent:          stats?.offers_sent ?? 0,
     positions_filled:     stats?.positions_filled ?? 0,
     _joined:              pipeline.Joined ?? 0,
   };
@@ -412,7 +409,6 @@ export default function RecruitmentDashboard() {
           { label: "Job Requisitions", icon: "📋", path: "requisitions", color: "#00aeec" },
           { label: "Job Openings",     icon: "🗂️", path: "openings",     color: "#8b5cf6" },
           { label: "Candidates",       icon: "👤", path: "candidates",   color: "#f59e0b" },
-          { label: "Offers",           icon: "📨", path: "offers",       color: "#10b981" },
         ].map(item => (
           <QuickLink key={item.path} {...item} onClick={() => go(item.path)} />
         ))}
