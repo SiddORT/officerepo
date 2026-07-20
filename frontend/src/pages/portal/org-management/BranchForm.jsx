@@ -44,7 +44,7 @@ export default function BranchForm({ editMode }) {
     city: "", district: "", state: "", country: "",
     description: "",
     branch_manager: "", branch_manager_id: "",
-    landline: "", landline_country_code: "+91",
+    landline: "",
     gst_registered: false, gstin: "", gst_registration_date: "",
     gst_jurisdiction: "", state_code: "",
   });
@@ -106,7 +106,6 @@ export default function BranchForm({ editMode }) {
           branch_manager:       b.branch_manager       || "",
           branch_manager_id:    b.branch_manager_id    || "",
           landline:             b.landline             || "",
-          landline_country_code: b.landline_country_code || "+91",
           gst_registered:       b.gst_registered       || false,
           gstin:                b.gstin                || "",
           gst_registration_date: b.gst_registration_date ? String(b.gst_registration_date).slice(0, 10) : "",
@@ -238,7 +237,6 @@ export default function BranchForm({ editMode }) {
         branch_manager:  form.branch_manager_id ? (form.branch_manager || null) : null,
         branch_manager_id: form.branch_manager_id || null,
         landline:        form.landline || null,
-        landline_country_code: form.landline ? (form.landline_country_code || "+91") : null,
         address_line_1:  form.address_line1 || null,
         address_line_2:  form.address_line2 || null,
         city:            form.city || null,
@@ -302,14 +300,19 @@ export default function BranchForm({ editMode }) {
           { label: "Branches", path: `/portal/${subdomain}/org/branches` },
           { label: editMode ? "Edit" : "New Branch" },
         ]}
+        actions={
+          <button onClick={() => navigate(-1)} className="btn-secondary">
+            ← Back
+          </button>
+        }
       />
 
       <div className="portal-form-card" style={{ maxWidth: 860, marginTop: 16 }}>
         {error && (
-          <div style={{ padding: "10px 14px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 16 }}>{error}</div>
+          <div style={{ padding: "10px 14px", borderRadius: 6, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171", fontSize: 13, marginBottom: 16 }}>{error}</div>
         )}
         {gstUploadError && (
-          <div style={{ padding: "10px 14px", borderRadius: 6, background: "rgba(245,158,11,0.1)", color: "#fbbf24", fontSize: 13, marginBottom: 16 }}>{gstUploadError}</div>
+          <div style={{ padding: "10px 14px", borderRadius: 6, background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", color: "#fbbf24", fontSize: 13, marginBottom: 16 }}>{gstUploadError}</div>
         )}
 
         {/* ── Basic Details ── */}
@@ -368,21 +371,19 @@ export default function BranchForm({ editMode }) {
 
         {/* ── Address ── */}
         <div style={SL}>Address</div>
-        <div className="portal-form-row">
+        <div>
+          <label className="portal-form-label">Address Line 1</label>
+          <input value={form.address_line1} onChange={e => set("address_line1", e.target.value)} className="input-field" placeholder="123 Business Park" />
+        </div>
+        <div>
+          <label className="portal-form-label">Address Line 2</label>
+          <input value={form.address_line2} onChange={e => set("address_line2", e.target.value)} className="input-field" placeholder="Floor 5, Tower B" />
+        </div>
+        <div className="portal-form-row" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
           <div>
             <label className="portal-form-label">Postal Code</label>
             <input value={form.postal_code} onChange={handlePincodeChange} className="input-field" placeholder="400001" />
           </div>
-        </div>
-        <div style={{ marginTop: 14 }}>
-          <label className="portal-form-label">Address Line 1</label>
-          <input value={form.address_line1} onChange={e => set("address_line1", e.target.value)} className="input-field" placeholder="123 Business Park" />
-        </div>
-        <div style={{ marginTop: 14 }}>
-          <label className="portal-form-label">Address Line 2</label>
-          <input value={form.address_line2} onChange={e => set("address_line2", e.target.value)} className="input-field" placeholder="Floor 5, Tower B" />
-        </div>
-        <div className="form-grid-4" style={{ marginTop: 14 }}>
           <div>
             <label className="portal-form-label">City</label>
             <select value={form.city} onChange={e => set("city", e.target.value)} className="input-field" disabled={!stateObj}>
@@ -535,12 +536,12 @@ export default function BranchForm({ editMode }) {
 
         {/* Landline */}
         <div style={{ marginBottom: 14 }}>
-          <PhoneInput
-            label="Landline"
-            dialCode={form.landline_country_code}
-            onDialCodeChange={v => set("landline_country_code", v)}
-            number={form.landline}
-            onNumberChange={v => set("landline", v)}
+          <label className="portal-form-label">Landline</label>
+          <input
+            value={form.landline}
+            onChange={e => set("landline", e.target.value)}
+            className="input-field"
+            placeholder="02212345678"
           />
         </div>
 
@@ -653,15 +654,15 @@ export default function BranchForm({ editMode }) {
           />
         </div>
 
-        {/* ── Actions ── */}
-        <div style={{ display: "flex", gap: 10, paddingTop: 20, marginTop: 4, borderTop: "1px solid var(--c-border)" }}>
-          <button onClick={handleSave} disabled={saving || gstUploading} className="btn-primary" style={{ minWidth: 120 }}>
-            {saving ? "Saving…" : editMode ? "Update Branch" : "Create Branch"}
-          </button>
-          <button onClick={() => navigate(`/portal/${subdomain}/org/branches`)} className="btn-secondary">
-            Cancel
-          </button>
-        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+        <button onClick={handleSave} disabled={saving || gstUploading} className="btn-primary" style={{ minWidth: 120 }}>
+          {saving ? "Saving…" : editMode ? "Update Branch" : "Create Branch"}
+        </button>
+        <button onClick={() => navigate(-1)} className="btn-secondary">
+          Cancel
+        </button>
       </div>
     </OrgLayout>
   );

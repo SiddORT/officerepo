@@ -386,7 +386,7 @@ describe("BranchForm — employee picker", () => {
     await waitFor(() => expect(screen.getByText("Aisha Sharma")).toBeInTheDocument());
     fireEvent.mouseDown(screen.getByText("Aisha Sharma"));
 
-    expect(screen.getByText(/✓ Linked to employee/i)).toBeInTheDocument();
+    expect(screen.getByText(/✓ Linked/i)).toBeInTheDocument();
 
     await userEvent.click(screen.getByText("Create Branch"));
     await waitFor(() => expect(mockApi.createBranch).toHaveBeenCalled());
@@ -408,7 +408,7 @@ describe("BranchForm — employee picker", () => {
     await userEvent.type(screen.getByPlaceholderText(/search employee/i), "Aisha");
     await waitFor(() => expect(screen.getByText("Aisha Sharma")).toBeInTheDocument());
     fireEvent.mouseDown(screen.getByText("Aisha Sharma"));
-    await userEvent.click(screen.getByText("Remove link"));
+    await userEvent.click(screen.getByTitle("Remove link"));
 
     await userEvent.click(screen.getByText("Create Branch"));
     await waitFor(() => expect(mockApi.createBranch).toHaveBeenCalled());
@@ -500,8 +500,7 @@ describe("BranchForm — create flow", () => {
     await userEvent.type(screen.getByPlaceholderText("Mumbai Head Office"), "Landline Branch");
     await userEvent.selectOptions(getCompanySelect(), "c1");
 
-    // Mocked PhoneInput for "Landline" renders "Landline number" aria-label
-    const landlineInput = screen.getByLabelText("Landline number");
+    const landlineInput = screen.getByPlaceholderText("02212345678");
     await userEvent.type(landlineInput, "02212345678");
 
     await userEvent.click(screen.getByText("Create Branch"));
@@ -509,7 +508,6 @@ describe("BranchForm — create flow", () => {
 
     const payload = mockApi.createBranch.mock.calls[0][2];
     expect(payload.landline).toBe("02212345678");
-    expect(payload.landline_country_code).toBe("+91");
   });
 
   it("sends landline as null when the landline field is left empty", async () => {
@@ -524,7 +522,6 @@ describe("BranchForm — create flow", () => {
     await waitFor(() => expect(mockApi.createBranch).toHaveBeenCalled());
     const payload = mockApi.createBranch.mock.calls[0][2];
     expect(payload.landline).toBeNull();
-    expect(payload.landline_country_code).toBeNull();
   });
 });
 
@@ -635,12 +632,12 @@ describe("BranchForm — edit mode prefill", () => {
     expect(screen.getByPlaceholderText("MUM-HO")).toHaveValue("MUM-HO");
   });
 
-  it("shows '✓ Linked to employee' when branch_manager_id is set in the loaded data", async () => {
+  it("shows '✓ Linked' when branch_manager_id is set in the loaded data", async () => {
     renderEditForm("br-1");
     await waitFor(() => expect(mockApi.getBranch).toHaveBeenCalled());
 
     await waitFor(() =>
-      expect(screen.getByText(/✓ Linked to employee/i)).toBeInTheDocument()
+      expect(screen.getByText(/✓ Linked/i)).toBeInTheDocument()
     );
   });
 
@@ -671,12 +668,12 @@ describe("BranchForm — edit mode prefill", () => {
     });
   });
 
-  it("restores landline from API into the Landline number input", async () => {
+  it("restores landline from API into the Landline input", async () => {
     renderEditForm("br-1");
     await waitFor(() => expect(mockApi.getBranch).toHaveBeenCalled());
 
     await waitFor(() =>
-      expect(screen.getByLabelText("Landline number")).toHaveValue("02212345678")
+      expect(screen.getByPlaceholderText("02212345678")).toHaveValue("02212345678")
     );
   });
 });
