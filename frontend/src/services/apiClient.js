@@ -553,6 +553,13 @@ export const portalEmployeeApi = {
 
   // Activities
   listActivities: (sd, tk, eid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/activities`, { headers: { Authorization: `Bearer ${tk}` } }),
+
+  // Photos
+  listPhotos:   (sd, tk, eid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/photos`, { headers: { Authorization: `Bearer ${tk}` } }),
+  uploadPhoto:  (sd, tk, eid, formData) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/photos`, formData, { headers: { Authorization: `Bearer ${tk}`, "Content-Type": "multipart/form-data" } }),
+  updatePhoto:  (sd, tk, eid, pid, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/photos/${pid}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
+  deletePhoto:  (sd, tk, eid, pid) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/photos/${pid}`, { headers: { Authorization: `Bearer ${tk}` } }),
+  downloadPhotoUrl: (sd, eid, pid) => `${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/photos/${pid}/download`,
 };
 
 // ── Organization Settings (superadmin — singleton platform identity) ─────────

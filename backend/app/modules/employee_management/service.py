@@ -12,6 +12,10 @@ from backend.app.modules.employee_management import repository as repo
 from backend.app.modules.organization_management.models import (
     OrgBranch, OrgCompany, OrgDepartment, OrgDesignation,
 )
+from backend.shared.storage.file_handler import (
+    save_upload, delete_file, physical_path, Visibility,
+    ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_SIZE_BYTES, ALLOWED_IMAGE_TYPES,
+)
 
 
 def _resolve_names(db: Session, rows) -> tuple:
@@ -556,6 +560,116 @@ def upsert_government_ids(db: Session, client_id: str, employee_id: str, payload
 def list_activities(db: Session, client_id: str, employee_id: str) -> List:
     _require_employee(db, client_id, employee_id)
     return [_activity_dict(r) for r in repo.list_activities(db, client_id, employee_id)]
+
+
+# ── Photos ────────────────────────────────────────────────────────────────────
+
+def _photo_dict(r, subdomain: str) -> Dict[str, Any]:
+    return {
+        "id": r.id, "employee_id": r.employee_id,
+        "storage_key": r.storage_key,
+        "original_name": r.original_name,
+        "label": r.label,
+        "is_profile_icon": r.is_profile_icon,
+        "uploaded_by": r.uploaded_by,
+        "download_url": f"/api/v1/portal/{subdomain}/employees/{r.employee_id}/photos/{r.id}/download",
+        "created_at": r.created_at, "updated_at": r.updated_at,
+    }
+
+
+def list_photos(db: Session, client_id: str, employee_id: str, subdomain: str) -> List:
+    _require_employee(db, client_id, employee_id)
+    return [_photo_dict(r, subdomain) for r in repo.list_photos(db, client_id, employee_id)]
+
+
+async def upload_photo(
+    db: Session, client_id: str, employee_id: str, file,
+    label: Optional[str], is_profile_icon: bool,
+    actor_id: Optional[str], subdomain: str,
+) -> Dict:
+    _require_employee(db, client_id, employee_id)
+    storage_key = await save_upload(
+        file,
+        scope=client_id,
+        module="employee_photos",
+        entity=employee_id,
+        visibility=Visibility.PRIVATE,
+        allowed_extensions=ALLOWED_IMAGE_EXTENSIONS,
+        max_size_bytes=MAX_IMAGE_SIZE_BYTES,
+        allowed_content_types=ALLOWED_IMAGE_TYPES,
+    )
+    if is_profile_icon:
+        repo.clear_profile_icon(db, client_id, employee_id)
+    row = repo.create_photo(db, client_id, employee_id, {
+        "storage_key": storage_key,
+        "original_name": file.filename,
+        "label": label or None,
+        "is_profile_icon": is_profile_icon,
+        "uploaded_by": actor_id,
+    })
+    if is_profile_icon:
+        _sync_profile_photo_url(db, client_id, employee_id, row.id, subdomain)
+    _log(db, client_id, employee_id, "PHOTO_UPLOADED", actor_id=actor_id,
+         notes=f"Photo uploaded: {label or row.original_name}")
+    return _photo_dict(row, subdomain)
+
+
+def update_photo(
+    db: Session, client_id: str, employee_id: str, photo_id: str,
+    data: dict, actor_id: Optional[str], subdomain: str,
+) -> Dict:
+    row = repo.get_photo(db, client_id, photo_id)
+    if not row or row.employee_id != employee_id:
+        raise HTTPException(404, "Photo not found.")
+    set_icon = data.get("is_profile_icon")
+    if set_icon:
+        repo.clear_profile_icon(db, client_id, employee_id)
+    row = repo.update_photo(db, row, data)
+    if set_icon:
+        _sync_profile_photo_url(db, client_id, employee_id, row.id, subdomain)
+    elif set_icon is False:
+        _clear_profile_photo_url_if_this(db, client_id, employee_id, row.id)
+    return _photo_dict(row, subdomain)
+
+
+def delete_photo(
+    db: Session, client_id: str, employee_id: str, photo_id: str,
+    actor_id: Optional[str],
+) -> None:
+    row = repo.get_photo(db, client_id, photo_id)
+    if not row or row.employee_id != employee_id:
+        raise HTTPException(404, "Photo not found.")
+    was_profile_icon = row.is_profile_icon
+    delete_file(row.storage_key, Visibility.PRIVATE)
+    repo.delete_photo(db, row)
+    if was_profile_icon:
+        emp = repo.get_employee(db, client_id, employee_id)
+        if emp:
+            repo.update_employee(db, emp, {"profile_photo_url": None})
+    _log(db, client_id, employee_id, "PHOTO_DELETED", actor_id=actor_id)
+
+
+def get_photo_path(db: Session, client_id: str, employee_id: str, photo_id: str):
+    row = repo.get_photo(db, client_id, photo_id)
+    if not row or row.employee_id != employee_id:
+        raise HTTPException(404, "Photo not found.")
+    path = physical_path(row.storage_key, Visibility.PRIVATE)
+    if not path.exists():
+        raise HTTPException(404, "Photo file not found.")
+    return path, row.original_name or "photo.jpg"
+
+
+def _sync_profile_photo_url(db: Session, client_id: str, employee_id: str, photo_id: str, subdomain: str) -> None:
+    emp = repo.get_employee(db, client_id, employee_id)
+    if emp:
+        url = f"/api/v1/portal/{subdomain}/employees/{employee_id}/photos/{photo_id}/download"
+        repo.update_employee(db, emp, {"profile_photo_url": url})
+
+
+def _clear_profile_photo_url_if_this(db: Session, client_id: str, employee_id: str, photo_id: str) -> None:
+    emp = repo.get_employee(db, client_id, employee_id)
+    if emp and emp.profile_photo_url and photo_id in (emp.profile_photo_url or ""):
+        repo.update_employee(db, emp, {"profile_photo_url": None})
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

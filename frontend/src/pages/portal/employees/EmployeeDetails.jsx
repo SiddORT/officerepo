@@ -420,6 +420,26 @@ export default function EmployeeDetails() {
   const [history, setHistory] = useState([]);
   const [family, setFamily] = useState([]);
   const [contacts, setContacts] = useState([]);
+  const [bankDetails, setBankDetails] = useState(null);
+  const [govIds, setGovIds] = useState(null);
+  const [activities, setActivities] = useState([]);
+  const [photos, setPhotos] = useState([]);
+
+  const [bankEditing, setBankEditing] = useState(false);
+  const [bankForm, setBankForm] = useState({});
+  const [bankSaving, setBankSaving] = useState(false);
+  const [bankError, setBankError] = useState("");
+
+  const [govEditing, setGovEditing] = useState(false);
+  const [govForm, setGovForm] = useState({});
+  const [govSaving, setGovSaving] = useState(false);
+  const [govError, setGovError] = useState("");
+
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoLabel, setPhotoLabel] = useState("");
+  const [photoIsIcon, setPhotoIsIcon] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
 
   const [showEdu, setShowEdu] = useState(false);
   const [showPrev, setShowPrev] = useState(false);
@@ -441,6 +461,18 @@ export default function EmployeeDetails() {
     portalEmployeeApi.listHistory(subdomain, token, empId).then(r => setHistory(r.data.data?.items || []));
     portalEmployeeApi.listFamilyMembers(subdomain, token, empId).then(r => setFamily(r.data.data?.items || []));
     portalEmployeeApi.listContacts(subdomain, token, empId).then(r => setContacts(r.data.data?.items || []));
+    portalEmployeeApi.getBankDetails(subdomain, token, empId).then(r => {
+      const d = r.data.data;
+      setBankDetails(d);
+      setBankForm(d || {});
+    }).catch(() => {});
+    portalEmployeeApi.getGovIds(subdomain, token, empId).then(r => {
+      const d = r.data.data;
+      setGovIds(d);
+      setGovForm(d || {});
+    }).catch(() => {});
+    portalEmployeeApi.listActivities(subdomain, token, empId).then(r => setActivities(r.data.data || [])).catch(() => {});
+    portalEmployeeApi.listPhotos(subdomain, token, empId).then(r => setPhotos(r.data.data?.items || [])).catch(() => {});
   }, [subdomain, token, empId]);
 
   useEffect(() => { load(); loadExtra(); }, [load, loadExtra]);
@@ -789,6 +821,328 @@ export default function EmployeeDetails() {
             </div>
           </Card>
         )}
+
+        {tab === "bank" && (
+          <div style={{ display: "grid", gap: 20 }}>
+            {/* Bank Details Section */}
+            <Card>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 0" }}>
+                <CardHeader icon="🏦" title="Bank Account Details" />
+                <button
+                  onClick={() => { setBankEditing(!bankEditing); setBankError(""); if (!bankEditing) setBankForm(bankDetails || {}); }}
+                  className={bankEditing ? "btn-secondary" : "btn-primary"}
+                  style={{ fontSize: 12, padding: "6px 14px" }}
+                >
+                  {bankEditing ? "Cancel" : "Edit"}
+                </button>
+              </div>
+              {bankError && <div style={{ margin: "0 20px 12px", padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13 }}>{bankError}</div>}
+              <div style={{ padding: "12px 20px 20px", display: "grid", gap: 16 }}>
+                {!bankEditing ? (
+                  bankDetails ? (
+                    <>
+                      <Grid2>
+                        <div><Label>Account Holder</Label><Val>{bankDetails.account_holder_name}</Val></div>
+                        <div><Label>Bank Name</Label><Val>{bankDetails.bank_name}</Val></div>
+                      </Grid2>
+                      <Grid2>
+                        <div><Label>Branch</Label><Val>{bankDetails.branch_name}</Val></div>
+                        <div><Label>Account Type</Label><Val>{bankDetails.account_type}</Val></div>
+                      </Grid2>
+                      <Grid2>
+                        <div><Label>Account Number</Label><Val>{bankDetails.account_number}</Val></div>
+                        <div><Label>IFSC Code</Label><Val>{bankDetails.ifsc_code}</Val></div>
+                      </Grid2>
+                      <Grid2>
+                        <div><Label>SWIFT Code</Label><Val>{bankDetails.swift_code}</Val></div>
+                        <div><Label>UPI ID</Label><Val>{bankDetails.upi_id}</Val></div>
+                      </Grid2>
+                      <Divider label="Payroll" />
+                      <Grid3>
+                        <div><Label>Salary Cycle</Label><Val>{bankDetails.salary_cycle}</Val></div>
+                        <div><Label>Credit Day</Label><Val>{bankDetails.salary_credit_date ? `Day ${bankDetails.salary_credit_date}` : null}</Val></div>
+                        <div><Label>Gratuity</Label><Val>{bankDetails.gratuity_applicable ? "Applicable" : "Not Applicable"}</Val></div>
+                      </Grid3>
+                      <Divider label="Statutory" />
+                      <Grid3>
+                        <div><Label>PF Account</Label><Val>{bankDetails.pf_account_number}</Val></div>
+                        <div><Label>PF UAN</Label><Val>{bankDetails.pf_uan_number}</Val></div>
+                        <div><Label>ESI Number</Label><Val>{bankDetails.esi_number}</Val></div>
+                      </Grid3>
+                      <Grid3>
+                        <div><Label>TDS</Label><Val>{bankDetails.tds_applicable ? `${bankDetails.tds_percentage || 0}%` : "Not Applicable"}</Val></div>
+                        <div><Label>PAN Linked</Label><Val>{bankDetails.pan_linked_to_account ? "Yes" : "No"}</Val></div>
+                      </Grid3>
+                    </>
+                  ) : (
+                    <div style={{ padding: 24, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>No bank details recorded. Click Edit to add.</div>
+                  )
+                ) : (
+                  <>
+                    <Grid2>
+                      <div><Label>Account Holder Name</Label><input value={bankForm.account_holder_name || ""} onChange={e => setBankForm(f => ({ ...f, account_holder_name: e.target.value }))} className="input-field" /></div>
+                      <div><Label>Bank Name</Label><input value={bankForm.bank_name || ""} onChange={e => setBankForm(f => ({ ...f, bank_name: e.target.value }))} className="input-field" /></div>
+                    </Grid2>
+                    <Grid2>
+                      <div><Label>Branch Name</Label><input value={bankForm.branch_name || ""} onChange={e => setBankForm(f => ({ ...f, branch_name: e.target.value }))} className="input-field" /></div>
+                      <div>
+                        <Label>Account Type</Label>
+                        <select value={bankForm.account_type || ""} onChange={e => setBankForm(f => ({ ...f, account_type: e.target.value }))} className="input-field">
+                          <option value="">Select…</option>
+                          {["Savings", "Current", "Salary"].map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
+                    </Grid2>
+                    <Grid2>
+                      <div><Label>Account Number</Label><input value={bankForm.account_number || ""} onChange={e => setBankForm(f => ({ ...f, account_number: e.target.value }))} className="input-field" /></div>
+                      <div><Label>IFSC Code</Label><input value={bankForm.ifsc_code || ""} onChange={e => setBankForm(f => ({ ...f, ifsc_code: e.target.value }))} className="input-field" /></div>
+                    </Grid2>
+                    <Grid2>
+                      <div><Label>SWIFT Code</Label><input value={bankForm.swift_code || ""} onChange={e => setBankForm(f => ({ ...f, swift_code: e.target.value }))} className="input-field" /></div>
+                      <div><Label>UPI ID</Label><input value={bankForm.upi_id || ""} onChange={e => setBankForm(f => ({ ...f, upi_id: e.target.value }))} className="input-field" /></div>
+                    </Grid2>
+                    <Divider label="Payroll" />
+                    <Grid3>
+                      <div>
+                        <Label>Salary Cycle</Label>
+                        <select value={bankForm.salary_cycle || ""} onChange={e => setBankForm(f => ({ ...f, salary_cycle: e.target.value }))} className="input-field">
+                          <option value="">Select…</option>
+                          {["Monthly", "Weekly", "Bi-weekly"].map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
+                      <div><Label>Salary Credit Day (1-31)</Label><input type="number" min="1" max="31" value={bankForm.salary_credit_date || ""} onChange={e => setBankForm(f => ({ ...f, salary_credit_date: e.target.value ? Number(e.target.value) : null }))} className="input-field" /></div>
+                    </Grid3>
+                    <Divider label="Statutory" />
+                    <Grid3>
+                      <div><Label>PF Account Number</Label><input value={bankForm.pf_account_number || ""} onChange={e => setBankForm(f => ({ ...f, pf_account_number: e.target.value }))} className="input-field" /></div>
+                      <div><Label>PF UAN Number</Label><input value={bankForm.pf_uan_number || ""} onChange={e => setBankForm(f => ({ ...f, pf_uan_number: e.target.value }))} className="input-field" /></div>
+                      <div><Label>ESI Number</Label><input value={bankForm.esi_number || ""} onChange={e => setBankForm(f => ({ ...f, esi_number: e.target.value }))} className="input-field" /></div>
+                    </Grid3>
+                    <Grid3>
+                      <div><Label>TDS %</Label><input type="number" step="0.01" value={bankForm.tds_percentage || ""} onChange={e => setBankForm(f => ({ ...f, tds_percentage: e.target.value || null }))} className="input-field" placeholder="10.00" /></div>
+                    </Grid3>
+                    <div style={{ display: "flex", gap: 16 }}>
+                      <Toggle value={!!bankForm.gratuity_applicable} onChange={v => setBankForm(f => ({ ...f, gratuity_applicable: v }))} label="Gratuity Applicable" />
+                      <Toggle value={!!bankForm.tds_applicable} onChange={v => setBankForm(f => ({ ...f, tds_applicable: v }))} label="TDS Applicable" />
+                      <Toggle value={!!bankForm.pan_linked_to_account} onChange={v => setBankForm(f => ({ ...f, pan_linked_to_account: v }))} label="PAN Linked to Account" />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+                      <button onClick={() => { setBankEditing(false); setBankError(""); }} className="btn-secondary">Cancel</button>
+                      <button disabled={bankSaving} className="btn-primary" onClick={async () => {
+                        setBankSaving(true); setBankError("");
+                        try {
+                          const payload = { ...bankForm };
+                          Object.keys(payload).forEach(k => { if (payload[k] === "") payload[k] = null; });
+                          const r = await portalEmployeeApi.upsertBankDetails(subdomain, token, empId, payload);
+                          setBankDetails(r.data.data); setBankForm(r.data.data || {}); setBankEditing(false);
+                        } catch (e) { setBankError(e?.response?.data?.detail || "Save failed."); }
+                        finally { setBankSaving(false); }
+                      }}>
+                        {bankSaving ? "Saving…" : "Save Bank Details"}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </Card>
+
+            {/* Government IDs Section */}
+            <Card>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 0" }}>
+                <CardHeader icon="🪪" title="Government IDs" />
+                <button
+                  onClick={() => { setGovEditing(!govEditing); setGovError(""); if (!govEditing) setGovForm(govIds || {}); }}
+                  className={govEditing ? "btn-secondary" : "btn-primary"}
+                  style={{ fontSize: 12, padding: "6px 14px" }}
+                >
+                  {govEditing ? "Cancel" : "Edit"}
+                </button>
+              </div>
+              {govError && <div style={{ margin: "0 20px 12px", padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13 }}>{govError}</div>}
+              <div style={{ padding: "12px 20px 20px", display: "grid", gap: 16 }}>
+                {!govEditing ? (
+                  govIds ? (
+                    <Grid3>
+                      <div><Label>PAN Number</Label><Val>{govIds.pan_number}</Val></div>
+                      <div><Label>Aadhaar Number</Label><Val>{govIds.aadhar_number}</Val></div>
+                      <div><Label>Passport Number</Label><Val>{govIds.passport_number}</Val></div>
+                      <div><Label>Driving Licence</Label><Val>{govIds.driving_license_number}</Val></div>
+                      <div><Label>Voter ID</Label><Val>{govIds.voter_id_number}</Val></div>
+                    </Grid3>
+                  ) : (
+                    <div style={{ padding: 24, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>No government IDs recorded. Click Edit to add.</div>
+                  )
+                ) : (
+                  <>
+                    <Grid3>
+                      <div><Label>PAN Number</Label><input value={govForm.pan_number || ""} onChange={e => setGovForm(f => ({ ...f, pan_number: e.target.value }))} className="input-field" placeholder="ABCDE1234F" /></div>
+                      <div><Label>Aadhaar Number</Label><input value={govForm.aadhar_number || ""} onChange={e => setGovForm(f => ({ ...f, aadhar_number: e.target.value }))} className="input-field" placeholder="1234 5678 9012" /></div>
+                      <div><Label>Passport Number</Label><input value={govForm.passport_number || ""} onChange={e => setGovForm(f => ({ ...f, passport_number: e.target.value }))} className="input-field" placeholder="A1234567" /></div>
+                      <div><Label>Driving Licence</Label><input value={govForm.driving_license_number || ""} onChange={e => setGovForm(f => ({ ...f, driving_license_number: e.target.value }))} className="input-field" placeholder="MH0120210001234" /></div>
+                      <div><Label>Voter ID</Label><input value={govForm.voter_id_number || ""} onChange={e => setGovForm(f => ({ ...f, voter_id_number: e.target.value }))} className="input-field" placeholder="ABC1234567" /></div>
+                    </Grid3>
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+                      <button onClick={() => { setGovEditing(false); setGovError(""); }} className="btn-secondary">Cancel</button>
+                      <button disabled={govSaving} className="btn-primary" onClick={async () => {
+                        setGovSaving(true); setGovError("");
+                        try {
+                          const payload = { ...govForm };
+                          Object.keys(payload).forEach(k => { if (payload[k] === "") payload[k] = null; });
+                          const r = await portalEmployeeApi.upsertGovIds(subdomain, token, empId, payload);
+                          setGovIds(r.data.data); setGovForm(r.data.data || {}); setGovEditing(false);
+                        } catch (e) { setGovError(e?.response?.data?.detail || "Save failed."); }
+                        finally { setGovSaving(false); }
+                      }}>
+                        {govSaving ? "Saving…" : "Save IDs"}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {tab === "activity" && (
+          <Card>
+            <CardHeader icon="📋" title="Activity Timeline" />
+            <div style={{ padding: "8px 20px 20px" }}>
+              {activities.length === 0 ? (
+                <div style={{ padding: 32, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>No activity recorded yet.</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                  {activities.map((a, idx) => (
+                    <div key={a.id} style={{ display: "flex", gap: 16, position: "relative" }}>
+                      {/* Timeline line */}
+                      {idx < activities.length - 1 && (
+                        <div style={{ position: "absolute", left: 19, top: 36, bottom: 0, width: 2, background: "var(--c-border)" }} />
+                      )}
+                      {/* Icon */}
+                      <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--c-surface2)", border: "2px solid var(--c-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, marginTop: 4, zIndex: 1 }}>
+                        {a.action?.includes("PHOTO") ? "📷" :
+                         a.action?.includes("BANK") ? "🏦" :
+                         a.action?.includes("GOV") ? "🪪" :
+                         a.action?.includes("EDUCATION") ? "🎓" :
+                         a.action?.includes("FAMILY") ? "👨‍👩‍👧" :
+                         a.action?.includes("CONTACT") || a.action?.includes("EMERGENCY") ? "🆘" :
+                         a.action?.includes("CREATED") ? "✨" :
+                         a.action?.includes("UPDATED") ? "✏️" :
+                         a.action?.includes("ACTIVATED") ? "✅" :
+                         a.action?.includes("DEACTIVATED") ? "🚫" : "📋"}
+                      </div>
+                      {/* Content */}
+                      <div style={{ flex: 1, paddingBottom: 20 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ fontWeight: 600, fontSize: 13 }}>
+                            {a.action?.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
+                          </span>
+                          <span className="t-muted" style={{ fontSize: 11 }}>
+                            {a.created_at ? new Date(a.created_at).toLocaleString() : ""}
+                          </span>
+                        </div>
+                        {a.notes && <div className="t-muted" style={{ fontSize: 12, marginTop: 3 }}>{a.notes}</div>}
+                        {a.actor_id && <div className="t-muted" style={{ fontSize: 11, marginTop: 2 }}>by {a.actor_id}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
+        {tab === "overview" && photos.length === 0 && !showPhotoUpload && (
+          <Card>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 16px" }}>
+              <CardHeader icon="📷" title="Photos" />
+              <button onClick={() => setShowPhotoUpload(true)} className="btn-primary" style={{ fontSize: 12, padding: "6px 14px" }}>Upload Photo</button>
+            </div>
+            <div style={{ padding: "0 20px 20px", textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>No photos uploaded yet.</div>
+          </Card>
+        )}
+
+        {tab === "overview" && (photos.length > 0 || showPhotoUpload) && (
+          <Card>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 4px" }}>
+              <CardHeader icon="📷" title="Photos" />
+              <button onClick={() => { setShowPhotoUpload(!showPhotoUpload); setPhotoLabel(""); setPhotoIsIcon(false); setPhotoError(""); }} className={showPhotoUpload ? "btn-secondary" : "btn-primary"} style={{ fontSize: 12, padding: "6px 14px" }}>
+                {showPhotoUpload ? "Cancel" : "Upload Photo"}
+              </button>
+            </div>
+
+            {showPhotoUpload && (
+              <div style={{ padding: "8px 20px 16px", borderBottom: "1px solid var(--c-border)", display: "grid", gap: 12 }}>
+                {photoError && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13 }}>{photoError}</div>}
+                <Grid2>
+                  <div>
+                    <Label>Label (e.g. Passport Size, Headshot)</Label>
+                    <input value={photoLabel} onChange={e => setPhotoLabel(e.target.value)} className="input-field" placeholder="Passport Size" />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "flex-end" }}>
+                    <Toggle value={photoIsIcon} onChange={setPhotoIsIcon} label="Set as Profile Icon" />
+                  </div>
+                </Grid2>
+                <div>
+                  <Label>Image File (JPG, PNG, WEBP — max 5 MB)</Label>
+                  <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled={photoUploading}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setPhotoUploading(true); setPhotoError("");
+                      const fd = new FormData();
+                      fd.append("file", file);
+                      if (photoLabel) fd.append("label", photoLabel);
+                      fd.append("is_profile_icon", photoIsIcon ? "true" : "false");
+                      try {
+                        await portalEmployeeApi.uploadPhoto(subdomain, token, empId, fd);
+                        setShowPhotoUpload(false); setPhotoLabel(""); setPhotoIsIcon(false);
+                        loadExtra(); load();
+                      } catch (err) { setPhotoError(err?.response?.data?.detail || "Upload failed."); }
+                      finally { setPhotoUploading(false); e.target.value = ""; }
+                    }}
+                    className="input-field" style={{ padding: "6px 10px" }}
+                  />
+                </div>
+                {photoUploading && <div style={{ fontSize: 12, color: "var(--c-muted)" }}>Uploading…</div>}
+              </div>
+            )}
+
+            <div style={{ padding: "16px 20px 20px", display: "flex", flexWrap: "wrap", gap: 16 }}>
+              {photos.map(photo => (
+                <div key={photo.id} style={{ position: "relative", width: 140, border: `2px solid ${photo.is_profile_icon ? "var(--c-accent)" : "var(--c-border)"}`, borderRadius: 10, overflow: "visible", background: "var(--c-surface2)" }}>
+                  {photo.is_profile_icon && (
+                    <div style={{ position: "absolute", top: -10, right: -10, background: "var(--c-accent)", color: "#fff", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, zIndex: 2 }}>★</div>
+                  )}
+                  <div style={{ width: 136, height: 136, borderRadius: "8px 8px 0 0", overflow: "hidden", background: "var(--c-border)" }}>
+                    <PhotoThumb subdomain={subdomain} token={token} empId={empId} photoId={photo.id} />
+                  </div>
+                  <div style={{ padding: "8px 10px" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--c-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{photo.label || "Photo"}</div>
+                    <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                      {!photo.is_profile_icon && (
+                        <button className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 600, padding: 0 }}
+                          onClick={async () => {
+                            try {
+                              await portalEmployeeApi.updatePhoto(subdomain, token, empId, photo.id, { is_profile_icon: true });
+                              loadExtra(); load();
+                            } catch {}
+                          }}>Set Icon</button>
+                      )}
+                      <button className="t-muted" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, padding: 0 }}
+                        onClick={async () => {
+                          if (!confirm("Delete this photo?")) return;
+                          try {
+                            await portalEmployeeApi.deletePhoto(subdomain, token, empId, photo.id);
+                            loadExtra(); load();
+                          } catch {}
+                        }}>Delete</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
       </div>
 
       {/* Modals */}
@@ -798,4 +1152,18 @@ export default function EmployeeDetails() {
       {showContact && <ContactModal subdomain={subdomain} token={token} empId={empId} editRow={editRow} relationships={options.family_relationships} onClose={() => setShowContact(false)} onSaved={() => { setShowContact(false); loadExtra(); }} />}
     </EmployeeLayout>
   );
+}
+
+function PhotoThumb({ subdomain, token, empId, photoId }) {
+  const [src, setSrc] = React.useState(null);
+  React.useEffect(() => {
+    let url = portalEmployeeApi.downloadPhotoUrl(subdomain, empId, photoId);
+    import("axios").then(({ default: axios }) => {
+      axios.get(url, { headers: { Authorization: `Bearer ${token}` }, responseType: "blob" })
+        .then(r => setSrc(URL.createObjectURL(r.data)))
+        .catch(() => {});
+    });
+  }, [subdomain, token, empId, photoId]);
+  if (!src) return <div style={{ width: "100%", height: "100%", background: "var(--c-surface2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>📷</div>;
+  return <img src={src} alt="Employee photo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />;
 }

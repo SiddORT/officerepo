@@ -11,7 +11,7 @@ from sqlalchemy import func
 from backend.app.modules.employee_management.models import (
     Employee, EmployeeEducation, EmployeePreviousEmployment,
     EmployeeFamilyMember, EmployeeEmergencyContact, EmployeeBankDetails,
-    EmployeeGovernmentIds, EmployeeActivity,
+    EmployeeGovernmentIds, EmployeeActivity, EmployeePhoto,
 )
 
 
@@ -326,6 +326,54 @@ def upsert_government_ids(db: Session, client_id: str, employee_id: str, data: d
     db.commit()
     db.refresh(row)
     return row
+
+
+# ── Photos ────────────────────────────────────────────────────────────────────
+
+def list_photos(db: Session, client_id: str, employee_id: str) -> List[EmployeePhoto]:
+    return db.query(EmployeePhoto).filter(
+        EmployeePhoto.client_id == client_id,
+        EmployeePhoto.employee_id == employee_id,
+    ).order_by(EmployeePhoto.is_profile_icon.desc(), EmployeePhoto.created_at).all()
+
+
+def get_photo(db: Session, client_id: str, photo_id: str) -> Optional[EmployeePhoto]:
+    return db.query(EmployeePhoto).filter(
+        EmployeePhoto.id == photo_id,
+        EmployeePhoto.client_id == client_id,
+    ).first()
+
+
+def create_photo(db: Session, client_id: str, employee_id: str, data: dict) -> EmployeePhoto:
+    row = EmployeePhoto(id=_uuid(), client_id=client_id, employee_id=employee_id, **data)
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def clear_profile_icon(db: Session, client_id: str, employee_id: str) -> None:
+    db.query(EmployeePhoto).filter(
+        EmployeePhoto.client_id == client_id,
+        EmployeePhoto.employee_id == employee_id,
+        EmployeePhoto.is_profile_icon.is_(True),
+    ).update({"is_profile_icon": False}, synchronize_session=False)
+    db.commit()
+
+
+def update_photo(db: Session, row: EmployeePhoto, data: dict) -> EmployeePhoto:
+    for k, v in data.items():
+        if hasattr(row, k):
+            setattr(row, k, v)
+    row.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def delete_photo(db: Session, row: EmployeePhoto) -> None:
+    db.delete(row)
+    db.commit()
 
 
 # ── Activities ────────────────────────────────────────────────────────────────

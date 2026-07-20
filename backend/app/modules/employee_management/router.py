@@ -26,7 +26,8 @@ from __future__ import annotations
 
 from typing import Generator, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from backend.app.core.security import decode_access_token
@@ -40,7 +41,7 @@ from backend.app.modules.employee_management.schemas import (
     PreviousEmploymentCreate, PreviousEmploymentUpdate,
     FamilyMemberCreate, FamilyMemberUpdate,
     EmergencyContactCreate, EmergencyContactUpdate,
-    BankDetailsUpsert, GovernmentIdsUpsert,
+    BankDetailsUpsert, GovernmentIdsUpsert, PhotoUpdate,
 )
 from backend.shared.response import ApiResponse
 
@@ -426,7 +427,7 @@ def upsert_bank_details(subdomain: str, emp_id: str, payload: BankDetailsUpsert,
 def get_government_ids(subdomain: str, emp_id: str,
     portal_user: dict = Depends(_portal_jwt), client_db: Session = Depends(_client_db_dep)):
     _sub(portal_user, subdomain)
-    return ApiResponse.ok(svc.get_government_ids(client_db, portal_user["client_id"], emp_id)).model_dump()
+    return ApiResponse.ok(svc.get_government_ids(client_db, portal_user["client_id"], emp_id, mask=False)).model_dump()
 
 
 @router.put("/{subdomain}/employees/{emp_id}/government-ids")
@@ -445,3 +446,65 @@ def list_activities(subdomain: str, emp_id: str,
     portal_user: dict = Depends(_portal_jwt), client_db: Session = Depends(_client_db_dep)):
     _sub(portal_user, subdomain)
     return ApiResponse.ok(svc.list_activities(client_db, portal_user["client_id"], emp_id)).model_dump()
+
+
+# ── Photos ────────────────────────────────────────────────────────────────────
+
+@router.get("/{subdomain}/employees/{emp_id}/photos")
+def list_photos(subdomain: str, emp_id: str,
+    portal_user: dict = Depends(_portal_jwt), client_db: Session = Depends(_client_db_dep)):
+    _sub(portal_user, subdomain)
+    items = svc.list_photos(client_db, portal_user["client_id"], emp_id, subdomain)
+    return ApiResponse.ok({"items": items, "total": len(items)}).model_dump()
+
+
+@router.post("/{subdomain}/employees/{emp_id}/photos")
+async def upload_photo(
+    subdomain: str, emp_id: str,
+    file: UploadFile = File(...),
+    label: Optional[str] = Form(None),
+    is_profile_icon: bool = Form(False),
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    _sub(portal_user, subdomain)
+    result = await svc.upload_photo(
+        client_db, portal_user["client_id"], emp_id, file,
+        label=label, is_profile_icon=is_profile_icon,
+        actor_id=portal_user.get("admin_user_id"), subdomain=subdomain,
+    )
+    return ApiResponse.ok(result, "Photo uploaded.").model_dump()
+
+
+@router.patch("/{subdomain}/employees/{emp_id}/photos/{photo_id}")
+def update_photo(
+    subdomain: str, emp_id: str, photo_id: str, payload: PhotoUpdate,
+    portal_user: dict = Depends(_portal_jwt), client_db: Session = Depends(_client_db_dep),
+):
+    _sub(portal_user, subdomain)
+    result = svc.update_photo(
+        client_db, portal_user["client_id"], emp_id, photo_id,
+        payload.model_dump(exclude_unset=True), portal_user.get("admin_user_id"), subdomain,
+    )
+    return ApiResponse.ok(result, "Photo updated.").model_dump()
+
+
+@router.delete("/{subdomain}/employees/{emp_id}/photos/{photo_id}")
+def delete_photo(
+    subdomain: str, emp_id: str, photo_id: str,
+    portal_user: dict = Depends(_portal_jwt), client_db: Session = Depends(_client_db_dep),
+):
+    _sub(portal_user, subdomain)
+    svc.delete_photo(client_db, portal_user["client_id"], emp_id, photo_id,
+                     actor_id=portal_user.get("admin_user_id"))
+    return ApiResponse.ok(None, "Photo deleted.").model_dump()
+
+
+@router.get("/{subdomain}/employees/{emp_id}/photos/{photo_id}/download")
+def download_photo(
+    subdomain: str, emp_id: str, photo_id: str,
+    portal_user: dict = Depends(_portal_jwt), client_db: Session = Depends(_client_db_dep),
+):
+    _sub(portal_user, subdomain)
+    path, filename = svc.get_photo_path(client_db, portal_user["client_id"], emp_id, photo_id)
+    return FileResponse(str(path), filename=filename, media_type="image/jpeg")

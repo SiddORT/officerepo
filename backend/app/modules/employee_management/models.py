@@ -266,3 +266,20 @@ class EmployeeActivity(ClientBase):
     notes       = Column(Text,        nullable=True)
 
     created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class EmployeePhoto(ClientBase):
+    __tablename__ = "employee_photos"
+
+    id              = Column(String(36), primary_key=True, default=_uuid)
+    client_id       = Column(String(36), nullable=False, index=True)
+    employee_id     = Column(String(36), nullable=False, index=True)
+
+    storage_key     = Column(String(500), nullable=False)
+    original_name   = Column(String(255), nullable=True)
+    label           = Column(String(100), nullable=True)
+    is_profile_icon = Column(Boolean,     nullable=False, default=False)
+    uploaded_by     = Column(String(36),  nullable=True)
+
+    created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

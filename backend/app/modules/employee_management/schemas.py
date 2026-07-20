@@ -248,3 +248,10 @@ class GovernmentIdsUpsert(BaseModel):
     passport_number:        Optional[str] = None
     driving_license_number: Optional[str] = None
     voter_id_number:        Optional[str] = None
+
+
+# ── Employee Photos ────────────────────────────────────────────────────────────
+
+class PhotoUpdate(BaseModel):
+    label:           Optional[str]  = None
+    is_profile_icon: Optional[bool] = None

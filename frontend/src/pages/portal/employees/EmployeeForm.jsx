@@ -158,6 +158,10 @@ export default function EmployeeForm({ editMode = false }) {
   const [designations, setDesignations] = useState([]);
   const [options, setOptions] = useState({});
 
+  const [photos, setPhotos] = useState([]);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+
   const todayStr = new Date().toISOString().split("T")[0];
 
   const blank = {
