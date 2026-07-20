@@ -127,6 +127,7 @@ export default function AssetCategories() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [retrying, setRetrying] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -161,6 +162,11 @@ export default function AssetCategories() {
   }, [subdomain, token, search, statusFilter, page]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    try { await load(); } finally { setRetrying(false); }
+  };
 
   const handleSave = async (form) => {
     if (modal?.mode === "edit") {
@@ -245,8 +251,17 @@ export default function AssetCategories() {
       </div>
 
       {error && (
-        <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, marginBottom: 14, fontSize: 13, color: "#f87171" }}>
-          {error}
+        <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, marginBottom: 14, fontSize: 13, color: "#f87171", display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ flex: 1 }}>{error}</span>
+          <button
+            onClick={handleRetry}
+            disabled={retrying}
+            style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.4)", background: "rgba(239,68,68,0.1)", color: retrying ? "var(--c-muted)" : "#f87171", fontSize: 12, cursor: retrying ? "not-allowed" : "pointer", opacity: retrying ? 0.7 : 1, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", flexShrink: 0 }}>
+            {retrying && (
+              <span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid rgba(239,68,68,0.4)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+            )}
+            {retrying ? "Retrying…" : "Try again"}
+          </button>
         </div>
       )}
 

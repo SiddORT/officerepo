@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
@@ -15,8 +15,9 @@ export default function OrgHierarchy() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [retrying, setRetrying] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     setLoading(true);
     setError("");
     portalOrgApi.hierarchy(subdomain, token, companyId)
@@ -24,6 +25,20 @@ export default function OrgHierarchy() {
       .catch(e => setError(e?.response?.data?.detail || "Failed to load hierarchy."))
       .finally(() => setLoading(false));
   }, [subdomain, token, companyId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      await portalOrgApi.hierarchy(subdomain, token, companyId)
+        .then(r => { setData(r.data.data); setError(""); });
+    } catch (e) {
+      setError(e?.response?.data?.detail || "Failed to load hierarchy.");
+    } finally {
+      setRetrying(false);
+    }
+  };
 
   const sectionHeader = (title, count) => (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "var(--c-surface2)", borderBottom: "1px solid var(--c-border)" }}>
@@ -46,7 +61,20 @@ export default function OrgHierarchy() {
         />
 
         {loading && <div style={{ padding: 60, textAlign: "center", color: "var(--c-muted)", fontSize: 13 }}>Loading…</div>}
-        {error && <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 13, color: "#f87171" }}>{error}</div>}
+        {error && (
+          <div style={{ padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 13, color: "#f87171", display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ flex: 1 }}>{error}</span>
+            <button
+              onClick={handleRetry}
+              disabled={retrying}
+              style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.4)", background: "rgba(239,68,68,0.1)", color: retrying ? "var(--c-muted)" : "#f87171", fontSize: 12, cursor: retrying ? "not-allowed" : "pointer", opacity: retrying ? 0.7 : 1, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", flexShrink: 0 }}>
+              {retrying && (
+                <span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid rgba(239,68,68,0.4)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+              )}
+              {retrying ? "Retrying…" : "Try again"}
+            </button>
+          </div>
+        )}
 
         {data && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

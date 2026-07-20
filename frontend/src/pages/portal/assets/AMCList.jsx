@@ -23,6 +23,7 @@ export default function AMCList() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [retrying, setRetrying] = useState(false);
   const [filterStatus, setFilterStatus] = useState("");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
@@ -50,6 +51,11 @@ export default function AMCList() {
   }, [subdomain, token, page, filterStatus]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    try { await load(); } finally { setRetrying(false); }
+  };
 
   useEffect(() => {
     if (assetSearch.length < 2) { setAssetResults([]); return; }
@@ -117,7 +123,20 @@ export default function AMCList() {
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {error && <div className="p-4 text-red-500 text-sm">{error}</div>}
+        {error && (
+          <div className="p-4 text-red-500 text-sm flex items-center gap-3">
+            <span className="flex-1">{error}</span>
+            <button
+              onClick={handleRetry}
+              disabled={retrying}
+              style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.4)", background: "rgba(239,68,68,0.1)", color: retrying ? "#9ca3af" : "#ef4444", fontSize: 12, cursor: retrying ? "not-allowed" : "pointer", opacity: retrying ? 0.7 : 1, display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap", flexShrink: 0 }}>
+              {retrying && (
+                <span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid rgba(239,68,68,0.4)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+              )}
+              {retrying ? "Retrying…" : "Try again"}
+            </button>
+          </div>
+        )}
         {loading ? (
           <div className="p-10 text-center text-gray-500 dark:text-gray-400">Loading…</div>
         ) : items.length === 0 ? (

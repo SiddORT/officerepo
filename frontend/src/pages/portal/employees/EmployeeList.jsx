@@ -43,6 +43,7 @@ export default function EmployeeList() {
   const PAGE_SIZE = 20;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [retrying, setRetrying] = useState(false);
 
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
@@ -88,6 +89,11 @@ export default function EmployeeList() {
   }, [subdomain, token, page, search, filterStatus, filterCompany, filterType]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    try { await load(); } finally { setRetrying(false); }
+  };
 
   const handleToggle = async (emp) => {
     setActionLoading(emp.id);
@@ -151,7 +157,20 @@ export default function EmployeeList() {
       </div>
 
       {/* Error */}
-      {error && <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+      {error && (
+        <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ flex: 1 }}>{error}</span>
+          <button
+            onClick={handleRetry}
+            disabled={retrying}
+            style={{ padding: "5px 12px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.4)", background: "rgba(239,68,68,0.1)", color: retrying ? "var(--c-muted)" : "#f87171", fontSize: 12, cursor: retrying ? "not-allowed" : "pointer", opacity: retrying ? 0.7 : 1, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", flexShrink: 0 }}>
+            {retrying && (
+              <span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid rgba(239,68,68,0.4)", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+            )}
+            {retrying ? "Retrying…" : "Try again"}
+          </button>
+        </div>
+      )}
 
       {/* Table */}
       <div className="portal-table-wrap">
