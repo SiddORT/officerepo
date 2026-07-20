@@ -253,7 +253,7 @@ const PEditBtn = ({ onClick }) => (
   </button>
 );
 
-function PortalProfilePage() {
+export function PortalProfilePage() {
   const { user, subdomain, token } = usePortalAuth();
   const [emp, setEmp] = useState(null);
   const [loading, setLoading] = useState(true);
