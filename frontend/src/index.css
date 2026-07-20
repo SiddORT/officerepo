@@ -49,6 +49,28 @@ html.theme-light {
   }
 }
 
+/* ── Suppress browser-native credential / password overlays ─────────────
+   Chrome injects a key/person icon into password fields via the
+   ::-webkit-credentials-auto-fill-button pseudo-element. In some
+   environments it renders as a broken image. We hide it globally and
+   use our own custom eye-toggle button instead.
+──────────────────────────────────────────────────────────────────────── */
+input::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
+input::-webkit-contacts-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+}
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 /* ── Layout classes — use variables, work in both themes automatically ── */
 .layout-root        { background-color: var(--c-bg); }
 .layout-sidebar     { background-color: var(--c-surface); border-right: 1px solid var(--c-border); }

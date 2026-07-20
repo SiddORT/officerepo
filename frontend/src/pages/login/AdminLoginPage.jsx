@@ -382,12 +382,14 @@ export default function AdminLoginPage() {
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    color: "rgba(255,255,255,0.4)",
+                    color: "rgba(255,255,255,0.65)",
                     padding: 4,
                     transition: "color 0.2s",
+                    display: "flex",
+                    alignItems: "center",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.8)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.4)")}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.95)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.65)")}
                 >
                   {showPass ? (
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
