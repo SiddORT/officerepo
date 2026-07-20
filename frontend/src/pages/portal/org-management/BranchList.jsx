@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
@@ -21,9 +21,10 @@ export default function BranchList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
-  const [filterCompany, setFilterCompany] = useState("");
+  const [filterCompany, setFilterCompany] = useState(() => searchParams.get("company_id") || "");
   const [companies, setCompanies] = useState([]);
 
   const [actionLoading, setActionLoading] = useState(null);

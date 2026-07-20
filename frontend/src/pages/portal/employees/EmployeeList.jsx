@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { ViewIconBtn, EditIconBtn } from "../../../components/ui/ActionIcons";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
@@ -44,9 +44,10 @@ export default function EmployeeList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
-  const [filterCompany, setFilterCompany] = useState("");
+  const [filterCompany, setFilterCompany] = useState(() => searchParams.get("company_id") || "");
   const [filterType, setFilterType] = useState("");
   const [companies, setCompanies] = useState([]);
   const [options, setOptions] = useState({});

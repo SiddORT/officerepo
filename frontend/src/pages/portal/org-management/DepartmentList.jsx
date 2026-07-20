@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
@@ -198,9 +198,10 @@ export default function DepartmentList() {
   const { subdomain } = useParams();
   const { token } = usePortalAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [companies, setCompanies] = useState([]);
-  const [selectedCompany, setSelectedCompany] = useState("");
+  const [selectedCompany, setSelectedCompany] = useState(() => searchParams.get("company_id") || "");
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
   const [rows, setRows] = useState([]);
@@ -222,7 +223,7 @@ export default function DepartmentList() {
       .then(r => {
         const list = r.data.data?.data || [];
         setCompanies(list);
-        if (list.length > 0) setSelectedCompany(list[0].id);
+        if (list.length > 0) setSelectedCompany(prev => prev || list[0].id);
       }).catch(() => {});
   }, [subdomain, token]);
 

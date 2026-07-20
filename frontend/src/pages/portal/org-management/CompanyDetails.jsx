@@ -68,16 +68,9 @@ function CompanyInitials({ name }) {
   );
 }
 
-function StatTile({ icon, value, sub, label, color }) {
-  return (
-    <div style={{
-      flex: 1, minWidth: 120,
-      background: "var(--c-surface)",
-      border: "1px solid var(--c-border)",
-      borderRadius: 10,
-      padding: "14px 16px",
-      display: "flex", alignItems: "center", gap: 12,
-    }}>
+function StatTile({ icon, value, sub, label, color, href }) {
+  const inner = (
+    <>
       <div style={{
         width: 38, height: 38, borderRadius: 9,
         background: `${color}18`,
@@ -95,8 +88,34 @@ function StatTile({ icon, value, sub, label, color }) {
         </div>
         <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 2 }}>{label}</div>
       </div>
-    </div>
+    </>
   );
+
+  const base = {
+    flex: 1, minWidth: 120,
+    background: "var(--c-surface)",
+    border: "1px solid var(--c-border)",
+    borderRadius: 10,
+    padding: "14px 16px",
+    display: "flex", alignItems: "center", gap: 12,
+    textDecoration: "none",
+    transition: "border-color 0.15s, box-shadow 0.15s",
+  };
+
+  if (href) {
+    return (
+      <Link
+        to={href}
+        style={base}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.boxShadow = `0 0 0 2px ${color}22`; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--c-border)"; e.currentTarget.style.boxShadow = "none"; }}
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return <div style={base}>{inner}</div>;
 }
 
 const TABS = ["Overview", "Compliance & Tax", "Addresses", "Documents", "Org Tree"];
@@ -256,10 +275,10 @@ export default function CompanyDetails() {
 
         {/* ── Stat tiles ──────────────────────────────────────────────── */}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <StatTile icon="👥" value={stats.activeEmployees} sub={stats.employees} label="Employees" color="#6366f1" />
-          <StatTile icon="🏗️" value={stats.departments} label="Departments" color="#0891b2" />
-          <StatTile icon="🏢" value={stats.branches} label="Branches" color="#059669" />
-          <StatTile icon="🏷️" value={stats.designations} label="Designations" color="#d97706" />
+          <StatTile icon="👥" value={stats.activeEmployees} sub={stats.employees} label="Employees" color="#6366f1" href={`/portal/${subdomain}/employees?company_id=${companyId}`} />
+          <StatTile icon="🏗️" value={stats.departments} label="Departments" color="#0891b2" href={`/portal/${subdomain}/org/departments?company_id=${companyId}`} />
+          <StatTile icon="🏢" value={stats.branches} label="Branches" color="#059669" href={`/portal/${subdomain}/org/branches?company_id=${companyId}`} />
+          <StatTile icon="🏷️" value={stats.designations} label="Designations" color="#d97706" href={`/portal/${subdomain}/org/designations?company_id=${companyId}`} />
         </div>
 
         {/* ── Tab bar ─────────────────────────────────────────────────── */}
