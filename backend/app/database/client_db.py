@@ -188,6 +188,12 @@ _COLUMN_MIGRATIONS = [
     ("org_branches", "gst_certificate_name", "VARCHAR(255)"),
     ("org_branches", "cost_center",          "VARCHAR(100)"),
     ("org_branches", "profit_center",        "VARCHAR(100)"),
+    # OrgBranch — landline, multi-contact, employee manager link
+    ("org_branches", "branch_manager_id",    "VARCHAR(36)"),
+    ("org_branches", "landline",             "VARCHAR(30)"),
+    ("org_branches", "landline_country_code","VARCHAR(10)"),
+    ("org_branches", "additional_emails",    "JSONB"),
+    ("org_branches", "additional_phones",    "JSONB"),
 ]
 
 

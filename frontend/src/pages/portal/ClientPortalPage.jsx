@@ -169,6 +169,7 @@ import DesignationList from "./org-management/DesignationList";
 import DesignationForm from "./org-management/DesignationForm";
 import DesignationDetails from "./org-management/DesignationDetails";
 import BranchList from "./org-management/BranchList";
+import BranchForm from "./org-management/BranchForm";
 import OrgHierarchy from "./org-management/OrgHierarchy";
 
 function PortalProtectedRoute({ children }) {
@@ -263,6 +264,8 @@ function PortalRoutes() {
       <Route path="/org/companies/:companyId"            element={<Protected><CompanyDetails /></Protected>} />
       <Route path="/org/companies/:companyId/edit"       element={<Protected><CompanyForm editMode={true} /></Protected>} />
       <Route path="/org/branches"                        element={<Protected><BranchList /></Protected>} />
+      <Route path="/org/branches/new"                    element={<Protected><BranchForm editMode={false} /></Protected>} />
+      <Route path="/org/branches/:branchId/edit"         element={<Protected><BranchForm editMode={true} /></Protected>} />
       <Route path="/org/departments"                     element={<Protected><DepartmentList /></Protected>} />
       <Route path="/org/departments/new"                 element={<Protected><DepartmentForm editMode={false} /></Protected>} />
       <Route path="/org/departments/hierarchy/:companyId" element={<Protected><OrgHierarchy /></Protected>} />

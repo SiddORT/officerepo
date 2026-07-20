@@ -12,7 +12,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, JSON, String, Text
 
 from backend.app.database.client_db import ClientBase
 
@@ -143,6 +143,11 @@ class OrgBranch(ClientBase):
     phone               = Column(String(30),  nullable=True)
     phone_country_code  = Column(String(10),  nullable=True)
     branch_manager      = Column(String(200), nullable=True)
+    branch_manager_id   = Column(String(36),  nullable=True)
+    landline            = Column(String(30),  nullable=True)
+    landline_country_code = Column(String(10), nullable=True)
+    additional_emails   = Column(JSON, nullable=True)
+    additional_phones   = Column(JSON, nullable=True)
 
     # Address
     address_line_1      = Column(String(255), nullable=True)

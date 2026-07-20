@@ -1,325 +1,18 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { useParams } from "react-router-dom";
-import { Country, State, City } from "country-state-city";
+import React, { useEffect, useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalOrgApi } from "../../../services/apiClient";
 import OrgLayout from "./OrgLayout";
 import PageHeader from "../shared/PageHeader";
 import Badge from "../shared/Badge";
 import Pagination from "../shared/Pagination";
-import PhoneInput from "../../../components/ui/PhoneInput";
-import usePincodeLookup from "../../../hooks/usePincodeLookup";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import { ViewIconBtn, EditIconBtn, ToggleStatusIconBtn, DeleteIconBtn } from "../../../components/ui/ActionIcons";
-
-// Ensure the currently-set value always appears as a selectable option,
-// even if it doesn't exactly match an entry in the reference dataset
-// (e.g. a value that came from the pincode auto-fill lookup).
-function ensureOption(names, current) {
-  if (!current) return names;
-  return names.some(n => n.toLowerCase() === current.trim().toLowerCase()) ? names : [current, ...names];
-}
-
-function genBranchCode(name) {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (!words.length) return "";
-  if (words.length === 1) return words[0].slice(0, 4).toUpperCase();
-  const head = words[0].slice(0, 3).toUpperCase();
-  const tail = words.slice(1).map(w => w[0].toUpperCase()).join("");
-  return `${head}-${tail}`;
-}
-
-const SECTION_LABEL_STYLE = {
-  fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
-  color: "var(--c-accent)", marginBottom: 10, paddingBottom: 6,
-  borderBottom: "1px solid var(--c-border)",
-};
-
-function BranchModal({ subdomain, token, companies, editBranch, onClose, onSaved }) {
-  const isEdit = !!editBranch;
-  const [form, setForm] = useState({
-    company_id:          editBranch?.company_id          || (companies[0]?.id || ""),
-    branch_code:         editBranch?.branch_code          || "",
-    branch_name:         editBranch?.branch_name          || "",
-    branch_type:         editBranch?.branch_type          || "",
-    postal_code:         editBranch?.postal_code          || "",
-    address_line1:       editBranch?.address_line_1       || "",
-    address_line2:       editBranch?.address_line_2       || "",
-    city:                editBranch?.city                 || "",
-    district:            editBranch?.district             || "",
-    state:               editBranch?.state                || "",
-    country:             editBranch?.country              || "",
-    phone:               editBranch?.phone                || "",
-    phone_country_code:  editBranch?.phone_country_code   || "+91",
-    email:               editBranch?.email                || "",
-    branch_manager:      editBranch?.branch_manager       || "",
-    description:         editBranch?.description          || "",
-    // GST & Tax
-    gst_registered:        editBranch?.gst_registered       || false,
-    gstin:                 editBranch?.gstin                || "",
-    gst_registration_date: editBranch?.gst_registration_date ? String(editBranch.gst_registration_date).slice(0,10) : "",
-    gst_jurisdiction:      editBranch?.gst_jurisdiction      || "",
-    state_code:            editBranch?.state_code            || "",
-    // Financial
-    cost_center:   editBranch?.cost_center   || "",
-    profit_center: editBranch?.profit_center || "",
-  });
-  const [autoCode, setAutoCode] = useState(!isEdit && !editBranch?.branch_code);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const { lookup } = usePincodeLookup();
-
-  // Cascading Country → State → City dropdowns
-  const countries = useMemo(() => Country.getAllCountries(), []);
-  const countryObj = useMemo(
-    () => countries.find(c => c.name.toLowerCase() === (form.country || "").trim().toLowerCase()),
-    [countries, form.country]
-  );
-  const states = useMemo(
-    () => (countryObj ? State.getStatesOfCountry(countryObj.isoCode) : []),
-    [countryObj]
-  );
-  const stateObj = useMemo(
-    () => states.find(s => s.name.toLowerCase() === (form.state || "").trim().toLowerCase()),
-    [states, form.state]
-  );
-  const cities = useMemo(
-    () => (countryObj && stateObj ? City.getCitiesOfState(countryObj.isoCode, stateObj.isoCode) : []),
-    [countryObj, stateObj]
-  );
-  const countryOptions = useMemo(() => ensureOption(countries.map(c => c.name), form.country), [countries, form.country]);
-  const stateOptions   = useMemo(() => ensureOption(states.map(s => s.name), form.state), [states, form.state]);
-  const cityOptions    = useMemo(() => ensureOption(cities.map(c => c.name), form.city), [cities, form.city]);
-
-  const handleCountryChange = (e) => setForm(f => ({ ...f, country: e.target.value, state: "", city: "" }));
-  const handleStateChange   = (e) => setForm(f => ({ ...f, state: e.target.value, city: "" }));
-
-  const handlePincodeChange = async (e) => {
-    const raw = e.target.value;
-    set("postal_code", raw);
-    const code = raw.trim();
-    if (code.length < 5) return;
-    const cc = form.country || "IN";
-    const result = await lookup(code, cc);
-    if (!result) return;
-    setForm(f => ({
-      ...f,
-      city:     result.city     || f.city,
-      district: result.district || f.district,
-      state:    result.state    || f.state,
-      country:  result.country  || f.country,
-    }));
-  };
-
-  const handleSave = async () => {
-    if (!form.branch_name.trim()) { setError("Branch name is required."); return; }
-    if (!form.company_id) { setError("Please select a company."); return; }
-    if (form.gst_registered && form.gstin) {
-      const GSTIN_RE = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
-      if (!GSTIN_RE.test(form.gstin.trim().toUpperCase())) {
-        setError("Invalid GSTIN format. Expected: 22AAAAA0000A1Z5"); return;
-      }
-    }
-    setSaving(true); setError("");
-    try {
-      const { address_line1, address_line2, ...rest } = form;
-      const payload = {
-        ...rest,
-        address_line_1: address_line1,
-        address_line_2: address_line2,
-        gstin: form.gstin ? form.gstin.trim().toUpperCase() : null,
-      };
-      Object.keys(payload).forEach(k => { if (payload[k] === "") payload[k] = null; });
-      payload.branch_name = form.branch_name;
-      payload.company_id = form.company_id;
-      payload.gst_registered = !!form.gst_registered;
-      if (isEdit) await portalOrgApi.updateBranch(subdomain, token, editBranch.id, payload);
-      else await portalOrgApi.createBranch(subdomain, token, payload);
-      onSaved();
-    } catch (e) { setError(e?.response?.data?.detail || e?.response?.data?.message || "Save failed."); }
-    finally { setSaving(false); }
-  };
-
-  const BRANCH_TYPES = ["Head Office", "Corporate Office", "Regional Office", "Branch Office", "Warehouse", "Project Site"];
-
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div className="portal-form-card" style={{ width: "100%", maxWidth: 820, maxHeight: "90vh", overflow: "auto" }}>
-        <div style={{ paddingBottom: 10, borderBottom: "1px solid var(--c-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontWeight: 700, color: "var(--c-text)", fontSize: 15 }}>{isEdit ? "Edit Branch" : "Add Branch"}</span>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-muted)", fontSize: 20, lineHeight: 1 }}>×</button>
-        </div>
-        <div style={{ padding: "14px 0", display: "grid", gap: 14 }}>
-          {error && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13 }}>{error}</div>}
-
-          {/* ── Basic Details ── */}
-          <div style={SECTION_LABEL_STYLE}>Basic Details</div>
-          <div>
-            <label className="portal-form-label">Company</label>
-            <select value={form.company_id} onChange={e => set("company_id", e.target.value)} className="input-field">
-              <option value="">Select company…</option>
-              {companies.map(c => <option key={c.id} value={c.id}>{c.company_name}</option>)}
-            </select>
-          </div>
-          <div className="portal-form-row">
-            <div>
-              <label className="portal-form-label">Branch Name</label>
-              <input
-                value={form.branch_name}
-                onChange={e => {
-                  const name = e.target.value;
-                  setForm(f => ({
-                    ...f,
-                    branch_name: name,
-                    branch_code: autoCode ? genBranchCode(name) : f.branch_code,
-                  }));
-                }}
-                className="input-field"
-                placeholder="Mumbai Head Office"
-              />
-            </div>
-            <div>
-              <label className="portal-form-label">
-                Branch Code
-                {autoCode && !isEdit && (
-                  <span style={{ fontSize: 10, color: "var(--c-accent)", marginLeft: 6, fontWeight: 400 }}>auto</span>
-                )}
-              </label>
-              <input
-                value={form.branch_code}
-                onChange={e => { setAutoCode(false); set("branch_code", e.target.value.toUpperCase()); }}
-                className="input-field"
-                placeholder="MUM-HO"
-                style={{ textTransform: "uppercase" }}
-              />
-            </div>
-          </div>
-          <div>
-            <label className="portal-form-label">Branch Type</label>
-            <select value={form.branch_type} onChange={e => set("branch_type", e.target.value)} className="input-field">
-              <option value="">Select type…</option>
-              {BRANCH_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
-
-          {/* ── Address ── */}
-          <div style={{ ...SECTION_LABEL_STYLE, marginTop: 4 }}>Address</div>
-          <div className="portal-form-row">
-            <div><label className="portal-form-label">Postal Code</label><input value={form.postal_code} onChange={handlePincodeChange} className="input-field" placeholder="400001" /></div>
-          </div>
-          <div><label className="portal-form-label">Address Line 1</label><input value={form.address_line1} onChange={e => set("address_line1", e.target.value)} className="input-field" placeholder="123 Business Park" /></div>
-          <div><label className="portal-form-label">Address Line 2</label><input value={form.address_line2} onChange={e => set("address_line2", e.target.value)} className="input-field" placeholder="Floor 5, Tower B" /></div>
-          <div className="form-grid-4">
-            <div>
-              <label className="portal-form-label">City</label>
-              <select value={form.city} onChange={e => set("city", e.target.value)} className="input-field" style={{ cursor: "pointer" }} disabled={!stateObj}>
-                <option value="">{stateObj ? "Select city…" : "Select state first"}</option>
-                {cityOptions.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div><label className="portal-form-label">District</label><input value={form.district} onChange={e => set("district", e.target.value)} className="input-field" placeholder="Mumbai Suburban" /></div>
-            <div>
-              <label className="portal-form-label">State</label>
-              <select value={form.state} onChange={handleStateChange} className="input-field" style={{ cursor: "pointer" }} disabled={!countryObj}>
-                <option value="">{countryObj ? "Select state…" : "Select country first"}</option>
-                {stateOptions.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="portal-form-label">Country</label>
-              <select value={form.country} onChange={handleCountryChange} className="input-field" style={{ cursor: "pointer" }}>
-                <option value="">Select country…</option>
-                {countryOptions.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* ── Contact ── */}
-          <div style={{ ...SECTION_LABEL_STYLE, marginTop: 4 }}>Contact</div>
-          <PhoneInput
-            label="Phone"
-            dialCode={form.phone_country_code}
-            onDialCodeChange={v => set("phone_country_code", v)}
-            number={form.phone}
-            onNumberChange={v => set("phone", v)}
-          />
-          <div className="portal-form-row">
-            <div><label className="portal-form-label">Email</label><input type="email" value={form.email} onChange={e => set("email", e.target.value)} className="input-field" placeholder="mumbai@acmetech.in" /></div>
-            <div><label className="portal-form-label">Branch Manager</label><input value={form.branch_manager} onChange={e => set("branch_manager", e.target.value)} className="input-field" placeholder="Name of the manager" /></div>
-          </div>
-
-          {/* ── GST & Tax ── */}
-          <div style={{ ...SECTION_LABEL_STYLE, marginTop: 4 }}>GST & Tax</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <input
-              type="checkbox"
-              id="gst_registered"
-              checked={!!form.gst_registered}
-              onChange={e => set("gst_registered", e.target.checked)}
-              style={{ width: 16, height: 16, cursor: "pointer" }}
-            />
-            <label htmlFor="gst_registered" style={{ fontSize: 13, color: "var(--c-text)", cursor: "pointer" }}>
-              This branch is GST registered
-            </label>
-          </div>
-          {form.gst_registered && (
-            <div style={{ display: "grid", gap: 14, paddingLeft: 4, borderLeft: "2px solid var(--c-accent)", paddingTop: 4 }}>
-              <div className="portal-form-row">
-                <div>
-                  <label className="portal-form-label">GSTIN</label>
-                  <input
-                    value={form.gstin}
-                    onChange={e => set("gstin", e.target.value.toUpperCase())}
-                    className="input-field"
-                    placeholder="22AAAAA0000A1Z5"
-                    maxLength={15}
-                    style={{ textTransform: "uppercase", fontFamily: "monospace" }}
-                  />
-                </div>
-                <div>
-                  <label className="portal-form-label">GST Registration Date</label>
-                  <input type="date" value={form.gst_registration_date} onChange={e => set("gst_registration_date", e.target.value)} className="input-field" />
-                </div>
-              </div>
-              <div className="portal-form-row">
-                <div>
-                  <label className="portal-form-label">GST Jurisdiction</label>
-                  <input value={form.gst_jurisdiction} onChange={e => set("gst_jurisdiction", e.target.value)} className="input-field" placeholder="e.g. Pune-I" />
-                </div>
-                <div>
-                  <label className="portal-form-label">State Code</label>
-                  <input value={form.state_code} onChange={e => set("state_code", e.target.value)} className="input-field" placeholder="e.g. 27" maxLength={3} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Financial ── */}
-          <div style={{ ...SECTION_LABEL_STYLE, marginTop: 4 }}>Financial</div>
-          <div className="portal-form-row">
-            <div><label className="portal-form-label">Cost Center</label><input value={form.cost_center} onChange={e => set("cost_center", e.target.value)} className="input-field" placeholder="CC-MUM-001" /></div>
-            <div><label className="portal-form-label">Profit Center</label><input value={form.profit_center} onChange={e => set("profit_center", e.target.value)} className="input-field" placeholder="PC-WEST-01" /></div>
-          </div>
-
-          {/* ── Notes ── */}
-          <div style={{ ...SECTION_LABEL_STYLE, marginTop: 4 }}>Notes</div>
-          <div><label className="portal-form-label">Description</label><textarea value={form.description} onChange={e => set("description", e.target.value)} className="input-field" style={{ height: 72, resize: "vertical" }} placeholder="Optional notes about this branch…" /></div>
-        </div>
-        <div style={{ display: "flex", gap: 10, paddingTop: 14, borderTop: "1px solid var(--c-border)" }}>
-          <button onClick={handleSave} disabled={saving} className="btn-primary" style={{ flex: 1 }}>
-            {saving ? "Saving…" : isEdit ? "Update" : "Create"}
-          </button>
-          <button onClick={onClose} style={{ flex: 1 }} className="btn-secondary">Cancel</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function BranchList() {
   const { subdomain } = useParams();
   const { token } = usePortalAuth();
+  const navigate = useNavigate();
 
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
@@ -335,7 +28,6 @@ export default function BranchList() {
 
   const [actionLoading, setActionLoading] = useState(null);
   const [toast, setToast] = useState(null);
-  const [modal, setModal] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -408,21 +100,12 @@ export default function BranchList() {
         <div style={{ position: "fixed", top: 16, right: 16, zIndex: 9999, padding: "10px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600, boxShadow: "0 4px 20px rgba(0,0,0,0.3)", background: toast.ok ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: toast.ok ? "#10b981" : "#f87171", border: `1px solid ${toast.ok ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}` }}>{toast.msg}</div>
       )}
 
-      {modal !== null && (
-        <BranchModal
-          subdomain={subdomain} token={token} companies={companies}
-          editBranch={modal === "new" ? null : modal}
-          onClose={() => setModal(null)}
-          onSaved={() => { setModal(null); load(); showToast(modal === "new" ? "Branch created." : "Branch updated."); }}
-        />
-      )}
-
       {/* Header */}
       <PageHeader
         title="Branches"
         subtitle={`${total} total records`}
         actions={
-          <button onClick={() => setModal("new")} className="btn-primary">+ Add Branch</button>
+          <button onClick={() => navigate(`/portal/${subdomain}/org/branches/new`)} className="btn-primary">+ Add Branch</button>
         }
       />
 
@@ -458,7 +141,7 @@ export default function BranchList() {
               {search || filterStatus || filterCompany ? "Try adjusting your filters." : "Add your first branch to get started."}
             </div>
             {!search && !filterStatus && !filterCompany && (
-              <button onClick={() => setModal("new")} className="btn-primary">+ Add Branch</button>
+              <button onClick={() => navigate(`/portal/${subdomain}/org/branches/new`)} className="btn-primary">+ Add Branch</button>
             )}
           </div>
         ) : (
@@ -475,33 +158,28 @@ export default function BranchList() {
                 const isExpanded = expandedId === b.id;
                 return (
                   <React.Fragment key={b.id}>
-                    <tr>
-                      <td style={{ width: 40, textAlign: "center", fontSize: 12, color: "var(--c-muted)" }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
+                    <tr style={{ opacity: b.is_active ? 1 : 0.55 }}>
+                      <td style={{ textAlign: "center", color: "var(--c-muted)", fontSize: 12 }}>{(page - 1) * PAGE_SIZE + i + 1}</td>
                       <td>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-text)" }}>{b.branch_name}</div>
-                        {b.branch_code && <div className="t-muted" style={{ fontSize: 11, fontFamily: "monospace" }}>{b.branch_code}</div>}
+                        <div style={{ fontWeight: 600, fontSize: 13, color: "var(--c-text)" }}>{b.branch_name}</div>
+                        <div style={{ fontSize: 11, color: "var(--c-muted)", fontFamily: "monospace", marginTop: 2 }}>{b.branch_code}</div>
                       </td>
-                      <td>
-                        {b.branch_type
-                          ? <span className="badge-purple">{b.branch_type}</span>
-                          : <span className="t-muted" style={{ opacity: 0.4 }}>—</span>}
+                      <td style={{ fontSize: 13, color: "var(--c-muted)" }}>{b.branch_type || "—"}</td>
+                      <td style={{ fontSize: 13, color: "var(--c-muted)" }}>{b.company_name || "—"}</td>
+                      <td style={{ fontSize: 13 }}>
+                        {[b.city, b.state, b.country].filter(Boolean).join(", ") || <span style={{ color: "var(--c-muted)", opacity: 0.5 }}>—</span>}
                       </td>
-                      <td className="t-body">{b.company_name || <span style={{ opacity: 0.4 }}>—</span>}</td>
-                      <td className="t-muted" style={{ fontSize: 12 }}>
-                        {[b.city, b.state, b.country].filter(Boolean).join(", ") || <span style={{ opacity: 0.4 }}>—</span>}
+                      <td style={{ fontSize: 13 }}>
+                        <span style={{ color: "var(--c-text)" }}>{b.active_employees}</span>
+                        <span style={{ color: "var(--c-muted)", fontSize: 11 }}> / {b.total_employees}</span>
                       </td>
-                      <td>
-                        {b.total_employees != null && <span className="badge-info">👥 {b.total_employees}</span>}
-                      </td>
-                      <td>
-                        <Badge status={b.is_active ? "Active" : "Inactive"} />
-                      </td>
+                      <td><Badge status={b.is_active ? "Active" : "Inactive"} /></td>
                       <td>
                         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                           <ViewIconBtn
                             onClick={() => setExpandedId(isExpanded ? null : b.id)}
                             title={isExpanded ? "Close details" : "View details"} />
-                          <EditIconBtn onClick={() => setModal(b)} title="Edit branch" />
+                          <EditIconBtn onClick={() => navigate(`/portal/${subdomain}/org/branches/${b.id}/edit`)} title="Edit branch" />
                           <ToggleStatusIconBtn isActive={b.is_active} onClick={() => handleToggle(b)} disabled={actionLoading === b.id}
                             title={b.is_active ? "Deactivate branch" : "Activate branch"} />
                           {!b.is_active && (
@@ -535,12 +213,13 @@ export default function BranchList() {
                               </div>
                             </div>
                             {/* Contact */}
-                            {(b.phone || b.email || b.branch_manager) && (
+                            {(b.phone || b.email || b.branch_manager || b.landline) && (
                               <div>
                                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-accent)", marginBottom: 10 }}>Contact</div>
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
                                   {b.branch_manager && <div><span className="portal-form-label">Manager: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.branch_manager}</span></div>}
-                                  {b.phone && <div><span className="portal-form-label">Phone: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.phone_country_code ? `${b.phone_country_code} ` : ""}{b.phone}</span></div>}
+                                  {b.phone && <div><span className="portal-form-label">Mobile: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.phone_country_code ? `${b.phone_country_code} ` : ""}{b.phone}</span></div>}
+                                  {b.landline && <div><span className="portal-form-label">Landline: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.landline_country_code ? `${b.landline_country_code} ` : ""}{b.landline}</span></div>}
                                   {b.email && <div><span className="portal-form-label">Email: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.email}</span></div>}
                                 </div>
                               </div>
@@ -551,7 +230,7 @@ export default function BranchList() {
                               {b.gst_registered ? (
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
                                   {b.gstin && <div><span className="portal-form-label">GSTIN: </span><span style={{ fontSize: 13, fontFamily: "monospace", color: "var(--c-text)" }}>{b.gstin}</span></div>}
-                                  {b.gst_registration_date && <div><span className="portal-form-label">Reg. Date: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{String(b.gst_registration_date).slice(0,10)}</span></div>}
+                                  {b.gst_registration_date && <div><span className="portal-form-label">Reg. Date: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{String(b.gst_registration_date).slice(0, 10)}</span></div>}
                                   {b.gst_jurisdiction && <div><span className="portal-form-label">Jurisdiction: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.gst_jurisdiction}</span></div>}
                                   {b.state_code && <div><span className="portal-form-label">State Code: </span><span style={{ fontSize: 13, color: "var(--c-text)" }}>{b.state_code}</span></div>}
                                   {b.has_gst_certificate && <div><span className="portal-form-label">Certificate: </span><span className="badge-success" style={{ fontSize: 11 }}>✓ Uploaded</span></div>}
@@ -560,16 +239,6 @@ export default function BranchList() {
                                 <span style={{ fontSize: 12, color: "var(--c-muted)", opacity: 0.6 }}>Not GST registered</span>
                               )}
                             </div>
-                            {/* Financial */}
-                            {(b.cost_center || b.profit_center) && (
-                              <div>
-                                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-accent)", marginBottom: 10 }}>Financial</div>
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
-                                  {b.cost_center && <div><span className="portal-form-label">Cost Center: </span><span style={{ fontSize: 13, fontFamily: "monospace", color: "var(--c-text)" }}>{b.cost_center}</span></div>}
-                                  {b.profit_center && <div><span className="portal-form-label">Profit Center: </span><span style={{ fontSize: 13, fontFamily: "monospace", color: "var(--c-text)" }}>{b.profit_center}</span></div>}
-                                </div>
-                              </div>
-                            )}
                           </div>
                         </td>
                       </tr>

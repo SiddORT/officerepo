@@ -130,6 +130,11 @@ class BranchCreate(BaseModel):
     phone:         Optional[str] = Field(None, max_length=30)
     phone_country_code: Optional[str] = Field(None, max_length=10)
     branch_manager: Optional[str] = Field(None, max_length=200)
+    branch_manager_id: Optional[str] = Field(None, max_length=36)
+    landline:       Optional[str] = Field(None, max_length=30)
+    landline_country_code: Optional[str] = Field(None, max_length=10)
+    additional_emails: Optional[list] = None
+    additional_phones: Optional[list] = None
     address_line_1: Optional[str] = Field(None, max_length=255)
     address_line_2: Optional[str] = Field(None, max_length=255)
     city:          Optional[str] = Field(None, max_length=100)
@@ -144,9 +149,6 @@ class BranchCreate(BaseModel):
     gst_registration_date: Optional[date]  = None
     gst_jurisdiction:      Optional[str]   = Field(None, max_length=100)
     state_code:            Optional[str]   = Field(None, max_length=10)
-    # Financial
-    cost_center:   Optional[str] = Field(None, max_length=100)
-    profit_center: Optional[str] = Field(None, max_length=100)
 
     @field_validator("branch_code")
     @classmethod
@@ -166,11 +168,17 @@ class BranchCreate(BaseModel):
 
 class BranchUpdate(BaseModel):
     branch_name:   Optional[str] = Field(None, max_length=200)
+    branch_code:   Optional[str] = Field(None, max_length=60)
     branch_type:   Optional[str] = Field(None, max_length=60)
     email:         Optional[str] = Field(None, max_length=254)
     phone:         Optional[str] = Field(None, max_length=30)
     phone_country_code: Optional[str] = Field(None, max_length=10)
     branch_manager: Optional[str] = Field(None, max_length=200)
+    branch_manager_id: Optional[str] = Field(None, max_length=36)
+    landline:       Optional[str] = Field(None, max_length=30)
+    landline_country_code: Optional[str] = Field(None, max_length=10)
+    additional_emails: Optional[list] = None
+    additional_phones: Optional[list] = None
     address_line_1: Optional[str] = Field(None, max_length=255)
     address_line_2: Optional[str] = Field(None, max_length=255)
     city:          Optional[str] = Field(None, max_length=100)
@@ -185,9 +193,13 @@ class BranchUpdate(BaseModel):
     gst_registration_date: Optional[date]  = None
     gst_jurisdiction:      Optional[str]   = Field(None, max_length=100)
     state_code:            Optional[str]   = Field(None, max_length=10)
-    # Financial
-    cost_center:   Optional[str] = Field(None, max_length=100)
-    profit_center: Optional[str] = Field(None, max_length=100)
+
+    @field_validator("branch_code")
+    @classmethod
+    def strip_code(cls, v) -> Optional[str]:
+        if v:
+            return v.strip().upper()
+        return v
 
     @field_validator("gstin")
     @classmethod
