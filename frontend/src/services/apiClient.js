@@ -509,6 +509,7 @@ export const portalOrgApi = {
 // ── Portal Employee Management ────────────────────────────────────────────────
 export const portalEmployeeApi = {
   options:  (sd, tk) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/meta/options`, { headers: { Authorization: `Bearer ${tk}` } }),
+  me:       (sd, tk) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/me`, { headers: { Authorization: `Bearer ${tk}` } }),
 
   list:     (sd, tk, p) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees`, { headers: { Authorization: `Bearer ${tk}` }, params: p }),
   get:      (sd, tk, id) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),

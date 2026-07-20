@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Routes, Route, Navigate, useParams } from "react-router-dom";
 
 // Client Settings pages
@@ -13,6 +13,7 @@ import SettingsDocTemplates  from "./client-settings/SettingsDocTemplates";
 import SettingsEmailTemplates from "./client-settings/SettingsEmailTemplates";
 import { PortalAuthProvider, usePortalAuth } from "../../contexts/PortalAuthContext";
 import { useTenant } from "../../contexts/TenantContext";
+import { portalEmployeeApi } from "../../services/apiClient";
 import { PortalNavProvider } from "../../contexts/PortalNavContext";
 import PortalLoginPage from "./PortalLoginPage";
 import PortalLayout from "./PortalLayout";
@@ -179,30 +180,186 @@ function PortalProtectedRoute({ children }) {
   return children;
 }
 
+// ── Profile page helpers ──────────────────────────────────────────────────────
+const PVal = ({ children }) => (
+  <div style={{ fontSize: 13, paddingTop: 2, color: children ? "var(--c-text)" : "var(--c-muted)" }}>
+    {children || "—"}
+  </div>
+);
+const PLabel = ({ children }) => (
+  <div style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--c-muted)", marginBottom: 2 }}>
+    {children}
+  </div>
+);
+const PCard = ({ icon, title, children }) => (
+  <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12, overflow: "hidden" }}>
+    <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--c-border)", display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14, color: "var(--c-heading)" }}>
+      <span style={{ fontSize: 16 }}>{icon}</span>{title}
+    </div>
+    <div style={{ padding: 20 }}>{children}</div>
+  </div>
+);
+const PGrid = ({ cols = 3, children }) => (
+  <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(${cols === 2 ? 180 : 140}px, 1fr))`, gap: 16 }}>
+    {children}
+  </div>
+);
+
 function PortalProfilePage() {
-  const { user, subdomain } = usePortalAuth();
+  const { user, subdomain, token } = usePortalAuth();
+  const [emp, setEmp] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [noRecord, setNoRecord] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const r = await portalEmployeeApi.me(subdomain, token);
+      const data = r.data?.data;
+      if (data) setEmp(data);
+      else setNoRecord(true);
+    } catch {
+      setNoRecord(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [subdomain, token]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const initials = (user?.name || "U").split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+
   return (
     <PortalLayout title="My Profile">
-      <div className="max-w-lg space-y-4">
-        <h2 className="text-lg font-bold" style={{ color: "var(--c-heading)" }}>Profile</h2>
-        <div className="rounded-xl p-5 space-y-3" style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)" }}>
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold text-white"
-              style={{ background: "linear-gradient(135deg, #00aeec, #ff7a1a)" }}>
-              {(user?.name || "U").split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)}
+      <div style={{ maxWidth: 860, display: "grid", gap: 20 }}>
+
+        {/* Identity card */}
+        <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12, padding: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ width: 56, height: 56, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg, #00aeec, #ff7a1a)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700, color: "#fff" }}>
+              {initials}
             </div>
             <div>
-              <div className="font-semibold" style={{ color: "var(--c-heading)" }}>{user?.name}</div>
-              <div className="text-sm" style={{ color: "var(--c-muted)" }}>{user?.email}</div>
+              <div style={{ fontWeight: 700, fontSize: 16, color: "var(--c-heading)" }}>
+                {emp?.full_name || user?.name}
+              </div>
+              {emp?.designation_name && (
+                <div style={{ fontSize: 13, color: "var(--c-accent)", fontWeight: 600 }}>{emp.designation_name}</div>
+              )}
+              <div style={{ fontSize: 13, color: "var(--c-muted)", marginTop: 2 }}>{user?.email}</div>
             </div>
+            {emp?.employee_code && (
+              <div style={{ marginLeft: "auto", textAlign: "right" }}>
+                <div style={{ fontSize: 11, color: "var(--c-muted)", fontWeight: 600, textTransform: "uppercase" }}>Employee ID</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--c-heading)", fontFamily: "monospace" }}>{emp.employee_code}</div>
+              </div>
+            )}
           </div>
-          <div className="pt-3" style={{ borderTop: "1px solid var(--c-border)" }}>
-            <div className="text-xs" style={{ color: "var(--c-muted)" }}>
-              Workspace: <span className="font-medium" style={{ color: "var(--c-text)" }}>{subdomain}.{import.meta.env.VITE_BASE_DOMAIN || window.location.hostname}</span>
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--c-border)", display: "flex", gap: 24, flexWrap: "wrap" }}>
+            {emp?.department_name && (
+              <div><PLabel>Department</PLabel><PVal>{emp.department_name}</PVal></div>
+            )}
+            {emp?.company_name && (
+              <div><PLabel>Company</PLabel><PVal>{emp.company_name}</PVal></div>
+            )}
+            {emp?.branch_name && (
+              <div><PLabel>Branch</PLabel><PVal>{emp.branch_name}</PVal></div>
+            )}
+            {emp?.work_mode && (
+              <div><PLabel>Work Mode</PLabel><PVal>{emp.work_mode}</PVal></div>
+            )}
+            <div>
+              <PLabel>Workspace</PLabel>
+              <PVal>{subdomain}.{import.meta.env.VITE_BASE_DOMAIN || window.location.hostname}</PVal>
             </div>
           </div>
         </div>
-        <p className="text-xs" style={{ color: "var(--c-muted)" }}>Profile editing coming soon.</p>
+
+        {loading && (
+          <div style={{ textAlign: "center", padding: 40, color: "var(--c-muted)", fontSize: 14 }}>Loading personal details…</div>
+        )}
+
+        {!loading && noRecord && (
+          <div style={{ textAlign: "center", padding: 32, color: "var(--c-muted)", fontSize: 13, background: "var(--c-surface)", borderRadius: 12, border: "1px solid var(--c-border)" }}>
+            No employee record is linked to your account yet. Contact your HR administrator.
+          </div>
+        )}
+
+        {!loading && emp && (
+          <>
+            {/* Personal Details */}
+            <PCard icon="👤" title="Personal Details">
+              <div style={{ display: "grid", gap: 16 }}>
+                <PGrid>
+                  <div><PLabel>Gender</PLabel><PVal>{emp.gender}</PVal></div>
+                  <div><PLabel>Date of Birth</PLabel><PVal>{emp.date_of_birth}</PVal></div>
+                  <div><PLabel>Marital Status</PLabel><PVal>{emp.marital_status}</PVal></div>
+                </PGrid>
+                <PGrid>
+                  <div><PLabel>Blood Group</PLabel><PVal>{emp.blood_group}</PVal></div>
+                  <div><PLabel>Nationality</PLabel><PVal>{emp.nationality}</PVal></div>
+                  <div><PLabel>Personal Email</PLabel><PVal>{emp.personal_email}</PVal></div>
+                </PGrid>
+              </div>
+            </PCard>
+
+            {/* Contact Details */}
+            <PCard icon="📞" title="Contact Details">
+              <PGrid>
+                <div>
+                  <PLabel>Mobile</PLabel>
+                  <PVal>{emp.mobile_number ? `${emp.mobile_country_code || ""} ${emp.mobile_number}`.trim() : null}</PVal>
+                </div>
+                <div>
+                  <PLabel>Alternate Mobile</PLabel>
+                  <PVal>{emp.alternate_mobile ? `${emp.alternate_mobile_country_code || ""} ${emp.alternate_mobile}`.trim() : null}</PVal>
+                </div>
+                <div><PLabel>Landline</PLabel><PVal>{emp.landline_number}</PVal></div>
+              </PGrid>
+            </PCard>
+
+            {/* Current Address */}
+            <PCard icon="📍" title="Current Address">
+              <div style={{ display: "grid", gap: 12 }}>
+                <PGrid cols={2}>
+                  <div><PLabel>Address Line 1</PLabel><PVal>{emp.current_address_line_1}</PVal></div>
+                  <div><PLabel>Address Line 2</PLabel><PVal>{emp.current_address_line_2}</PVal></div>
+                </PGrid>
+                <PGrid>
+                  <div><PLabel>City</PLabel><PVal>{emp.current_city}</PVal></div>
+                  <div><PLabel>District</PLabel><PVal>{emp.current_district}</PVal></div>
+                  <div><PLabel>State</PLabel><PVal>{emp.current_state}</PVal></div>
+                </PGrid>
+                <PGrid cols={2}>
+                  <div><PLabel>Country</PLabel><PVal>{emp.current_country}</PVal></div>
+                  <div><PLabel>Postal Code</PLabel><PVal>{emp.current_postal_code}</PVal></div>
+                </PGrid>
+              </div>
+            </PCard>
+
+            {/* Permanent Address */}
+            <PCard icon="🏠" title="Permanent Address">
+              {emp.permanent_same_as_current ? (
+                <div style={{ fontSize: 13, color: "var(--c-muted)", textAlign: "center", padding: "8px 0" }}>Same as current address</div>
+              ) : (
+                <div style={{ display: "grid", gap: 12 }}>
+                  <PGrid cols={2}>
+                    <div><PLabel>Address Line 1</PLabel><PVal>{emp.permanent_address_line_1}</PVal></div>
+                    <div><PLabel>Address Line 2</PLabel><PVal>{emp.permanent_address_line_2}</PVal></div>
+                  </PGrid>
+                  <PGrid>
+                    <div><PLabel>City</PLabel><PVal>{emp.permanent_city}</PVal></div>
+                    <div><PLabel>District</PLabel><PVal>{emp.permanent_district}</PVal></div>
+                    <div><PLabel>State</PLabel><PVal>{emp.permanent_state}</PVal></div>
+                  </PGrid>
+                  <PGrid cols={2}>
+                    <div><PLabel>Country</PLabel><PVal>{emp.permanent_country}</PVal></div>
+                    <div><PLabel>Postal Code</PLabel><PVal>{emp.permanent_postal_code}</PVal></div>
+                  </PGrid>
+                </div>
+              )}
+            </PCard>
+          </>
+        )}
       </div>
     </PortalLayout>
   );

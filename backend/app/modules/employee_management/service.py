@@ -253,6 +253,17 @@ def get_employee(db: Session, client_id: str, employee_id: str) -> Dict:
     return _emp_dict(emp, **_emp_names(db, emp))
 
 
+def get_my_employee(db: Session, client_id: str, email: str) -> Optional[Dict]:
+    """Return the basic employee record for the logged-in portal user, matched by email.
+    Returns None if no employee record exists for this email."""
+    if not email:
+        return None
+    emp = repo.get_employee_by_email(db, client_id, email.lower().strip())
+    if not emp:
+        return None
+    return _emp_dict(emp, **_emp_names(db, emp))
+
+
 def get_employee_profile(db: Session, client_id: str, employee_id: str) -> Dict:
     emp = repo.get_employee(db, client_id, employee_id)
     if not emp:

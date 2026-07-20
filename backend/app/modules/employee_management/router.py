@@ -113,6 +113,21 @@ def meta_options(
     return ApiResponse.ok(svc.get_meta_options()).model_dump()
 
 
+# ── Self-service: logged-in user's own employee record ────────────────────────
+
+@router.get("/{subdomain}/employees/me")
+def get_my_employee(
+    subdomain: str,
+    portal_user: dict = Depends(_portal_jwt),
+    client_db: Session = Depends(_client_db_dep),
+):
+    """Return the employee record for the currently logged-in portal user (matched by email).
+    Returns null data if no employee record is linked to this account."""
+    _sub(portal_user, subdomain)
+    result = svc.get_my_employee(client_db, portal_user["client_id"], portal_user.get("email", ""))
+    return ApiResponse.ok(result).model_dump()
+
+
 # ── Employee CRUD ─────────────────────────────────────────────────────────────
 
 @router.get("/{subdomain}/employees")
