@@ -17,7 +17,6 @@ Routes
   GET/POST/PATCH/DELETE  .../education[/{edu_id}]
   GET/POST/PATCH/DELETE  .../employment-history[/{hist_id}]
   GET/POST/PATCH/DELETE  .../family-members[/{member_id}]
-  GET/POST/PATCH/DELETE  .../emergency-contacts[/{contact_id}]
   GET/PUT                .../bank-details
   GET/PUT                .../government-ids
   GET                    .../activities
@@ -40,7 +39,6 @@ from backend.app.modules.employee_management.schemas import (
     EducationCreate, EducationUpdate,
     PreviousEmploymentCreate, PreviousEmploymentUpdate,
     FamilyMemberCreate, FamilyMemberUpdate,
-    EmergencyContactCreate, EmergencyContactUpdate,
     BankDetailsUpsert, GovernmentIdsUpsert, PhotoUpdate,
 )
 from backend.shared.response import ApiResponse
@@ -365,42 +363,6 @@ def delete_family_member(subdomain: str, emp_id: str, member_id: str,
     _sub(portal_user, subdomain)
     svc.delete_family_member(client_db, portal_user["client_id"], emp_id, member_id)
     return ApiResponse.ok(None, "Family member removed.").model_dump()
-
-
-# ── Emergency Contacts ────────────────────────────────────────────────────────
-
-@router.get("/{subdomain}/employees/{emp_id}/emergency-contacts")
-def list_emergency_contacts(subdomain: str, emp_id: str,
-    portal_user: dict = Depends(_portal_jwt), client_db: Session = Depends(_client_db_dep)):
-    _sub(portal_user, subdomain)
-    return ApiResponse.ok(svc.list_emergency_contacts(client_db, portal_user["client_id"], emp_id)).model_dump()
-
-
-@router.post("/{subdomain}/employees/{emp_id}/emergency-contacts")
-def add_emergency_contact(subdomain: str, emp_id: str, payload: EmergencyContactCreate, request: Request,
-    portal_user: dict = Depends(_portal_jwt), client_db: Session = Depends(_client_db_dep)):
-    _sub(portal_user, subdomain)
-    result = svc.add_emergency_contact(client_db, portal_user["client_id"], emp_id, payload,
-                                       actor_id=portal_user.get("admin_user_id"), ip=_get_ip(request))
-    return ApiResponse.ok(result, "Emergency contact added.").model_dump()
-
-
-@router.patch("/{subdomain}/employees/{emp_id}/emergency-contacts/{contact_id}")
-def update_emergency_contact(subdomain: str, emp_id: str, contact_id: str,
-    payload: EmergencyContactUpdate, request: Request,
-    portal_user: dict = Depends(_portal_jwt), client_db: Session = Depends(_client_db_dep)):
-    _sub(portal_user, subdomain)
-    result = svc.update_emergency_contact(client_db, portal_user["client_id"], emp_id, contact_id, payload,
-                                          actor_id=portal_user.get("admin_user_id"), ip=_get_ip(request))
-    return ApiResponse.ok(result, "Emergency contact updated.").model_dump()
-
-
-@router.delete("/{subdomain}/employees/{emp_id}/emergency-contacts/{contact_id}")
-def delete_emergency_contact(subdomain: str, emp_id: str, contact_id: str,
-    portal_user: dict = Depends(_portal_jwt), client_db: Session = Depends(_client_db_dep)):
-    _sub(portal_user, subdomain)
-    svc.delete_emergency_contact(client_db, portal_user["client_id"], emp_id, contact_id)
-    return ApiResponse.ok(None, "Emergency contact removed.").model_dump()
 
 
 # ── Bank Details ──────────────────────────────────────────────────────────────

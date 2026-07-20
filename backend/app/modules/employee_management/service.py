@@ -128,22 +128,14 @@ def _family_dict(r) -> Dict[str, Any]:
         "occupation": r.occupation,
         "phone_country_code": r.phone_country_code or "+91",
         "phone": r.phone,
+        "alternate_phone_country_code": getattr(r, "alternate_phone_country_code", "+91") or "+91",
+        "alternate_phone": getattr(r, "alternate_phone", None),
+        "email": getattr(r, "email", None),
+        "address": getattr(r, "address", None),
         "is_dependent": r.is_dependent, "is_nominee": r.is_nominee,
         "nomination_percentage": float(r.nomination_percentage) if r.nomination_percentage is not None else None,
+        "is_emergency_contact": getattr(r, "is_emergency_contact", False) or False,
         "remarks": r.remarks,
-        "created_at": r.created_at, "updated_at": r.updated_at,
-    }
-
-
-def _contact_dict(r) -> Dict[str, Any]:
-    return {
-        "id": r.id, "employee_id": r.employee_id,
-        "contact_name": r.contact_name, "relationship": r.relationship,
-        "mobile_country_code": getattr(r, "mobile_country_code", "+91") or "+91",
-        "mobile_number": r.mobile_number,
-        "alternate_country_code": getattr(r, "alternate_country_code", "+91") or "+91",
-        "alternate_number": r.alternate_number,
-        "address": r.address,
         "created_at": r.created_at, "updated_at": r.updated_at,
     }
 
@@ -276,7 +268,6 @@ def get_employee_profile(db: Session, client_id: str, employee_id: str) -> Dict:
     edu    = [_edu_dict(r)      for r in repo.list_education(db, client_id, employee_id)]
     prev   = [_prev_emp_dict(r) for r in repo.list_prev_employment(db, client_id, employee_id)]
     family = [_family_dict(r)   for r in repo.list_family_members(db, client_id, employee_id)]
-    emer   = [_contact_dict(r)  for r in repo.list_emergency_contacts(db, client_id, employee_id)]
     bank   = _bank_dict(repo.get_bank_details(db, client_id, employee_id))
     gov    = _gov_dict(repo.get_government_ids(db, client_id, employee_id), mask=True)
     acts   = [_activity_dict(r) for r in repo.list_activities(db, client_id, employee_id, limit=20)]
@@ -287,7 +278,6 @@ def get_employee_profile(db: Session, client_id: str, employee_id: str) -> Dict:
         "employment_history": prev,
         "experience_summary": _experience_summary(prev),
         "family_members": family,
-        "emergency_contacts": emer,
         "bank_details": bank,
         "government_ids": gov,
         "recent_activities": acts,
@@ -488,39 +478,6 @@ def delete_family_member(db: Session, client_id: str, employee_id: str, member_i
     if not row or row.employee_id != employee_id:
         raise HTTPException(404, "Family member not found.")
     repo.delete_family_member(db, row)
-
-
-# ── Emergency Contacts ────────────────────────────────────────────────────────
-
-def list_emergency_contacts(db: Session, client_id: str, employee_id: str) -> List:
-    _require_employee(db, client_id, employee_id)
-    return [_contact_dict(r) for r in repo.list_emergency_contacts(db, client_id, employee_id)]
-
-
-def add_emergency_contact(db: Session, client_id: str, employee_id: str, payload,
-                          actor_id: Optional[str], ip: Optional[str]) -> Dict:
-    _require_employee(db, client_id, employee_id)
-    data = payload.model_dump(exclude_none=True)
-    row = repo.create_emergency_contact(db, client_id, employee_id, data)
-    _log(db, client_id, employee_id, "EMERGENCY_CONTACT_ADDED", actor_id=actor_id, ip_address=ip)
-    return _contact_dict(row)
-
-
-def update_emergency_contact(db: Session, client_id: str, employee_id: str, contact_id: str,
-                              payload, actor_id: Optional[str], ip: Optional[str]) -> Dict:
-    row = repo.get_emergency_contact(db, client_id, contact_id)
-    if not row or row.employee_id != employee_id:
-        raise HTTPException(404, "Emergency contact not found.")
-    data = payload.model_dump(exclude_unset=True)
-    row = repo.update_emergency_contact(db, row, data)
-    return _contact_dict(row)
-
-
-def delete_emergency_contact(db: Session, client_id: str, employee_id: str, contact_id: str) -> None:
-    row = repo.get_emergency_contact(db, client_id, contact_id)
-    if not row or row.employee_id != employee_id:
-        raise HTTPException(404, "Emergency contact not found.")
-    repo.delete_emergency_contact(db, row)
 
 
 # ── Bank Details ──────────────────────────────────────────────────────────────

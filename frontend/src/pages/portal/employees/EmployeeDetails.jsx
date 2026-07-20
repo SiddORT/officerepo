@@ -83,7 +83,6 @@ const TABS = [
   { id: "education",  label: "Education",   icon: "🎓" },
   { id: "experience", label: "Experience",  icon: "🏢" },
   { id: "family",     label: "Family",      icon: "👨‍👩‍👧" },
-  { id: "contacts",   label: "Contacts",    icon: "🆘" },
   { id: "bank",       label: "Bank & IDs",  icon: "🏦" },
   { id: "activity",   label: "Activity",    icon: "📋" },
 ];
@@ -91,8 +90,7 @@ const TABS = [
 // ── Inline form helpers ────────────────────────────────────────────────────────
 const emptyEdu = () => ({ qualification: "", degree: "", specialization: "", institution_name: "", university: "", country: "", start_year: "", end_year: "", percentage: "", cgpa: "", is_completed: true, remarks: "" });
 const emptyPrev = () => ({ company_name: "", designation: "", department: "", employment_type: "", start_date: "", end_date: "", last_salary: "", reporting_manager_name: "", reporting_manager_contact: "", reason_for_leaving: "", remarks: "" });
-const emptyContact = () => ({ contact_name: "", relationship: "", mobile_country_code: "+91", mobile_number: "", alternate_country_code: "+91", alternate_number: "", address: "" });
-const emptyFamily = () => ({ member_name: "", relationship: "", date_of_birth: "", gender: "", occupation: "", phone_country_code: "+91", phone: "", is_dependent: false, is_nominee: false, nomination_percentage: "", remarks: "" });
+const emptyFamily = () => ({ member_name: "", relationship: "", date_of_birth: "", gender: "", occupation: "", phone_country_code: "+91", phone: "", alternate_phone_country_code: "+91", alternate_phone: "", email: "", address: "", is_dependent: false, is_nominee: false, nomination_percentage: "", is_emergency_contact: false, remarks: "" });
 
 const Label = ({ children, required }) => (
   <label className={`portal-form-label ${required ? "portal-form-label-req" : ""}`}>{children}</label>
@@ -230,7 +228,12 @@ function FamilyModal({ subdomain, token, empId, editRow, familyRelationships, on
     date_of_birth: editRow.date_of_birth || "",
     phone: editRow.phone || "",
     phone_country_code: editRow.phone_country_code || "+91",
+    alternate_phone: editRow.alternate_phone || "",
+    alternate_phone_country_code: editRow.alternate_phone_country_code || "+91",
+    email: editRow.email || "",
+    address: editRow.address || "",
     nomination_percentage: editRow.nomination_percentage || "",
+    is_emergency_contact: editRow.is_emergency_contact || false,
   } : emptyFamily());
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
@@ -244,7 +247,9 @@ function FamilyModal({ subdomain, token, empId, editRow, familyRelationships, on
     payload.member_name = form.member_name;
     payload.is_dependent = form.is_dependent;
     payload.is_nominee = form.is_nominee;
+    payload.is_emergency_contact = form.is_emergency_contact;
     payload.phone_country_code = form.phone_country_code || "+91";
+    payload.alternate_phone_country_code = form.alternate_phone_country_code || "+91";
     try {
       if (editRow?.id) await portalEmployeeApi.updateFamilyMember(subdomain, token, empId, editRow.id, payload);
       else await portalEmployeeApi.addFamilyMember(subdomain, token, empId, payload);
@@ -256,7 +261,7 @@ function FamilyModal({ subdomain, token, empId, editRow, familyRelationships, on
   const todayStr = new Date().toISOString().split("T")[0];
 
   return (
-    <Modal open title={editRow ? "Edit Family Member" : "Add Family Member"} onClose={onClose}>
+    <Modal open title={editRow ? "Edit Family / Contact" : "Add Family / Contact"} onClose={onClose}>
       {err && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{err}</div>}
       <div style={{ display: "grid", gap: 12 }}>
         <Grid2>
@@ -299,100 +304,38 @@ function FamilyModal({ subdomain, token, empId, editRow, familyRelationships, on
             placeholder="9876543210"
           />
         </div>
-        <div className="form-grid-2" style={{ gap: 12 }}>
+        <div>
+          <Label>Alternate Phone</Label>
+          <PhoneInput
+            countryCode={form.alternate_phone_country_code}
+            number={form.alternate_phone}
+            onCountryChange={v => set("alternate_phone_country_code", v)}
+            onNumberChange={v => set("alternate_phone", v)}
+            placeholder="9876543210"
+          />
+        </div>
+        <div>
+          <Label>Email</Label>
+          <input type="email" value={form.email || ""} onChange={e => set("email", e.target.value)} className="input-field" placeholder="email@example.com" />
+        </div>
+        <div>
+          <Label>Address</Label>
+          <textarea value={form.address || ""} onChange={e => set("address", e.target.value)} className="input-field" placeholder="Full address" rows={2} style={{ resize: "vertical" }} />
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
           <Toggle value={form.is_dependent} onChange={v => set("is_dependent", v)} label="Is Dependent" />
           <Toggle value={form.is_nominee} onChange={v => set("is_nominee", v)} label="Insurance Nominee" />
+          <Toggle value={form.is_emergency_contact} onChange={v => set("is_emergency_contact", v)} label="Is Emergency Contact" />
         </div>
         {form.is_nominee && (
           <div style={{ maxWidth: 220 }}>
-            <Label>Nomination % </Label>
+            <Label>Nomination %</Label>
             <input type="number" min="0" max="100" value={form.nomination_percentage || ""} onChange={e => set("nomination_percentage", e.target.value)} className="input-field" placeholder="100" />
           </div>
         )}
         <div>
           <Label>Remarks</Label>
           <input value={form.remarks || ""} onChange={e => set("remarks", e.target.value)} className="input-field" />
-        </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-          <button onClick={onClose} className="btn-secondary">Cancel</button>
-          <button onClick={handleSave} disabled={saving} className="btn-primary">
-            {saving ? "Saving…" : "Save"}
-          </button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-// ── Emergency Contact Modal ────────────────────────────────────────────────────
-function ContactModal({ subdomain, token, empId, editRow, relationships, onClose, onSaved }) {
-  const [form, setForm] = useState(editRow ? {
-    ...editRow,
-    mobile_country_code: editRow.mobile_country_code || "+91",
-    alternate_country_code: editRow.alternate_country_code || "+91",
-  } : emptyContact());
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState("");
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
-  const handleSave = async () => {
-    if (!form.contact_name?.trim()) { setErr("Contact name is required."); return; }
-    if (!form.mobile_number?.trim()) { setErr("Mobile number is required."); return; }
-    setSaving(true); setErr("");
-    const payload = { ...form };
-    Object.keys(payload).forEach(k => { if (payload[k] === "") payload[k] = null; });
-    payload.contact_name = form.contact_name;
-    payload.mobile_number = form.mobile_number;
-    payload.mobile_country_code = form.mobile_country_code || "+91";
-    payload.alternate_country_code = form.alternate_country_code || "+91";
-    try {
-      if (editRow?.id) await portalEmployeeApi.updateContact(subdomain, token, empId, editRow.id, payload);
-      else await portalEmployeeApi.addContact(subdomain, token, empId, payload);
-      onSaved();
-    } catch (e) { setErr(e?.response?.data?.detail || "Save failed."); }
-    finally { setSaving(false); }
-  };
-
-  return (
-    <Modal open title={editRow ? "Edit Emergency Contact" : "Add Emergency Contact"} onClose={onClose}>
-      {err && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{err}</div>}
-      <div style={{ display: "grid", gap: 12 }}>
-        <Grid2>
-          <div>
-            <Label>Contact Name *</Label>
-            <input value={form.contact_name} onChange={e => set("contact_name", e.target.value)} className="input-field" placeholder="Sunita Sharma" />
-          </div>
-          <div>
-            <Label>Relationship</Label>
-            <select value={form.relationship || ""} onChange={e => set("relationship", e.target.value)} className="input-field">
-              <option value="">Select…</option>
-              {(relationships || []).map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </div>
-        </Grid2>
-        <div>
-          <Label>Mobile Number *</Label>
-          <PhoneInput
-            countryCode={form.mobile_country_code}
-            number={form.mobile_number}
-            onCountryChange={v => set("mobile_country_code", v)}
-            onNumberChange={v => set("mobile_number", v)}
-            placeholder="9876543210"
-          />
-        </div>
-        <div>
-          <Label>Alternate Number</Label>
-          <PhoneInput
-            countryCode={form.alternate_country_code}
-            number={form.alternate_number}
-            onCountryChange={v => set("alternate_country_code", v)}
-            onNumberChange={v => set("alternate_number", v)}
-            placeholder="9876543210"
-          />
-        </div>
-        <div>
-          <Label>Address</Label>
-          <input value={form.address || ""} onChange={e => set("address", e.target.value)} className="input-field" placeholder="Full address" />
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
           <button onClick={onClose} className="btn-secondary">Cancel</button>
@@ -419,7 +362,6 @@ export default function EmployeeDetails() {
   const [edu, setEdu] = useState([]);
   const [history, setHistory] = useState([]);
   const [family, setFamily] = useState([]);
-  const [contacts, setContacts] = useState([]);
   const [bankDetails, setBankDetails] = useState(null);
   const [govIds, setGovIds] = useState(null);
   const [activities, setActivities] = useState([]);
@@ -444,7 +386,6 @@ export default function EmployeeDetails() {
   const [showEdu, setShowEdu] = useState(false);
   const [showPrev, setShowPrev] = useState(false);
   const [showFamily, setShowFamily] = useState(false);
-  const [showContact, setShowContact] = useState(false);
   const [editRow, setEditRow] = useState(null);
 
   const load = useCallback(async () => {
@@ -460,7 +401,6 @@ export default function EmployeeDetails() {
     portalEmployeeApi.listEducation(subdomain, token, empId).then(r => setEdu(r.data.data?.items || []));
     portalEmployeeApi.listHistory(subdomain, token, empId).then(r => setHistory(r.data.data?.items || []));
     portalEmployeeApi.listFamilyMembers(subdomain, token, empId).then(r => setFamily(r.data.data?.items || []));
-    portalEmployeeApi.listContacts(subdomain, token, empId).then(r => setContacts(r.data.data?.items || []));
     portalEmployeeApi.getBankDetails(subdomain, token, empId).then(r => {
       const d = r.data.data;
       setBankDetails(d);
@@ -733,85 +673,51 @@ export default function EmployeeDetails() {
 
         {tab === "family" && (
           <Card>
-            <CardHeader icon="👨‍👩‍👧" title="Family Members" />
+            <CardHeader icon="👨‍👩‍👧" title="Family & Contacts" />
             <div style={{ padding: 0 }}>
               <div style={{ overflowX: "auto" }}>
                 <table className="portal-table">
                   <thead>
                     <tr>
-                      <th>Member Name</th>
+                      <th>Name</th>
                       <th>Relationship</th>
-                      <th>Details</th>
-                      <th>Benefits</th>
+                      <th>Contact</th>
+                      <th>Flags</th>
                       <th style={{ textAlign: "right" }}>
-                        <button onClick={() => { setEditRow(null); setShowFamily(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>+ Add Member</button>
+                        <button onClick={() => { setEditRow(null); setShowFamily(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>+ Add</button>
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {family.length === 0 ? (
-                      <tr><td colSpan={5} style={{ textAlign: "center", color: "var(--c-muted)", padding: 32 }}>No family members added.</td></tr>
+                      <tr><td colSpan={5} style={{ textAlign: "center", color: "var(--c-muted)", padding: 32 }}>No family members or emergency contacts added.</td></tr>
                     ) : family.map(r => (
                       <tr key={r.id}>
                         <td>
-                          <div style={{ fontWeight: 600 }}>{r.member_name}</div>
-                          <div style={{ fontSize: 11, color: "var(--c-muted)" }}>{r.gender} · {r.date_of_birth}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <span style={{ fontWeight: 600 }}>{r.member_name}</span>
+                            {r.is_emergency_contact && (
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 10, background: "rgba(239,68,68,0.12)", color: "#f87171", whiteSpace: "nowrap" }}>🆘 Emergency Contact</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 2 }}>{r.gender}{r.date_of_birth ? ` · ${r.date_of_birth}` : ""}</div>
                         </td>
                         <td>{r.relationship}</td>
                         <td>
-                          <div>{r.occupation}</div>
-                          <div style={{ fontSize: 11, color: "var(--c-muted)" }}>{r.phone_country_code} {r.phone}</div>
+                          <div style={{ fontSize: 12 }}>{r.phone_country_code} {r.phone}</div>
+                          {r.alternate_phone && <div style={{ fontSize: 11, color: "var(--c-muted)" }}>{r.alternate_phone_country_code} {r.alternate_phone} (Alt)</div>}
+                          {r.email && <div style={{ fontSize: 11, color: "var(--c-muted)" }}>✉ {r.email}</div>}
+                          {r.address && <div style={{ fontSize: 11, color: "var(--c-muted)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.address}</div>}
                         </td>
                         <td style={{ verticalAlign: "middle" }}>
-                          <div style={{ display: "flex", gap: 6 }}>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                             {r.is_dependent && <Badge status="Active" />}
                             {r.is_nominee && <Badge status="Purple" />}
                           </div>
                           {r.is_nominee && r.nomination_percentage && <div style={{ fontSize: 10, color: "var(--c-muted)", marginTop: 2 }}>{r.nomination_percentage}% share</div>}
                         </td>
                         <td style={{ textAlign: "right" }}>
-                          <EditIconBtn onClick={() => { setEditRow(r); setShowFamily(true); }} title="Edit family member" />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {tab === "contacts" && (
-          <Card>
-            <CardHeader icon="🆘" title="Emergency Contacts" />
-            <div style={{ padding: 0 }}>
-              <div style={{ overflowX: "auto" }}>
-                <table className="portal-table">
-                  <thead>
-                    <tr>
-                      <th>Contact Name</th>
-                      <th>Relationship</th>
-                      <th>Phone Numbers</th>
-                      <th>Address</th>
-                      <th style={{ textAlign: "right" }}>
-                        <button onClick={() => { setEditRow(null); setShowContact(true); }} className="t-accent" style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>+ Add Contact</button>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {contacts.length === 0 ? (
-                      <tr><td colSpan={5} style={{ textAlign: "center", color: "var(--c-muted)", padding: 32 }}>No emergency contacts added.</td></tr>
-                    ) : contacts.map(r => (
-                      <tr key={r.id}>
-                        <td style={{ fontWeight: 600 }}>{r.contact_name}</td>
-                        <td>{r.relationship}</td>
-                        <td>
-                          <div>{r.mobile_country_code} {r.mobile_number}</div>
-                          {r.alternate_number && <div style={{ fontSize: 11, color: "var(--c-muted)" }}>{r.alternate_country_code} {r.alternate_number} (Alt)</div>}
-                        </td>
-                        <td style={{ maxWidth: 200, fontSize: 12 }}>{r.address}</td>
-                        <td style={{ textAlign: "right" }}>
-                          <EditIconBtn onClick={() => { setEditRow(r); setShowContact(true); }} title="Edit emergency contact" />
+                          <EditIconBtn onClick={() => { setEditRow(r); setShowFamily(true); }} title="Edit" />
                         </td>
                       </tr>
                     ))}
@@ -1149,7 +1055,6 @@ export default function EmployeeDetails() {
       {showEdu && <EduModal subdomain={subdomain} token={token} empId={empId} editRow={editRow} onClose={() => setShowEdu(false)} onSaved={() => { setShowEdu(false); loadExtra(); }} />}
       {showPrev && <PrevEmpModal subdomain={subdomain} token={token} empId={empId} editRow={editRow} onClose={() => setShowPrev(false)} onSaved={() => { setShowPrev(false); loadExtra(); }} />}
       {showFamily && <FamilyModal subdomain={subdomain} token={token} empId={empId} editRow={editRow} familyRelationships={options.family_relationships} onClose={() => setShowFamily(false)} onSaved={() => { setShowFamily(false); loadExtra(); }} />}
-      {showContact && <ContactModal subdomain={subdomain} token={token} empId={empId} editRow={editRow} relationships={options.family_relationships} onClose={() => setShowContact(false)} onSaved={() => { setShowContact(false); loadExtra(); }} />}
     </EmployeeLayout>
   );
 }

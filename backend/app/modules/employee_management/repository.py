@@ -10,7 +10,7 @@ from sqlalchemy import func
 
 from backend.app.modules.employee_management.models import (
     Employee, EmployeeEducation, EmployeePreviousEmployment,
-    EmployeeFamilyMember, EmployeeEmergencyContact, EmployeeBankDetails,
+    EmployeeFamilyMember, EmployeeBankDetails,
     EmployeeGovernmentIds, EmployeeActivity, EmployeePhoto,
 )
 
@@ -237,45 +237,6 @@ def update_family_member(db: Session, row: EmployeeFamilyMember, data: dict) -> 
 
 
 def delete_family_member(db: Session, row: EmployeeFamilyMember) -> None:
-    db.delete(row)
-    db.commit()
-
-
-# ── Emergency Contacts ────────────────────────────────────────────────────────
-
-def list_emergency_contacts(db: Session, client_id: str, employee_id: str) -> List[EmployeeEmergencyContact]:
-    return db.query(EmployeeEmergencyContact).filter(
-        EmployeeEmergencyContact.client_id == client_id,
-        EmployeeEmergencyContact.employee_id == employee_id,
-    ).order_by(EmployeeEmergencyContact.created_at).all()
-
-
-def get_emergency_contact(db: Session, client_id: str, contact_id: str) -> Optional[EmployeeEmergencyContact]:
-    return db.query(EmployeeEmergencyContact).filter(
-        EmployeeEmergencyContact.id == contact_id,
-        EmployeeEmergencyContact.client_id == client_id,
-    ).first()
-
-
-def create_emergency_contact(db: Session, client_id: str, employee_id: str, data: dict) -> EmployeeEmergencyContact:
-    row = EmployeeEmergencyContact(id=_uuid(), client_id=client_id, employee_id=employee_id, **data)
-    db.add(row)
-    db.commit()
-    db.refresh(row)
-    return row
-
-
-def update_emergency_contact(db: Session, row: EmployeeEmergencyContact, data: dict) -> EmployeeEmergencyContact:
-    for k, v in data.items():
-        if hasattr(row, k):
-            setattr(row, k, v)
-    row.updated_at = datetime.utcnow()
-    db.commit()
-    db.refresh(row)
-    return row
-
-
-def delete_emergency_contact(db: Session, row: EmployeeEmergencyContact) -> None:
     db.delete(row)
     db.commit()
 

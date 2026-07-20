@@ -531,12 +531,6 @@ export const portalEmployeeApi = {
   updateHistory: (sd, tk, eid, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/employment-history/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
   deleteHistory: (sd, tk, eid, id) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/employment-history/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
 
-  // Emergency Contacts
-  listContacts:   (sd, tk, eid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/emergency-contacts`, { headers: { Authorization: `Bearer ${tk}` } }),
-  addContact:     (sd, tk, eid, data) => axios.post(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/emergency-contacts`, data, { headers: { Authorization: `Bearer ${tk}` } }),
-  updateContact:  (sd, tk, eid, id, data) => axios.patch(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/emergency-contacts/${id}`, data, { headers: { Authorization: `Bearer ${tk}` } }),
-  deleteContact:  (sd, tk, eid, id) => axios.delete(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/emergency-contacts/${id}`, { headers: { Authorization: `Bearer ${tk}` } }),
-
   // Bank Details
   getBankDetails:    (sd, tk, eid) => axios.get(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/bank-details`, { headers: { Authorization: `Bearer ${tk}` } }),
   upsertBankDetails: (sd, tk, eid, data) => axios.put(`${API_BASE_URL}/api/v1/portal/${sd}/employees/${eid}/bank-details`, data, { headers: { Authorization: `Bearer ${tk}` } }),

@@ -204,6 +204,12 @@ _COLUMN_MIGRATIONS = [
     ("org_branches", "landline_country_code","VARCHAR(10)"),
     ("org_branches", "additional_emails",    "JSONB"),
     ("org_branches", "additional_phones",    "JSONB"),
+    # EmployeeFamilyMember — unified family+emergency fields
+    ("employee_family_members", "alternate_phone_country_code", "VARCHAR(10) DEFAULT '+91'"),
+    ("employee_family_members", "alternate_phone",              "VARCHAR(30)"),
+    ("employee_family_members", "email",                        "VARCHAR(150)"),
+    ("employee_family_members", "address",                      "TEXT"),
+    ("employee_family_members", "is_emergency_contact",         "BOOLEAN NOT NULL DEFAULT FALSE"),
 ]
 
 
@@ -251,6 +257,37 @@ _DATA_REPAIRS = [
         "WHERE branch_manager_id IS NULL "
         "  AND branch_manager IS NOT NULL "
         "  AND is_deleted = FALSE",
+    ),
+    # Migrate ALL legacy emergency_contact rows into employee_family_members.
+    # Idempotent: the source row's id becomes the target row's primary key, so
+    # a replay produces a no-op WHERE NOT EXISTS (SELECT 1 ... WHERE id = ec.id).
+    # This avoids any name+phone collision risk — every source row is migrated
+    # exactly once, regardless of duplicate names or numbers.
+    (
+        "employee_emergency_contacts",
+        "INSERT INTO employee_family_members "
+        "  (id, client_id, employee_id, member_name, relationship, "
+        "   phone_country_code, phone, alternate_phone_country_code, alternate_phone, "
+        "   address, is_dependent, is_nominee, is_emergency_contact, "
+        "   created_at, updated_at) "
+        "SELECT "
+        "  ec.id, ec.client_id, ec.employee_id, "
+        "  ec.contact_name, ec.relationship, "
+        "  COALESCE(ec.mobile_country_code, '+91'), ec.mobile_number, "
+        "  COALESCE(ec.alternate_country_code, '+91'), ec.alternate_number, "
+        "  ec.address, FALSE, FALSE, TRUE, "
+        "  ec.created_at, ec.updated_at "
+        "FROM employee_emergency_contacts ec "
+        "WHERE NOT EXISTS ("
+        "  SELECT 1 FROM employee_family_members WHERE id = ec.id"
+        ")",
+    ),
+    # Drop the old table once all rows have been migrated above.
+    # On subsequent startups the guard check (insp.get_table_names()) finds the
+    # table gone and skips both entries automatically — fully idempotent.
+    (
+        "employee_emergency_contacts",
+        "DROP TABLE employee_emergency_contacts",
     ),
 ]
 

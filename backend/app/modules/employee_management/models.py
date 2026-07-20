@@ -163,36 +163,22 @@ class EmployeeFamilyMember(ClientBase):
     client_id       = Column(String(36), nullable=False, index=True)
     employee_id     = Column(String(36), nullable=False, index=True)
 
-    member_name         = Column(String(150), nullable=False)
-    relationship        = Column(String(50),  nullable=True)
-    date_of_birth       = Column(Date,        nullable=True)
-    gender              = Column(String(20),  nullable=True)
-    occupation          = Column(String(100), nullable=True)
-    phone_country_code  = Column(String(10),  nullable=True, default="+91")
-    phone               = Column(String(30),  nullable=True)
-    is_dependent        = Column(Boolean,     nullable=False, default=False)
-    is_nominee          = Column(Boolean,     nullable=False, default=False)
-    nomination_percentage = Column(Numeric(5,2), nullable=True)
-    remarks             = Column(Text,        nullable=True)
-
-    created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-
-
-class EmployeeEmergencyContact(ClientBase):
-    __tablename__ = "employee_emergency_contacts"
-
-    id              = Column(String(36), primary_key=True, default=_uuid)
-    client_id       = Column(String(36), nullable=False, index=True)
-    employee_id     = Column(String(36), nullable=False, index=True)
-
-    contact_name        = Column(String(150), nullable=False)
-    relationship        = Column(String(50),  nullable=True)
-    mobile_country_code = Column(String(10),  nullable=True, default="+91")
-    mobile_number       = Column(String(30),  nullable=False)
-    alternate_country_code = Column(String(10), nullable=True, default="+91")
-    alternate_number    = Column(String(30),  nullable=True)
-    address             = Column(Text,        nullable=True)
+    member_name                  = Column(String(150), nullable=False)
+    relationship                 = Column(String(50),  nullable=True)
+    date_of_birth                = Column(Date,        nullable=True)
+    gender                       = Column(String(20),  nullable=True)
+    occupation                   = Column(String(100), nullable=True)
+    phone_country_code           = Column(String(10),  nullable=True, default="+91")
+    phone                        = Column(String(30),  nullable=True)
+    alternate_phone_country_code = Column(String(10),  nullable=True, default="+91")
+    alternate_phone              = Column(String(30),  nullable=True)
+    email                        = Column(String(150), nullable=True)
+    address                      = Column(Text,        nullable=True)
+    is_dependent                 = Column(Boolean,     nullable=False, default=False)
+    is_nominee                   = Column(Boolean,     nullable=False, default=False)
+    nomination_percentage        = Column(Numeric(5,2), nullable=True)
+    is_emergency_contact         = Column(Boolean,     nullable=False, default=False)
+    remarks                      = Column(Text,        nullable=True)
 
     created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

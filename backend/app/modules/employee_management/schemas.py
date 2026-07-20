@@ -169,53 +169,41 @@ class PreviousEmploymentUpdate(PreviousEmploymentCreate):
 # ── Family Members ────────────────────────────────────────────────────────────
 
 class FamilyMemberCreate(BaseModel):
-    member_name:          str
-    relationship:         Optional[str] = None
-    date_of_birth:        Optional[date] = None
-    gender:               Optional[str] = None
-    occupation:           Optional[str] = None
-    phone_country_code:   Optional[str] = "+91"
-    phone:                Optional[str] = None
-    is_dependent:         bool = False
-    is_nominee:           bool = False
-    nomination_percentage: Optional[Decimal] = None
-    remarks:              Optional[str] = None
+    member_name:                  str
+    relationship:                 Optional[str] = None
+    date_of_birth:                Optional[date] = None
+    gender:                       Optional[str] = None
+    occupation:                   Optional[str] = None
+    phone_country_code:           Optional[str] = "+91"
+    phone:                        Optional[str] = None
+    alternate_phone_country_code: Optional[str] = "+91"
+    alternate_phone:              Optional[str] = None
+    email:                        Optional[str] = None
+    address:                      Optional[str] = None
+    is_dependent:                 bool = False
+    is_nominee:                   bool = False
+    nomination_percentage:        Optional[Decimal] = None
+    is_emergency_contact:         bool = False
+    remarks:                      Optional[str] = None
 
 
 class FamilyMemberUpdate(BaseModel):
-    member_name:          Optional[str] = None
-    relationship:         Optional[str] = None
-    date_of_birth:        Optional[date] = None
-    gender:               Optional[str] = None
-    occupation:           Optional[str] = None
-    phone_country_code:   Optional[str] = None
-    phone:                Optional[str] = None
-    is_dependent:         Optional[bool] = None
-    is_nominee:           Optional[bool] = None
-    nomination_percentage: Optional[Decimal] = None
-    remarks:              Optional[str] = None
-
-
-# ── Emergency Contacts ────────────────────────────────────────────────────────
-
-class EmergencyContactCreate(BaseModel):
-    contact_name:          str
-    relationship:          Optional[str] = None
-    mobile_country_code:   Optional[str] = "+91"
-    mobile_number:         str
-    alternate_country_code: Optional[str] = "+91"
-    alternate_number:      Optional[str] = None
-    address:               Optional[str] = None
-
-
-class EmergencyContactUpdate(BaseModel):
-    contact_name:          Optional[str] = None
-    relationship:          Optional[str] = None
-    mobile_country_code:   Optional[str] = None
-    mobile_number:         Optional[str] = None
-    alternate_country_code: Optional[str] = None
-    alternate_number:      Optional[str] = None
-    address:               Optional[str] = None
+    member_name:                  Optional[str] = None
+    relationship:                 Optional[str] = None
+    date_of_birth:                Optional[date] = None
+    gender:                       Optional[str] = None
+    occupation:                   Optional[str] = None
+    phone_country_code:           Optional[str] = None
+    phone:                        Optional[str] = None
+    alternate_phone_country_code: Optional[str] = None
+    alternate_phone:              Optional[str] = None
+    email:                        Optional[str] = None
+    address:                      Optional[str] = None
+    is_dependent:                 Optional[bool] = None
+    is_nominee:                   Optional[bool] = None
+    nomination_percentage:        Optional[Decimal] = None
+    is_emergency_contact:         Optional[bool] = None
+    remarks:                      Optional[str] = None
 
 
 # ── Bank Details ──────────────────────────────────────────────────────────────
