@@ -91,16 +91,23 @@ def seed_module_catalog(db: Session) -> None:
     db.commit()
 
     # Ensure every active client has an enabled client_modules row for each system module.
-    if not system_codes:
+    # client_modules.module_name stores the human-readable name (e.g. "Client Settings"),
+    # not the catalog code — consistent with how all other modules are stored.
+    system_names: list[str] = []
+    for entry in MODULE_CATALOG:
+        if entry.get("is_system_module"):
+            system_names.append(entry["name"])
+
+    if not system_names:
         return
     all_clients = db.query(Client).filter(Client.is_deleted == False).all()
     for client in all_clients:
-        for code in system_codes:
+        for mod_name in system_names:
             exists = (
                 db.query(ClientModule)
-                .filter(ClientModule.client_id == client.id, ClientModule.module_name == code)
+                .filter(ClientModule.client_id == client.id, ClientModule.module_name == mod_name)
                 .first()
             )
             if not exists:
-                db.add(ClientModule(client_id=client.id, module_name=code, is_enabled=True))
+                db.add(ClientModule(client_id=client.id, module_name=mod_name, is_enabled=True))
     db.commit()

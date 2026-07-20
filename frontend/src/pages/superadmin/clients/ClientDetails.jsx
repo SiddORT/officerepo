@@ -500,10 +500,25 @@ const MODULE_CATALOG_UI = {
     icon: "git-branch",
     submodules: ["Approval Workflows", "Automation Rules", "Notification Templates", "Escalation Rules"],
   },
+  "Client Settings": {
+    description: "Workspace configuration — general settings, branding, localization, notifications, and credentials.",
+    color: "#64748b",
+    icon: "settings",
+    submodules: [],
+    system: true,
+  },
+  "User Management": {
+    description: "Portal user accounts, roles, and access control for this workspace.",
+    color: "#64748b",
+    icon: "users",
+    submodules: [],
+    system: true,
+  },
 };
 
 function ModuleIcon({ name, color, size = 20 }) {
   const paths = {
+    settings:          "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z",
     building:          "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
     briefcase:         "M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
     "briefcase-alt":   "M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
@@ -700,7 +715,21 @@ function ModulesTab({ clientId, onChange }) {
                       )}
                     </div>
                   </div>
-                  <Toggle checked={isOn} onChange={(v) => stageParent(mod.module_name, v)} />
+                  {ui.system ? (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 4,
+                      background: "rgba(100,116,139,0.12)", color: "#64748b",
+                      border: "1px solid rgba(100,116,139,0.25)",
+                      display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap",
+                    }}>
+                      <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      System
+                    </span>
+                  ) : (
+                    <Toggle checked={isOn} onChange={(v) => stageParent(mod.module_name, v)} />
+                  )}
                 </div>
 
                 {/* Description */}
