@@ -314,7 +314,21 @@ def update_employee(db: Session, client_id: str, employee_id: str, payload,
         if repo.get_employee_by_email(db, client_id, data["official_email"]):
             raise HTTPException(409, f"Email '{data['official_email']}' already in use.")
 
+    name_fields = {"first_name", "last_name", "middle_name", "display_name"}
+    name_changed = any(f in data for f in name_fields)
+
     emp = repo.update_employee(db, emp, data)
+
+    if name_changed:
+        new_display = emp.display_name or " ".join(
+            p for p in [emp.first_name, getattr(emp, "middle_name", None), emp.last_name] if p
+        ).strip()
+        (
+            db.query(OrgBranch)
+            .filter(OrgBranch.branch_manager_id == emp.id)
+            .update({"branch_manager": new_display}, synchronize_session=False)
+        )
+
     _log(db, client_id, emp.id, c.ACTION_UPDATED, actor_id=actor_id, ip_address=ip,
          notes="; ".join(notes_parts) if notes_parts else None)
     return _emp_dict(emp)
