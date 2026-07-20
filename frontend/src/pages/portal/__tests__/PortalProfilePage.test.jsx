@@ -1,5 +1,6 @@
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { PortalProfilePage } from "../ClientPortalPage";
@@ -9,7 +10,7 @@ vi.mock("../../../contexts/PortalAuthContext", () => ({
 }));
 
 vi.mock("../../../services/apiClient", () => ({
-  portalEmployeeApi: { me: vi.fn() },
+  portalEmployeeApi: { me: vi.fn(), update: vi.fn() },
 }));
 
 vi.mock("../PortalLayout", () => ({
@@ -25,6 +26,42 @@ const DEFAULT_AUTH = {
   token: "tok-test",
 };
 
+const EMP_DATA = {
+  id: "emp-1",
+  full_name: "Jane Doe",
+  employee_code: "EMP001",
+  designation_name: "Engineer",
+  department_name: "Engineering",
+  gender: "Female",
+  date_of_birth: "1990-06-15",
+  marital_status: "Single",
+  blood_group: "O+",
+  nationality: "Indian",
+  personal_email: "jane@personal.com",
+  mobile_country_code: "+91",
+  mobile_number: "9876543210",
+  alternate_mobile_country_code: "+91",
+  alternate_mobile: "",
+  landline_number: "",
+  current_address_line_1: "123 Main St",
+  current_city: "Mumbai",
+  current_state: "Maharashtra",
+  current_country: "India",
+  current_postal_code: "400001",
+};
+
+function makeEmpResponse(emp = EMP_DATA) {
+  return {
+    data: {
+      data: {
+        employee_module_enabled: true,
+        db_provisioned: true,
+        data: emp,
+      },
+    },
+  };
+}
+
 function renderProfilePage() {
   return render(
     <MemoryRouter>
@@ -35,6 +72,7 @@ function renderProfilePage() {
 
 beforeEach(() => {
   usePortalAuth.mockReturnValue(DEFAULT_AUTH);
+  vi.clearAllMocks();
 });
 
 describe("PortalProfilePage", () => {
@@ -117,6 +155,80 @@ describe("PortalProfilePage", () => {
     await waitFor(() => {
       expect(screen.getByText("Jane Doe")).toBeInTheDocument();
       expect(screen.getByText("EMP001")).toBeInTheDocument();
+    });
+  });
+});
+
+describe("PortalProfilePage — edit modal open/save cycle", () => {
+  it("opening Personal Details populates the form with existing employee values", async () => {
+    portalEmployeeApi.me.mockResolvedValue(makeEmpResponse());
+
+    renderProfilePage();
+
+    await waitFor(() => expect(screen.getByText("Jane Doe")).toBeInTheDocument());
+
+    const editButtons = screen.getAllByRole("button", { name: /^edit$/i });
+    await userEvent.click(editButtons[0]);
+
+    expect(screen.getByText("Edit Personal Details")).toBeInTheDocument();
+
+    expect(screen.getByDisplayValue("Female")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("jane@personal.com")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("1990-06-15")).toBeInTheDocument();
+  });
+
+  it("successful save calls portalEmployeeApi.update with the right payload and reloads", async () => {
+    portalEmployeeApi.me.mockResolvedValue(makeEmpResponse());
+    portalEmployeeApi.update.mockResolvedValue({ data: { data: EMP_DATA } });
+
+    renderProfilePage();
+
+    await waitFor(() => expect(screen.getByText("Jane Doe")).toBeInTheDocument());
+
+    const editButtons = screen.getAllByRole("button", { name: /^edit$/i });
+    await userEvent.click(editButtons[0]);
+
+    const saveBtn = screen.getByRole("button", { name: /^save$/i });
+    await userEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(portalEmployeeApi.update).toHaveBeenCalledWith(
+        "acme",
+        "tok-test",
+        "emp-1",
+        expect.objectContaining({
+          gender: "Female",
+          date_of_birth: "1990-06-15",
+          personal_email: "jane@personal.com",
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(portalEmployeeApi.me).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("failed save shows the error string from the API response", async () => {
+    portalEmployeeApi.me.mockResolvedValue(makeEmpResponse());
+    portalEmployeeApi.update.mockRejectedValue({
+      response: { data: { detail: "Validation failed: invalid date" } },
+    });
+
+    renderProfilePage();
+
+    await waitFor(() => expect(screen.getByText("Jane Doe")).toBeInTheDocument());
+
+    const editButtons = screen.getAllByRole("button", { name: /^edit$/i });
+    await userEvent.click(editButtons[0]);
+
+    const saveBtn = screen.getByRole("button", { name: /^save$/i });
+    await userEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Validation failed: invalid date")
+      ).toBeInTheDocument();
     });
   });
 });
