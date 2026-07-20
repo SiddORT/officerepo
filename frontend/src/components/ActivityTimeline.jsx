@@ -247,6 +247,7 @@ export default function ActivityTimeline({
   emptySubtitle,
   title = "Recruitment Timeline",
   accentColor = "#6366f1",
+  maxHeight,
 }) {
   return (
     <>
@@ -297,7 +298,10 @@ export default function ActivityTimeline({
         </div>
 
         {/* Body */}
-        <div style={{ padding: "16px 16px 16px 14px" }}>
+        <div style={{
+          padding: "16px 16px 16px 14px",
+          ...(maxHeight ? { maxHeight, overflowY: "auto" } : {}),
+        }}>
           {loading ? (
             [0, 1, 2].map(i => <SkeletonCard key={i} index={i} />)
           ) : items.length === 0 ? (

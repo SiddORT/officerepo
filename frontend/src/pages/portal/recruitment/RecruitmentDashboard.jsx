@@ -418,33 +418,6 @@ export default function RecruitmentDashboard() {
         ))}
       </div>
 
-      {/* ── Hiring Pipeline ── */}
-      <div style={{
-        background: "var(--c-surface)",
-        border: "1px solid var(--c-border)",
-        borderRadius: 12,
-        padding: "18px 24px 22px",
-        boxShadow: "var(--c-shadow)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-text)" }}>Hiring Pipeline</div>
-          <div style={{ fontSize: 11, color: "var(--c-muted)" }}>Active candidates by stage</div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-          {PIPELINE_STAGES.map((stage, i) => (
-            <React.Fragment key={stage.key}>
-              <PipelineStage stage={stage} count={pipeline[stage.key] ?? 0} />
-              {i < PIPELINE_STAGES.length - 1 && (
-                <PipelineConnector
-                  color1={PIPELINE_STAGES[i].color}
-                  color2={PIPELINE_STAGES[i + 1].color}
-                />
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
-
       {/* ── Main Grid: Openings + Activity ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 296px", gap: 14, alignItems: "start" }}>
 
@@ -539,6 +512,7 @@ export default function RecruitmentDashboard() {
         onViewAll={() => go("candidates")}
         emptyTitle="No Recruitment Activity Yet"
         emptySubtitle="Activities will automatically appear here as your hiring process begins."
+        maxHeight={420}
       />
 
     </div>
