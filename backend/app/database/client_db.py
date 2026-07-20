@@ -69,8 +69,9 @@ def build_client_db_url(conn) -> str:
 def make_client_session(url: str) -> Session:
     """Return a new SQLAlchemy Session connected to the client DB.
 
-    Also runs column migrations once per URL per process so that existing
-    client DBs pick up new columns without needing a full re-provision.
+    Also runs column migrations and one-time data repairs once per URL per
+    process so that existing client DBs pick up schema + data fixes without
+    needing a full re-provision.
     """
     engine = _get_engine(url)
     if url not in _migrated:
@@ -79,6 +80,12 @@ def make_client_session(url: str) -> Session:
         except Exception:
             pass  # never block normal requests
         _migrated.add(url)
+    if url not in _repaired:
+        try:
+            _repair_data(engine)
+        except Exception:
+            pass  # never block normal requests
+        _repaired.add(url)
     factory = sessionmaker(bind=engine, autoflush=True, autocommit=False)
     return factory()
 
@@ -89,6 +96,9 @@ _provisioned: set = set()
 
 # Track which URLs have had column migrations applied this process (once per URL).
 _migrated: set = set()
+
+# Track which URLs have had data repairs applied this process (once per URL).
+_repaired: set = set()
 
 # ── Column migrations for tables that may have been created before new columns were added ──
 # Each entry: (table_name, column_name, column_definition)
@@ -208,6 +218,37 @@ def _migrate_columns(engine: Engine) -> None:
                 conn.commit()
             except Exception:
                 conn.rollback()
+
+
+# ── One-time data repairs ──────────────────────────────────────────────────────
+# Each entry is a raw SQL statement run once per client-DB URL per process.
+# Statements must be safe to replay (idempotent) — use conditional WHERE clauses.
+_DATA_REPAIRS = [
+    # branch_manager text column must not hold stale free-text when branch_manager_id
+    # is set. The service layer resolves the live employee name on every read, so the
+    # stored text is redundant (and potentially misleading) when an ID is present.
+    # This repair clears any stale cached names left by pre-fix writes.
+    (
+        "org_branches",
+        "UPDATE org_branches "
+        "SET branch_manager = NULL "
+        "WHERE branch_manager_id IS NOT NULL AND branch_manager IS NOT NULL",
+    ),
+]
+
+
+def _repair_data(engine: Engine) -> None:
+    """Run one-time data repair statements once per client-DB URL per process."""
+    with engine.connect() as conn:
+        for table, sql in _DATA_REPAIRS:
+            try:
+                insp = inspect(engine)
+                if table not in insp.get_table_names():
+                    continue  # table doesn't exist yet on this client DB
+                conn.execute(text(sql))
+                conn.commit()
+            except Exception:
+                conn.rollback()  # never block normal requests
 
 
 # ── Foreign-key constraints for tables that pre-date the FK being added ──

@@ -391,6 +391,17 @@ def create_branch(
         raise HTTPException(409, f"Branch code '{payload.branch_code}' already exists for this company.")
     _assert_manager_is_active(client_db, getattr(payload, "branch_manager_id", None))
     data = payload.model_dump()
+    # Sync branch_manager text with the linked employee record.
+    # When an ID is provided the stored name must come from the employee row, not free-text input.
+    # When no ID is provided there is nothing reliable to store, so clear the text column too.
+    mgr_id = data.get("branch_manager_id")
+    if mgr_id:
+        emp = client_db.query(Employee).filter(Employee.id == mgr_id).first()
+        if not emp:
+            raise HTTPException(400, f"Employee '{mgr_id}' not found.")
+        data["branch_manager"] = _employee_display_name(emp)
+    else:
+        data["branch_manager"] = None
     b = repo.create_branch(client_db, client_id, data)
     _log(client_db, client_id, c.ACTION_BRANCH_CREATED, actor_id, ip,
          {"branch_name": b.branch_name, "branch_code": b.branch_code})
@@ -406,10 +417,28 @@ def update_branch(
     b = repo.get_branch(client_db, client_id, branch_id)
     if not b:
         raise HTTPException(404, "Branch not found.")
-    dumped = payload.model_dump(exclude_unset=True)
-    if "branch_manager_id" in dumped:
-        _assert_manager_is_active(client_db, dumped["branch_manager_id"])
-    data = {k: v for k, v in dumped.items()}
+    data = {k: v for k, v in payload.model_dump(exclude_unset=True).items()}
+    # Sync branch_manager text with the linked employee record.
+    # If branch_manager_id is being set/changed → validate the employee is active then
+    # overwrite the text name from the live employee row (never trust free-text input).
+    # If branch_manager_id is being explicitly cleared → also clear the text column.
+    # If branch_manager_id is not in this patch but free-text branch_manager was sent → discard it.
+    if "branch_manager_id" in data:
+        mgr_id = data["branch_manager_id"]
+        if mgr_id:
+            emp = client_db.query(Employee).filter(Employee.id == mgr_id).first()
+            if emp is None:
+                raise HTTPException(400, "The selected branch manager no longer exists.")
+            if getattr(emp, "is_deleted", False):
+                raise HTTPException(400, "The selected branch manager has been removed and cannot be assigned.")
+            if not getattr(emp, "is_active", True):
+                raise HTTPException(400, "The selected branch manager is inactive and cannot be assigned.")
+            data["branch_manager"] = _employee_display_name(emp)
+        else:
+            data["branch_manager"] = None
+    elif "branch_manager" in data:
+        # Free-text branch_manager without a matching ID change — discard to avoid stale values.
+        data.pop("branch_manager")
     repo.update_branch(client_db, b, data)
     _log(client_db, client_id, c.ACTION_BRANCH_UPDATED, actor_id, ip,
          {"branch_name": b.branch_name})

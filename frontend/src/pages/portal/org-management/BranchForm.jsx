@@ -235,7 +235,7 @@ export default function BranchForm({ editMode }) {
         phone_country_code: primaryPhone ? primaryCountryCode : null,
         additional_emails: additionalEmails.length ? additionalEmails : [],
         additional_phones: additionalPhones.length ? additionalPhones : [],
-        branch_manager:  form.branch_manager || null,
+        branch_manager:  form.branch_manager_id ? (form.branch_manager || null) : null,
         branch_manager_id: form.branch_manager_id || null,
         landline:        form.landline || null,
         landline_country_code: form.landline ? (form.landline_country_code || "+91") : null,
@@ -416,41 +416,50 @@ export default function BranchForm({ editMode }) {
         {/* Branch Manager — employee picker */}
         <div ref={empPickerRef} style={{ position: "relative", marginBottom: 14 }}>
           <label className="portal-form-label">Branch Manager</label>
-          <input
-            value={empSearch || form.branch_manager}
-            onChange={e => {
-              const v = e.target.value;
-              setEmpSearch(v);
-              set("branch_manager", v);
-              if (!v) { set("branch_manager_id", ""); }
-              setEmpOpen(true);
-              searchEmployees(v);
-            }}
-            onFocus={() => { setEmpOpen(true); if (empSearch || form.branch_manager) searchEmployees(empSearch || form.branch_manager); }}
-            className="input-field"
-            placeholder="Search employee name or code…"
-            autoComplete="off"
-          />
-          {form.branch_manager_id && (
-            <div style={{ fontSize: 11, color: "var(--c-accent)", marginTop: 2 }}>
-              ✓ Linked to employee
+          {form.branch_manager_id ? (
+            /* Linked state — show read-only name badge; no free-text editing */
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "var(--c-bg-subtle, rgba(0,0,0,0.04))", border: "1px solid var(--c-border)", borderRadius: 6 }}>
+              <span style={{ flex: 1, fontSize: 13 }}>{form.branch_manager}</span>
+              <span style={{ fontSize: 11, color: "var(--c-accent)", whiteSpace: "nowrap" }}>✓ Linked</span>
               <button
                 type="button"
-                onClick={() => { set("branch_manager_id", ""); setEmpSearch(""); set("branch_manager", ""); setEmpOptions([]); }}
-                style={{ marginLeft: 8, background: "none", border: "none", cursor: "pointer", color: "var(--c-muted)", fontSize: 11 }}
-              >Remove link</button>
+                onClick={() => { set("branch_manager_id", ""); set("branch_manager", ""); setEmpSearch(""); setEmpOptions([]); }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-muted)", fontSize: 13, lineHeight: 1, padding: "0 2px" }}
+                title="Remove link"
+              >×</button>
             </div>
+          ) : (
+            /* Unlinked state — search-only input; typing does not store free-text */
+            <>
+              <input
+                value={empSearch}
+                onChange={e => {
+                  const v = e.target.value;
+                  setEmpSearch(v);
+                  setEmpOpen(true);
+                  searchEmployees(v);
+                }}
+                onFocus={() => { setEmpOpen(true); if (empSearch) searchEmployees(empSearch); }}
+                className="input-field"
+                placeholder="Search employee name or code…"
+                autoComplete="off"
+              />
+              <div style={{ fontSize: 11, color: "var(--c-muted)", marginTop: 3 }}>
+                Select an employee from the list to link a branch manager.
+              </div>
+            </>
           )}
-          {empOpen && (empLoading || empOptions.length > 0) && (
+          {!form.branch_manager_id && empOpen && (empLoading || empOptions.length > 0) && (
             <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 200, background: "var(--c-card)", border: "1px solid var(--c-border)", borderRadius: 6, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", maxHeight: 200, overflowY: "auto" }}>
               {empLoading && <div style={{ padding: "10px 14px", fontSize: 13, color: "var(--c-muted)" }}>Searching…</div>}
               {!empLoading && empOptions.map(emp => (
                 <div
                   key={emp.id}
                   onMouseDown={() => {
-                    set("branch_manager", emp.full_name || `${emp.first_name} ${emp.last_name}`.trim());
+                    const name = emp.full_name || `${emp.first_name} ${emp.last_name}`.trim();
+                    set("branch_manager", name);
                     set("branch_manager_id", emp.id);
-                    setEmpSearch(emp.full_name || `${emp.first_name} ${emp.last_name}`.trim());
+                    setEmpSearch(name);
                     setEmpOpen(false);
                     setEmpOptions([]);
                   }}
