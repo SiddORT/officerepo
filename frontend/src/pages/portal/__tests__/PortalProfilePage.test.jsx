@@ -66,6 +66,32 @@ describe("PortalProfilePage", () => {
     });
   });
 
+  it("shows the no-record fallback when the API returns no data field", async () => {
+    portalEmployeeApi.me.mockResolvedValue({
+      data: { data: { employee_module_enabled: true, db_provisioned: true } },
+    });
+
+    renderProfilePage();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/No employee record is linked to your account/i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("shows the no-record fallback when the API call fails with a network error", async () => {
+    portalEmployeeApi.me.mockRejectedValue(new Error("Network Error"));
+
+    renderProfilePage();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/No employee record is linked to your account/i)
+      ).toBeInTheDocument();
+    });
+  });
+
   it("renders the employee card when employee data is present", async () => {
     portalEmployeeApi.me.mockResolvedValue({
       data: {
