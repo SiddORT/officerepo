@@ -67,10 +67,16 @@ def deactivate_module(db: Session, code: str, actor: str) -> Dict:
 
 
 def seed_module_catalog(db: Session) -> None:
-    """Idempotent upsert — insert new catalog rows and update mutable fields on existing ones."""
+    """Idempotent upsert — insert new catalog rows, update mutable fields, and
+    auto-enable system modules for every existing client that doesn't have a row yet."""
     from backend.app.modules.module_registry.constants import MODULE_CATALOG
+    from backend.app.modules.client_management.models import Client, ClientModule
+
     MUTABLE = {"name", "description", "route", "icon", "display_order",
                "is_system_module", "parent_module_code"}
+
+    system_codes: list[str] = []
+
     for entry in MODULE_CATALOG:
         existing = repo.get_by_code(db, entry["code"])
         if existing:
@@ -79,4 +85,22 @@ def seed_module_catalog(db: Session) -> None:
                 repo.update(db, existing, updates)
         else:
             repo.create(db, {**entry, "is_active": True})
+        if entry.get("is_system_module"):
+            system_codes.append(entry["code"])
+
+    db.commit()
+
+    # Ensure every active client has an enabled client_modules row for each system module.
+    if not system_codes:
+        return
+    all_clients = db.query(Client).filter(Client.is_deleted == False).all()
+    for client in all_clients:
+        for code in system_codes:
+            exists = (
+                db.query(ClientModule)
+                .filter(ClientModule.client_id == client.id, ClientModule.module_name == code)
+                .first()
+            )
+            if not exists:
+                db.add(ClientModule(client_id=client.id, module_name=code, is_enabled=True))
     db.commit()
