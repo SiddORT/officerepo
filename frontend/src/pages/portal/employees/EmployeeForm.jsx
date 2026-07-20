@@ -275,6 +275,7 @@ export default function EmployeeForm({ editMode = false }) {
     if (!form.official_email.trim()) return "Official email is required.";
     if (!form.mobile_number.trim()) return "Mobile number is required.";
     if (!form.company_id) return "Please select a company.";
+    if (form.nationality === "Other" && !nationalityOther.trim()) return "Please specify the nationality when selecting 'Other'.";
     return "";
   };
 
@@ -450,14 +451,19 @@ export default function EmployeeForm({ editMode = false }) {
                   {NATIONALITY_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
                 {form.nationality === "Other" && (
-                  <input
-                    value={nationalityOther}
-                    onChange={e => setNationalityOther(e.target.value)}
-                    className="input-field"
-                    placeholder="Please specify nationality…"
-                    style={{ marginTop: 8 }}
-                    autoFocus
-                  />
+                  <>
+                    <input
+                      value={nationalityOther}
+                      onChange={e => setNationalityOther(e.target.value)}
+                      className="input-field"
+                      placeholder="Please specify nationality…"
+                      style={{ marginTop: 8, borderColor: error && !nationalityOther.trim() ? "#f87171" : undefined }}
+                      autoFocus
+                    />
+                    {error && !nationalityOther.trim() && (
+                      <div style={{ color: "#f87171", fontSize: 12, marginTop: 4 }}>Please specify the nationality.</div>
+                    )}
+                  </>
                 )}
               </div>
             </Grid3>
