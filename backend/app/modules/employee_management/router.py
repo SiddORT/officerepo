@@ -119,13 +119,41 @@ def meta_options(
 def get_my_employee(
     subdomain: str,
     portal_user: dict = Depends(_portal_jwt),
-    client_db: Session = Depends(_client_db_dep),
+    platform_db: Session = Depends(get_platform_db),
 ):
     """Return the employee record for the currently logged-in portal user (matched by email).
-    Returns null data if no employee record is linked to this account."""
+
+    Graceful degradation:
+    - Module not enabled  → 200 {employee_module_enabled: false}
+    - DB not provisioned  → 200 {employee_module_enabled: true, db_provisioned: false}
+    - No linked record    → 200 {employee_module_enabled: true, db_provisioned: true, data: null}
+    - Found               → 200 {employee_module_enabled: true, db_provisioned: true, data: {...}}
+    """
     _sub(portal_user, subdomain)
-    result = svc.get_my_employee(client_db, portal_user["client_id"], portal_user.get("email", ""))
-    return ApiResponse.ok(result).model_dump()
+
+    from backend.app.modules.client_management import repository as client_repo
+    from backend.app.modules.client_management.constants import DB_STATUS_ACTIVE
+
+    client_id = portal_user["client_id"]
+
+    mod = client_repo.get_module(platform_db, client_id, MODULE_NAME)
+    if not mod or not mod.is_enabled:
+        return ApiResponse.ok({"employee_module_enabled": False}).model_dump()
+
+    conn = client_repo.get_db_connection(platform_db, client_id)
+    if not conn or conn.database_status != DB_STATUS_ACTIVE:
+        return ApiResponse.ok({"employee_module_enabled": True, "db_provisioned": False}).model_dump()
+
+    from backend.app.database.client_db import build_client_db_url, provision_portal_schema, make_client_session
+    url = build_client_db_url(conn)
+    provision_portal_schema(url)
+    client_db = make_client_session(url)
+    try:
+        result = svc.get_my_employee(client_db, client_id, portal_user.get("email", ""))
+    finally:
+        client_db.close()
+
+    return ApiResponse.ok({"employee_module_enabled": True, "db_provisioned": True, "data": result}).model_dump()
 
 
 # ── Employee CRUD ─────────────────────────────────────────────────────────────

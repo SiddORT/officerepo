@@ -257,7 +257,7 @@ function PortalProfilePage() {
   const { user, subdomain, token } = usePortalAuth();
   const [emp, setEmp] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [noRecord, setNoRecord] = useState(false);
+  const [empStatus, setEmpStatus] = useState(null);
 
   // Edit modal state: "personal" | "contact" | "current_address" | "permanent_address" | null
   const [editModal, setEditModal] = useState(null);
@@ -269,11 +269,19 @@ function PortalProfilePage() {
   const load = useCallback(async () => {
     try {
       const r = await portalEmployeeApi.me(subdomain, token);
-      const data = r.data?.data;
-      if (data) setEmp(data);
-      else setNoRecord(true);
+      const payload = r.data?.data;
+      if (payload && payload.employee_module_enabled === false) {
+        setEmpStatus("module_disabled");
+      } else if (payload && payload.db_provisioned === false) {
+        setEmpStatus("db_not_provisioned");
+      } else if (payload?.data) {
+        setEmp(payload.data);
+        setEmpStatus("found");
+      } else {
+        setEmpStatus("no_record");
+      }
     } catch {
-      setNoRecord(true);
+      setEmpStatus("no_record");
     } finally {
       setLoading(false);
     }
@@ -398,7 +406,19 @@ function PortalProfilePage() {
           <div style={{ textAlign: "center", padding: 40, color: "var(--c-muted)", fontSize: 14 }}>Loading personal details…</div>
         )}
 
-        {!loading && noRecord && (
+        {!loading && empStatus === "module_disabled" && (
+          <div style={{ textAlign: "center", padding: 32, color: "var(--c-muted)", fontSize: 13, background: "var(--c-surface)", borderRadius: 12, border: "1px solid var(--c-border)" }}>
+            Employee details aren&apos;t available for your workspace plan. Contact your administrator to enable the Employee Management module.
+          </div>
+        )}
+
+        {!loading && empStatus === "db_not_provisioned" && (
+          <div style={{ textAlign: "center", padding: 32, color: "var(--c-muted)", fontSize: 13, background: "var(--c-surface)", borderRadius: 12, border: "1px solid var(--c-border)" }}>
+            Your workspace database hasn&apos;t been set up yet. Contact your administrator to complete workspace provisioning.
+          </div>
+        )}
+
+        {!loading && empStatus === "no_record" && (
           <div style={{ textAlign: "center", padding: 32, color: "var(--c-muted)", fontSize: 13, background: "var(--c-surface)", borderRadius: 12, border: "1px solid var(--c-border)" }}>
             No employee record is linked to your account yet. Contact your HR administrator.
           </div>
