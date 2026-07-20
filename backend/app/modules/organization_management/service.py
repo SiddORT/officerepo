@@ -254,7 +254,11 @@ def delete_company(
 
 def _branch_dict(b, company_name: Optional[str] = None, total_employees: int = 0, active_employees: int = 0, documents: Optional[list] = None, manager_name: Optional[str] = None) -> Dict[str, Any]:
     branch_manager_id = getattr(b, "branch_manager_id", None)
-    resolved_manager = manager_name if branch_manager_id else getattr(b, "branch_manager", None)
+    if branch_manager_id:
+        # manager_name is None only when the employee row is gone entirely (hard-deleted)
+        resolved_manager = manager_name if manager_name is not None else "(Employee Removed)"
+    else:
+        resolved_manager = getattr(b, "branch_manager", None)
     return {
         "id": b.id, "client_id": b.client_id, "company_id": b.company_id,
         "company_name": company_name,
@@ -305,12 +309,43 @@ def _employee_display_name(emp: Employee) -> str:
 
 
 def _resolve_manager_names(client_db: Session, rows) -> Dict[str, str]:
-    """Batch-fetch live employee names keyed by employee id for a list of branch rows."""
+    """Batch-fetch employee names keyed by employee id for a list of branch rows.
+
+    Includes soft-deleted and inactive employees so that branches with a stale
+    branch_manager_id still surface a meaningful label instead of silently
+    returning null.  The caller (_branch_dict) handles the case where the id
+    is present but no row exists at all (hard-deleted → "(Employee Removed)").
+    """
     manager_ids = {b.branch_manager_id for b in rows if getattr(b, "branch_manager_id", None)}
     if not manager_ids:
         return {}
-    emps = client_db.query(Employee).filter(Employee.id.in_(manager_ids)).all()
-    return {e.id: _employee_display_name(e) for e in emps}
+    emps = (
+        client_db.query(Employee)
+        .filter(Employee.id.in_(manager_ids))
+        .all()
+    )
+    result: Dict[str, str] = {}
+    for e in emps:
+        name = _employee_display_name(e)
+        if getattr(e, "is_deleted", False):
+            name = f"{name} (Removed)"
+        elif not getattr(e, "is_active", True):
+            name = f"{name} (Inactive)"
+        result[e.id] = name
+    return result
+
+
+def _assert_manager_is_active(client_db: Session, branch_manager_id: Optional[str]) -> None:
+    """Raise 400 if the given employee id is deleted, inactive, or not found."""
+    if not branch_manager_id:
+        return
+    emp = client_db.query(Employee).filter(Employee.id == branch_manager_id).first()
+    if emp is None:
+        raise HTTPException(400, "The selected branch manager no longer exists.")
+    if getattr(emp, "is_deleted", False):
+        raise HTTPException(400, "The selected branch manager has been removed and cannot be assigned.")
+    if not getattr(emp, "is_active", True):
+        raise HTTPException(400, "The selected branch manager is inactive and cannot be assigned.")
 
 
 def list_branches(client_db: Session, client_id: str, **kwargs) -> Dict:
@@ -354,6 +389,7 @@ def create_branch(
 ) -> Dict:
     if repo.get_branch_by_code(client_db, client_id, payload.company_id, payload.branch_code):
         raise HTTPException(409, f"Branch code '{payload.branch_code}' already exists for this company.")
+    _assert_manager_is_active(client_db, getattr(payload, "branch_manager_id", None))
     data = payload.model_dump()
     b = repo.create_branch(client_db, client_id, data)
     _log(client_db, client_id, c.ACTION_BRANCH_CREATED, actor_id, ip,
@@ -370,7 +406,10 @@ def update_branch(
     b = repo.get_branch(client_db, client_id, branch_id)
     if not b:
         raise HTTPException(404, "Branch not found.")
-    data = {k: v for k, v in payload.model_dump(exclude_unset=True).items()}
+    dumped = payload.model_dump(exclude_unset=True)
+    if "branch_manager_id" in dumped:
+        _assert_manager_is_active(client_db, dumped["branch_manager_id"])
+    data = {k: v for k, v in dumped.items()}
     repo.update_branch(client_db, b, data)
     _log(client_db, client_id, c.ACTION_BRANCH_UPDATED, actor_id, ip,
          {"branch_name": b.branch_name})
