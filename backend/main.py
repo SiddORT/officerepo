@@ -96,6 +96,11 @@ from backend.app.modules.exit_management.router import router as portal_exit_rou
 from backend.app.platform.superadmin.rotation_router import router as rotation_router
 from backend.app.platform.superadmin.rotation_status_router import router as rotation_status_router
 from backend.app.modules.industry_master.router import router as industry_master_router
+from backend.app.modules.client_settings.router import router as portal_settings_router
+from backend.app.modules.client_settings.models import (  # noqa: F401
+    ClientGeneralSettings, ClientBranding, ClientLocalization,
+    ClientNotificationChannel, ClientCredential, ClientCommonMaster,
+)
 
 _startup_log = logging.getLogger(__name__)
 
@@ -592,6 +597,7 @@ def create_app(app_settings=settings) -> FastAPI:
     app.include_router(portal_loan_router,        prefix=f"{prefix}/portal", tags=["portal loan management"])
     app.include_router(portal_expense_router,     prefix=f"{prefix}/portal", tags=["portal expense management"])
     app.include_router(portal_exit_router,        prefix=f"{prefix}/portal", tags=["portal exit management"])
+    app.include_router(portal_settings_router,    prefix=f"{prefix}/portal", tags=["portal client settings"])
 
     # Industry Master (superadmin — platform-level reference data)
     app.include_router(industry_master_router, prefix=f"{prefix}/superadmin/industry-master", tags=["industry master"])

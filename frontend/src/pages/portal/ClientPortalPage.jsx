@@ -1,5 +1,16 @@
 import React from "react";
 import { Routes, Route, Navigate, useParams } from "react-router-dom";
+
+// Client Settings pages
+import ClientSettingsLayout from "./client-settings/ClientSettingsLayout";
+import SettingsGeneral       from "./client-settings/SettingsGeneral";
+import SettingsBranding      from "./client-settings/SettingsBranding";
+import SettingsLocalization  from "./client-settings/SettingsLocalization";
+import SettingsNotifications from "./client-settings/SettingsNotifications";
+import SettingsCredentials   from "./client-settings/SettingsCredentials";
+import SettingsCommonMasters from "./client-settings/SettingsCommonMasters";
+import SettingsDocTemplates  from "./client-settings/SettingsDocTemplates";
+import SettingsEmailTemplates from "./client-settings/SettingsEmailTemplates";
 import { PortalAuthProvider, usePortalAuth } from "../../contexts/PortalAuthContext";
 import { useTenant } from "../../contexts/TenantContext";
 import { PortalNavProvider } from "../../contexts/PortalNavContext";
@@ -495,6 +506,21 @@ function PortalRoutes() {
       <Route path="/workflow/escalations"   element={<CS module="Workflow Engine" submodule="Escalation Rules" />} />
       <Route path="/workflow"               element={<Navigate to={pp("/workflow/approvals")} replace />} />
       <Route path="/workflow/*"             element={<Navigate to={pp("/workflow/approvals")} replace />} />
+
+      {/* Client Settings */}
+      <Route path="/client-settings" element={<Protected><ClientSettingsLayout /></Protected>}>
+        <Route index element={<Navigate to={pp("/client-settings/general")} replace />} />
+        <Route path="general"         element={<SettingsGeneral />} />
+        <Route path="branding"        element={<SettingsBranding />} />
+        <Route path="localization"    element={<SettingsLocalization />} />
+        <Route path="notifications"   element={<SettingsNotifications />} />
+        <Route path="credentials"     element={<SettingsCredentials />} />
+        <Route path="common-masters"  element={<SettingsCommonMasters />} />
+        <Route path="doc-templates"   element={<SettingsDocTemplates />} />
+        <Route path="email-templates" element={<SettingsEmailTemplates />} />
+        <Route path="*"               element={<Navigate to={pp("/client-settings/general")} replace />} />
+      </Route>
+      <Route path="/client-settings/*" element={<Navigate to={pp("/client-settings/general")} replace />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to={user ? pp("/dashboard") : pp("/")} replace />} />

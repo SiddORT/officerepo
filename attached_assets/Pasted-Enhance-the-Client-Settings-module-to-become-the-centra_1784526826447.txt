@@ -1,0 +1,287 @@
+Enhance the Client Settings module to become the central configuration hub for every tenant.
+
+IMPORTANT
+
+This is ONLY the Client Settings framework.
+
+Do NOT implement business logic for Offer Letters, Email Sending, Approval Workflows or Integrations.
+
+Create the module structure, database tables, APIs and UI only for the sections listed below.
+
+==================================================
+CLIENT SETTINGS
+==================================================
+
+This module is automatically provisioned whenever a new Client (Tenant) is created.
+
+It is a mandatory system module.
+
+Each tenant has its own isolated settings.
+
+==================================================
+SIDEBAR
+==================================================
+
+Client Settings
+
+• General
+• Company Branding
+• Localization
+• Notification Management
+• Credentials & Integrations
+• Common Masters
+• Document Templates
+• Email Templates
+
+Create placeholder pages where implementation is deferred.
+
+==================================================
+1. GENERAL
+==================================================
+
+Fields
+
+• Client Name
+• Display Name
+• Default Company
+• Default Language
+• Default Date Format
+• Default Time Format (12/24 Hour)
+• Fiscal Year Start Month
+• Week Start Day
+
+==================================================
+2. COMPANY BRANDING
+==================================================
+
+Fields
+
+Company Logo
+
+Favicon
+
+Company Seal
+
+Authorized Signature
+
+Authorized Signatory Name
+
+Designation
+
+Website
+
+Support Email
+
+Phone
+
+Registered Address
+
+Corporate Address
+
+Image preview
+
+Replace/Delete
+
+==================================================
+3. LOCALIZATION
+==================================================
+
+Fields
+
+Default Currency
+
+Currency Symbol
+
+Currency Position
+
+Decimal Precision
+
+Default Time Zone
+
+Default Country
+
+Language
+
+Date Format
+
+Time Format
+
+Number Format
+
+These settings should be reusable by every module.
+
+==================================================
+4. NOTIFICATION MANAGEMENT
+==================================================
+
+Create configuration only.
+
+Notification Channels
+
+• Email
+• SMS
+• WhatsApp
+• Push Notification
+• In-App Notification
+
+Enable/Disable each channel.
+
+Placeholder for future provider configuration.
+
+==================================================
+5. CREDENTIALS & INTEGRATIONS
+==================================================
+
+Create secure credential management.
+
+Initially support placeholders for:
+
+SMTP
+
+SMS Gateway
+
+WhatsApp API
+
+Google OAuth
+
+Microsoft OAuth
+
+Calendar Integration
+
+Storage Provider
+
+Future APIs
+
+Display
+
+Configured
+
+Not Configured
+
+Do not expose secrets.
+
+Passwords and API Keys must be encrypted.
+
+==================================================
+6. COMMON MASTERS
+==================================================
+
+Create reusable master data.
+
+Initially include
+
+Countries
+
+States
+
+Cities
+
+Currencies
+
+Languages
+
+Departments (future reference)
+
+Employment Types
+
+Blood Groups
+
+Marital Status
+
+Gender
+
+Document Types
+
+Relationship Types
+
+These masters should be reusable across HRMS, CRM and other modules.
+
+Do not duplicate the same master data in multiple modules.
+
+==================================================
+7. DOCUMENT TEMPLATES
+==================================================
+
+Create placeholder page only.
+
+Display
+
+"Document Template Engine will be implemented in the next phase."
+
+==================================================
+8. EMAIL TEMPLATES
+==================================================
+
+Create placeholder page only.
+
+Display
+
+"Email Template Engine will be implemented in the next phase."
+
+==================================================
+DATABASE
+==================================================
+
+Every settings table must include
+
+Tenant ID
+
+Created By
+
+Created At
+
+Updated By
+
+Updated At
+
+Status
+
+==================================================
+API
+==================================================
+
+Create CRUD APIs for
+
+General
+
+Company Branding
+
+Localization
+
+Notification Management
+
+Credentials
+
+Common Masters
+
+==================================================
+SECURITY
+==================================================
+
+Sensitive credentials must be encrypted before storage.
+
+Never return secret values through API responses.
+
+==================================================
+OUT OF SCOPE
+==================================================
+
+Do NOT implement
+
+Offer Letter Templates
+
+Email Sending
+
+SMTP Testing
+
+PDF Generation
+
+Workflow Engine
+
+Notification Engine
+
+Approval Matrix
+
+These will be implemented in separate phases.
+
+The objective is to establish a scalable Client Settings framework that all future Office Repo modules can use.

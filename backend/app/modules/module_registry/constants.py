@@ -11,6 +11,16 @@ parent_module_code = <code> → child module (shown inside parent modal + portal
 MODULE_CATALOG = [
     # ── System (always present, not client-toggleable) ────────────────────────
     {
+        "code": "CLIENT_SETTINGS",
+        "name": "Client Settings",
+        "description": "Central configuration hub — general, branding, localization, notifications, credentials, and masters",
+        "route": "client-settings",
+        "icon": "settings",
+        "display_order": 0,
+        "is_system_module": True,
+        "parent_module_code": None,
+    },
+    {
         "code": "USER_MANAGEMENT",
         "name": "User Management",
         "description": "Workspace users, roles, login logs, and session management",

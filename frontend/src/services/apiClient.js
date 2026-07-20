@@ -1307,3 +1307,51 @@ export const currencyApi = {
   syncLogs: (params) => apiClient.get(`${CURRENCIES}/sync-logs`, { params }),
   runSync: (syncSource) => apiClient.post(`${CURRENCIES}/sync`, null, { params: { sync_source: syncSource } }),
 };
+
+// ── Client Settings (portal) ──────────────────────────────────────────────────
+const _purl = (subdomain, path) => `/api/v1/portal/${subdomain}/settings/${path}`;
+const _bare = axios.create({ baseURL: "" });
+
+export const portalSettingsApi = {
+  getGeneral: (sub, tok) =>
+    _bare.get(_purl(sub, "general"), { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+  updateGeneral: (sub, tok, data) =>
+    _bare.patch(_purl(sub, "general"), data, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+
+  getBranding: (sub, tok) =>
+    _bare.get(_purl(sub, "branding"), { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+  updateBranding: (sub, tok, data) =>
+    _bare.patch(_purl(sub, "branding"), data, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+  clearBrandingField: (sub, tok, field) =>
+    _bare.delete(_purl(sub, `branding/${field}`), { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+
+  getLocalization: (sub, tok) =>
+    _bare.get(_purl(sub, "localization"), { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+  updateLocalization: (sub, tok, data) =>
+    _bare.patch(_purl(sub, "localization"), data, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+
+  getNotificationChannels: (sub, tok) =>
+    _bare.get(_purl(sub, "notification-channels"), { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+  updateNotificationChannel: (sub, tok, channel, is_enabled) =>
+    _bare.patch(_purl(sub, `notification-channels/${channel}`), { is_enabled }, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+
+  getCredentials: (sub, tok) =>
+    _bare.get(_purl(sub, "credentials"), { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+  updateCredential: (sub, tok, type, config) =>
+    _bare.patch(_purl(sub, `credentials/${type}`), { config }, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+  clearCredential: (sub, tok, type) =>
+    _bare.delete(_purl(sub, `credentials/${type}`), { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+
+  getAllMasterTypes: (sub, tok) =>
+    _bare.get(_purl(sub, "common-masters"), { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+  getCommonMasters: (sub, tok, masterType) =>
+    _bare.get(_purl(sub, `common-masters/${masterType}`), { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+  createCommonMaster: (sub, tok, masterType, data) =>
+    _bare.post(_purl(sub, `common-masters/${masterType}`), data, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+  updateCommonMaster: (sub, tok, masterType, id, data) =>
+    _bare.patch(_purl(sub, `common-masters/${masterType}/${id}`), data, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+  deleteCommonMaster: (sub, tok, masterType, id) =>
+    _bare.delete(_purl(sub, `common-masters/${masterType}/${id}`), { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+  seedCommonMasters: (sub, tok, masterType) =>
+    _bare.post(_purl(sub, `common-masters/${masterType}/seed`), {}, { headers: { Authorization: `Bearer ${tok}` } }).then(r => r.data),
+};
