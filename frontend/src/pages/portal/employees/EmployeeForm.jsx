@@ -1,5 +1,5 @@
 // @refresh reset
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { usePortalAuth } from "../../../contexts/PortalAuthContext";
 import { portalEmployeeApi, portalOrgApi } from "../../../services/apiClient";
@@ -59,6 +59,26 @@ const COUNTRY_CODES = [
   { code: "+27",  label: "🇿🇦 +27",  name: "South Africa" },
   { code: "+55",  label: "🇧🇷 +55",  name: "Brazil" },
   { code: "+7",   label: "🇷🇺 +7",   name: "Russia" },
+];
+
+const NATIONALITY_OPTIONS = [
+  "Afghan", "Albanian", "Algerian", "American", "Andorran", "Angolan", "Argentine", "Armenian",
+  "Australian", "Austrian", "Azerbaijani", "Bahraini", "Bangladeshi", "Belarusian", "Belgian",
+  "Bolivian", "Bosnian", "Brazilian", "British", "Bulgarian", "Cambodian", "Cameroonian",
+  "Canadian", "Chilean", "Chinese", "Colombian", "Congolese", "Croatian", "Cuban", "Cypriot",
+  "Czech", "Danish", "Dominican", "Dutch", "Ecuadorian", "Egyptian", "Emirati", "Estonian",
+  "Ethiopian", "Filipino", "Finnish", "French", "Georgian", "German", "Ghanaian", "Greek",
+  "Guatemalan", "Honduran", "Hungarian", "Indian", "Indonesian", "Iranian", "Iraqi", "Irish",
+  "Israeli", "Italian", "Ivorian", "Jamaican", "Japanese", "Jordanian", "Kazakhstani", "Kenyan",
+  "Kuwaiti", "Kyrgyz", "Laotian", "Latvian", "Lebanese", "Libyan", "Lithuanian", "Luxembourgish",
+  "Macedonian", "Malaysian", "Maldivian", "Maltese", "Mexican", "Moldovan", "Mongolian",
+  "Moroccan", "Mozambican", "Namibian", "Nepali", "New Zealander", "Nigerian", "Norwegian",
+  "Omani", "Pakistani", "Palestinian", "Panamanian", "Paraguayan", "Peruvian", "Polish",
+  "Portuguese", "Qatari", "Romanian", "Russian", "Rwandan", "Saudi", "Serbian", "Singaporean",
+  "Slovak", "Slovenian", "Somali", "South African", "South Korean", "Spanish", "Sri Lankan",
+  "Sudanese", "Swedish", "Swiss", "Syrian", "Taiwanese", "Tajik", "Tanzanian", "Thai",
+  "Tunisian", "Turkish", "Turkmen", "Ugandan", "Ukrainian", "Uruguayan", "Uzbek", "Venezuelan",
+  "Vietnamese", "Yemeni", "Zambian", "Zimbabwean", "Other",
 ];
 
 const Label = ({ children, required }) => (
@@ -137,6 +157,7 @@ export default function EmployeeForm({ editMode = false }) {
     reporting_manager_id: "", functional_manager_id: "",
   };
   const [form, setForm] = useState(blank);
+  const displayNameTouched = useRef(editMode);
   const { lookup } = usePincodeLookup();
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -156,6 +177,14 @@ export default function EmployeeForm({ editMode = false }) {
       [`${prefix}_country`]:  result.country  || f[`${prefix}_country`],
     }));
   };
+
+  useEffect(() => {
+    if (displayNameTouched.current) return;
+    const first = (form.first_name || "").trim();
+    const last  = (form.last_name  || "").trim();
+    const auto  = [first, last].filter(Boolean).join(" ");
+    setForm(f => ({ ...f, display_name: auto }));
+  }, [form.first_name, form.last_name]);
 
   useEffect(() => {
     portalOrgApi.listCompanies(subdomain, token, { page_size: 200, is_active: true })
@@ -318,7 +347,15 @@ export default function EmployeeForm({ editMode = false }) {
             </Grid3>
             <div style={{ maxWidth: 360 }}>
               <Label>Display Name</Label>
-              <input value={form.display_name} onChange={e => set("display_name", e.target.value)} className="input-field" placeholder="Rajan Sharma (optional)" />
+              <input
+                value={form.display_name}
+                onChange={e => {
+                  displayNameTouched.current = true;
+                  set("display_name", e.target.value);
+                }}
+                className="input-field"
+                placeholder="Rajan Sharma (auto-generated)"
+              />
             </div>
           </Section>
 
@@ -358,7 +395,10 @@ export default function EmployeeForm({ editMode = false }) {
               </div>
               <div>
                 <Label>Nationality</Label>
-                <input value={form.nationality} onChange={e => set("nationality", e.target.value)} className="input-field" placeholder="Indian" />
+                <select value={form.nationality} onChange={e => set("nationality", e.target.value)} className="input-field">
+                  <option value="">Select…</option>
+                  {NATIONALITY_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
               </div>
             </Grid3>
           </Section>
@@ -491,14 +531,14 @@ export default function EmployeeForm({ editMode = false }) {
                 <Label>Department</Label>
                 <select value={form.department_id} onChange={e => set("department_id", e.target.value)} className="input-field" disabled={!form.company_id}>
                   <option value="">Select department…</option>
-                  {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  {departments.map(d => <option key={d.id} value={d.id}>{d.department_name}</option>)}
                 </select>
               </div>
               <div>
                 <Label>Designation</Label>
                 <select value={form.designation_id} onChange={e => set("designation_id", e.target.value)} className="input-field" disabled={!form.company_id}>
                   <option value="">Select designation…</option>
-                  {designations.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  {designations.map(d => <option key={d.id} value={d.id}>{d.designation_name}</option>)}
                 </select>
               </div>
             </Grid2>
