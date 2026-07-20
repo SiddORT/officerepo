@@ -224,15 +224,33 @@ def _migrate_columns(engine: Engine) -> None:
 # Each entry is a raw SQL statement run once per client-DB URL per process.
 # Statements must be safe to replay (idempotent) — use conditional WHERE clauses.
 _DATA_REPAIRS = [
-    # branch_manager text column must not hold stale free-text when branch_manager_id
-    # is set. The service layer resolves the live employee name on every read, so the
-    # stored text is redundant (and potentially misleading) when an ID is present.
-    # This repair clears any stale cached names left by pre-fix writes.
+    # Back-fill branch_manager text from the live employee display name for all
+    # branches that have a branch_manager_id set.  Rows created before the
+    # service-layer sync fix may have a stale cached name (or NULL) alongside a
+    # valid branch_manager_id.  Resolving via a JOIN guarantees the stored name
+    # matches what _employee_display_name() would return: prefer display_name,
+    # fall back to first/middle/last concatenation.
+    (
+        "org_branches",
+        "UPDATE org_branches "
+        "SET branch_manager = CASE "
+        "  WHEN TRIM(COALESCE(e.display_name, '')) != '' THEN e.display_name "
+        "  ELSE TRIM(CONCAT_WS(' ', e.first_name, e.middle_name, e.last_name)) "
+        "END "
+        "FROM employees e "
+        "WHERE org_branches.branch_manager_id = e.id "
+        "  AND org_branches.is_deleted = FALSE",
+    ),
+    # Clear any dangling free-text name on branches where branch_manager_id is
+    # NULL.  These rows may have been saved before the ID field existed and the
+    # stored text is now unverifiable / potentially stale.
     (
         "org_branches",
         "UPDATE org_branches "
         "SET branch_manager = NULL "
-        "WHERE branch_manager_id IS NOT NULL AND branch_manager IS NOT NULL",
+        "WHERE branch_manager_id IS NULL "
+        "  AND branch_manager IS NOT NULL "
+        "  AND is_deleted = FALSE",
     ),
 ]
 
