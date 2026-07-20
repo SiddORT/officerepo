@@ -281,7 +281,7 @@ export function PortalProfilePage() {
         setEmpStatus("no_record");
       }
     } catch {
-      setEmpStatus("no_record");
+      setEmpStatus("error");
     } finally {
       setLoading(false);
     }
@@ -421,6 +421,19 @@ export function PortalProfilePage() {
         {!loading && empStatus === "no_record" && (
           <div style={{ textAlign: "center", padding: 32, color: "var(--c-muted)", fontSize: 13, background: "var(--c-surface)", borderRadius: 12, border: "1px solid var(--c-border)" }}>
             No employee record is linked to your account yet. Contact your HR administrator.
+          </div>
+        )}
+
+        {!loading && empStatus === "error" && (
+          <div style={{ textAlign: "center", padding: 32, background: "var(--c-surface)", borderRadius: 12, border: "1px solid var(--c-border)" }}>
+            <div style={{ color: "var(--c-danger, #ef4444)", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Something went wrong</div>
+            <div style={{ color: "var(--c-muted)", fontSize: 13, marginBottom: 16 }}>We couldn&apos;t load your profile. Please check your connection and try again.</div>
+            <button
+              onClick={() => { setLoading(true); load(); }}
+              style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface-raised, var(--c-surface))", color: "var(--c-text)", fontSize: 13, cursor: "pointer" }}
+            >
+              Try again
+            </button>
           </div>
         )}
 

@@ -118,15 +118,25 @@ describe("PortalProfilePage", () => {
     });
   });
 
-  it("shows the no-record fallback when the API call fails with a network error", async () => {
+  it("shows the error state when the API call fails with a network error", async () => {
     portalEmployeeApi.me.mockRejectedValue(new Error("Network Error"));
 
     renderProfilePage();
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/No employee record is linked to your account/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Something went wrong/i)).toBeInTheDocument();
+      expect(screen.getByText(/couldn't load your profile/i)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+    });
+  });
+
+  it("does not show the no-record message when the API call fails with a network error", async () => {
+    portalEmployeeApi.me.mockRejectedValue(new Error("Network Error"));
+
+    renderProfilePage();
+
+    await waitFor(() => {
+      expect(screen.queryByText(/No employee record is linked to your account/i)).not.toBeInTheDocument();
     });
   });
 
