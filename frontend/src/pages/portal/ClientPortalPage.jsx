@@ -1,3 +1,4 @@
+// @refresh reset
 import React, { useState, useEffect, useCallback } from "react";
 import { Routes, Route, Navigate, useParams } from "react-router-dom";
 
@@ -14,6 +15,7 @@ import SettingsEmailTemplates from "./client-settings/SettingsEmailTemplates";
 import { PortalAuthProvider, usePortalAuth } from "../../contexts/PortalAuthContext";
 import { useTenant } from "../../contexts/TenantContext";
 import { portalEmployeeApi } from "../../services/apiClient";
+import Modal from "../../components/ui/Modal";
 import { PortalNavProvider } from "../../contexts/PortalNavContext";
 import PortalLoginPage from "./PortalLoginPage";
 import PortalLayout from "./PortalLayout";
@@ -191,10 +193,12 @@ const PLabel = ({ children }) => (
     {children}
   </div>
 );
-const PCard = ({ icon, title, children }) => (
+const PCard = ({ icon, title, action, children }) => (
   <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 12, overflow: "hidden" }}>
     <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--c-border)", display: "flex", alignItems: "center", gap: 8, fontWeight: 700, fontSize: 14, color: "var(--c-heading)" }}>
-      <span style={{ fontSize: 16 }}>{icon}</span>{title}
+      <span style={{ fontSize: 16 }}>{icon}</span>
+      <span style={{ flex: 1 }}>{title}</span>
+      {action}
     </div>
     <div style={{ padding: 20 }}>{children}</div>
   </div>
@@ -205,11 +209,62 @@ const PGrid = ({ cols = 3, children }) => (
   </div>
 );
 
+// ── Profile edit helpers ───────────────────────────────────────────────────────
+const PROFILE_COUNTRY_CODES = [
+  { code: "+91", label: "🇮🇳 +91" }, { code: "+1", label: "🇺🇸 +1" },
+  { code: "+44", label: "🇬🇧 +44" }, { code: "+971", label: "🇦🇪 +971" },
+  { code: "+65", label: "🇸🇬 +65" }, { code: "+61", label: "🇦🇺 +61" },
+  { code: "+60", label: "🇲🇾 +60" }, { code: "+66", label: "🇹🇭 +66" },
+  { code: "+880", label: "🇧🇩 +880" }, { code: "+92", label: "🇵🇰 +92" },
+  { code: "+94", label: "🇱🇰 +94" }, { code: "+977", label: "🇳🇵 +977" },
+  { code: "+968", label: "🇴🇲 +968" }, { code: "+966", label: "🇸🇦 +966" },
+  { code: "+974", label: "🇶🇦 +974" }, { code: "+973", label: "🇧🇭 +973" },
+  { code: "+49", label: "🇩🇪 +49" }, { code: "+33", label: "🇫🇷 +33" },
+  { code: "+39", label: "🇮🇹 +39" }, { code: "+81", label: "🇯🇵 +81" },
+  { code: "+86", label: "🇨🇳 +86" }, { code: "+82", label: "🇰🇷 +82" },
+  { code: "+27", label: "🇿🇦 +27" }, { code: "+55", label: "🇧🇷 +55" },
+  { code: "+7", label: "🇷🇺 +7" },
+];
+
+function ProfilePhoneInput({ countryCode, number, onCountryChange, onNumberChange, placeholder }) {
+  return (
+    <div style={{ display: "flex" }}>
+      <select value={countryCode || "+91"} onChange={e => onCountryChange(e.target.value)}
+        className="input-field"
+        style={{ width: 100, borderRadius: "6px 0 0 6px", borderRight: "none", flexShrink: 0, fontSize: 12, paddingLeft: 6, paddingRight: 2 }}>
+        {PROFILE_COUNTRY_CODES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+      </select>
+      <input value={number || ""} onChange={e => onNumberChange(e.target.value)}
+        placeholder={placeholder || "9876543210"}
+        className="input-field"
+        style={{ borderRadius: "0 6px 6px 0", flex: 1 }} />
+    </div>
+  );
+}
+
+const PFLabel = ({ children, required }) => (
+  <label className={`portal-form-label ${required ? "portal-form-label-req" : ""}`}>{children}</label>
+);
+
+const PEditBtn = ({ onClick }) => (
+  <button onClick={onClick}
+    style={{ fontSize: 12, fontWeight: 600, color: "var(--c-accent)", background: "transparent", border: "1px solid var(--c-accent)", borderRadius: 6, padding: "3px 10px", cursor: "pointer" }}>
+    Edit
+  </button>
+);
+
 function PortalProfilePage() {
   const { user, subdomain, token } = usePortalAuth();
   const [emp, setEmp] = useState(null);
   const [loading, setLoading] = useState(true);
   const [noRecord, setNoRecord] = useState(false);
+
+  // Edit modal state: "personal" | "contact" | "current_address" | "permanent_address" | null
+  const [editModal, setEditModal] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [saveSuccess, setSaveSuccess] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -226,6 +281,71 @@ function PortalProfilePage() {
 
   useEffect(() => { load(); }, [load]);
 
+  const openEdit = (section) => {
+    if (!emp) return;
+    setSaveError(""); setSaveSuccess("");
+    if (section === "personal") {
+      setEditForm({
+        gender: emp.gender || "",
+        date_of_birth: emp.date_of_birth || "",
+        marital_status: emp.marital_status || "",
+        blood_group: emp.blood_group || "",
+        nationality: emp.nationality || "",
+        personal_email: emp.personal_email || "",
+      });
+    } else if (section === "contact") {
+      setEditForm({
+        mobile_country_code: emp.mobile_country_code || "+91",
+        mobile_number: emp.mobile_number || "",
+        alternate_mobile_country_code: emp.alternate_mobile_country_code || "+91",
+        alternate_mobile: emp.alternate_mobile || "",
+        landline_number: emp.landline_number || "",
+      });
+    } else if (section === "current_address") {
+      setEditForm({
+        current_address_line_1: emp.current_address_line_1 || "",
+        current_address_line_2: emp.current_address_line_2 || "",
+        current_city: emp.current_city || "",
+        current_district: emp.current_district || "",
+        current_state: emp.current_state || "",
+        current_country: emp.current_country || "",
+        current_postal_code: emp.current_postal_code || "",
+      });
+    } else if (section === "permanent_address") {
+      setEditForm({
+        permanent_same_as_current: emp.permanent_same_as_current || false,
+        permanent_address_line_1: emp.permanent_address_line_1 || "",
+        permanent_address_line_2: emp.permanent_address_line_2 || "",
+        permanent_city: emp.permanent_city || "",
+        permanent_district: emp.permanent_district || "",
+        permanent_state: emp.permanent_state || "",
+        permanent_country: emp.permanent_country || "",
+        permanent_postal_code: emp.permanent_postal_code || "",
+      });
+    }
+    setEditModal(section);
+  };
+
+  const set = (k, v) => setEditForm(f => ({ ...f, [k]: v }));
+
+  const handleSave = async () => {
+    if (!emp?.id) return;
+    setSaving(true); setSaveError(""); setSaveSuccess("");
+    const payload = { ...editForm };
+    Object.keys(payload).forEach(k => { if (payload[k] === "") payload[k] = null; });
+    try {
+      await portalEmployeeApi.update(subdomain, token, emp.id, payload);
+      setSaveSuccess("Saved successfully.");
+      await load();
+      setTimeout(() => { setEditModal(null); setSaveSuccess(""); }, 800);
+    } catch (e) {
+      setSaveError(e?.response?.data?.detail || "Save failed. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const todayStr = new Date().toISOString().split("T")[0];
   const initials = (user?.name || "U").split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 
   return (
@@ -287,7 +407,7 @@ function PortalProfilePage() {
         {!loading && emp && (
           <>
             {/* Personal Details */}
-            <PCard icon="👤" title="Personal Details">
+            <PCard icon="👤" title="Personal Details" action={<PEditBtn onClick={() => openEdit("personal")} />}>
               <div style={{ display: "grid", gap: 16 }}>
                 <PGrid>
                   <div><PLabel>Gender</PLabel><PVal>{emp.gender}</PVal></div>
@@ -303,7 +423,7 @@ function PortalProfilePage() {
             </PCard>
 
             {/* Contact Details */}
-            <PCard icon="📞" title="Contact Details">
+            <PCard icon="📞" title="Contact Details" action={<PEditBtn onClick={() => openEdit("contact")} />}>
               <PGrid>
                 <div>
                   <PLabel>Mobile</PLabel>
@@ -318,7 +438,7 @@ function PortalProfilePage() {
             </PCard>
 
             {/* Current Address */}
-            <PCard icon="📍" title="Current Address">
+            <PCard icon="📍" title="Current Address" action={<PEditBtn onClick={() => openEdit("current_address")} />}>
               <div style={{ display: "grid", gap: 12 }}>
                 <PGrid cols={2}>
                   <div><PLabel>Address Line 1</PLabel><PVal>{emp.current_address_line_1}</PVal></div>
@@ -337,7 +457,7 @@ function PortalProfilePage() {
             </PCard>
 
             {/* Permanent Address */}
-            <PCard icon="🏠" title="Permanent Address">
+            <PCard icon="🏠" title="Permanent Address" action={<PEditBtn onClick={() => openEdit("permanent_address")} />}>
               {emp.permanent_same_as_current ? (
                 <div style={{ fontSize: 13, color: "var(--c-muted)", textAlign: "center", padding: "8px 0" }}>Same as current address</div>
               ) : (
@@ -361,6 +481,196 @@ function PortalProfilePage() {
           </>
         )}
       </div>
+
+      {/* ── Edit Modals ── */}
+
+      {/* Personal Details Modal */}
+      {editModal === "personal" && (
+        <Modal open title="Edit Personal Details" onClose={() => setEditModal(null)}>
+          {saveError && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{saveError}</div>}
+          {saveSuccess && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(34,197,94,0.1)", color: "#4ade80", fontSize: 13, marginBottom: 12 }}>{saveSuccess}</div>}
+          <div style={{ display: "grid", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+              <div>
+                <PFLabel>Gender</PFLabel>
+                <select value={editForm.gender || ""} onChange={e => set("gender", e.target.value)} className="input-field">
+                  <option value="">Select…</option>
+                  {["Male", "Female", "Other", "Prefer not to say"].map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
+              <div>
+                <PFLabel>Date of Birth</PFLabel>
+                <input type="date" value={editForm.date_of_birth || ""} onChange={e => set("date_of_birth", e.target.value)} max={todayStr} className="input-field" />
+              </div>
+              <div>
+                <PFLabel>Marital Status</PFLabel>
+                <select value={editForm.marital_status || ""} onChange={e => set("marital_status", e.target.value)} className="input-field">
+                  <option value="">Select…</option>
+                  {["Single", "Married", "Divorced", "Widowed", "Separated"].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+              <div>
+                <PFLabel>Blood Group</PFLabel>
+                <select value={editForm.blood_group || ""} onChange={e => set("blood_group", e.target.value)} className="input-field">
+                  <option value="">Select…</option>
+                  {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              <div>
+                <PFLabel>Nationality</PFLabel>
+                <input value={editForm.nationality || ""} onChange={e => set("nationality", e.target.value)} className="input-field" placeholder="Indian" />
+              </div>
+              <div>
+                <PFLabel>Personal Email</PFLabel>
+                <input type="email" value={editForm.personal_email || ""} onChange={e => set("personal_email", e.target.value)} className="input-field" placeholder="personal@email.com" />
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+              <button onClick={() => setEditModal(null)} className="btn-secondary">Cancel</button>
+              <button onClick={handleSave} disabled={saving} className="btn-primary">{saving ? "Saving…" : "Save"}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Contact Details Modal */}
+      {editModal === "contact" && (
+        <Modal open title="Edit Contact Details" onClose={() => setEditModal(null)}>
+          {saveError && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{saveError}</div>}
+          {saveSuccess && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(34,197,94,0.1)", color: "#4ade80", fontSize: 13, marginBottom: 12 }}>{saveSuccess}</div>}
+          <div style={{ display: "grid", gap: 12 }}>
+            <div>
+              <PFLabel>Mobile Number</PFLabel>
+              <ProfilePhoneInput
+                countryCode={editForm.mobile_country_code}
+                number={editForm.mobile_number}
+                onCountryChange={v => set("mobile_country_code", v)}
+                onNumberChange={v => set("mobile_number", v)}
+              />
+            </div>
+            <div>
+              <PFLabel>Alternate Mobile</PFLabel>
+              <ProfilePhoneInput
+                countryCode={editForm.alternate_mobile_country_code}
+                number={editForm.alternate_mobile}
+                onCountryChange={v => set("alternate_mobile_country_code", v)}
+                onNumberChange={v => set("alternate_mobile", v)}
+              />
+            </div>
+            <div>
+              <PFLabel>Landline</PFLabel>
+              <input value={editForm.landline_number || ""} onChange={e => set("landline_number", e.target.value)} className="input-field" placeholder="022-12345678" />
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+              <button onClick={() => setEditModal(null)} className="btn-secondary">Cancel</button>
+              <button onClick={handleSave} disabled={saving} className="btn-primary">{saving ? "Saving…" : "Save"}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Current Address Modal */}
+      {editModal === "current_address" && (
+        <Modal open title="Edit Current Address" onClose={() => setEditModal(null)}>
+          {saveError && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{saveError}</div>}
+          {saveSuccess && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(34,197,94,0.1)", color: "#4ade80", fontSize: 13, marginBottom: 12 }}>{saveSuccess}</div>}
+          <div style={{ display: "grid", gap: 12 }}>
+            <div>
+              <PFLabel>Address Line 1</PFLabel>
+              <input value={editForm.current_address_line_1 || ""} onChange={e => set("current_address_line_1", e.target.value)} className="input-field" placeholder="Flat / House No., Street" />
+            </div>
+            <div>
+              <PFLabel>Address Line 2</PFLabel>
+              <input value={editForm.current_address_line_2 || ""} onChange={e => set("current_address_line_2", e.target.value)} className="input-field" placeholder="Area / Locality" />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+              <div>
+                <PFLabel>City</PFLabel>
+                <input value={editForm.current_city || ""} onChange={e => set("current_city", e.target.value)} className="input-field" placeholder="Mumbai" />
+              </div>
+              <div>
+                <PFLabel>District</PFLabel>
+                <input value={editForm.current_district || ""} onChange={e => set("current_district", e.target.value)} className="input-field" placeholder="Mumbai Suburban" />
+              </div>
+              <div>
+                <PFLabel>State</PFLabel>
+                <input value={editForm.current_state || ""} onChange={e => set("current_state", e.target.value)} className="input-field" placeholder="Maharashtra" />
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+              <div>
+                <PFLabel>Country</PFLabel>
+                <input value={editForm.current_country || ""} onChange={e => set("current_country", e.target.value)} className="input-field" placeholder="India" />
+              </div>
+              <div>
+                <PFLabel>Postal Code</PFLabel>
+                <input value={editForm.current_postal_code || ""} onChange={e => set("current_postal_code", e.target.value)} className="input-field" placeholder="400001" />
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+              <button onClick={() => setEditModal(null)} className="btn-secondary">Cancel</button>
+              <button onClick={handleSave} disabled={saving} className="btn-primary">{saving ? "Saving…" : "Save"}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Permanent Address Modal */}
+      {editModal === "permanent_address" && (
+        <Modal open title="Edit Permanent Address" onClose={() => setEditModal(null)}>
+          {saveError && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{saveError}</div>}
+          {saveSuccess && <div style={{ padding: "8px 12px", borderRadius: 6, background: "rgba(34,197,94,0.1)", color: "#4ade80", fontSize: 13, marginBottom: 12 }}>{saveSuccess}</div>}
+          <div style={{ display: "grid", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <input type="checkbox" id="perm-same" checked={!!editForm.permanent_same_as_current} onChange={e => set("permanent_same_as_current", e.target.checked)}
+                style={{ width: 16, height: 16, cursor: "pointer" }} />
+              <label htmlFor="perm-same" style={{ fontSize: 13, cursor: "pointer", color: "var(--c-text)" }}>Same as current address</label>
+            </div>
+            {!editForm.permanent_same_as_current && (
+              <>
+                <div>
+                  <PFLabel>Address Line 1</PFLabel>
+                  <input value={editForm.permanent_address_line_1 || ""} onChange={e => set("permanent_address_line_1", e.target.value)} className="input-field" placeholder="Flat / House No., Street" />
+                </div>
+                <div>
+                  <PFLabel>Address Line 2</PFLabel>
+                  <input value={editForm.permanent_address_line_2 || ""} onChange={e => set("permanent_address_line_2", e.target.value)} className="input-field" placeholder="Area / Locality" />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+                  <div>
+                    <PFLabel>City</PFLabel>
+                    <input value={editForm.permanent_city || ""} onChange={e => set("permanent_city", e.target.value)} className="input-field" placeholder="Pune" />
+                  </div>
+                  <div>
+                    <PFLabel>District</PFLabel>
+                    <input value={editForm.permanent_district || ""} onChange={e => set("permanent_district", e.target.value)} className="input-field" placeholder="Pune" />
+                  </div>
+                  <div>
+                    <PFLabel>State</PFLabel>
+                    <input value={editForm.permanent_state || ""} onChange={e => set("permanent_state", e.target.value)} className="input-field" placeholder="Maharashtra" />
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+                  <div>
+                    <PFLabel>Country</PFLabel>
+                    <input value={editForm.permanent_country || ""} onChange={e => set("permanent_country", e.target.value)} className="input-field" placeholder="India" />
+                  </div>
+                  <div>
+                    <PFLabel>Postal Code</PFLabel>
+                    <input value={editForm.permanent_postal_code || ""} onChange={e => set("permanent_postal_code", e.target.value)} className="input-field" placeholder="411001" />
+                  </div>
+                </div>
+              </>
+            )}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+              <button onClick={() => setEditModal(null)} className="btn-secondary">Cancel</button>
+              <button onClick={handleSave} disabled={saving} className="btn-primary">{saving ? "Saving…" : "Save"}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </PortalLayout>
   );
 }
