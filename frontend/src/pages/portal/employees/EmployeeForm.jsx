@@ -128,6 +128,7 @@ export default function EmployeeForm({ editMode = false }) {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(editMode);
   const [error, setError] = useState("");
+  const [nationalityOther, setNationalityOther] = useState("");
 
   const [companies, setCompanies] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -212,7 +213,7 @@ export default function EmployeeForm({ editMode = false }) {
         first_name: e.first_name || "", middle_name: e.middle_name || "", last_name: e.last_name || "",
         display_name: e.display_name || "",
         gender: e.gender || "", date_of_birth: e.date_of_birth || "", marital_status: e.marital_status || "",
-        blood_group: e.blood_group || "", nationality: e.nationality || "",
+        blood_group: e.blood_group || "", nationality: NATIONALITY_OPTIONS.includes(e.nationality || "") ? (e.nationality || "") : (e.nationality ? "Other" : ""),
         personal_email: e.personal_email || "", official_email: e.official_email || "",
         mobile_country_code: e.mobile_country_code || "+91", mobile_number: e.mobile_number || "",
         alternate_mobile_country_code: e.alternate_mobile_country_code || "+91", alternate_mobile: e.alternate_mobile || "",
@@ -232,6 +233,9 @@ export default function EmployeeForm({ editMode = false }) {
         relieving_date: e.relieving_date || "",
         reporting_manager_id: e.reporting_manager_id || "", functional_manager_id: e.functional_manager_id || "",
       });
+      if (e.nationality && !NATIONALITY_OPTIONS.includes(e.nationality)) {
+        setNationalityOther(e.nationality);
+      }
     }).catch(() => setError("Failed to load employee.")).finally(() => setLoading(false));
   }, [editMode, empId, subdomain, token]);
 
@@ -249,6 +253,9 @@ export default function EmployeeForm({ editMode = false }) {
     if (err) { setError(err); return; }
     setSaving(true); setError("");
     const payload = { ...form };
+    if (payload.nationality === "Other") {
+      payload.nationality = nationalityOther.trim() || null;
+    }
     Object.keys(payload).forEach(k => { if (payload[k] === "") payload[k] = null; });
     payload.first_name = form.first_name;
     payload.last_name = form.last_name;
@@ -395,10 +402,27 @@ export default function EmployeeForm({ editMode = false }) {
               </div>
               <div>
                 <Label>Nationality</Label>
-                <select value={form.nationality} onChange={e => set("nationality", e.target.value)} className="input-field">
+                <select
+                  value={form.nationality}
+                  onChange={e => {
+                    set("nationality", e.target.value);
+                    if (e.target.value !== "Other") setNationalityOther("");
+                  }}
+                  className="input-field"
+                >
                   <option value="">Select…</option>
                   {NATIONALITY_OPTIONS.map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
+                {form.nationality === "Other" && (
+                  <input
+                    value={nationalityOther}
+                    onChange={e => setNationalityOther(e.target.value)}
+                    className="input-field"
+                    placeholder="Please specify nationality…"
+                    style={{ marginTop: 8 }}
+                    autoFocus
+                  />
+                )}
               </div>
             </Grid3>
           </Section>
