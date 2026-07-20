@@ -258,6 +258,7 @@ export function PortalProfilePage() {
   const [emp, setEmp] = useState(null);
   const [loading, setLoading] = useState(true);
   const [empStatus, setEmpStatus] = useState(null);
+  const [retrying, setRetrying] = useState(false);
 
   // Edit modal state: "personal" | "contact" | "current_address" | "permanent_address" | null
   const [editModal, setEditModal] = useState(null);
@@ -286,6 +287,15 @@ export function PortalProfilePage() {
       setLoading(false);
     }
   }, [subdomain, token]);
+
+  const handleRetry = useCallback(async () => {
+    setRetrying(true);
+    try {
+      await load();
+    } finally {
+      setRetrying(false);
+    }
+  }, [load]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -429,10 +439,14 @@ export function PortalProfilePage() {
             <div style={{ color: "var(--c-danger, #ef4444)", fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Something went wrong</div>
             <div style={{ color: "var(--c-muted)", fontSize: 13, marginBottom: 16 }}>We couldn&apos;t load your profile. Please check your connection and try again.</div>
             <button
-              onClick={() => { setLoading(true); load(); }}
-              style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface-raised, var(--c-surface))", color: "var(--c-text)", fontSize: 13, cursor: "pointer" }}
+              onClick={handleRetry}
+              disabled={retrying}
+              style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid var(--c-border)", background: "var(--c-surface-raised, var(--c-surface))", color: retrying ? "var(--c-muted)" : "var(--c-text)", fontSize: 13, cursor: retrying ? "not-allowed" : "pointer", opacity: retrying ? 0.7 : 1, display: "inline-flex", alignItems: "center", gap: 6 }}
             >
-              Try again
+              {retrying && (
+                <span style={{ width: 12, height: 12, border: "2px solid var(--c-muted)", borderTopColor: "var(--c-text)", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
+              )}
+              {retrying ? "Retrying…" : "Try again"}
             </button>
           </div>
         )}
