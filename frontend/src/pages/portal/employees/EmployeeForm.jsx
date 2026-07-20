@@ -61,6 +61,26 @@ const COUNTRY_CODES = [
   { code: "+7",   label: "🇷🇺 +7",   name: "Russia" },
 ];
 
+const COUNTRY_OPTIONS = [
+  "Afghanistan", "Albania", "Algeria", "Argentina", "Armenia", "Australia", "Austria",
+  "Azerbaijan", "Bahrain", "Bangladesh", "Belarus", "Belgium", "Bolivia", "Bosnia and Herzegovina",
+  "Brazil", "Bulgaria", "Cambodia", "Cameroon", "Canada", "Chile", "China", "Colombia",
+  "Croatia", "Cuba", "Cyprus", "Czech Republic", "Denmark", "Dominican Republic",
+  "Ecuador", "Egypt", "Estonia", "Ethiopia", "Finland", "France", "Georgia", "Germany",
+  "Ghana", "Greece", "Guatemala", "Honduras", "Hungary", "India", "Indonesia", "Iran", "Iraq",
+  "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya",
+  "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Libya", "Lithuania", "Luxembourg",
+  "Malaysia", "Maldives", "Malta", "Mexico", "Moldova", "Mongolia", "Morocco", "Mozambique",
+  "Namibia", "Nepal", "Netherlands", "New Zealand", "Nigeria", "Norway", "Oman", "Pakistan",
+  "Palestine", "Panama", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar",
+  "Romania", "Russia", "Rwanda", "Saudi Arabia", "Serbia", "Singapore", "Slovakia",
+  "Slovenia", "Somalia", "South Africa", "South Korea", "Spain", "Sri Lanka", "Sudan",
+  "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand",
+  "Tunisia", "Turkey", "Turkmenistan", "Uganda", "Ukraine", "United Arab Emirates",
+  "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Venezuela", "Vietnam",
+  "Yemen", "Zambia", "Zimbabwe", "Other",
+];
+
 const NATIONALITY_OPTIONS = [
   "Afghan", "Albanian", "Algerian", "American", "Andorran", "Angolan", "Argentine", "Armenian",
   "Australian", "Austrian", "Azerbaijani", "Bahraini", "Bangladeshi", "Belarusian", "Belgian",
@@ -129,6 +149,8 @@ export default function EmployeeForm({ editMode = false }) {
   const [loading, setLoading] = useState(editMode);
   const [error, setError] = useState("");
   const [nationalityOther, setNationalityOther] = useState("");
+  const [currentCountryOther, setCurrentCountryOther] = useState("");
+  const [permanentCountryOther, setPermanentCountryOther] = useState("");
 
   const [companies, setCompanies] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -221,11 +243,13 @@ export default function EmployeeForm({ editMode = false }) {
         resume_url: e.resume_url || "", resume_filename: e.resume_filename || "",
         current_address_line_1: e.current_address_line_1 || "", current_address_line_2: e.current_address_line_2 || "",
         current_postal_code: e.current_postal_code || "", current_city: e.current_city || "",
-        current_district: e.current_district || "", current_state: e.current_state || "", current_country: e.current_country || "",
+        current_district: e.current_district || "", current_state: e.current_state || "",
+        current_country: COUNTRY_OPTIONS.includes(e.current_country || "") ? (e.current_country || "") : (e.current_country ? "Other" : ""),
         permanent_same_as_current: e.permanent_same_as_current ?? true,
         permanent_address_line_1: e.permanent_address_line_1 || "", permanent_address_line_2: e.permanent_address_line_2 || "",
         permanent_postal_code: e.permanent_postal_code || "", permanent_city: e.permanent_city || "",
-        permanent_district: e.permanent_district || "", permanent_state: e.permanent_state || "", permanent_country: e.permanent_country || "",
+        permanent_district: e.permanent_district || "", permanent_state: e.permanent_state || "",
+        permanent_country: COUNTRY_OPTIONS.includes(e.permanent_country || "") ? (e.permanent_country || "") : (e.permanent_country ? "Other" : ""),
         branch_id: e.branch_id || "", work_mode: e.work_mode || "",
         employee_category: e.employee_category || "", employment_type: e.employment_type || "",
         employment_status: e.employment_status || "Draft",
@@ -235,6 +259,12 @@ export default function EmployeeForm({ editMode = false }) {
       });
       if (e.nationality && !NATIONALITY_OPTIONS.includes(e.nationality)) {
         setNationalityOther(e.nationality);
+      }
+      if (e.current_country && !COUNTRY_OPTIONS.includes(e.current_country)) {
+        setCurrentCountryOther(e.current_country);
+      }
+      if (e.permanent_country && !COUNTRY_OPTIONS.includes(e.permanent_country)) {
+        setPermanentCountryOther(e.permanent_country);
       }
     }).catch(() => setError("Failed to load employee.")).finally(() => setLoading(false));
   }, [editMode, empId, subdomain, token]);
@@ -255,6 +285,12 @@ export default function EmployeeForm({ editMode = false }) {
     const payload = { ...form };
     if (payload.nationality === "Other") {
       payload.nationality = nationalityOther.trim() || null;
+    }
+    if (payload.current_country === "Other") {
+      payload.current_country = currentCountryOther.trim() || null;
+    }
+    if (payload.permanent_country === "Other") {
+      payload.permanent_country = permanentCountryOther.trim() || null;
     }
     Object.keys(payload).forEach(k => { if (payload[k] === "") payload[k] = null; });
     payload.first_name = form.first_name;
@@ -491,7 +527,30 @@ export default function EmployeeForm({ editMode = false }) {
               <div><Label>City</Label><input value={form.current_city} onChange={e => set("current_city", e.target.value)} className="input-field" placeholder="Mumbai" /></div>
               <div><Label>District</Label><input value={form.current_district} onChange={e => set("current_district", e.target.value)} className="input-field" placeholder="Mumbai Suburban" /></div>
               <div><Label>State</Label><input value={form.current_state} onChange={e => set("current_state", e.target.value)} className="input-field" placeholder="Maharashtra" /></div>
-              <div><Label>Country</Label><input value={form.current_country} onChange={e => set("current_country", e.target.value)} className="input-field" placeholder="India" /></div>
+              <div>
+                <Label>Country</Label>
+                <select
+                  value={form.current_country}
+                  onChange={e => {
+                    set("current_country", e.target.value);
+                    if (e.target.value !== "Other") setCurrentCountryOther("");
+                  }}
+                  className="input-field"
+                >
+                  <option value="">Select…</option>
+                  {COUNTRY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                {form.current_country === "Other" && (
+                  <input
+                    value={currentCountryOther}
+                    onChange={e => setCurrentCountryOther(e.target.value)}
+                    className="input-field"
+                    placeholder="Please specify country…"
+                    style={{ marginTop: 8 }}
+                    autoFocus
+                  />
+                )}
+              </div>
             </Grid3>
           </Section>
 
@@ -515,7 +574,30 @@ export default function EmployeeForm({ editMode = false }) {
                   <div><Label>City</Label><input value={form.permanent_city} onChange={e => set("permanent_city", e.target.value)} className="input-field" placeholder="Delhi" /></div>
                   <div><Label>District</Label><input value={form.permanent_district} onChange={e => set("permanent_district", e.target.value)} className="input-field" placeholder="New Delhi" /></div>
                   <div><Label>State</Label><input value={form.permanent_state} onChange={e => set("permanent_state", e.target.value)} className="input-field" placeholder="Delhi" /></div>
-                  <div><Label>Country</Label><input value={form.permanent_country} onChange={e => set("permanent_country", e.target.value)} className="input-field" placeholder="India" /></div>
+                  <div>
+                    <Label>Country</Label>
+                    <select
+                      value={form.permanent_country}
+                      onChange={e => {
+                        set("permanent_country", e.target.value);
+                        if (e.target.value !== "Other") setPermanentCountryOther("");
+                      }}
+                      className="input-field"
+                    >
+                      <option value="">Select…</option>
+                      {COUNTRY_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    {form.permanent_country === "Other" && (
+                      <input
+                        value={permanentCountryOther}
+                        onChange={e => setPermanentCountryOther(e.target.value)}
+                        className="input-field"
+                        placeholder="Please specify country…"
+                        style={{ marginTop: 8 }}
+                        autoFocus
+                      />
+                    )}
+                  </div>
                 </Grid3>
               </>
             )}
